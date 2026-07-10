@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { AnnotatedToken } from "../types";
+import { AnnotatedToken, SegmentationCandidate } from "../types";
 
 export interface Paragraph {
   id: number;
@@ -78,11 +78,21 @@ export function useTokenization() {
     }
   }
 
+  async function splitToken(token: AnnotatedToken) {
+    return await invoke<AnnotatedToken[]>("split_token", { token });
+  }
+
+  async function getCandidates(token: AnnotatedToken, topN = 5) {
+    return await invoke<SegmentationCandidate[]>("get_candidates", { token, topN });
+  }
+
   return {
     paragraphs,
     isAnalyzing,
     errorMsg,
     analyzeText,
     mergeTokens,
+    splitToken,
+    getCandidates,
   };
 }

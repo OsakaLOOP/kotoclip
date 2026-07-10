@@ -52,6 +52,10 @@ export interface AnnotatedToken {
   inference_reason: string | null;
 }
 
+export interface SegmentationCandidate {
+  tokens: AnnotatedToken[];
+}
+
 /// 词典释义条目
 export interface DictEntry {
   dict_name: string;

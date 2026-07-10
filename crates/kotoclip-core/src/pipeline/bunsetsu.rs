@@ -102,7 +102,7 @@ pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsets
 }
 
 /// 构造单个文节，并提取其核心自立语 (HeadWord) 与属性
-fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
+pub(crate) fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
     // 拼接表层形
     let surface: String = morphemes.iter().map(|m| m.surface.as_str()).collect();
 

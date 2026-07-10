@@ -3,6 +3,7 @@ pub mod bunsetsu;
 pub mod grammar;
 pub mod restore;
 pub mod ruby;
+pub mod candidates;
 
 use crate::models::AnnotatedToken;
 use std::path::Path;

@@ -44,6 +44,8 @@ pub fn run() {
             commands::mark_known,
             commands::mark_unknown,
             commands::add_merge_rule,
+            commands::split_token,
+            commands::get_candidates,
             commands::export_selected,
         ])
         .run(tauri::generate_context!())

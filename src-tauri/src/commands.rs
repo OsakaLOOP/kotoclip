@@ -1,6 +1,6 @@
 use tauri::State;
 use crate::state::AppState;
-use kotoclip_core::models::{AnnotatedToken, DictEntry, ExportEntry};
+use kotoclip_core::models::{AnnotatedToken, DictEntry, ExportEntry, SegmentationCandidate};
 
 /// IPC 命令：分析日语文本并进行生词等级判定
 #[tauri::command]
@@ -56,6 +56,25 @@ pub async fn add_merge_rule(
 ) -> Result<(), String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     engine.add_merge_rule(&parts).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn split_token(
+    state: State<'_, AppState>,
+    token: AnnotatedToken,
+) -> Result<Vec<AnnotatedToken>, String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    Ok(engine.split_token(&token))
+}
+
+#[tauri::command]
+pub async fn get_candidates(
+    state: State<'_, AppState>,
+    token: AnnotatedToken,
+    top_n: usize,
+) -> Result<Vec<SegmentationCandidate>, String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    Ok(engine.get_candidates(&token, top_n))
 }
 
 /// IPC 命令：打包所选生词生成 Anki 格式的导出 JSON 字符串

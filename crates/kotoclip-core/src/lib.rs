@@ -9,7 +9,7 @@ use std::path::Path;
 use pipeline::Pipeline;
 use dictionary::lookup::DictionaryEngine;
 use profile::ProfileEngine;
-use models::{AnnotatedToken, DictEntry};
+use models::{AnnotatedToken, DictEntry, SegmentationCandidate};
 
 /// Kotoclip 核心引擎，粘合了分词管线、词库检索以及用户历史曝光画像
 pub struct Engine {
@@ -91,5 +91,17 @@ impl Engine {
     /// 获取所有用户自定义分词合并规则
     pub fn get_merge_rules(&self) -> Result<Vec<Vec<String>>, Box<dyn std::error::Error>> {
         self.profile.get_merge_rules()
+    }
+
+    pub fn split_token(&self, token: &AnnotatedToken) -> Vec<AnnotatedToken> {
+        pipeline::candidates::split_token(token)
+    }
+
+    pub fn get_candidates(
+        &self,
+        token: &AnnotatedToken,
+        top_n: usize,
+    ) -> Vec<SegmentationCandidate> {
+        pipeline::candidates::get_candidates(token, top_n)
     }
 }

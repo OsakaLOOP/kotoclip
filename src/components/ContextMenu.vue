@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
 import { AnnotatedToken } from "../types";
+import type { SegmentationCandidate } from "../types";
 
 const props = defineProps<{
   show: boolean;
@@ -9,6 +10,8 @@ const props = defineProps<{
   token: AnnotatedToken | null;
   paragraphId: number;
   tokenIndex: number;
+  candidates: SegmentationCandidate[];
+  candidatesLoading: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -16,6 +19,9 @@ const emit = defineEmits<{
   (e: "mark-known", paragraphId: number, tokenIndex: number): void;
   (e: "mark-unknown", paragraphId: number, tokenIndex: number): void;
   (e: "view-definition", paragraphId: number, tokenIndex: number): void;
+  (e: "split"): void;
+  (e: "load-candidates"): void;
+  (e: "apply-candidate", tokens: AnnotatedToken[]): void;
 }>();
 
 function handleMarkKnown() {
@@ -61,6 +67,31 @@ onUnmounted(() => {
   >
     <div class="menu-header">{{ token.bunsetsu.surface }}</div>
     <div class="menu-divider"></div>
+
+    <button class="menu-item" @click="emit('split')">
+      <span class="icon">拆</span> 拆为形态素
+    </button>
+
+    <button
+      class="menu-item"
+      :disabled="candidatesLoading"
+      @click="emit('load-candidates')"
+    >
+      <span class="icon">候</span>
+      {{ candidatesLoading ? '生成中...' : 'Top-N 分词候选' }}
+    </button>
+
+    <div v-if="candidates.length > 0" class="candidate-list">
+      <button
+        v-for="(candidate, index) in candidates"
+        :key="index"
+        class="candidate-item"
+        @click="emit('apply-candidate', candidate.tokens)"
+      >
+        {{ candidate.tokens.map((item) => item.bunsetsu.surface).join('｜') }}
+      </button>
+    </div>
+    <div class="menu-divider"></div>
     
     <button class="menu-item" @click="handleViewDefinition">
       <span class="icon">📖</span> 查看完整释义
@@ -88,7 +119,7 @@ onUnmounted(() => {
 .context-menu {
   position: fixed;
   z-index: 1100;
-  width: 180px;
+  width: 240px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -129,6 +160,37 @@ onUnmounted(() => {
 
 .menu-item:hover {
   background-color: var(--accent-light);
+  color: var(--accent-color);
+}
+
+.menu-item:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px;
+}
+
+.candidate-item {
+  width: 100%;
+  overflow: hidden;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.candidate-item:hover {
+  border-color: var(--accent-color);
   color: var(--accent-color);
 }
 

@@ -89,6 +89,12 @@ pub struct AnnotatedToken {
     pub inference_reason: Option<String>,
 }
 
+/// One alternative segmentation for a currently rendered token.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SegmentationCandidate {
+    pub tokens: Vec<AnnotatedToken>,
+}
+
 /// 导出用的选词条目
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportEntry {

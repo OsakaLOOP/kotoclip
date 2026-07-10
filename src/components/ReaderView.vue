@@ -6,7 +6,7 @@ import { useTokenization } from "../composables/useTokenization";
 import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
-import { DictEntry } from "../types";
+import { DictEntry, SegmentationCandidate, AnnotatedToken } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import TooltipPanel from "./TooltipPanel.vue";
@@ -23,7 +23,15 @@ const analysisMetrics = ref<{ characterCount: number; durationMs: number } | nul
 const scrollContainerRef = ref<HTMLElement | null>(null);
 
 // 初始化 composables
-const { paragraphs, isAnalyzing, errorMsg, analyzeText, mergeTokens } = useTokenization();
+const {
+  paragraphs,
+  isAnalyzing,
+  errorMsg,
+  analyzeText,
+  mergeTokens,
+  splitToken,
+  getCandidates,
+} = useTokenization();
 const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected } = useSelection(paragraphs);
 const { lookupWord } = useDictionary();
 
@@ -48,6 +56,8 @@ const contextMenuY = ref(0);
 const contextMenuToken = ref<any | null>(null);
 const contextMenuParagraphId = ref(0);
 const contextMenuTokenIndex = ref(0);
+const contextMenuCandidates = ref<SegmentationCandidate[]>([]);
+const candidatesLoading = ref(false);
 
 // 侧边栏导出面板显示状态
 const showExportPanel = ref(false);
@@ -229,7 +239,41 @@ function handleParagraphDblClick(e: MouseEvent, paragraphId: number) {
   contextMenuToken.value = token;
   contextMenuParagraphId.value = paragraphId;
   contextMenuTokenIndex.value = tokenIndex;
+  contextMenuCandidates.value = [];
   contextMenuShow.value = true;
+}
+
+function replaceContextToken(replacement: AnnotatedToken[]) {
+  const paragraph = paragraphs.value.find(
+    (item) => item.id === contextMenuParagraphId.value
+  );
+  if (!paragraph || replacement.length === 0) return;
+  paragraph.tokens.splice(contextMenuTokenIndex.value, 1, ...replacement);
+  clearAllSelections();
+  contextMenuShow.value = false;
+  virtualizer.value.measure();
+}
+
+async function splitContextToken() {
+  if (!contextMenuToken.value) return;
+  try {
+    replaceContextToken(await splitToken(contextMenuToken.value));
+  } catch (err) {
+    console.error("Split Token Error:", err);
+  }
+}
+
+async function loadContextCandidates() {
+  if (!contextMenuToken.value) return;
+  candidatesLoading.value = true;
+  try {
+    contextMenuCandidates.value = await getCandidates(contextMenuToken.value, 5);
+  } catch (err) {
+    console.error("Candidate Lookup Error:", err);
+    contextMenuCandidates.value = [];
+  } finally {
+    candidatesLoading.value = false;
+  }
 }
 
 // 查看完整释义对话框
@@ -412,10 +456,15 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       :token="contextMenuToken"
       :paragraphId="contextMenuParagraphId"
       :tokenIndex="contextMenuTokenIndex"
+      :candidates="contextMenuCandidates"
+      :candidatesLoading="candidatesLoading"
       @close="contextMenuShow = false"
       @mark-known="markAsKnown"
       @mark-unknown="markAsUnknown"
       @view-definition="viewFullDefinition"
+      @split="splitContextToken"
+      @load-candidates="loadContextCandidates"
+      @apply-candidate="replaceContextToken"
     />
 
     <!-- 5. 生词导出侧边栏 -->
