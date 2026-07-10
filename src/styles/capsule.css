@@ -70,6 +70,12 @@
   opacity: 0.85;
 }
 
+.grammar-match {
+  color: #1769aa;
+  text-decoration: underline;
+  text-decoration-color: #1769aa;
+}
+
 /* 语法标签 Badge */
 .grammar-badge {
   display: inline-flex;
@@ -78,8 +84,8 @@
   padding: 0.05rem 0.2rem;
   margin-left: 0.2rem;
   border-radius: 4px;
-  background-color: var(--accent-light);
-  color: var(--accent-color);
+  background-color: #e5f1fb;
+  color: #1769aa;
   border: 1px solid rgba(43, 76, 126, 0.2);
   vertical-align: middle;
   font-weight: normal;

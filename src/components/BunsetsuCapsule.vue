@@ -71,6 +71,11 @@ const headMorphemeIndices = computed(() => {
 function isHeadMorpheme(index: number) {
   return headMorphemeIndices.value.has(index);
 }
+
+function isGrammarMorpheme(index: number) {
+  const m = props.token.bunsetsu.morphemes[index];
+  return props.token.bunsetsu.grammar_tags.some((tag) => m.char_range[0] >= tag.char_range[0] && m.char_range[1] <= tag.char_range[1]);
+}
 </script>
 
 <template>
@@ -83,7 +88,7 @@ function isHeadMorpheme(index: number) {
     <span
       v-for="(m, idx) in token.bunsetsu.morphemes"
       :key="idx"
-      :class="isHeadMorpheme(idx) ? 'head-word-highlight' : 'helper-word'"
+      :class="{ 'head-word-highlight': isHeadMorpheme(idx), 'helper-word': !isHeadMorpheme(idx), 'grammar-match': isGrammarMorpheme(idx) }"
     >
       {{ m.surface }}
     </span>

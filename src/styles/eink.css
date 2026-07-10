@@ -68,6 +68,10 @@ body.eink-mode .grammar-badge {
   border: 1px solid #000000 !important;
   border-radius: 0 !important;
 }
+body.eink-mode .grammar-match {
+  color: #000 !important;
+  text-decoration: underline;
+}
 
 /* 弹窗与悬浮面板 */
 body.eink-mode .tooltip-panel,
