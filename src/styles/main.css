@@ -1,0 +1,107 @@
+:root {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+
+  /* 配色系统 - 亮色模式 (日系和风雅致色调) */
+  --bg-primary: #fcfbfa; /* 极浅米白/障子纸色 */
+  --bg-secondary: #f2efeb;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --text-primary: #1c2438; /* 绀青偏黑 */
+  --text-secondary: #5a6882;
+  --text-muted: #8fa0ba;
+  
+  --accent-color: #2b4c7e; /* 蓝紫色/千岁绿 */
+  --accent-hover: #4068a3;
+  --accent-light: rgba(43, 76, 126, 0.08);
+  
+  --border-color: #e5e0da;
+  --shadow-sm: 0 2px 8px rgba(28, 36, 56, 0.04);
+  --shadow-md: 0 8px 24px rgba(28, 36, 56, 0.08);
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  /* 生词 Novelty 着色度 */
+  --novelty-high-bg: rgba(235, 94, 85, 0.12); /* 绯红 */
+  --novelty-high-border: rgba(235, 94, 85, 0.4);
+  --novelty-high-text: #bd3228;
+  
+  --novelty-mid-bg: rgba(224, 151, 62, 0.08); /* 琥珀色 */
+  --novelty-mid-border: rgba(224, 151, 62, 0.3);
+  --novelty-mid-text: #965d09;
+  
+  --selection-indicator: #0a84ff;
+  
+  /* 磨砂玻璃特效 */
+  --glass-bg: rgba(252, 251, 250, 0.75);
+  --glass-border: rgba(28, 36, 56, 0.08);
+  --glass-filter: blur(16px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #12141c; /* 绀鼠/夜色 */
+    --bg-secondary: #1a1e2b;
+    --bg-card: rgba(26, 30, 43, 0.8);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    --accent-color: #5c8ae6;
+    --accent-hover: #80aaff;
+    --accent-light: rgba(92, 138, 230, 0.15);
+    
+    --border-color: #272f44;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.35);
+
+    --novelty-high-bg: rgba(248, 113, 113, 0.15);
+    --novelty-high-border: rgba(248, 113, 113, 0.45);
+    --novelty-high-text: #fca5a5;
+
+    --novelty-mid-bg: rgba(251, 191, 36, 0.1);
+    --novelty-mid-border: rgba(251, 191, 36, 0.35);
+    --novelty-mid-text: #fde047;
+
+    --glass-bg: rgba(18, 20, 28, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.05);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 按钮、输入框的统一样式 */
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* 隐藏滚动条但保留滚动功能 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

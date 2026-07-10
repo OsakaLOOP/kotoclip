@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "crates/kotoclip-core",
+    "src-tauri",
+]
+resolver = "2"

@@ -1,0 +1,133 @@
+/* 嵌套胶囊系统样式 */
+
+.paragraph-block {
+  margin-bottom: 1.5rem;
+  line-height: 2.2; /* 给嵌套胶囊留出高度 */
+  font-size: 1.2rem;
+  word-break: break-all;
+  white-space: normal;
+}
+
+/* 基础文节胶囊容器 */
+.bunsetsu-capsule {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  margin: 0.15rem 0.2rem;
+  padding: 0.05rem 0.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+  background-clip: padding-box;
+}
+
+/* 根据 Novelty 评分进行样式判定 */
+/* 1. 高 Novelty (> 0.6) - 生词胶囊 */
+.bunsetsu-capsule.novelty-high {
+  background-color: var(--novelty-high-bg);
+  border-color: var(--novelty-high-border);
+}
+.bunsetsu-capsule.novelty-high .head-word-highlight {
+  color: var(--novelty-high-text);
+  font-weight: 600;
+}
+
+/* 2. 中 Novelty (0.2 ~ 0.6) - 可能认识的词 */
+.bunsetsu-capsule.novelty-mid {
+  background-color: var(--novelty-mid-bg);
+  border-color: var(--novelty-mid-border);
+  border-style: dashed;
+}
+.bunsetsu-capsule.novelty-mid .head-word-highlight {
+  color: var(--novelty-mid-text);
+  font-weight: 550;
+}
+
+/* 3. 低 Novelty (< 0.2) - 已知词/简单词 (无可见边框，只在 hover 时显示) */
+.bunsetsu-capsule.novelty-low {
+  border-color: transparent;
+  background-color: transparent;
+}
+.bunsetsu-capsule.novelty-low .head-word-highlight {
+  color: var(--text-primary);
+}
+.bunsetsu-capsule.novelty-low:hover {
+  border-color: var(--border-color);
+  border-style: dotted;
+  background-color: var(--bg-secondary);
+}
+
+/* 自立语 (核心词) 与 付属语的区分 */
+.head-word-highlight {
+  transition: color 0.2s ease;
+}
+
+.helper-word {
+  color: var(--text-secondary);
+  font-size: 0.95em;
+  opacity: 0.85;
+}
+
+/* 语法标签 Badge */
+.grammar-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  padding: 0.05rem 0.2rem;
+  margin-left: 0.2rem;
+  border-radius: 4px;
+  background-color: var(--accent-light);
+  color: var(--accent-color);
+  border: 1px solid rgba(43, 76, 126, 0.2);
+  vertical-align: middle;
+  font-weight: normal;
+  pointer-events: none;
+}
+
+/* 选中状态 (用户点击选中准备导出) */
+.bunsetsu-capsule.is-selected {
+  outline: 2px solid var(--selection-indicator);
+  outline-offset: 1px;
+  background-color: rgba(10, 132, 255, 0.1) !important;
+}
+
+/* 拖拽选中高亮效果 (Drag-Merge 联动) */
+.bunsetsu-capsule.drag-over {
+  box-shadow: 0 0 0 2px var(--accent-color);
+  background-color: var(--accent-light) !important;
+}
+
+/* 标记为已掌握的单词 (脱下胶囊，完全变成正文文本) */
+.bunsetsu-capsule.is-known {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: text;
+  margin: 0;
+  padding: 0;
+}
+.bunsetsu-capsule.is-known .head-word-highlight {
+  color: var(--text-primary) !important;
+  font-weight: normal !important;
+}
+.bunsetsu-capsule.is-known .helper-word {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+}
+.bunsetsu-capsule.is-known .grammar-badge {
+  display: none !important; /* 已知词的语法后缀不再单独高亮显示 */
+}
+
+/* 标点符号/符号胶囊 */
+.bunsetsu-capsule.punctuation {
+  cursor: default;
+  padding: 0;
+  margin: 0 0.1rem;
+}
+.bunsetsu-capsule.punctuation:hover {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}

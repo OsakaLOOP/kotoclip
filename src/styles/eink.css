@@ -1,0 +1,79 @@
+/* E-ink 墨水屏低能耗/高对比度降级样式 */
+
+body.eink-mode {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.eink-mode * {
+  /* 禁用全部动画与渐变，防止残影 */
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* 墨水屏下的嵌套胶囊 */
+body.eink-mode .bunsetsu-capsule {
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  margin: 0.1rem 0.15rem;
+  padding: 0 0.15rem;
+}
+
+/* 1. 高 Novelty - 实线 1px 黑色边框 */
+body.eink-mode .bunsetsu-capsule.novelty-high {
+  border: 1px solid #000000 !important;
+}
+body.eink-mode .bunsetsu-capsule.novelty-high .head-word-highlight {
+  color: #000000 !important;
+  font-weight: bold !important;
+  text-decoration: underline;
+}
+
+/* 2. 中 Novelty - 虚线 1px 黑色边框 */
+body.eink-mode .bunsetsu-capsule.novelty-mid {
+  border: 1px dashed #000000 !important;
+}
+body.eink-mode .bunsetsu-capsule.novelty-mid .head-word-highlight {
+  color: #000000 !important;
+  font-weight: bold !important;
+}
+
+/* 3. 低 Novelty - 无边框 */
+body.eink-mode .bunsetsu-capsule.novelty-low {
+  border: none !important;
+}
+
+/* 选中状态 - 粗实线黑边框，或者反色显示 */
+body.eink-mode .bunsetsu-capsule.is-selected {
+  outline: 2px solid #000000 !important;
+  outline-offset: 1px;
+}
+
+/* 拖拽状态 - 反色（黑底白字） */
+body.eink-mode .bunsetsu-capsule.drag-over {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+body.eink-mode .bunsetsu-capsule.drag-over * {
+  color: #ffffff !important;
+}
+
+/* 语法 Badge - 改为普通文本括号包裹，避免色块 */
+body.eink-mode .grammar-badge {
+  background: transparent !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  border-radius: 0 !important;
+}
+
+/* 弹窗与悬浮面板 */
+body.eink-mode .tooltip-panel,
+body.eink-mode .context-menu,
+body.eink-mode .export-panel {
+  background-color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0 !important;
+}

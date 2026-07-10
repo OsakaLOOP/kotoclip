@@ -1,0 +1,162 @@
+use crate::models::{Bunsetsu, HeadWord, Morpheme};
+
+/// 判断形态素是否是自立语 (能够独立构成词意的词，如动词、名词、形容词等)
+fn is_jiritsugo(m: &Morpheme) -> bool {
+    let pos = &m.pos;
+    match pos.major.as_str() {
+        "動詞" => pos.sub1 == "自立",
+        "形容詞" => true,
+        "名詞" => {
+            // 名词中要排除接尾辞、非自立名词等
+            pos.sub1 != "接尾" && pos.sub1 != "非自立" && pos.sub1 != "特殊"
+        }
+        "副詞" | "連体詞" | "接続詞" | "感動詞" | "接頭詞" => true,
+        _ => false,
+    }
+}
+
+/// 判断形态素是否是标点/记号
+fn is_punctuation(m: &Morpheme) -> bool {
+    m.pos.major == "記号"
+}
+
+/// 基于词性状态机，将形态素序列聚合成文节 (Bunsetsu) 列表，并在此阶段应用用户自定义合并规则
+pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsetsu> {
+    if morphemes.is_empty() {
+        return Vec::new();
+    }
+
+    let mut bunsetsus = Vec::new();
+    let mut current_morphemes: Vec<Morpheme> = Vec::new();
+    let mut i = 0;
+    let n = morphemes.len();
+
+    while i < n {
+        // 尝试匹配用户自定义合并规则 (优先尝试匹配更长的规则)
+        let mut matched_rule_len = 0;
+        for rule in merge_rules {
+            let rule_len = rule.len();
+            if i + rule_len <= n {
+                let mut matches = true;
+                for (offset, expected_surface) in rule.iter().enumerate() {
+                    if morphemes[i + offset].surface != *expected_surface {
+                        matches = false;
+                        break;
+                    }
+                }
+                if matches {
+                    matched_rule_len = rule_len;
+                    break;
+                }
+            }
+        }
+
+        if matched_rule_len > 0 {
+            // 如果在匹配前，current_morphemes 中有暂存数据，先结算它们
+            if !current_morphemes.is_empty() {
+                bunsetsus.push(build_bunsetsu(current_morphemes));
+                current_morphemes = Vec::new();
+            }
+
+            // 将匹配到的这组形态素强制聚合并输出为一个独立文节
+            let mut merged = Vec::new();
+            for offset in 0..matched_rule_len {
+                merged.push(morphemes[i + offset].clone());
+            }
+            bunsetsus.push(build_bunsetsu(merged));
+
+            // 跳转索引并继续
+            i += matched_rule_len;
+            continue;
+        }
+
+        // 常规形态素组块逻辑 (词性状态机)
+        let m = &morphemes[i];
+        let m_clone = m.clone();
+
+        if current_morphemes.is_empty() {
+            current_morphemes.push(m_clone);
+            i += 1;
+            continue;
+        }
+
+        let is_m_jiritsugo = is_jiritsugo(m);
+        let is_m_punc = is_punctuation(m);
+        let is_prev_punc = is_punctuation(&current_morphemes[current_morphemes.len() - 1]);
+        let is_prev_prefix = current_morphemes[current_morphemes.len() - 1].pos.major == "接頭詞";
+
+        if is_m_punc || is_prev_punc || (is_m_jiritsugo && !is_prev_prefix) {
+            bunsetsus.push(build_bunsetsu(current_morphemes));
+            current_morphemes = Vec::new();
+        }
+
+        current_morphemes.push(m_clone);
+        i += 1;
+    }
+
+    if !current_morphemes.is_empty() {
+        bunsetsus.push(build_bunsetsu(current_morphemes));
+    }
+
+    bunsetsus
+}
+
+/// 构造单个文节，并提取其核心自立语 (HeadWord) 与属性
+fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
+    // 拼接表层形
+    let surface: String = morphemes.iter().map(|m| m.surface.as_str()).collect();
+
+    // 确定字符偏移区间
+    let start = morphemes.first().map(|m| m.char_range.0).unwrap_or(0);
+    let end = morphemes.last().map(|m| m.char_range.1).unwrap_or(0);
+
+    // 提取核心自立语
+    // 优先选择文节中第一个满足 is_jiritsugo 且不是 "接頭詞" 的形态素
+    // 如果找不到，则回退选择第一个自立语，或者整个文节的第一个形态素
+    let head_index = morphemes
+        .iter()
+        .position(|m| is_jiritsugo(m) && m.pos.major != "接頭詞")
+        .or_else(|| morphemes.iter().position(is_jiritsugo))
+        .unwrap_or(0);
+    let head_morpheme = &morphemes[head_index];
+
+    // IPADIC splits many dictionary headwords into a noun plus nominal suffixes,
+    // for example 警察 + 署 and はぐれ + 者. Keep the suffixes in the headword so
+    // highlighting and dictionary lookup operate on the complete lexical unit.
+    let mut head_surface = head_morpheme.surface.clone();
+    let mut head_base_form = head_morpheme.base_form.clone();
+    let mut head_reading = head_morpheme.reading.clone();
+    if head_morpheme.pos.major == "名詞" {
+        for suffix in morphemes.iter().skip(head_index + 1) {
+            if suffix.pos.major != "名詞" || suffix.pos.sub1 != "接尾" {
+                break;
+            }
+            head_surface.push_str(&suffix.surface);
+            head_base_form.push_str(&suffix.base_form);
+            if suffix.reading != "*" {
+                if head_reading == "*" {
+                    head_reading.clear();
+                }
+                head_reading.push_str(&suffix.reading);
+            }
+        }
+    }
+
+    let head_word = HeadWord {
+        surface: head_surface,
+        base_form: head_base_form,
+        reading: head_reading,
+        pos: head_morpheme.pos.clone(),
+    };
+
+    let mut bunsetsu = Bunsetsu {
+        morphemes,
+        surface,
+        head_word,
+        grammar_tags: Vec::new(), // 在后续的语法匹配阶段填充
+        char_range: (start, end),
+    };
+
+    bunsetsu.head_word.base_form = super::restore::restore_base_form(&bunsetsu);
+    bunsetsu
+}
