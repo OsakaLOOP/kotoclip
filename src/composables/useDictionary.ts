@@ -14,7 +14,7 @@ export function useDictionary() {
    * @param word 辞书形原形
    * @param priorityList 用户偏好的词典优先级列表
    */
-  async function lookupWord(word: string, priorityList: string[] = defaultPriority) {
+  async function lookupWord(word: string, reading?: string, priorityList: string[] = defaultPriority) {
     if (!word) {
       dictionaryResults.value = [];
       return [];
@@ -24,6 +24,7 @@ export function useDictionary() {
     try {
       const results = await invoke<DictEntry[]>("lookup_word", {
         word,
+        reading,
         priorityList,
       });
       dictionaryResults.value = results;

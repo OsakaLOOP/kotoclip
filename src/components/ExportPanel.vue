@@ -13,6 +13,7 @@ const emit = defineEmits<{
   (e: "remove-key", paragraphId: number, tokenIndex: number): void;
   (e: "clear-all"): void;
   (e: "export"): void;
+  (e: "update-note", paragraphId: number, tokenIndex: number, note: string): void;
 }>();
 
 const isExporting = ref(false);
@@ -25,6 +26,7 @@ const selectedTokens = computed(() => {
     surface: string;
     baseForm: string;
     reading: string;
+    note: string;
   }[] = [];
 
   for (const key of props.selectedKeys) {
@@ -38,6 +40,7 @@ const selectedTokens = computed(() => {
       surface: token.bunsetsu.surface,
       baseForm: token.bunsetsu.head_word.base_form,
       reading: token.bunsetsu.head_word.reading,
+      note: "",
     });
   }
   return list;
@@ -74,7 +77,8 @@ const count = computed(() => selectedTokens.value.length);
             <div class="card-content">
               <div class="card-word">{{ item.baseForm }}</div>
               <div class="card-reading">【{{ item.reading }}】</div>
-              <div class="card-surface">来自: {{ item.surface }}</div>
+            <div class="card-surface">来自: {{ item.surface }}</div>
+            <textarea class="card-note" :value="item.note" @input="emit('update-note', item.paragraphId, item.tokenIndex, ($event.target as HTMLTextAreaElement).value)" />
             </div>
             <button
               class="card-remove"

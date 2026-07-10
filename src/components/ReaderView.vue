@@ -32,7 +32,7 @@ const {
   splitToken,
   getCandidates,
 } = useTokenization();
-const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected } = useSelection(paragraphs);
+const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs);
 const { lookupWord } = useDictionary();
 
 // 详细释义弹窗状态
@@ -180,7 +180,7 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
     tooltipDefPreview.value = "正在载入释义...";
 
     // 异步查询词典释义摘要
-    const defs = await lookupWord(token.bunsetsu.head_word.base_form);
+    const defs = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
     if (defs && defs.length > 0) {
       // 提取第一个词典的释义，截断多余标签
       tooltipDefPreview.value = defs[0].definition_html;
@@ -286,7 +286,7 @@ async function viewFullDefinition(paragraphId: number, tokenIndex: number) {
   showDefinitionModal.value = true;
   modalDefinitions.value = [];
 
-  const defs = await lookupWord(token.bunsetsu.head_word.base_form);
+  const defs = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
   modalDefinitions.value = defs;
 }
 
@@ -303,8 +303,8 @@ function toggleEinkMode() {
 // 触发 Anki 数据包生成并保存
 async function executeExport() {
   try {
-    const jsonStr = await exportSelected(async (word) => {
-      return await lookupWord(word);
+    const jsonStr = await exportSelected(inputText.value, async (word, reading) => {
+      return await lookupWord(word, reading);
     });
 
     // 创建本地 Blob 并触发浏览器下载 (Tauri 环境下可直接调用本地存储，此处通过浏览器 API 下载十分通用)
@@ -468,13 +468,14 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
     />
 
     <!-- 5. 生词导出侧边栏 -->
-    <ExportPanel
+      <ExportPanel
       :show="showExportPanel"
       :selectedKeys="selectedKeys"
       :paragraphs="paragraphs"
       @close="showExportPanel = false"
       @remove-key="removeSelectedKey"
-      @clear-all="clearAllSelections"
+        @clear-all="clearAllSelections"
+        @update-note="updateNote"
       @export="executeExport"
     />
 

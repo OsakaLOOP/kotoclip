@@ -106,7 +106,12 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
    * 导出所有选中的词为结构化 Anki 格式 JSON
    * 提取选中词的整句上下文并标出高亮区间
    */
-  async function exportSelected(lookupFn: (word: string) => Promise<DictEntry[]>) {
+  const notes = ref<Record<string, string>>({});
+  function updateNote(paragraphId: number, tokenIndex: number, note: string) {
+    notes.value[`${paragraphId}-${tokenIndex}`] = note;
+  }
+
+  async function exportSelected(sourceText: string, lookupFn: (word: string, reading?: string) => Promise<DictEntry[]>) {
     const exportEntries: ExportEntry[] = [];
 
     for (const key of selectedKeys.value) {
@@ -133,7 +138,7 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
       }
 
       // 获取多词典释义列表
-      const dictDefs = await lookupFn(token.bunsetsu.head_word.base_form);
+      const dictDefs = await lookupFn(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
 
       exportEntries.push({
         surface: token.bunsetsu.surface,
@@ -144,12 +149,15 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
         context_sentence: contextSentence,
         context_highlight: [highlightStart, highlightEnd],
         definitions: dictDefs,
+        jlpt_levels: [...new Set(token.bunsetsu.grammar_tags.map((t) => t.jlpt_level).filter((level): level is number => level !== null))].sort((a, b) => a - b),
+        user_note: notes.value[`${key.paragraphId}-${key.tokenIndex}`] ?? "",
       });
     }
 
     try {
       // 调用 Rust 端导出接口，做 JSON 处理，返回完整 JSON 字符串
       const jsonStr = await invoke<string>("export_selected", {
+        sourceText,
         selectedEntries: exportEntries,
       });
       return jsonStr;
@@ -161,6 +169,7 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
 
   return {
     selectedKeys,
+    updateNote,
     toggleSelect,
     markAsKnown,
     markAsUnknown,
