@@ -20,10 +20,11 @@ pub async fn analyze_text(
 pub async fn lookup_word(
     state: State<'_, AppState>,
     word: String,
+    reading: Option<String>,
     priority_list: Vec<String>,
 ) -> Result<Vec<DictEntry>, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    Ok(engine.lookup_word(&word, &priority_list))
+    Ok(engine.lookup_word(&word, reading.as_deref(), &priority_list))
 }
 
 /// IPC 命令：主动标记单词为“已知”
@@ -80,7 +81,8 @@ pub async fn get_candidates(
 /// IPC 命令：打包所选生词生成 Anki 格式的导出 JSON 字符串
 #[tauri::command]
 pub async fn export_selected(
+    source_text: String,
     selected_entries: Vec<ExportEntry>,
 ) -> Result<String, String> {
-    kotoclip_core::export::json::export_to_json(selected_entries).map_err(|e| e.to_string())
+    kotoclip_core::export::json::export_to_json(&source_text, selected_entries).map_err(|e| e.to_string())
 }

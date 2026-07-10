@@ -1,6 +1,7 @@
 use crate::models::{Bunsetsu, GrammarTag, Morpheme, PosTag};
 use aho_corasick::AhoCorasick;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 /// 语法约束条件，用于二次验证
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -199,6 +200,19 @@ impl GrammarMatcher {
             },
         ];
 
+        // The seed is replaceable in development/test builds and by the desktop
+        // data directory loader. Invalid files are rejected without taking down NLP.
+        let patterns = std::env::var("KOTOCLIP_GRAMMAR_PATTERNS")
+            .ok()
+            .and_then(|path| std::fs::read_to_string(path).ok())
+            .and_then(|content| serde_json::from_str::<Vec<GrammarPattern>>(&content).ok())
+            .filter(|rules| validate_patterns(rules))
+            .unwrap_or(patterns);
+
+        // Additional patterns cover the current reader examples.
+        let mut patterns = patterns;
+        patterns.extend(example_patterns());
+
         // 获取所有的 pos_patterns 供 Aho-Corasick 构建
         let ac_patterns: Vec<String> = patterns.iter().map(|p| p.pos_pattern.clone()).collect();
         let ac = AhoCorasick::new(ac_patterns)?;
@@ -252,6 +266,8 @@ impl GrammarMatcher {
                         name_en: pattern.name_en.clone(),
                         jlpt_level: pattern.jlpt_level,
                         description: pattern.description.clone(),
+                        morpheme_range: (start, end),
+                        char_range: (sub_morphemes.first().unwrap().char_range.0, sub_morphemes.last().unwrap().char_range.1),
                     };
 
                     matched_tags.push((target_bunsetsu_idx, tag));
@@ -268,6 +284,31 @@ impl GrammarMatcher {
             }
         }
     }
+}
+
+fn validate_patterns(patterns: &[GrammarPattern]) -> bool {
+    let mut ids = HashSet::new();
+    patterns.iter().all(|pattern| {
+        !pattern.id.is_empty() && !pattern.name_ja.is_empty() && ids.insert(pattern.id.clone())
+            && pattern.pos_pattern.bytes().all(|byte| b"VNAXPDRCIOHT".contains(&byte))
+            && pattern.constraints.iter().all(|constraint| constraint.index < pattern.pos_pattern.len() && !constraint.values.is_empty())
+    })
+}
+
+fn example_patterns() -> Vec<GrammarPattern> {
+    let make = |id: &str, name: &str, pattern: &str, index: usize, values: &[&str], level: u8| GrammarPattern {
+        id: id.to_string(), name_ja: name.to_string(), name_en: name.to_string(), jlpt_level: Some(level),
+        description: format!("例句语法：{}", name), pos_pattern: pattern.to_string(),
+        constraints: vec![Constraint { index, field: "base_form".to_string(), values: values.iter().map(|v| (*v).to_string()).collect() }],
+    };
+    vec![
+        make("te_kuru", "〜てくる", "VPV", 2, &["くる", "来る"], 3),
+        make("te_yaru", "〜てやる", "VPV", 2, &["やる"], 3),
+        make("te_oku", "〜ておく", "VPV", 2, &["おく"], 3),
+        make("tsumori", "〜つもりだ", "NPD", 1, &["つもり"], 4),
+        make("nagaramo", "〜ながら（も）", "VP", 1, &["ながら"], 3),
+        make("negative_n", "〜ん", "VX", 1, &["ぬ", "ん"], 3),
+    ]
 }
 
 /// 校验约束条件是否符合

@@ -29,11 +29,14 @@ def convert_mdx_to_sqlite(mdx_path, sqlite_path, dict_name):
         CREATE TABLE IF NOT EXISTS entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             headword TEXT NOT NULL,
+            reading TEXT,
             definition TEXT NOT NULL,
             dict_name TEXT NOT NULL
         )
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_entries_headword ON entries(headword)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_entries_reading ON entries(reading)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS metadata (schema_version INTEGER NOT NULL, source_name TEXT NOT NULL, imported_at TEXT NOT NULL)')
 
     # 2. 创建 FTS5 trigram 全文检索虚拟表
     # 注意: trigram 分词器在 SQLite 3.34.0+ 版本可用，常用于中日韩等无空格分词语言的子串模糊检索
@@ -83,12 +86,14 @@ def convert_mdx_to_sqlite(mdx_path, sqlite_path, dict_name):
         if not headword or not definition:
             continue
             
-        insert_data.append((headword, definition, dict_name))
+        # MDX metadata is not a reliable structured source for all dictionaries;
+        # leave reading NULL instead of guessing from definition prose.
+        insert_data.append((headword, None, definition, dict_name))
         count += 1
         
         if len(insert_data) >= 5000:
             cursor.executemany(
-                'INSERT INTO entries (headword, definition, dict_name) VALUES (?, ?, ?)', 
+                'INSERT INTO entries (headword, reading, definition, dict_name) VALUES (?, ?, ?, ?)',
                 insert_data
             )
             conn.commit()
@@ -97,7 +102,7 @@ def convert_mdx_to_sqlite(mdx_path, sqlite_path, dict_name):
 
     if insert_data:
         cursor.executemany(
-            'INSERT INTO entries (headword, definition, dict_name) VALUES (?, ?, ?)', 
+            'INSERT INTO entries (headword, reading, definition, dict_name) VALUES (?, ?, ?, ?)',
             insert_data
         )
         conn.commit()
@@ -107,6 +112,7 @@ def convert_mdx_to_sqlite(mdx_path, sqlite_path, dict_name):
     # 5. 执行 FTS5 rebuild 以填充虚拟表 (若初次建表导入)
     print("正在构建 FTS5 全文检索索引...")
     cursor.execute("INSERT INTO entries_fts(entries_fts) VALUES('rebuild')")
+    cursor.execute("INSERT INTO metadata(schema_version, source_name, imported_at) VALUES (2, ?, datetime('now'))", (dict_name,))
     conn.commit()
     
     conn.close()

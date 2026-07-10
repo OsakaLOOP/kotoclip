@@ -1,6 +1,11 @@
 import sys
 import os
 import sqlite3
+import unicodedata
+
+def normalize_reading(value):
+    value = unicodedata.normalize('NFKC', value)
+    return ''.join(chr(ord(c) + 0x60) if '\u3041' <= c <= '\u3096' else c for c in value)
 
 def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
     if not os.path.exists(txt_path):
@@ -21,11 +26,14 @@ def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
         CREATE TABLE IF NOT EXISTS entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             headword TEXT NOT NULL,
+            reading TEXT,
             definition TEXT NOT NULL,
             dict_name TEXT NOT NULL
         )
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_entries_headword ON entries(headword)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_entries_reading ON entries(reading)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS metadata (schema_version INTEGER NOT NULL, source_name TEXT NOT NULL, imported_at TEXT NOT NULL)')
 
     # 2. 创建 FTS5 trigram 全文检索虚拟表
     cursor.execute('''
@@ -76,7 +84,9 @@ def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
             line_str = line.strip('\r\n')
             
             if state == 'head':
-                current_headword = line_str.strip()
+                parts = line_str.split('\t', 1)
+                current_headword = parts[0].strip()
+                current_reading = normalize_reading(parts[1].strip()) if len(parts) == 2 and parts[1].strip() else None
                 if current_headword:  # 忽略开头的空行
                     state = 'body'
                     current_definition_lines = []
@@ -85,12 +95,12 @@ def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
                     # 结算当前词条
                     definition = '\n'.join(current_definition_lines).strip()
                     if current_headword and definition:
-                        insert_data.append((current_headword, definition, dict_name))
+                        insert_data.append((current_headword, current_reading, definition, dict_name))
                         count += 1
                         
                         if len(insert_data) >= 10000:
                             cursor.executemany(
-                                'INSERT INTO entries (headword, definition, dict_name) VALUES (?, ?, ?)', 
+                                'INSERT INTO entries (headword, reading, definition, dict_name) VALUES (?, ?, ?, ?)',
                                 insert_data
                             )
                             conn.commit()
@@ -106,7 +116,7 @@ def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
     # 导入余下的数据
     if insert_data:
         cursor.executemany(
-            'INSERT INTO entries (headword, definition, dict_name) VALUES (?, ?, ?)', 
+            'INSERT INTO entries (headword, reading, definition, dict_name) VALUES (?, ?, ?, ?)',
             insert_data
         )
         conn.commit()
@@ -116,6 +126,7 @@ def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
     # 4. 构建全文检索索引
     print("Building FTS5 full-text search index...")
     cursor.execute("INSERT INTO entries_fts(entries_fts) VALUES('rebuild')")
+    cursor.execute("INSERT INTO metadata(schema_version, source_name, imported_at) VALUES (2, ?, datetime('now'))", (dict_name,))
     conn.commit()
     
     conn.close()

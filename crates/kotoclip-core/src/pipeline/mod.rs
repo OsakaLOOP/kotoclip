@@ -69,18 +69,38 @@ impl Pipeline {
 mod tests {
     use super::*;
 
+    fn get_test_ipadic_path() -> Option<String> {
+        if let Ok(env_path) = std::env::var("KOTOCLIP_TEST_IPADIC") {
+            if std::path::Path::new(&env_path).exists() {
+                return Some(env_path);
+            }
+        }
+        let candidates = vec![
+            "../../ipadic/system.dic",
+            "../ipadic/system.dic",
+            "ipadic/system.dic",
+            "D:\\PROJ\\GIT\\kotoclip\\ipadic\\system.dic",
+        ];
+        for c in candidates {
+            if std::path::Path::new(c).exists() {
+                return Some(c.to_string());
+            }
+        }
+        None
+    }
+
     #[test]
     fn test_pipeline_smoke() {
         // 使用用户下载的 IPADIC 二进制字典路径进行测试
-        let dict_path = "D:\\PROJ\\GIT\\kotoclip\\ipadic\\system.dic";
-        
-        // 如果文件不存在则跳过测试 (以便在缺失字典的环境中能够编译)
-        if !std::path::Path::new(dict_path).exists() {
-            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
-            return;
-        }
+        let dict_path = match get_test_ipadic_path() {
+            Some(p) => p,
+            None => {
+                println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+                return;
+            }
+        };
 
-        let pipeline = Pipeline::new(dict_path).expect("初始化 NLP Pipeline 失败");
+        let pipeline = Pipeline::new(&dict_path).expect("初始化 NLP Pipeline 失败");
         
         // 核心测试文本: 食べさせられなかった (吃 + 使役 + 被动 + 过去否定)
         let tokens = pipeline.process("食べさせられなかった", &[]);
@@ -115,14 +135,16 @@ mod tests {
 
     #[test]
     fn test_user_example_preserves_complete_text() {
-        let dict_path = "D:\\PROJ\\GIT\\kotoclip\\ipadic\\system.dic";
-        if !std::path::Path::new(dict_path).exists() {
-            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
-            return;
-        }
+        let dict_path = match get_test_ipadic_path() {
+            Some(p) => p,
+            None => {
+                println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+                return;
+            }
+        };
 
-        let text = "しらばっくれんなよ、古川。お前の素性は割れてんだ。マガツカミを連れ歩くはぐれ者が、正面から堂々と警察署に乗り込んでくるその度胸だきゃあ褒めてやろう。貴様、マガツカミを使って何をするつもりだった？";
-        let pipeline = Pipeline::new(dict_path).expect("初始化 NLP Pipeline 失败");
+        let text = "しらばっくれんなよ、古川。お前の素性は割れてんだ。マガツカミを连れ歩くはぐれ者が、正面から堂々と警察署に乗り込んでくるその度胸だきゃあ褒めてやろう。貴様、マガツカミを使って何をするつもりだった？";
+        let pipeline = Pipeline::new(&dict_path).expect("初始化 NLP Pipeline 失败");
         let tokens = pipeline.process(text, &[]);
 
         assert!(!tokens.is_empty(), "用户例文应生成至少一个 token");
@@ -142,15 +164,17 @@ mod tests {
 
     #[test]
     fn test_authoritative_ruby_is_removed_and_overrides_reading() {
-        let dict_path = "D:\\PROJ\\GIT\\kotoclip\\ipadic\\system.dic";
-        if !std::path::Path::new(dict_path).exists() {
-            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
-            return;
-        }
+        let dict_path = match get_test_ipadic_path() {
+            Some(p) => p,
+            None => {
+                println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+                return;
+            }
+        };
 
         let text = "七日は屈《かが》み、鬼怒川の腰元にぶら下がる鍵を奪う。\n  ついでに胸ポケットの煙草《たばこ》ももらっておいた。と、突然手首を掴まれる。\n\n  \u{3000}鋭い痛みに顔をしかめながらも、鬼怒川は眼光鋭く、七日を睨《にら》みつけていた。\n\n  「......古《ふる》川《かわ》。俺の名を覚えておけ。貴様、絶対に──」";
         let expected = "七日は屈み、鬼怒川の腰元にぶら下がる鍵を奪う。\n  ついでに胸ポケットの煙草ももらっておいた。と、突然手首を掴まれる。\n\n  \u{3000}鋭い痛みに顔をしかめながらも、鬼怒川は眼光鋭く、七日を睨みつけていた。\n\n  「......古川。俺の名を覚えておけ。貴様、絶対に──」";
-        let pipeline = Pipeline::new(dict_path).expect("初始化 NLP Pipeline 失败");
+        let pipeline = Pipeline::new(&dict_path).expect("初始化 NLP Pipeline 失败");
         let tokens = pipeline.process(text, &[]);
         let reconstructed: String = tokens
             .iter()

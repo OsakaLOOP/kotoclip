@@ -1,4 +1,4 @@
-use crate::models::{Bunsetsu, HeadWord, Morpheme};
+use crate::models::{Bunsetsu, GrammarTag, HeadWord, Morpheme};
 
 /// 判断形态素是否是自立语 (能够独立构成词意的词，如动词、名词、形容词等)
 fn is_jiritsugo(m: &Morpheme) -> bool {
@@ -120,9 +120,8 @@ pub(crate) fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
         .unwrap_or(0);
     let head_morpheme = &morphemes[head_index];
 
-    // IPADIC splits many dictionary headwords into a noun plus nominal suffixes,
-    // for example 警察 + 署 and はぐれ + 者. Keep the suffixes in the headword so
-    // highlighting and dictionary lookup operate on the complete lexical unit.
+    // Keep the candidate available; the dictionary-aware resolver decides whether
+    // nominal suffixes belong to the lexical head.
     let mut head_surface = head_morpheme.surface.clone();
     let mut head_base_form = head_morpheme.base_form.clone();
     let mut head_reading = head_morpheme.reading.clone();
@@ -159,4 +158,29 @@ pub(crate) fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
 
     bunsetsu.head_word.base_form = super::restore::restore_base_form(&bunsetsu);
     bunsetsu
+}
+
+pub fn resolve_lexical_boundaries<F: Fn(&str) -> bool>(bunsetsus: &mut [Bunsetsu], contains_exact: F) {
+    for bunsetsu in bunsetsus {
+        let Some(head_index) = bunsetsu.morphemes.iter().position(|m| is_jiritsugo(m) && m.pos.major != "接頭詞") else { continue };
+        let suffix_start = head_index + 1;
+        if suffix_start >= bunsetsu.morphemes.len() || bunsetsu.morphemes[suffix_start..].iter().all(|m| m.pos.major == "名詞" && m.pos.sub1 == "接尾") == false { continue; }
+        let candidate = bunsetsu.head_word.base_form.clone();
+        if contains_exact(&candidate) { continue; }
+        let root = &bunsetsu.morphemes[head_index];
+        bunsetsu.head_word.surface = root.surface.clone();
+        bunsetsu.head_word.base_form = super::restore::restore_base_form(bunsetsu);
+        bunsetsu.head_word.reading = root.reading.clone();
+        for suffix in &bunsetsu.morphemes[suffix_start..] {
+            bunsetsu.grammar_tags.push(GrammarTag {
+                pattern_id: format!("nominal_suffix:{}", suffix.surface),
+                name_ja: format!("接尾辞「{}」", suffix.surface),
+                name_en: "Nominal suffix".to_string(),
+                jlpt_level: None,
+                description: "词典未收录的名词接尾辞".to_string(),
+                morpheme_range: (bunsetsu.morphemes.iter().position(|m| m.char_range == suffix.char_range).unwrap_or(suffix_start), bunsetsu.morphemes.iter().position(|m| m.char_range == suffix.char_range).unwrap_or(suffix_start) + 1),
+                char_range: suffix.char_range,
+            });
+        }
+    }
 }

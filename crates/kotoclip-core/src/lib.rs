@@ -50,7 +50,13 @@ impl Engine {
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
         // 先拉取用户自定义的短语合并规则
         let merge_rules = self.profile.get_merge_rules().unwrap_or_default();
-        let tokens = self.pipeline.process(text, &merge_rules);
+        let mut tokens = self.pipeline.process(text, &merge_rules);
+        for token in &mut tokens {
+            pipeline::bunsetsu::resolve_lexical_boundaries(
+                std::slice::from_mut(&mut token.bunsetsu),
+                |word| self.dictionary.contains_exact(word),
+            );
+        }
         // 调用画像引擎打分标注
         let annotated = self.profile.annotate_tokens(tokens)?;
         if record_exposure {
@@ -78,8 +84,8 @@ impl Engine {
     }
 
     /// 从词库中查询单词释义，并按传入的词典优先级顺序列表进行重排聚合
-    pub fn lookup_word(&self, word: &str, priority_list: &[String]) -> Vec<DictEntry> {
-        let raw_entries = self.dictionary.lookup(word);
+    pub fn lookup_word(&self, word: &str, reading: Option<&str>, priority_list: &[String]) -> Vec<DictEntry> {
+        let raw_entries = self.dictionary.lookup(word, reading);
         dictionary::aggregate::sort_definitions(raw_entries, priority_list)
     }
 
