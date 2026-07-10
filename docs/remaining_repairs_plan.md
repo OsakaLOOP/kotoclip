@@ -6,7 +6,8 @@ Updated: 2026-07-10
 
 This document is the implementation plan for work intentionally deferred after commits
 `63b8dad` (exposure tracking) and `7be30e8` (split and segmentation candidates).
-No items below are implemented by this document.
+The implementation is now present in the working tree; the sections below remain the
+design and verification reference for the completed repairs.
 
 Recommended order:
 
