@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
+  "productName": "Kotoclip",
   "version": "0.1.0",
   "identifier": "com.kotoclip.app",
   "build": {
@@ -12,18 +12,21 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-app",
+        "title": "Kotoclip",
         "width": 800,
         "height": 600
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost; img-src 'self' data: asset:; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": [
+      "../ipadic/system.dic"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
