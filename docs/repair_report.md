@@ -8,13 +8,13 @@ This file tracks the requested repairs. Each numbered item is committed separate
 | --- | --- | --- | --- |
 | Baseline | Complete | Restored first analysis rendering, fixed overlapping grammar matches, measured virtual rows, constrained tooltips, joined nominal suffix headwords, added development metrics, and added authoritative `漢字《かな》` input handling. | `63b5300` |
 | 1 | Complete | Successful reader analysis records lexical exposures after scoring; internal merge refreshes do not double-count. | `63b8dad` |
-| 2 | Pending | Cover grammar found in current examples, allow an external pattern source, and render recognized grammar in blue. | - |
-| 3 | Complete | Double-click actions can split a token at real morpheme boundaries or apply deterministic Top-N segmentation candidates. | Pending item commit |
-| 4 | Pending | Remove hard-coded Tauri data paths and use application resource/data directories. | - |
-| 5 | Pending | Sanitize MDict HTML and restore an effective CSP. | - |
-| 6 | Pending | Add dictionary reading data and reading fallback lookup. | - |
-| 7 | Pending | Complete export hash, JLPT, nested context, and user-note fields. | - |
-| Lexical boundary | Pending | Prefer a complete dictionary headword for suffixes such as `者` and `署`; otherwise treat the suffix separately. | - |
+| 2 | Planned | Cover current-example grammar from an external-capable rule source and render exact matches in blue. | See `remaining_repairs_plan.md` |
+| 3 | Complete | Double-click actions can split a token at real morpheme boundaries or apply deterministic Top-N segmentation candidates. | `7be30e8` |
+| 4 | Planned | Remove hard-coded Tauri data paths and use application resource/data directories. | See `remaining_repairs_plan.md` |
+| 5 | Planned | Sanitize MDict HTML and restore an effective CSP. | See `remaining_repairs_plan.md` |
+| 6 | Planned | Add dictionary reading data and reading fallback lookup. | See `remaining_repairs_plan.md` |
+| 7 | Planned | Complete export hash, JLPT, nested context, and user-note fields. | See `remaining_repairs_plan.md` |
+| Lexical boundary | Planned | Prefer a complete dictionary headword for suffixes such as `者` and `署`; otherwise annotate the suffix as grammar. | See `remaining_repairs_plan.md` |
 
 ## Verification Log
 
