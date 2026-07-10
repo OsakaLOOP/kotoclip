@@ -1,4 +1,5 @@
 use super::ProfileEngine;
+use crate::models::AnnotatedToken;
 use rusqlite::Result;
 
 /// 曝光数据记录
@@ -8,6 +9,18 @@ pub struct ExposureRecord {
 }
 
 impl ProfileEngine {
+    /// Record one exposure for every lexical token that was actually presented.
+    pub fn record_token_exposures(&self, tokens: &[AnnotatedToken]) -> Result<()> {
+        for token in tokens {
+            let head = &token.bunsetsu.head_word;
+            if head.pos.major == "記号" || head.base_form.trim().is_empty() {
+                continue;
+            }
+            self.record_exposure(&head.base_form, &head.reading, &head.pos.major)?;
+        }
+        Ok(())
+    }
+
     /// 记录一次生词曝光。若单词不存在，则新建记录；若已存在，累加曝光计数并更新时间。
     pub fn record_exposure(&self, base_form: &str, reading: &str, pos: &str) -> Result<()> {
         let sql = "

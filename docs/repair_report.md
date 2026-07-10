@@ -6,8 +6,8 @@ This file tracks the requested repairs. Each numbered item is committed separate
 
 | Item | Status | Summary | Commit |
 | --- | --- | --- | --- |
-| Baseline | Complete | Restored first analysis rendering, fixed overlapping grammar matches, measured virtual rows, constrained tooltips, joined nominal suffix headwords, added development metrics, and added authoritative `漢字《かな》` input handling. | Pending baseline commit |
-| 1 | Pending | Connect exposure recording to the reading flow and make novelty scores evolve. | - |
+| Baseline | Complete | Restored first analysis rendering, fixed overlapping grammar matches, measured virtual rows, constrained tooltips, joined nominal suffix headwords, added development metrics, and added authoritative `漢字《かな》` input handling. | `63b5300` |
+| 1 | Complete | Successful reader analysis records lexical exposures after scoring; internal merge refreshes do not double-count. | Pending item commit |
 | 2 | Pending | Cover grammar found in current examples, allow an external pattern source, and render recognized grammar in blue. | - |
 | 3 | Pending | Implement split and Top-N candidate commands and UI. | - |
 | 4 | Pending | Remove hard-coded Tauri data paths and use application resource/data directories. | - |
@@ -20,3 +20,4 @@ This file tracks the requested repairs. Each numbered item is committed separate
 
 - `cargo test -p kotoclip-core pipeline:: -- --nocapture`: passed (6 tests).
 - `npm run build`: passed after the baseline frontend changes.
+- Item 1: profile test proves the next occurrence receives a lower novelty score.

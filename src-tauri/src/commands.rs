@@ -7,9 +7,12 @@ use kotoclip_core::models::{AnnotatedToken, DictEntry, ExportEntry};
 pub async fn analyze_text(
     state: State<'_, AppState>,
     text: String,
+    record_exposure: Option<bool>,
 ) -> Result<Vec<AnnotatedToken>, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    engine.analyze_text(&text).map_err(|e| e.to_string())
+    engine
+        .analyze_text_with_exposure(&text, record_exposure.unwrap_or(true))
+        .map_err(|e| e.to_string())
 }
 
 /// IPC 命令：查词，并按照多词词典优先级重排序

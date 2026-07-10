@@ -64,7 +64,7 @@ const {
     // 1. 调用后端接口注册自定义规则
     await mergeTokens(surfaces);
     // 2. 重新分析全部文本，刷新界面
-    await triggerAnalysis();
+    await triggerAnalysis(false);
   } catch (err) {
     alert("合并分词失败");
   }
@@ -109,10 +109,10 @@ onBeforeUnmount(() => {
 });
 
 // 执行文本分析
-async function triggerAnalysis() {
+async function triggerAnalysis(recordExposure = true) {
   if (!inputText.value.trim()) return;
   const startedAt = performance.now();
-  await analyzeText(inputText.value);
+  await analyzeText(inputText.value, recordExposure);
   if (!errorMsg.value) {
     analysisMetrics.value = {
       characterCount: Array.from(inputText.value).length,
@@ -340,7 +340,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           <button
             class="analyze-btn"
             :disabled="isAnalyzing"
-            @click="triggerAnalysis"
+            @click="triggerAnalysis()"
           >
             {{ isAnalyzing ? '正在跑 NLP 分词管线...' : '解析生词胶囊' }}
           </button>

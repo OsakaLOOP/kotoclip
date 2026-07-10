@@ -114,5 +114,49 @@ mod tests {
         let reason = token.inference_reason.as_ref().unwrap();
         assert!(reason.contains("剣") && reason.contains("術"), "推导原因应当明确包含汉字");
     }
-}
 
+    #[test]
+    fn test_exposure_recording_reduces_novelty_on_next_analysis() {
+        let engine = ProfileEngine::new(":memory:").expect("无法初始化内存用户数据库");
+        let mock_token = AnnotatedToken {
+            bunsetsu: Bunsetsu {
+                morphemes: Vec::new(),
+                surface: "難語".to_string(),
+                head_word: HeadWord {
+                    surface: "難語".to_string(),
+                    base_form: "難語".to_string(),
+                    reading: "ナンゴ".to_string(),
+                    pos: PosTag {
+                        major: "名詞".to_string(),
+                        sub1: "一般".to_string(),
+                        sub2: "*".to_string(),
+                        sub3: "*".to_string(),
+                    },
+                },
+                grammar_tags: Vec::new(),
+                char_range: (0, 2),
+            },
+            novelty_score: 1.0,
+            is_selected: false,
+            is_known: false,
+            inference_reason: None,
+        };
+
+        let first = engine
+            .annotate_tokens(vec![mock_token.clone()])
+            .expect("首次评分失败");
+        engine
+            .record_token_exposures(&first)
+            .expect("记录曝光失败");
+        let second = engine
+            .annotate_tokens(vec![mock_token])
+            .expect("再次评分失败");
+
+        assert!(second[0].novelty_score < first[0].novelty_score);
+        let exposure = engine
+            .get_exposure("難語", "ナンゴ")
+            .expect("读取曝光失败")
+            .expect("曝光记录不存在");
+        assert_eq!(exposure.exposure_count, 1);
+    }
+}

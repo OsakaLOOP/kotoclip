@@ -38,11 +38,24 @@ impl Engine {
 
     /// 解析一段文章，执行完整分词、语法提取，并自动从画像库标注生词分值 (Novelty)
     pub fn analyze_text(&self, text: &str) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        self.analyze_text_with_exposure(text, true)
+    }
+
+    /// Analyze text and optionally record the rendered lexical tokens as exposures.
+    /// Internal refreshes (for example after registering a merge rule) disable recording.
+    pub fn analyze_text_with_exposure(
+        &self,
+        text: &str,
+        record_exposure: bool,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
         // 先拉取用户自定义的短语合并规则
         let merge_rules = self.profile.get_merge_rules().unwrap_or_default();
         let tokens = self.pipeline.process(text, &merge_rules);
         // 调用画像引擎打分标注
         let annotated = self.profile.annotate_tokens(tokens)?;
+        if record_exposure {
+            self.profile.record_token_exposures(&annotated)?;
+        }
         Ok(annotated)
     }
 

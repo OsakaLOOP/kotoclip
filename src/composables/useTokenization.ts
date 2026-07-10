@@ -15,7 +15,7 @@ export function useTokenization() {
   /**
    * 分析整页文本
    */
-  async function analyzeText(text: string) {
+  async function analyzeText(text: string, recordExposure = true) {
     if (!text.trim()) {
       paragraphs.value = [];
       return;
@@ -26,7 +26,10 @@ export function useTokenization() {
 
     try {
       // 调用 Tauri 命令进行分词与用户画像评分标注
-      const allTokens = await invoke<AnnotatedToken[]>("analyze_text", { text });
+      const allTokens = await invoke<AnnotatedToken[]>("analyze_text", {
+        text,
+        recordExposure,
+      });
       
       // 根据换行符切分为段落结构，方便虚拟列表高效渲染
       const tempParagraphs: Paragraph[] = [];
