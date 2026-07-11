@@ -1,17 +1,38 @@
-use tauri::State;
+use serde::Serialize;
+use tauri::{Emitter, State, Window};
 use crate::state::AppState;
+use kotoclip_core::analysis_progress::AnalysisProgress;
 use kotoclip_core::models::{AnnotatedToken, DictEntry, ExportEntry, SegmentationCandidate};
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AnalysisProgressEvent {
+    request_id: String,
+    #[serde(flatten)]
+    progress: AnalysisProgress,
+}
 
 /// IPC 命令：分析日语文本并进行生词等级判定
 #[tauri::command]
 pub async fn analyze_text(
+    window: Window,
     state: State<'_, AppState>,
     text: String,
     record_exposure: Option<bool>,
+    request_id: Option<String>,
 ) -> Result<Vec<AnnotatedToken>, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    let request_id = request_id.unwrap_or_else(|| "legacy".to_string());
     engine
-        .analyze_text_with_exposure(&text, record_exposure.unwrap_or(true))
+        .analyze_text_with_progress(&text, record_exposure.unwrap_or(true), |progress| {
+            let _ = window.emit(
+                "analysis-progress",
+                AnalysisProgressEvent {
+                    request_id: request_id.clone(),
+                    progress,
+                },
+            );
+        })
         .map_err(|e| e.to_string())
 }
 

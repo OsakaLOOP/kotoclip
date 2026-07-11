@@ -305,7 +305,7 @@ fn example_patterns() -> Vec<GrammarPattern> {
         make("te_kuru", "〜てくる", "VPV", 2, &["くる", "来る"], 3),
         make("te_yaru", "〜てやる", "VPV", 2, &["やる"], 3),
         make("te_oku", "〜ておく", "VPV", 2, &["おく"], 3),
-        make("tsumori", "〜つもりだ", "NPD", 1, &["つもり"], 4),
+        make("tsumori", "〜つもりだ", "NX", 0, &["つもり"], 4),
         make("nagaramo", "〜ながら（も）", "VP", 1, &["ながら"], 3),
         make("negative_n", "〜ん", "VX", 1, &["ぬ", "ん"], 3),
     ]

@@ -1,0 +1,55 @@
+{
+  "characters": 48597,
+  "tokens": 19139,
+  "total_ms": 2751,
+  "phases": [
+    {
+      "phase": "Preparing",
+      "started_ms": 0,
+      "completed_ms": 13,
+      "duration_ms": 13
+    },
+    {
+      "phase": "Tokenizing",
+      "started_ms": 13,
+      "completed_ms": 705,
+      "duration_ms": 692
+    },
+    {
+      "phase": "Chunking",
+      "started_ms": 705,
+      "completed_ms": 1404,
+      "duration_ms": 699
+    },
+    {
+      "phase": "GrammarMatching",
+      "started_ms": 1404,
+      "completed_ms": 1447,
+      "duration_ms": 43
+    },
+    {
+      "phase": "DictionaryMatching",
+      "started_ms": 1447,
+      "completed_ms": 1527,
+      "duration_ms": 80
+    },
+    {
+      "phase": "ProfileScoring",
+      "started_ms": 1527,
+      "completed_ms": 2704,
+      "duration_ms": 1177
+    },
+    {
+      "phase": "RecordingExposure",
+      "started_ms": 2704,
+      "completed_ms": 2751,
+      "duration_ms": 47
+    },
+    {
+      "phase": "Completed",
+      "started_ms": 2751,
+      "completed_ms": 2751,
+      "duration_ms": 0
+    }
+  ]
+}

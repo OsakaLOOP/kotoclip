@@ -4,12 +4,14 @@ pub mod dictionary;
 pub mod profile;
 pub mod export;
 pub mod ffi;
+pub mod analysis_progress;
 
 use std::path::Path;
 use pipeline::Pipeline;
 use dictionary::lookup::DictionaryEngine;
 use profile::ProfileEngine;
 use models::{AnnotatedToken, DictEntry, SegmentationCandidate};
+use analysis_progress::{AnalysisPhase, AnalysisProgress};
 
 /// Kotoclip 核心引擎，粘合了分词管线、词库检索以及用户历史曝光画像
 pub struct Engine {
@@ -48,20 +50,73 @@ impl Engine {
         text: &str,
         record_exposure: bool,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        self.analyze_text_with_progress(text, record_exposure, |_| {})
+    }
+
+    /// 执行分析并在真实管线边界及逐 token 阶段报告进度。
+    pub fn analyze_text_with_progress<F>(
+        &self,
+        text: &str,
+        record_exposure: bool,
+        mut report: F,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>>
+    where
+        F: FnMut(AnalysisProgress),
+    {
+        report(AnalysisProgress::stage(AnalysisPhase::Preparing, 1, "读取合并规则"));
         // 先拉取用户自定义的短语合并规则
         let merge_rules = self.profile.get_merge_rules().unwrap_or_default();
-        let mut tokens = self.pipeline.process(text, &merge_rules);
-        for token in &mut tokens {
+        let mut tokens = self.pipeline.process_with_progress(text, &merge_rules, &mut report);
+        let token_count = tokens.len();
+        let report_step = (token_count / 100).max(1);
+        report(AnalysisProgress::counted(
+            AnalysisPhase::DictionaryMatching,
+            0,
+            token_count,
+            55,
+            "按词典校正词汇边界",
+        ));
+        for (index, token) in tokens.iter_mut().enumerate() {
             pipeline::bunsetsu::resolve_lexical_boundaries(
                 std::slice::from_mut(&mut token.bunsetsu),
                 |word| self.dictionary.contains_exact(word),
             );
+            let completed = index + 1;
+            if completed == token_count || completed % report_step == 0 {
+                let percent = 55 + ((completed * 5 / token_count.max(1)) as u8);
+                report(AnalysisProgress::counted(
+                    AnalysisPhase::DictionaryMatching,
+                    completed,
+                    token_count,
+                    percent,
+                    "按词典校正词汇边界",
+                ));
+            }
         }
         // 调用画像引擎打分标注
-        let annotated = self.profile.annotate_tokens(tokens)?;
+        let annotated = self.profile.annotate_tokens_with_progress(tokens, |completed, total| {
+            let percent = 61 + ((completed * 35 / total.max(1)) as u8);
+            report(AnalysisProgress::counted(
+                AnalysisPhase::ProfileScoring,
+                completed,
+                total,
+                percent,
+                "计算词汇熟悉度",
+            ));
+        })?;
         if record_exposure {
-            self.profile.record_token_exposures(&annotated)?;
+            self.profile.record_token_exposures_with_progress(&annotated, |completed, total| {
+                let percent = 97 + ((completed * 2 / total.max(1)) as u8);
+                report(AnalysisProgress::counted(
+                    AnalysisPhase::RecordingExposure,
+                    completed,
+                    total,
+                    percent,
+                    "记录本次词汇曝光",
+                ));
+            })?;
         }
+        report(AnalysisProgress::stage(AnalysisPhase::Completed, 100, "分析完成"));
         Ok(annotated)
     }
 
@@ -109,5 +164,55 @@ impl Engine {
         top_n: usize,
     ) -> Vec<SegmentationCandidate> {
         pipeline::candidates::get_candidates(token, top_n)
+    }
+}
+
+#[cfg(test)]
+mod progress_tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn reports_monotonic_real_pipeline_phases() {
+        let dict_path = [
+            "../../ipadic/system.dic",
+            "../ipadic/system.dic",
+            "ipadic/system.dic",
+        ]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file());
+        let Some(dict_path) = dict_path else {
+            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+            return;
+        };
+
+        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-progress-{nonce}"));
+        let dictionary_directory = directory.join("dicts");
+        std::fs::create_dir_all(&dictionary_directory).unwrap();
+        let engine = Engine::new(dict_path, &dictionary_directory, directory.join("profile.sqlite")).unwrap();
+        let mut events = Vec::new();
+        let tokens = engine
+            .analyze_text_with_progress("七日は警察署へ向かった。", true, |event| events.push(event))
+            .unwrap();
+
+        assert!(!tokens.is_empty());
+        assert!(events.windows(2).all(|pair| pair[0].percent <= pair[1].percent));
+        for phase in [
+            AnalysisPhase::Preparing,
+            AnalysisPhase::Tokenizing,
+            AnalysisPhase::Chunking,
+            AnalysisPhase::GrammarMatching,
+            AnalysisPhase::DictionaryMatching,
+            AnalysisPhase::ProfileScoring,
+            AnalysisPhase::RecordingExposure,
+            AnalysisPhase::Completed,
+        ] {
+            assert!(events.iter().any(|event| event.phase == phase), "缺少进度阶段：{phase:?}");
+        }
+        assert_eq!(events.last().unwrap().percent, 100);
+
+        drop(engine);
+        std::fs::remove_dir_all(directory).unwrap();
     }
 }

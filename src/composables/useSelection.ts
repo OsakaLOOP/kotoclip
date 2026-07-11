@@ -151,6 +151,7 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
         definitions: dictDefs,
         jlpt_levels: [...new Set(token.bunsetsu.grammar_tags.map((t) => t.jlpt_level).filter((level): level is number => level !== null))].sort((a, b) => a - b),
         user_note: notes.value[`${key.paragraphId}-${key.tokenIndex}`] ?? "",
+        char_range: token.bunsetsu.char_range,
       });
     }
 

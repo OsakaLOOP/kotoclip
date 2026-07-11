@@ -47,11 +47,49 @@ fn normalize_reading(reading: &str) -> String {
         .collect()
 }
 
+fn strip_markdown_images(input: &str) -> String {
+    let chars: Vec<char> = input.chars().collect();
+    let mut result = Vec::with_capacity(chars.len());
+    let mut i = 0;
+    while i < chars.len() {
+        if i + 1 < chars.len() && chars[i] == '!' && chars[i + 1] == '[' {
+            let mut j = i + 2;
+            let mut found_bracket = false;
+            while j < chars.len() {
+                if chars[j] == ']' {
+                    found_bracket = true;
+                    break;
+                }
+                j += 1;
+            }
+            if found_bracket && j + 1 < chars.len() && chars[j + 1] == '(' {
+                let mut k = j + 2;
+                let mut found_paren = false;
+                while k < chars.len() {
+                    if chars[k] == ')' {
+                        found_paren = true;
+                        break;
+                    }
+                    k += 1;
+                }
+                if found_paren {
+                    i = k + 1;
+                    continue;
+                }
+            }
+        }
+        result.push(chars[i]);
+        i += 1;
+    }
+    result.into_iter().collect()
+}
+
 /// Removes valid `漢字《かな》` markup and records its range in the cleaned text.
 /// A new ruby annotation starts a new base boundary, which makes
 /// `古《ふる》川《かわ》` two annotations instead of treating the second as `古川`.
 pub fn prepare_text(input: &str) -> PreparedText {
-    let chars: Vec<char> = input.chars().collect();
+    let stripped = strip_markdown_images(input);
+    let chars: Vec<char> = stripped.chars().collect();
     let mut cleaned = Vec::with_capacity(chars.len());
     let mut annotations = Vec::new();
     let mut base_boundary = 0;
@@ -294,5 +332,13 @@ mod tests {
             &prepared.annotations,
         );
         assert_eq!(reading.as_deref(), Some("カガミ"));
+    }
+
+    #[test]
+    fn test_strip_markdown_images() {
+        assert_eq!(strip_markdown_images("这是一个![alt](./img.jpg)图片"), "这是一个图片");
+        assert_eq!(strip_markdown_images("没有![未闭合"), "没有![未闭合");
+        assert_eq!(strip_markdown_images("普通的[链接](url)"), "普通的[链接](url)");
+        assert_eq!(strip_markdown_images("多个![a](b)和![c](d)"), "多个和");
     }
 }

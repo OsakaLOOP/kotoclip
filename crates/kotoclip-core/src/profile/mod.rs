@@ -158,5 +158,18 @@ mod tests {
             .expect("读取曝光失败")
             .expect("曝光记录不存在");
         assert_eq!(exposure.exposure_count, 1);
+
+        let mut progress = Vec::new();
+        engine
+            .record_token_exposures_with_progress(&[first[0].clone(), first[0].clone()], |completed, total| {
+                progress.push((completed, total));
+            })
+            .expect("批量记录曝光失败");
+        let exposure = engine
+            .get_exposure("難語", "ナンゴ")
+            .expect("读取批量曝光失败")
+            .expect("批量曝光记录不存在");
+        assert_eq!(exposure.exposure_count, 3, "聚合写入必须保留每次词汇出现");
+        assert_eq!(progress.last(), Some(&(1, 1)), "进度应按唯一写入项报告");
     }
 }

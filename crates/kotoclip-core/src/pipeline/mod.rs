@@ -6,6 +6,7 @@ pub mod ruby;
 pub mod candidates;
 
 use crate::models::AnnotatedToken;
+use crate::analysis_progress::{AnalysisPhase, AnalysisProgress};
 use std::path::Path;
 
 /// NLP 处理引擎管线容器
@@ -27,20 +28,42 @@ impl Pipeline {
 
     /// 执行完整的 NLP 管线：形態素解析 -> 文節组块 -> 语法匹配 -> 辞書形还原 (应用自定义合并规则)
     pub fn process(&self, text: &str, merge_rules: &[Vec<String>]) -> Vec<AnnotatedToken> {
+        self.process_with_progress(text, merge_rules, &mut |_| {})
+    }
+
+    pub fn process_with_progress<F>(
+        &self,
+        text: &str,
+        merge_rules: &[Vec<String>],
+        report: &mut F,
+    ) -> Vec<AnnotatedToken>
+    where
+        F: FnMut(AnalysisProgress),
+    {
         if text.is_empty() {
             return Vec::new();
         }
 
         // 1. Strip author-supplied ruby before NLP, then apply it as the authoritative reading.
+        report(AnalysisProgress::stage(AnalysisPhase::Preparing, 2, "整理原文与振假名"));
         let prepared = ruby::prepare_text(text);
+        report(AnalysisProgress::stage(AnalysisPhase::Tokenizing, 3, "执行形态素分析"));
         let mut morphemes = self.morpheme_analyzer.analyze(&prepared.text);
         ruby::override_morpheme_readings(
             &prepared.text,
             &mut morphemes,
             &prepared.annotations,
         );
-        
+        report(AnalysisProgress::counted(
+            AnalysisPhase::Tokenizing,
+            morphemes.len(),
+            morphemes.len(),
+            25,
+            "形态素分析完成",
+        ));
+
         // 2. 文节组块 (包含用户自定义合并规则匹配)
+        report(AnalysisProgress::stage(AnalysisPhase::Chunking, 26, "构建文节"));
         let bunsetsus = bunsetsu::chunk(&morphemes, merge_rules);
         let mut bunsetsus = ruby::merge_annotated_bunsetsus(bunsetsus, &prepared.annotations);
         ruby::override_bunsetsu_readings(
@@ -48,9 +71,24 @@ impl Pipeline {
             &mut bunsetsus,
             &prepared.annotations,
         );
+        report(AnalysisProgress::counted(
+            AnalysisPhase::Chunking,
+            bunsetsus.len(),
+            bunsetsus.len(),
+            50,
+            "文节构建完成",
+        ));
 
         // 3. 语法模式匹配 (Aho-Corasick)
+        report(AnalysisProgress::stage(AnalysisPhase::GrammarMatching, 51, "匹配语法模式"));
         self.grammar_matcher.match_patterns(&mut bunsetsus);
+        report(AnalysisProgress::counted(
+            AnalysisPhase::GrammarMatching,
+            bunsetsus.len(),
+            bunsetsus.len(),
+            54,
+            "语法匹配完成",
+        ));
 
         // 4. 组装输出，设置默认状态 (曝光评分、Novelty 将在画像服务做二次加工)
         bunsetsus.into_iter().map(|b| {
@@ -79,7 +117,6 @@ mod tests {
             "../../ipadic/system.dic",
             "../ipadic/system.dic",
             "ipadic/system.dic",
-            "D:\\PROJ\\GIT\\kotoclip\\ipadic\\system.dic",
         ];
         for c in candidates {
             if std::path::Path::new(c).exists() {

@@ -6,12 +6,14 @@ import { useTokenization } from "../composables/useTokenization";
 import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
+import { useScrollFocus } from "../composables/useScrollFocus";
 import { DictEntry, SegmentationCandidate, AnnotatedToken } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import TooltipPanel from "./TooltipPanel.vue";
 import ContextMenu from "./ContextMenu.vue";
 import ExportPanel from "./ExportPanel.vue";
+import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
 
 // 状态定义
 const inputText = ref("");
@@ -21,12 +23,14 @@ const showDevMetrics = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_METR
 const analysisMetrics = ref<{ characterCount: number; durationMs: number } | null>(null);
 
 const scrollContainerRef = ref<HTMLElement | null>(null);
+const { triggerUpdate } = useScrollFocus(scrollContainerRef);
 
 // 初始化 composables
 const {
   paragraphs,
   isAnalyzing,
   errorMsg,
+  analysisProgress,
   analyzeText,
   mergeTokens,
   splitToken,
@@ -105,6 +109,7 @@ watch(
     await nextTick();
     virtualizer.value.measure();
     virtualizer.value.scrollToOffset(0);
+    triggerUpdate();
   },
   { flush: "post" }
 );
@@ -121,16 +126,18 @@ onBeforeUnmount(() => {
 // 执行文本分析
 async function triggerAnalysis(recordExposure = true) {
   if (!inputText.value.trim()) return;
+  const sourceText = inputText.value;
   const startedAt = performance.now();
-  await analyzeText(inputText.value, recordExposure);
-  if (!errorMsg.value) {
+  const succeeded = await analyzeText(sourceText, recordExposure);
+  if (succeeded) {
     analysisMetrics.value = {
-      characterCount: Array.from(inputText.value).length,
+      characterCount: Array.from(sourceText).length,
       durationMs: Math.round(performance.now() - startedAt),
     };
     showInput.value = false;
     await nextTick();
     virtualizer.value.measure();
+    triggerUpdate();
   }
 }
 
@@ -158,7 +165,8 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
   const p = paragraphs.value.find((para) => para.id === paragraphId);
   const token = p?.tokens[tokenIndex];
 
-  if (!token || token.is_known) {
+  const isPunc = token && token.bunsetsu.morphemes.length === 1 && token.bunsetsu.morphemes[0].pos.major === "記号";
+  if (!token || token.is_known || isPunc) {
     tooltipShow.value = false;
     return;
   }
@@ -212,6 +220,11 @@ function handleParagraphClick(e: MouseEvent, paragraphId: number) {
   const tokenIndex = parseInt(capsuleEl.getAttribute("data-token-index") || "", 10);
   if (isNaN(tokenIndex)) return;
 
+  const p = paragraphs.value.find((para) => para.id === paragraphId);
+  const token = p?.tokens[tokenIndex];
+  const isPunc = token && token.bunsetsu.morphemes.length === 1 && token.bunsetsu.morphemes[0].pos.major === "記号";
+  if (!token || isPunc) return;
+
   // 切换该 token 选中状态 (用于 Anki 导出)
   toggleSelect(paragraphId, tokenIndex);
 }
@@ -227,7 +240,8 @@ function handleParagraphDblClick(e: MouseEvent, paragraphId: number) {
 
   const p = paragraphs.value.find((para) => para.id === paragraphId);
   const token = p?.tokens[tokenIndex];
-  if (!token) return;
+  const isPunc = token && token.bunsetsu.morphemes.length === 1 && token.bunsetsu.morphemes[0].pos.major === "記号";
+  if (!token || isPunc) return;
 
   // 取消 Tooltip 显示
   if (tooltipTimeout) clearTimeout(tooltipTimeout);
@@ -298,6 +312,7 @@ function toggleEinkMode() {
   } else {
     document.body.classList.remove("eink-mode");
   }
+  triggerUpdate();
 }
 
 // 触发 Anki 数据包生成并保存
@@ -335,6 +350,37 @@ function clearAllSelections() {
 // 单个移出选中列表
 function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   toggleSelect(paragraphId, tokenIndex);
+}
+
+function isOpeningPunctuation(token: AnnotatedToken): boolean {
+  if (token.bunsetsu.morphemes.length !== 1) return false;
+  const m = token.bunsetsu.morphemes[0];
+  if (m.pos.major !== "記号") return false;
+  const s = m.surface;
+  return /^[「『（［｛【〈《“‘(]$/.test(s);
+}
+
+function isPunctuation(token: AnnotatedToken): boolean {
+  if (token.bunsetsu.morphemes.length !== 1) return false;
+  return token.bunsetsu.morphemes[0].pos.major === "記号";
+}
+
+function shouldInsertWjBefore(tokens: AnnotatedToken[], index: number): boolean {
+  if (index === 0) return false;
+  const currentToken = tokens[index];
+  if (isPunctuation(currentToken) && !isOpeningPunctuation(currentToken)) {
+    return true;
+  }
+  return false;
+}
+
+function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
+  if (index === tokens.length - 1) return false;
+  const currentToken = tokens[index];
+  if (isOpeningPunctuation(currentToken)) {
+    return true;
+  }
+  return false;
 }
 </script>
 
@@ -376,24 +422,37 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           v-model="inputText"
           placeholder="在此粘贴整页日文文本..."
           class="raw-textarea"
+          :disabled="isAnalyzing"
+          :aria-busy="isAnalyzing"
         ></textarea>
         <div v-if="errorMsg" class="error-message">
           ⚠️ 分析出错: {{ errorMsg }}
         </div>
+        <AnalysisProgressPanel
+          :progress="analysisProgress"
+          :active="isAnalyzing"
+        />
         <div class="btn-group">
           <button
             class="analyze-btn"
             :disabled="isAnalyzing"
             @click="triggerAnalysis()"
           >
-            {{ isAnalyzing ? '正在跑 NLP 分词管线...' : '解析生词胶囊' }}
+            {{ isAnalyzing ? analysisProgress.message : '解析生词胶囊' }}
           </button>
         </div>
       </div>
 
+      <AnalysisProgressPanel
+        v-if="!showInput"
+        class="reader-progress-overlay"
+        :progress="analysisProgress"
+        :active="isAnalyzing"
+      />
+
       <!-- 2. 阅读展示区域 -->
       <div
-        v-else
+        v-if="!showInput"
         ref="scrollContainerRef"
         class="reader-viewport no-scrollbar"
       >
@@ -425,14 +484,21 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             @click="handleParagraphClick($event, paragraphs[virtualRow.index].id)"
             @dblclick="handleParagraphDblClick($event, paragraphs[virtualRow.index].id)"
           >
-            <BunsetsuCapsule
-              v-for="(token, tokenIndex) in paragraphs[virtualRow.index].tokens"
-              :key="tokenIndex"
-              :token="token"
-              :paragraphId="paragraphs[virtualRow.index].id"
-              :tokenIndex="tokenIndex"
-              :isDragSelected="isTokenDragSelected(paragraphs[virtualRow.index].id, tokenIndex)"
-            />
+            <template v-if="paragraphs[virtualRow.index].tokens.length > 0">
+              <template v-for="(token, tokenIndex) in paragraphs[virtualRow.index].tokens" :key="tokenIndex">
+                <template v-if="shouldInsertWjBefore(paragraphs[virtualRow.index].tokens, tokenIndex)">&#x2060;</template>
+                <BunsetsuCapsule
+                  :token="token"
+                  :paragraphId="paragraphs[virtualRow.index].id"
+                  :tokenIndex="tokenIndex"
+                  :isDragSelected="isTokenDragSelected(paragraphs[virtualRow.index].id, tokenIndex)"
+                />
+                <template v-if="shouldInsertWjAfter(paragraphs[virtualRow.index].tokens, tokenIndex)">&#x2060;</template>
+              </template>
+            </template>
+            <template v-else>
+              <span class="empty-line-placeholder">&nbsp;</span>
+            </template>
           </div>
         </div>
       </div>
@@ -551,6 +617,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .dev-metrics {
@@ -581,6 +649,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   gap: 6px;
   transition: all 0.2s ease;
   box-shadow: none;
+  white-space: nowrap;
+  font-size: 0.85rem;
 }
 
 .icon-btn:hover {
@@ -612,11 +682,20 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   justify-content: center;
 }
 
+.reader-progress-overlay {
+  position: absolute;
+  z-index: 20;
+  top: 12px;
+  left: 50%;
+  width: min(680px, calc(100% - 32px));
+  transform: translateX(-50%);
+}
+
 /* 输入模块样式 */
 .input-section {
   width: 100%;
-  max-width: 800px;
-  padding: 40px 24px;
+  max-width: clamp(600px, 75vw, 960px);
+  padding: 40px clamp(24px, 5vw, 64px);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -634,12 +713,18 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   outline: none;
   font-size: 1.1rem;
   line-height: 1.6;
+  font-family: var(--font-ja);
   box-shadow: inset var(--shadow-sm);
   transition: border-color 0.2s;
 }
 
 .raw-textarea:focus {
   border-color: var(--accent-color);
+}
+
+.raw-textarea:disabled {
+  cursor: progress;
+  opacity: 0.72;
 }
 
 .btn-group {
@@ -683,9 +768,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 /* 阅读器视口样式 */
 .reader-viewport {
   flex: 1;
-  max-width: 800px;
+  max-width: clamp(600px, 75vw, 960px);
+  width: 100%;
   overflow-y: auto;
-  padding: 40px 24px;
+  padding: 40px clamp(24px, 5vw, 64px);
   box-sizing: border-box;
 }
 
@@ -769,6 +855,21 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   font-size: 0.9rem;
   line-height: 1.6;
   color: var(--text-secondary);
+}
+
+.empty-line-placeholder {
+  user-select: none;
+  visibility: hidden;
+}
+
+/* Modal 渐变过渡 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
 

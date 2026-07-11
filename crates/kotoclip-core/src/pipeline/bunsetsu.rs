@@ -164,23 +164,94 @@ pub fn resolve_lexical_boundaries<F: Fn(&str) -> bool>(bunsetsus: &mut [Bunsetsu
     for bunsetsu in bunsetsus {
         let Some(head_index) = bunsetsu.morphemes.iter().position(|m| is_jiritsugo(m) && m.pos.major != "接頭詞") else { continue };
         let suffix_start = head_index + 1;
-        if suffix_start >= bunsetsu.morphemes.len() || bunsetsu.morphemes[suffix_start..].iter().all(|m| m.pos.major == "名詞" && m.pos.sub1 == "接尾") == false { continue; }
+
+        let mut suffix_indices = Vec::new();
+        for idx in suffix_start..bunsetsu.morphemes.len() {
+            let m = &bunsetsu.morphemes[idx];
+            if m.pos.major == "名詞" && m.pos.sub1 == "接尾" {
+                suffix_indices.push(idx);
+            } else {
+                break;
+            }
+        }
+        if suffix_indices.is_empty() {
+            continue;
+        }
+
         let candidate = bunsetsu.head_word.base_form.clone();
         if contains_exact(&candidate) { continue; }
+
         let root = &bunsetsu.morphemes[head_index];
         bunsetsu.head_word.surface = root.surface.clone();
-        bunsetsu.head_word.base_form = super::restore::restore_base_form(bunsetsu);
+        bunsetsu.head_word.base_form = root.base_form.clone();
         bunsetsu.head_word.reading = root.reading.clone();
-        for suffix in &bunsetsu.morphemes[suffix_start..] {
+
+        for idx in suffix_indices {
+            let suffix = &bunsetsu.morphemes[idx];
             bunsetsu.grammar_tags.push(GrammarTag {
                 pattern_id: format!("nominal_suffix:{}", suffix.surface),
                 name_ja: format!("接尾辞「{}」", suffix.surface),
                 name_en: "Nominal suffix".to_string(),
                 jlpt_level: None,
                 description: "词典未收录的名词接尾辞".to_string(),
-                morpheme_range: (bunsetsu.morphemes.iter().position(|m| m.char_range == suffix.char_range).unwrap_or(suffix_start), bunsetsu.morphemes.iter().position(|m| m.char_range == suffix.char_range).unwrap_or(suffix_start) + 1),
+                morpheme_range: (idx, idx + 1),
                 char_range: suffix.char_range,
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::PosTag;
+
+    #[test]
+    fn test_resolve_lexical_boundaries_splits_on_missing_dict() {
+        let m1 = Morpheme {
+            surface: "警察".to_string(),
+            pos: PosTag { major: "名詞".to_string(), sub1: "一般".to_string(), sub2: "*".to_string(), sub3: "*".to_string() },
+            base_form: "警察".to_string(),
+            reading: "ケイサツ".to_string(),
+            conjugation_type: "*".to_string(),
+            conjugation_form: "*".to_string(),
+            char_range: (0, 2),
+        };
+        let m2 = Morpheme {
+            surface: "署".to_string(),
+            pos: PosTag { major: "名詞".to_string(), sub1: "接尾".to_string(), sub2: "*".to_string(), sub3: "*".to_string() },
+            base_form: "署".to_string(),
+            reading: "ショ".to_string(),
+            conjugation_type: "*".to_string(),
+            conjugation_form: "*".to_string(),
+            char_range: (2, 3),
+        };
+        let m3 = Morpheme {
+            surface: "に".to_string(),
+            pos: PosTag { major: "助詞".to_string(), sub1: "格助詞".to_string(), sub2: "*".to_string(), sub3: "*".to_string() },
+            base_form: "に".to_string(),
+            reading: "ニ".to_string(),
+            conjugation_type: "*".to_string(),
+            conjugation_form: "*".to_string(),
+            char_range: (3, 4),
+        };
+
+        // 场景 1：如果字典中没有“警察署”，应剥离并产生接尾辞的 grammar tag
+        let bunsetsu = build_bunsetsu(vec![m1.clone(), m2.clone(), m3.clone()]);
+        let mut list = vec![bunsetsu];
+        resolve_lexical_boundaries(&mut list, |word| word == "警察");
+
+        assert_eq!(list[0].head_word.base_form, "警察");
+        assert_eq!(list[0].grammar_tags.len(), 1);
+        assert_eq!(list[0].grammar_tags[0].pattern_id, "nominal_suffix:署");
+        assert_eq!(list[0].grammar_tags[0].char_range, (2, 3));
+
+        // 场景 2：如果字典中有“警察署”，保留合并的长词
+        let bunsetsu = build_bunsetsu(vec![m1.clone(), m2.clone(), m3.clone()]);
+        let mut list = vec![bunsetsu];
+        resolve_lexical_boundaries(&mut list, |word| word == "警察署");
+
+        assert_eq!(list[0].head_word.base_form, "警察署");
+        assert!(list[0].grammar_tags.is_empty());
     }
 }

@@ -1,11 +1,29 @@
 /* 嵌套胶囊系统样式 */
 
 .paragraph-block {
-  margin-bottom: 1.5rem;
+  font-family: var(--font-ja);
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid transparent;
   line-height: 2.2; /* 给嵌套胶囊留出高度 */
   font-size: 1.2rem;
-  word-break: break-all;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   white-space: normal;
+  text-align: justify;
+  text-align-last: left;
+  transition: opacity 0.25s ease-out;
+  will-change: opacity;
+}
+
+.paragraph-block:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* 段落首个胶囊消除左偏移以实现完美左对齐 */
+.paragraph-block .bunsetsu-capsule:first-child {
+  margin-left: 0;
 }
 
 /* 基础文节胶囊容器 */
@@ -13,7 +31,7 @@
   display: inline-flex;
   align-items: center;
   position: relative;
-  margin: 0.15rem 0.2rem;
+  margin: 0.15rem 0.05rem;
   padding: 0.05rem 0.25rem;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;

@@ -1,10 +1,12 @@
 use kotoclip_core::dictionary::lookup::DictionaryEngine;
 use kotoclip_core::pipeline::{bunsetsu, ruby, Pipeline};
+use kotoclip_core::Engine;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::time::Instant;
 
 #[derive(Default)]
 struct CliArgs {
@@ -78,6 +80,22 @@ struct CoverageReport {
     missed_lexemes: Vec<MissedLexeme>,
 }
 
+#[derive(Debug, Serialize)]
+struct PhaseTiming {
+    phase: String,
+    started_ms: u128,
+    completed_ms: u128,
+    duration_ms: u128,
+}
+
+#[derive(Debug, Serialize)]
+struct BenchmarkReport {
+    characters: usize,
+    tokens: usize,
+    total_ms: u128,
+    phases: Vec<PhaseTiming>,
+}
+
 #[derive(Default)]
 struct MissAggregate {
     surfaces: HashSet<String>,
@@ -100,6 +118,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "lookup" => lookup(&args),
         "analyze" => analyze(&args),
         "audit" => audit(&args),
+        "benchmark" => benchmark(&args),
         "repl" => repl(&args),
         "help" | "--help" | "-h" => {
             print_help();
@@ -264,6 +283,61 @@ fn audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let source_path = PathBuf::from(args.required("source").map_err(io::Error::other)?);
+    let source = std::fs::read_to_string(&source_path)?;
+    let text = extract_chapter(&source, args.options.get("chapter").map(String::as_str))?;
+    let profile = args.required("profile").map_err(io::Error::other)?;
+    let engine = Engine::new(
+        args.options.get("system-dict").map_or("ipadic/system.dic", String::as_str),
+        args.options.get("dict-dir").map_or("data/dicts", String::as_str),
+        profile,
+    )?;
+    let started = Instant::now();
+    let mut current_phase: Option<(String, u128)> = None;
+    let mut phases = Vec::new();
+    let tokens = engine.analyze_text_with_progress(
+        text,
+        !args.flags.contains("no-record-exposure"),
+        |event| {
+            let elapsed = started.elapsed().as_millis();
+            let phase = format!("{:?}", event.phase);
+            if current_phase.as_ref().map_or(true, |(current, _)| current != &phase) {
+                if let Some((previous, phase_started)) = current_phase.replace((phase, elapsed)) {
+                    phases.push(PhaseTiming {
+                        phase: previous,
+                        started_ms: phase_started,
+                        completed_ms: elapsed,
+                        duration_ms: elapsed.saturating_sub(phase_started),
+                    });
+                }
+            }
+        },
+    )?;
+    let total_ms = started.elapsed().as_millis();
+    if let Some((phase, phase_started)) = current_phase {
+        phases.push(PhaseTiming {
+            phase,
+            started_ms: phase_started,
+            completed_ms: total_ms,
+            duration_ms: total_ms.saturating_sub(phase_started),
+        });
+    }
+    let report = BenchmarkReport {
+        characters: text.chars().count(),
+        tokens: tokens.len(),
+        total_ms,
+        phases,
+    };
+    let json = serde_json::to_string_pretty(&report)?;
+    if let Some(output) = args.options.get("json") {
+        std::fs::write(output, &json)?;
+        println!("基准报告已写入：{output}");
+    }
+    println!("{json}");
+    Ok(())
+}
+
 fn repl(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let dictionary = dictionary(args)?;
     let pipeline = pipeline(args)?;
@@ -346,6 +420,8 @@ fn print_help() {
   audit --source PATH [--chapter TITLE] [--page-lines N --page N]
         [--start-line N --line-count N --sample-every N]
         [--json PATH --min-coverage 0.10 --max-misses N]
+  benchmark --source PATH --profile PATH [--chapter TITLE]
+        [--no-record-exposure] [--json PATH]
   repl
 "#);
 }

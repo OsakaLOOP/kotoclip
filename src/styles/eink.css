@@ -81,3 +81,7 @@ body.eink-mode .export-panel {
   border: 2px solid #000000 !important;
   border-radius: 0 !important;
 }
+
+body.eink-mode .paragraph-block {
+  opacity: 1 !important;
+}

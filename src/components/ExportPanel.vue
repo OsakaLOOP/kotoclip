@@ -281,4 +281,23 @@ const count = computed(() => selectedTokens.value.length);
 .slide-leave-to {
   transform: translateX(100%);
 }
+
+.card-note {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-ja);
+  font-size: 0.8rem;
+  resize: vertical;
+  min-height: 32px;
+  max-height: 80px;
+  outline: none;
+}
+.card-note:focus {
+  border-color: var(--accent-color);
+}
 </style>

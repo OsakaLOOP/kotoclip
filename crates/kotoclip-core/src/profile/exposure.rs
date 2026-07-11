@@ -1,6 +1,7 @@
 use super::ProfileEngine;
 use crate::models::AnnotatedToken;
-use rusqlite::Result;
+use rusqlite::{params, Result};
+use std::collections::BTreeMap;
 
 /// 曝光数据记录
 pub struct ExposureRecord {
@@ -11,13 +12,50 @@ pub struct ExposureRecord {
 impl ProfileEngine {
     /// Record one exposure for every lexical token that was actually presented.
     pub fn record_token_exposures(&self, tokens: &[AnnotatedToken]) -> Result<()> {
+        self.record_token_exposures_with_progress(tokens, |_, _| {})
+    }
+
+    pub fn record_token_exposures_with_progress<F>(&self, tokens: &[AnnotatedToken], mut report: F) -> Result<()>
+    where
+        F: FnMut(usize, usize),
+    {
+        // 同一页面常重复出现相同词汇。先聚合出现次数，再在一个事务中写入，
+        // 保持曝光计数语义不变，同时避免每个 token 触发一次磁盘提交。
+        let mut exposures: BTreeMap<(String, String, String), i64> = BTreeMap::new();
         for token in tokens {
             let head = &token.bunsetsu.head_word;
-            if head.pos.major == "記号" || head.base_form.trim().is_empty() {
-                continue;
+            if head.pos.major != "記号" && !head.base_form.trim().is_empty() {
+                *exposures.entry((
+                    head.base_form.clone(),
+                    head.reading.clone(),
+                    head.pos.major.clone(),
+                )).or_insert(0) += 1;
             }
-            self.record_exposure(&head.base_form, &head.reading, &head.pos.major)?;
         }
+
+        let total = exposures.len();
+        let report_step = (total / 100).max(1);
+        report(0, total);
+
+        let transaction = self.conn.unchecked_transaction()?;
+        {
+            let mut statement = transaction.prepare_cached(
+                "INSERT INTO exposure_history
+                    (base_form, reading, pos, exposure_count, last_seen_at, is_known)
+                 VALUES (?1, ?2, ?3, ?4, datetime('now'), 0)
+                 ON CONFLICT(base_form, reading) DO UPDATE SET
+                    exposure_count = exposure_count + excluded.exposure_count,
+                    last_seen_at = datetime('now')",
+            )?;
+            for (index, ((base_form, reading, pos), count)) in exposures.into_iter().enumerate() {
+                statement.execute(params![base_form, reading, pos, count])?;
+                let completed = index + 1;
+                if completed == total || completed % report_step == 0 {
+                    report(completed, total);
+                }
+            }
+        }
+        transaction.commit()?;
         Ok(())
     }
 

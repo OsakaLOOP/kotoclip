@@ -6,4 +6,4 @@ export interface Bunsetsu { morphemes: Morpheme[]; surface: string; head_word: H
 export interface AnnotatedToken { bunsetsu: Bunsetsu; novelty_score: number; is_selected: boolean; is_known: boolean; inference_reason: string | null; }
 export interface SegmentationCandidate { tokens: AnnotatedToken[]; }
 export interface DictEntry { dict_name: string; headword: string; definition_html: string; match_type: "headword" | "reading" | "fuzzy"; }
-export interface ExportEntry { surface: string; base_form: string; reading: string; pos: string; grammar_tags: string[]; jlpt_levels: number[]; context_sentence: string; context_highlight: [number, number]; definitions: DictEntry[]; user_note: string; }
+export interface ExportEntry { surface: string; base_form: string; reading: string; pos: string; grammar_tags: string[]; jlpt_levels: number[]; context_sentence: string; context_highlight: [number, number]; definitions: DictEntry[]; user_note: string; char_range?: [number, number]; }

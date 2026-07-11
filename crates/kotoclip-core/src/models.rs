@@ -22,6 +22,7 @@ pub struct ExportEntry {
     pub surface: String, pub base_form: String, pub reading: String, pub pos: String, pub grammar_tags: Vec<String>,
     pub context_sentence: String, pub context_highlight: (usize, usize), pub definitions: Vec<DictEntry>,
     pub jlpt_levels: Vec<u8>, pub user_note: String,
+    pub char_range: Option<(usize, usize)>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DictEntry { pub dict_name: String, pub headword: String, pub definition_html: String, pub match_type: String }

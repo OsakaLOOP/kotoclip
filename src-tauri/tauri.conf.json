@@ -25,7 +25,8 @@
     "active": true,
     "targets": "all",
     "resources": [
-      "../ipadic/system.dic"
+      "../ipadic/system.dic",
+      "../data/dicts/starter.sqlite"
     ],
     "icon": [
       "icons/32x32.png",

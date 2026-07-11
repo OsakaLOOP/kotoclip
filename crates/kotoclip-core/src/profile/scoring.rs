@@ -3,8 +3,22 @@ use crate::models::AnnotatedToken;
 
 impl ProfileEngine {
     /// 遍历 annotated tokens，结合 SQLite 画像库，标注生词评分 (Novelty) 并决定是否降级为 Plain Text
-    pub fn annotate_tokens(&self, mut tokens: Vec<AnnotatedToken>) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
-        for token in &mut tokens {
+    pub fn annotate_tokens(&self, tokens: Vec<AnnotatedToken>) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        self.annotate_tokens_with_progress(tokens, |_, _| {})
+    }
+
+    pub fn annotate_tokens_with_progress<F>(
+        &self,
+        mut tokens: Vec<AnnotatedToken>,
+        mut report: F,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>>
+    where
+        F: FnMut(usize, usize),
+    {
+        let total = tokens.len();
+        let report_step = (total / 100).max(1);
+        report(0, total);
+        for (index, token) in tokens.iter_mut().enumerate() {
             let base_form = &token.bunsetsu.head_word.base_form;
             let reading = &token.bunsetsu.head_word.reading;
             let pos_tag = &token.bunsetsu.head_word.pos;
@@ -13,6 +27,7 @@ impl ProfileEngine {
             if pos_tag.major == "記号" {
                 token.novelty_score = 0.0;
                 token.is_known = true;
+                report_if_needed(&mut report, index + 1, total, report_step);
                 continue;
             }
 
@@ -22,6 +37,7 @@ impl ProfileEngine {
                 if record.is_known {
                     token.novelty_score = 0.0;
                     token.is_known = true;
+                    report_if_needed(&mut report, index + 1, total, report_step);
                     continue;
                 }
 
@@ -52,8 +68,15 @@ impl ProfileEngine {
             if token.novelty_score < 0.2 {
                 token.is_known = true;
             }
+            report_if_needed(&mut report, index + 1, total, report_step);
         }
 
         Ok(tokens)
+    }
+}
+
+fn report_if_needed<F: FnMut(usize, usize)>(report: &mut F, completed: usize, total: usize, step: usize) {
+    if completed == total || completed % step == 0 {
+        report(completed, total);
     }
 }
