@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
+use tauri::path::BaseDirectory;
 
 pub struct AppPaths {
     pub system_dictionary: PathBuf,
@@ -12,7 +13,8 @@ pub struct AppPaths {
 impl AppPaths {
     pub fn resolve(app: &AppHandle) -> Result<Self, Box<dyn std::error::Error>> {
         // 允许 KOTOCLIP_DATA_DIR 作为显式的开发/测试重写
-        let data_dir = if let Ok(env_dir) = std::env::var("KOTOCLIP_DATA_DIR") {
+        let env_data_dir = std::env::var("KOTOCLIP_DATA_DIR").ok();
+        let data_dir = if let Some(env_dir) = &env_data_dir {
             PathBuf::from(env_dir)
         } else {
             app.path().app_data_dir()?
@@ -31,21 +33,52 @@ impl AppPaths {
         let system_dictionary = match system_dictionary {
             Some(p) => p,
             None => {
-                // 在 Tauri 2.0 中，resolve_resource 可以将相对路径解析为实际的安装路径或开发路径
-                app.path().resource_dir()?.join("ipadic").join("system.dic")
+                // 在 Tauri 2.0 中，使用 PathResolver 的 resolve 方法解析资源路径
+                app.path().resolve("../ipadic/system.dic", BaseDirectory::Resource)
+                    .or_else(|_| app.path().resolve("ipadic/system.dic", BaseDirectory::Resource))
+                    .or_else(|_| app.path().resolve("system.dic", BaseDirectory::Resource))
+                    .unwrap_or_else(|_| {
+                        let res_dir = app.path().resource_dir().unwrap_or_else(|_| PathBuf::from("."));
+                        res_dir.join("ipadic").join("system.dic")
+                    })
             }
         };
 
-        let dictionary_dir = data_dir.join("dicts");
+        // 开发构建直接使用仓库 data/dicts，确保真实外部词典参与流程；
+        // 安装构建仍使用应用数据目录，避免依赖源码路径。
+        let dictionary_dir = if env_data_dir.is_some() {
+            data_dir.join("dicts")
+        } else if cfg!(debug_assertions) {
+            let repository_dicts = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new("."))
+                .join("data")
+                .join("dicts");
+            if repository_dicts.is_dir() {
+                repository_dicts
+            } else {
+                data_dir.join("dicts")
+            }
+        } else {
+            data_dir.join("dicts")
+        };
         let profile_db = data_dir.join("user_profile.db");
         let grammar_patterns = data_dir.join("grammar_patterns.json");
 
         // A starter database is optional; user dictionaries are never overwritten.
         std::fs::create_dir_all(&dictionary_dir)?;
-        let starter = app.path().resource_dir()?.join("dicts").join("starter.sqlite");
-        if starter.exists() {
+        let starter = app.path().resolve("../data/dicts/starter.sqlite", BaseDirectory::Resource)
+            .or_else(|_| app.path().resolve("data/dicts/starter.sqlite", BaseDirectory::Resource))
+            .or_else(|_| app.path().resolve("dicts/starter.sqlite", BaseDirectory::Resource))
+            .or_else(|_| app.path().resolve("starter.sqlite", BaseDirectory::Resource))
+            .ok()
+            .filter(|p| p.exists());
+
+        if let Some(starter_path) = starter {
             let destination = dictionary_dir.join("starter.sqlite");
-            if !destination.exists() { std::fs::copy(starter, &destination)?; }
+            if !destination.exists() {
+                std::fs::copy(starter_path, &destination)?;
+            }
         }
 
         Ok(Self {

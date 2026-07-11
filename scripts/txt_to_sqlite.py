@@ -3,6 +3,11 @@ import os
 import sqlite3
 import unicodedata
 
+from dictionary_schema import SCHEMA_VERSION, ensure_schema, rebuild_search_tables
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 def normalize_reading(value):
     value = unicodedata.normalize('NFKC', value)
     return ''.join(chr(ord(c) + 0x60) if '\u3041' <= c <= '\u3096' else c for c in value)
@@ -20,6 +25,7 @@ def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
     print(f"Connecting to target SQLite database: {sqlite_path} ...")
     conn = sqlite3.connect(sqlite_path)
     cursor = conn.cursor()
+    ensure_schema(conn)
 
     # 1. 创建主表与精确查询索引
     cursor.execute('''
@@ -126,7 +132,9 @@ def convert_txt_to_sqlite(txt_path, sqlite_path, dict_name):
     # 4. 构建全文检索索引
     print("Building FTS5 full-text search index...")
     cursor.execute("INSERT INTO entries_fts(entries_fts) VALUES('rebuild')")
-    cursor.execute("INSERT INTO metadata(schema_version, source_name, imported_at) VALUES (2, ?, datetime('now'))", (dict_name,))
+    print("Building structured spelling and reading indexes...")
+    rebuild_search_tables(conn)
+    cursor.execute("INSERT INTO metadata(schema_version, source_name, imported_at) VALUES (?, ?, datetime('now'))", (SCHEMA_VERSION, dict_name))
     conn.commit()
     
     conn.close()

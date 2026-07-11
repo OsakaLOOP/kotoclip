@@ -1,0 +1,818 @@
+{
+  "source": "D:\\Downloads\\epub-exp\\source\\七日の喰い神 (ガガガ文庫) (カミツキレイニー)\\output.md",
+  "chapter": "## 第一話　冷やし神",
+  "selected_line_start": 1,
+  "selected_line_end": 2308,
+  "analyzed_nonempty_lines": 1142,
+  "analyzed_characters": 40046,
+  "lexical_occurrences": 9463,
+  "headword_matches": 8249,
+  "reading_matches": 810,
+  "unmatched": 404,
+  "coverage_rate": 0.9573074077987953,
+  "reconstruction_pass_rate": 1.0,
+  "range_integrity_pass_rate": 1.0,
+  "grammar_tags": 856,
+  "missed_lexemes": [
+    {
+      "base_form": "ラティメリア",
+      "reading": "*",
+      "surfaces": [
+        "ラティメリア"
+      ],
+      "occurrences": 137
+    },
+    {
+      "base_form": "マガツカミ",
+      "reading": "*",
+      "surfaces": [
+        "マガツカミ"
+      ],
+      "occurrences": 91
+    },
+    {
+      "base_form": "ー",
+      "reading": "*",
+      "surfaces": [
+        "ー"
+      ],
+      "occurrences": 6
+    },
+    {
+      "base_form": "ぃ",
+      "reading": "*",
+      "surfaces": [
+        "ぃ"
+      ],
+      "occurrences": 5
+    },
+    {
+      "base_form": "キャンディー",
+      "reading": "キャンディー",
+      "surfaces": [
+        "キャンディー"
+      ],
+      "occurrences": 5
+    },
+    {
+      "base_form": "ヒヤメリア",
+      "reading": "*",
+      "surfaces": [
+        "ヒヤメリア"
+      ],
+      "occurrences": 4
+    },
+    {
+      "base_form": "ミィ",
+      "reading": "*",
+      "surfaces": [
+        "ミィ"
+      ],
+      "occurrences": 4
+    },
+    {
+      "base_form": "ヤミー",
+      "reading": "*",
+      "surfaces": [
+        "ヤミー"
+      ],
+      "occurrences": 4
+    },
+    {
+      "base_form": "ってか",
+      "reading": "ッテカ",
+      "surfaces": [
+        "ってか"
+      ],
+      "occurrences": 3
+    },
+    {
+      "base_form": "つまみ上げる",
+      "reading": "ツマミアゲ",
+      "surfaces": [
+        "つまみ上げ"
+      ],
+      "occurrences": 3
+    },
+    {
+      "base_form": "どんなに",
+      "reading": "ドンナニ",
+      "surfaces": [
+        "どんなに"
+      ],
+      "occurrences": 3
+    },
+    {
+      "base_form": "もう一度",
+      "reading": "モウイチド",
+      "surfaces": [
+        "もう一度"
+      ],
+      "occurrences": 3
+    },
+    {
+      "base_form": "ゃあにゃあ",
+      "reading": "*",
+      "surfaces": [
+        "ゃあにゃあ"
+      ],
+      "occurrences": 3
+    },
+    {
+      "base_form": "ニタァ",
+      "reading": "*",
+      "surfaces": [
+        "ニタァ"
+      ],
+      "occurrences": 3
+    },
+    {
+      "base_form": "あまりに",
+      "reading": "アマリニ",
+      "surfaces": [
+        "あまりに"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "あー",
+      "reading": "アー",
+      "surfaces": [
+        "あー"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "ぅ",
+      "reading": "*",
+      "surfaces": [
+        "ぅ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "きょとん",
+      "reading": "キョトン",
+      "surfaces": [
+        "きょとん"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "ぐぐ",
+      "reading": "*",
+      "surfaces": [
+        "ぐぐ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "ぺたんと",
+      "reading": "*",
+      "surfaces": [
+        "ぺたんと"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "エイミー",
+      "reading": "*",
+      "surfaces": [
+        "エイミー"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "ターニャ",
+      "reading": "*",
+      "surfaces": [
+        "ターニャ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "ヤァ",
+      "reading": "*",
+      "surfaces": [
+        "ヤァ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "ヤァァァアミィ",
+      "reading": "*",
+      "surfaces": [
+        "ヤァァァアミィ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "ヤアミィ",
+      "reading": "*",
+      "surfaces": [
+        "ヤアミィ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "呆然と",
+      "reading": "ボウゼント",
+      "surfaces": [
+        "呆然と"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "心地よい",
+      "reading": "ココチヨカッ",
+      "surfaces": [
+        "心地よかっ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "炎天下",
+      "reading": "エンテンカ",
+      "surfaces": [
+        "炎天下"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "窺える",
+      "reading": "ウカガエル",
+      "surfaces": [
+        "窺える"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "見渡せる",
+      "reading": "ミワタセ",
+      "surfaces": [
+        "見渡せ"
+      ],
+      "occurrences": 2
+    },
+    {
+      "base_form": "yummy",
+      "reading": "*",
+      "surfaces": [
+        "yummy"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ありがと",
+      "reading": "アリガト",
+      "surfaces": [
+        "ありがと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "あんなに",
+      "reading": "アンナニ",
+      "surfaces": [
+        "あんなに"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぃぃ",
+      "reading": "*",
+      "surfaces": [
+        "ぃぃ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぃってさ",
+      "reading": "*",
+      "surfaces": [
+        "ぃってさ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "いかんせん",
+      "reading": "イカンセン",
+      "surfaces": [
+        "いかんせん"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "いつの間にか",
+      "reading": "イツノマニカ",
+      "surfaces": [
+        "いつの間にか"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぅうっ",
+      "reading": "*",
+      "surfaces": [
+        "ぅうっ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぅわぁぁぁああん",
+      "reading": "*",
+      "surfaces": [
+        "ぅわぁぁぁああん"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぇ",
+      "reading": "*",
+      "surfaces": [
+        "ぇ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぇぇっ",
+      "reading": "*",
+      "surfaces": [
+        "ぇぇっ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぉぉっ",
+      "reading": "*",
+      "surfaces": [
+        "ぉぉっ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "おぉ",
+      "reading": "オォ",
+      "surfaces": [
+        "おぉ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "おーい",
+      "reading": "オーイ",
+      "surfaces": [
+        "おーい"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "お喋り",
+      "reading": "オシヤベリ",
+      "surfaces": [
+        "お喋り"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "かくれんぼ",
+      "reading": "カクレンボ",
+      "surfaces": [
+        "かくれんぼ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぎゅうっと",
+      "reading": "ギュウット",
+      "surfaces": [
+        "ぎゅうっと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぐっ",
+      "reading": "*",
+      "surfaces": [
+        "ぐっ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぐにゃりと",
+      "reading": "*",
+      "surfaces": [
+        "ぐにゃりと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぐふっ",
+      "reading": "グフッ",
+      "surfaces": [
+        "ぐふっ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ざけんなあっ",
+      "reading": "*",
+      "surfaces": [
+        "ざけんなあっ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "そういや",
+      "reading": "ソウイヤ",
+      "surfaces": [
+        "そういや"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "そびえ立つ",
+      "reading": "ソビエタッ",
+      "surfaces": [
+        "そびえ立っ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "そろりと",
+      "reading": "ソロリト",
+      "surfaces": [
+        "そろりと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "つるりと",
+      "reading": "ツルリト",
+      "surfaces": [
+        "つるりと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "とめどない",
+      "reading": "トメドナク",
+      "surfaces": [
+        "とめどなく"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "とんでも",
+      "reading": "トンデモ",
+      "surfaces": [
+        "とんでも"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ふふふ",
+      "reading": "フフフ",
+      "surfaces": [
+        "ふふふ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぶらりと",
+      "reading": "ブラリト",
+      "surfaces": [
+        "ぶらりと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぷい",
+      "reading": "*",
+      "surfaces": [
+        "ぷい"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぷるんと",
+      "reading": "*",
+      "surfaces": [
+        "ぷるんと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ぼーっと",
+      "reading": "ボーット",
+      "surfaces": [
+        "ぼーっと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "むっ",
+      "reading": "*",
+      "surfaces": [
+        "むっ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゃあ",
+      "reading": "*",
+      "surfaces": [
+        "ゃあ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゃあにゃあと",
+      "reading": "*",
+      "surfaces": [
+        "ゃあにゃあと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゃう",
+      "reading": "*",
+      "surfaces": [
+        "ゃう"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゃないわ",
+      "reading": "*",
+      "surfaces": [
+        "ゃないわ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "やって来る",
+      "reading": "ヤッテキ",
+      "surfaces": [
+        "やって来"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ょい",
+      "reading": "*",
+      "surfaces": [
+        "ょい"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "よくもまあ",
+      "reading": "ヨクモマア",
+      "surfaces": [
+        "よくもまあ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "イィエエアアアアアアアアッ",
+      "reading": "*",
+      "surfaces": [
+        "イィエエアアアアアアアアッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "オァアアアアアアアアッ",
+      "reading": "*",
+      "surfaces": [
+        "オァアアアアアアアアッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "オオォォォォォオォオオオッ",
+      "reading": "*",
+      "surfaces": [
+        "オオォォォォォオォオオオッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "キュッ",
+      "reading": "*",
+      "surfaces": [
+        "キュッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゴォォォオッォォ",
+      "reading": "*",
+      "surfaces": [
+        "ゴォォォオッォォ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゴキッ",
+      "reading": "*",
+      "surfaces": [
+        "ゴキッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゴスッ",
+      "reading": "*",
+      "surfaces": [
+        "ゴスッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ゴッ",
+      "reading": "*",
+      "surfaces": [
+        "ゴッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ザーザーと",
+      "reading": "ザーザート",
+      "surfaces": [
+        "ザーザーと"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ズゥゥウウウウウッ",
+      "reading": "*",
+      "surfaces": [
+        "ズゥゥウウウウウッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ズォォォオオオッ",
+      "reading": "*",
+      "surfaces": [
+        "ズォォォオオオッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ズダンッ",
+      "reading": "*",
+      "surfaces": [
+        "ズダンッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ターニャッ",
+      "reading": "*",
+      "surfaces": [
+        "ターニャッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ダブルバーガー",
+      "reading": "*",
+      "surfaces": [
+        "ダブルバーガー"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "チィン",
+      "reading": "*",
+      "surfaces": [
+        "チィン"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "チラ",
+      "reading": "*",
+      "surfaces": [
+        "チラ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ドゥン",
+      "reading": "*",
+      "surfaces": [
+        "ドゥン"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ドーナッ",
+      "reading": "*",
+      "surfaces": [
+        "ドーナッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ナットゥー",
+      "reading": "*",
+      "surfaces": [
+        "ナットゥー"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ナットー",
+      "reading": "*",
+      "surfaces": [
+        "ナットー"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "バイーン",
+      "reading": "*",
+      "surfaces": [
+        "バイーン"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "バサァ",
+      "reading": "*",
+      "surfaces": [
+        "バサァ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ピカッ",
+      "reading": "*",
+      "surfaces": [
+        "ピカッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ピリ",
+      "reading": "*",
+      "surfaces": [
+        "ピリ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ミャ",
+      "reading": "*",
+      "surfaces": [
+        "ミャ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ヤァァァアアアアアアアアアアァアアミィィィイイッ",
+      "reading": "*",
+      "surfaces": [
+        "ヤァァァアアアアアアアアアアァアアミィィィイイッ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ヤァアミィ",
+      "reading": "*",
+      "surfaces": [
+        "ヤァアミィ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ヤァアミィィイ",
+      "reading": "*",
+      "surfaces": [
+        "ヤァアミィィイ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ヤァミィ",
+      "reading": "*",
+      "surfaces": [
+        "ヤァミィ"
+      ],
+      "occurrences": 1
+    },
+    {
+      "base_form": "ヤァミィッ",
+      "reading": "*",
+      "surfaces": [
+        "ヤァミィッ"
+      ],
+      "occurrences": 1
+    }
+  ]
+}

@@ -2,6 +2,11 @@ import sys
 import os
 import sqlite3
 
+from dictionary_schema import SCHEMA_VERSION, ensure_schema, rebuild_search_tables
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 # 尝试导入 readmdict。如果在用户环境中没有安装，将会在运行时报错并引导用户安装。
 try:
     from readmdict import MDX
@@ -23,6 +28,7 @@ def convert_mdx_to_sqlite(mdx_path, sqlite_path, dict_name):
     print(f"正在连接目标 SQLite 数据库: {sqlite_path} ...")
     conn = sqlite3.connect(sqlite_path)
     cursor = conn.cursor()
+    ensure_schema(conn)
 
     # 1. 创建词条主表与精确索引
     cursor.execute('''
@@ -112,7 +118,9 @@ def convert_mdx_to_sqlite(mdx_path, sqlite_path, dict_name):
     # 5. 执行 FTS5 rebuild 以填充虚拟表 (若初次建表导入)
     print("正在构建 FTS5 全文检索索引...")
     cursor.execute("INSERT INTO entries_fts(entries_fts) VALUES('rebuild')")
-    cursor.execute("INSERT INTO metadata(schema_version, source_name, imported_at) VALUES (2, ?, datetime('now'))", (dict_name,))
+    print("正在构建表记与读音索引...")
+    rebuild_search_tables(conn)
+    cursor.execute("INSERT INTO metadata(schema_version, source_name, imported_at) VALUES (?, ?, datetime('now'))", (SCHEMA_VERSION, dict_name))
     conn.commit()
     
     conn.close()
