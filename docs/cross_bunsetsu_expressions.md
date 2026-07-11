@@ -1,0 +1,322 @@
+# 跨文节表达模块完整设计与迭代指南
+
+## 1. 模块目的
+
+本模块识别和保存跨越两个以上文节、但整体具有固定或半固定含义的日语表达。
+
+典型对象：
+
+- `有無を｜言わさず`
+- `されていたのにも｜かかわらず`
+- `兄に｜負けるところが｜多い`
+- `食料に｜すぎない`
+- `何が｜何でも`
+
+模块不负责以下对象：
+
+- 已经完整位于一个文节内的语法，如当前 Pipeline 中的 `ない限り`、`からには`。
+- 普通的任意相邻文节组合。
+- 改写 Vibrato 的文节或形态素边界。
+- 词典词头合并。`警察署`、`はぐれ者` 等由词典边界层负责。
+- 非连续表达的最终识别。`どんなに…たところで` 等需要后续 NFA。
+
+核心原则是：表达层只增加语义关系，不破坏 NLP、词典和字符范围的原始结果。
+
+## 2. 当前实现入口
+
+| 入口 | 职责 |
+| --- | --- |
+| `crates/kotoclip-core/resources/expression_patterns.json` | 内置连续表达目录 |
+| `crates/kotoclip-core/src/pipeline/expressions.rs` | 跨文节语素状态机 |
+| `crates/kotoclip-core/src/profile/expressions.rs` | 用户表达持久化、归一化和自动应用 |
+| `crates/kotoclip-core/src/models.rs` | 表达规则、模式片段和命中注解模型 |
+| `crates/kotoclip-core/src/lib.rs` | 内置与用户表达接入正式分析顺序 |
+| `src/components/ExpressionRuleEditor.vue` | 拖拽后的命名、说明和槽位编辑 |
+| `src/components/ExpressionRulesPanel.vue` | 用户表达查看与删除 |
+| `src/components/BunsetsuCapsule.vue` | 表达范围、连接带和标签渲染 |
+| `crates/kotoclip-core/src/bin/kotoclip-cli.rs` | 表达观察、扫描、添加和 REPL |
+
+## 3. 数据模型
+
+### 3.1 `ExpressionAnnotation`
+
+每次实际命中都会向相关 `AnnotatedToken.expressions` 附加注解：
+
+- `match_id`：一次命中的稳定标识。
+- `rule_id`：用户 SQLite 规则 ID；内置规则使用负数 ID。
+- `label`：正文旁显示的短标签。
+- `description`：整体含义或使用条件，不是逐词翻译。
+- `origin`：`builtin` 或 `custom`。
+- `position`：`start`、`middle`、`end` 或 `single`。
+- `token_range`：半开 token 范围。
+- `char_range`：半开字符范围，可从文节内部的语素开始或结束。
+- `surface`：本次实际匹配到的表层文本。
+
+`token_range` 用于跨胶囊连接；`char_range` 用于只标记真正属于表达的语素。例如 `兄に｜負けるところが｜多い` 的表达字符范围从助词 `に` 开始，不包含参数 `兄`。
+
+### 3.2 用户规则
+
+`ExpressionRule` 包含：
+
+- `label`、`description`、`origin`、`created_at`。
+- 一个或多个 `ExpressionPatternPart`。
+
+每个 `ExpressionPatternPart` 对应一个文节：
+
+- `lemmas`：该文节结构语素的辞书形序列。
+- `pos`：与辞书形一一对应的词性序列。
+- `surface_hint`：只供用户理解，不参与结构相等判断。
+- `is_slot`：是否为可变槽位。
+
+槽位不等于无约束通配。槽位忽略具体辞书形，但仍要求词性与助词序列相同。例如 `{名詞＋を}` 可以从 `何を` 复用到 `仕事を`，不会匹配 `仕事が`。
+
+## 4. 正式分析流程
+
+当前顺序如下：
+
+1. 去除并记录作者振假名。
+2. Vibrato 形态素分析。
+3. 文节组块。
+4. 文节内语法匹配。
+5. 应用已选择的 N-best 文节内语素方案。
+6. 外部词典校正词汇边界。
+7. 用户画像评分。
+8. 应用用户跨文节表达规则。
+9. 应用内置跨文节表达状态机。
+10. 记录曝光。
+
+历史 `user_merge_rules` 不再进入正式 Pipeline。旧表和 API 暂时保留用于兼容旧数据，但不会继续改变文节边界。
+
+## 5. 内置连续表达状态机
+
+### 5.1 输入展开
+
+状态机把全部 `AnnotatedToken` 展开为连续语素流。每个扁平语素保留：
+
+- 所属 token 索引。
+- 表层形与辞书形。
+- 主词性。
+- 全局字符范围。
+
+空白语素被跳过，标点仍保留，因此模式不会无意跨过标点。
+
+### 5.2 atom 匹配
+
+目录中的一个 atom 可指定：
+
+- 一个或多个允许的辞书形。
+- 可选主词性。
+- 省略辞书形时，成为受词性约束的槽位。例如任意动词接 `間もなく`。
+
+所有 atom 必须在扁平语素流中连续匹配。只有命中跨越至少两个 token 时，才作为跨文节表达返回。
+
+### 5.3 范围重建
+
+状态机使用首末命中语素计算精确 `char_range`，再根据所属 token 计算 `token_range`。因此模式可以从一个文节内部的助词开始，而 UI 仍能连接整个涉及的文节。
+
+### 5.4 内置目录格式
+
+```json
+{
+  "id": "concessive_nimo_kakawarazu",
+  "label": "にもかかわらず",
+  "description": "前项事实成立，却出现与通常预期相反或不受其影响的后项。",
+  "category": "让步",
+  "atoms": [
+    { "lemmas": ["に"], "pos": "助詞" },
+    { "lemmas": ["も"], "pos": "助詞" },
+    { "lemmas": ["かかわる", "関わる"], "pos": "動詞" },
+    { "lemmas": ["ぬ"], "pos": "助動詞" }
+  ]
+}
+```
+
+辞书形变体必须来自实际 Pipeline 观察。例如 IPADIC 把 `言わさず` 分析为 `言わす＋ぬ`，目录同时允许必要的变体，但不应用宽泛表面模糊匹配替代语法判断。
+
+## 6. 用户规则匹配
+
+### 6.1 规则创建
+
+阅读页横向拖过两个以上胶囊后打开编辑器。用户必须确认：
+
+- 短标签。
+- 整体含义或使用条件。
+- 哪些文节是可变槽位。
+
+保存时从每个文节提取辞书形和词性签名，并写入 `user_expression_rules`。
+
+### 6.2 结构归一化
+
+为了跨活用复用，签名进行有限归一化：
+
+- `た`、`ます` 视为时态或礼貌尾，不限定表达模板。
+- `だ`、`です` 统一为 `<copula>`。
+- 句末 `か`、`ね`、`よ` 不限定模板。
+- 否定等会改变意义的形式继续保留。
+- `surface_hint` 永不参与匹配。
+
+该归一化只服务人工规则，不替代完整日语语法分析。
+
+### 6.3 重叠规则
+
+当前允许多个表达重叠。这样可以同时观察较长句式和其中的短固定表达。UI 默认以首个注解决定连接带主样式，但模型保留全部注解。
+
+后续若出现视觉拥挤，应增加显示优先级，而不是在核心层丢弃重叠命中。
+
+## 7. SQLite 结构
+
+```sql
+CREATE TABLE user_expression_rules (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    label        TEXT NOT NULL,
+    description  TEXT NOT NULL DEFAULT '',
+    origin       TEXT NOT NULL DEFAULT 'custom',
+    pattern_json TEXT NOT NULL UNIQUE,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+
+相同 `pattern_json` 再次保存时更新标签和说明，不生成重复规则。开发期旧表缺列时，初始化过程会执行兼容迁移。
+
+## 8. UI 逻辑
+
+### 8.1 创建
+
+- 拖拽只能在同一段落内进行。
+- 已知词可以参与表达；标点不能作为拖拽端点。
+- 松开后不立即保存，而是进入表达编辑器。
+- 保存后重新分析原文，使自动匹配结果成为正式后端输出。
+
+### 8.2 展示
+
+- 文节胶囊保持原大小。
+- 涉及的 token 下方使用细连接带。
+- 真正命中的语素使用紫色点状下划线。
+- 首 token 显示短标签，悬停标题显示整体说明。
+- E-ink 模式改用黑色细线和边框标签。
+
+### 8.3 管理
+
+顶部“表达式”入口打开规则侧栏。侧栏显示标签、原始选择提示、槽位和整体说明，并支持删除。删除后当前文本重新分析，旧注解立即消失。
+
+## 9. CLI 研究流程
+
+### 9.1 查看一个句子的真实文节和签名
+
+```powershell
+cargo run -p kotoclip-core --bin kotoclip-cli -- expression-preview \
+  --profile D:\tmp\expression.sqlite \
+  --text "有無を言わさず拘束された。"
+```
+
+### 9.2 扫描指定章节的已有表达
+
+```powershell
+cargo run -p kotoclip-core --bin kotoclip-cli -- expression-scan \
+  --profile D:\tmp\expression.sqlite \
+  --source "D:\Downloads\epub-exp\source\七日の喰い神 (ガガガ文庫) (カミツキレイニー)\output.md" \
+  --chapter "## 第一話　冷やし神"
+```
+
+### 9.3 保存人工规则
+
+```powershell
+cargo run -p kotoclip-core --bin kotoclip-cli -- expression-add \
+  --profile D:\tmp\expression.sqlite \
+  --text "示例文本" \
+  --start-token 1 --end-token 3 \
+  --slots 0 \
+  --label "短标签" \
+  --description "整体意义与适用条件"
+```
+
+### 9.4 REPL
+
+```powershell
+cargo run -p kotoclip-core --bin kotoclip-cli -- expression-repl \
+  --profile D:\tmp\expression.sqlite
+```
+
+REPL 使用 `analyze`、`select`、`rules`、`delete`、`show` 和 `quit` 反复观察、保存和撤销。
+
+## 10. 当前真实文本证据
+
+第一话全章当前命中 10 次、9 种表达：
+
+- `有無を｜言わさず`
+- `休む｜間もなく`
+- `食料に｜すぎない`
+- `にも｜かかわらず`
+- `こと｜なく`，在两个不同句子中复现。
+- `に｜しては`
+- `何が｜何でも`
+- `目も｜くれず`
+- `なすが｜ままに`
+
+这些命中用于证明模块可工作，不表示目录已经覆盖全部跨文节表达。
+
+## 11. 添加内置表达的判定标准
+
+新增目录项前应依次确认：
+
+1. 整体是否具有稳定意义或关系功能，而非任意相邻短语。
+2. 当前 Vibrato/IPADIC 是否确实将其分到两个以上文节。
+3. 表达本体从哪个语素开始，前接名词是否只是参数。
+4. 辞书形是否存在 IPADIC 特有分析，需要哪些实证变体。
+5. 是否连续。非连续表达不要强塞进当前连续状态机。
+6. 是否会与更短规则重叠，重叠是否有解释价值。
+7. 至少在真实上下文中用 `expression-preview` 和 `expression-scan` 人工阅读。
+
+## 12. 已知限制
+
+- 内置目录每次分析按连续 atom 匹配，不支持任意间隙、可选分支或否定约束。
+- 用户规则以整文节为 part，不能在编辑器中只选择文节内部的部分语素。
+- 用户槽位只使用词性序列，不支持命名捕获和跨 part 一致性约束。
+- 内置与用户规则没有统一的版本、优先级和禁用机制。
+- 当前侧栏只管理用户规则，内置目录不可在 UI 中关闭。
+- 重叠表达的视觉层次仍是初版。
+- 整体说明由规则作者维护，尚无来源、例句或可信度字段。
+
+## 13. 后续方向
+
+### 优先级 A：非连续 NFA
+
+为 `どんなに…たところで` 等表达增加：
+
+- 有界间隙，例如允许 1 到 8 个文节。
+- 可选 atom 和分支。
+- 命名捕获，如前项、比较对象、结果项。
+- 终止条件，禁止跨句号和段落。
+- 最长优先、最具体优先的冲突策略。
+
+该 NFA 应作为表达模块扩展，不应伪装成 Vibrato 分词候选。
+
+### 优先级 B：目录治理
+
+- 为内置目录增加 `version`、`priority`、`examples`、`source`、`confidence`。
+- 支持用户禁用某个内置规则或记录误匹配。
+- 提供 JSON 导入、导出和 schema 校验。
+- 按语言功能分类浏览：让步、限定、比较、时间、固定表达等。
+
+### 优先级 C：交互清洗
+
+- 点击表达连接带打开完整说明和实际捕获内容。
+- 提供“正确、范围错误、不是表达”反馈。
+- 把负反馈存成按上下文签名的抑制规则，而非直接删除内置模式。
+- 在章节扫描 CLI 中支持接受、拒绝、修改范围和直接生成目录草案。
+
+### 优先级 D：与其他模块协同
+
+- 用 N-best 替代路径检查表达为何未命中，但不自动采用高成本路径。
+- 用词典验证固定名词部分，词典读音不参与同音猜测。
+- 将表达整体释义加入导出上下文。
+- 画像可记录“表达已知/未知”，但不要与单词曝光次数混为同一指标。
+
+## 14. 维护注意事项
+
+- 不要重新启用旧文节合并规则来实现表达。
+- 不要用整句正则直接操作原始 Markdown；先使用 ruby 预处理和正式 Pipeline 范围。
+- 不要让 `surface_hint` 参与匹配。
+- 不要用机械命中数量声称语义正确率。
+- 修改目录后优先用实际小说行进行交互阅读，并记录误匹配上下文。
+
