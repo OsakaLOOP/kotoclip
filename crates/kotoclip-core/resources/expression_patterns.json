@@ -116,5 +116,220 @@
         { "lemmas": ["に"], "pos": "助詞" }
       ]
     }
+  ],
+  "correlative_patterns": [
+    {
+      "id": "simile_marude",
+      "label": "まるで〜ようだ",
+      "description": "将某事物比作另一事物；中间为比喻内容。",
+      "category": "比喻呼应",
+      "head_atoms": [
+        { "lemmas": ["まるで"], "pos": "副詞" }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["よう"] }],
+        [{ "lemmas": ["よう"] }, { "lemmas": ["だ"] }],
+        [{ "lemmas": ["よう"] }, { "lemmas": ["に"] }],
+        [{ "lemmas": ["よう"] }, { "lemmas": ["な"] }],
+        [{ "lemmas": ["みたい"] }],
+        [{ "lemmas": ["みたい"] }, { "lemmas": ["だ"] }],
+        [{ "lemmas": ["みたい"] }, { "lemmas": ["に"] }],
+        [{ "lemmas": ["みたい"] }, { "lemmas": ["な"] }],
+        [{ "lemmas": ["か"] }, { "lemmas": ["の"] }, { "lemmas": ["よう"] }],
+        [{ "lemmas": ["か"] }, { "lemmas": ["の"] }, { "lemmas": ["よう"] }, { "lemmas": ["だ"] }],
+        [{ "lemmas": ["か"] }, { "lemmas": ["の"] }, { "lemmas": ["よう"] }, { "lemmas": ["に"] }],
+        [{ "lemmas": ["か"] }, { "lemmas": ["の"] }, { "lemmas": ["よう"] }, { "lemmas": ["な"] }]
+      ],
+      "gap_bunsetsu": [0, 12]
+    },
+    {
+      "id": "simile_sanagara",
+      "label": "さながら〜ように",
+      "description": "恰似、宛如某状态或场景。",
+      "category": "比喻呼应",
+      "head_atoms": [
+        { "lemmas": ["さながら"], "pos": "副詞" }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["よう"] }],
+        [{ "lemmas": ["よう"] }, { "lemmas": ["だ"] }],
+        [{ "lemmas": ["よう"] }, { "lemmas": ["に"] }],
+        [{ "lemmas": ["よう"] }, { "lemmas": ["な"] }],
+        [{ "lemmas": ["ごとく"] }],
+        [{ "lemmas": ["ごとし"] }]
+      ],
+      "gap_bunsetsu": [0, 12]
+    },
+    {
+      "id": "rhetorical_ittai",
+      "label": "一体〜か",
+      "description": "强调疑问或反问语气；到底、究竟如何。",
+      "category": "究竟呼应",
+      "head_atoms": [
+        { "lemmas": ["一体", "いったい"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["か"] }],
+        [{ "lemmas": ["の"] }, { "lemmas": ["か"] }],
+        [{ "lemmas": ["だろ"] }, { "lemmas": ["う"] }],
+        [{ "lemmas": ["だ"] }, { "lemmas": ["ろう"] }],
+        [{ "lemmas": ["だ"] }],
+        [{ "lemmas": ["な"] }, { "lemmas": ["だ"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "concessive_donnani",
+      "label": "どんなに〜ても",
+      "description": "表示无论怎样做前项，后项结果均不改变。",
+      "category": "让步呼应",
+      "head_atoms": [
+        { "lemmas": ["どんなに"], "pos": "副詞" }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["て"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["で"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["として"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["た"] }, { "lemmas": ["ところ"] }, { "lemmas": ["で"] }],
+        [{ "lemmas": ["だ"] }, { "lemmas": ["ところ"] }, { "lemmas": ["で"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "concessive_ikura",
+      "label": "いくら〜ても",
+      "description": "表示无论多么频繁或程度多么深，也无济于事。",
+      "category": "让步呼应",
+      "head_atoms": [
+        { "lemmas": ["いくら"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["て"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["で"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["として"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["た"] }, { "lemmas": ["って"] }],
+        [{ "lemmas": ["だ"] }, { "lemmas": ["って"] }],
+        [{ "lemmas": ["たって"] }],
+        [{ "lemmas": ["だって"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "concessive_tatoe",
+      "label": "たとえ〜ても",
+      "description": "假设一种极端的让步条件：即使、纵然……也。",
+      "category": "让步呼应",
+      "head_atoms": [
+        { "lemmas": ["たとえ", "たとい"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["て"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["で"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["として"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["た"] }, { "lemmas": ["って"] }],
+        [{ "lemmas": ["だ"] }, { "lemmas": ["って"] }],
+        [{ "lemmas": ["たって"] }],
+        [{ "lemmas": ["だって"] }],
+        [{ "lemmas": ["と"] }, { "lemmas": ["し"] }, { "lemmas": ["て"] }, { "lemmas": ["も"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "interrogative_doushite",
+      "label": "どうして〜のか",
+      "description": "询问原因或表示反问：为什么、怎么会……呢。",
+      "category": "疑问呼应",
+      "head_atoms": [
+        { "lemmas": ["どうして"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["か"] }],
+        [{ "lemmas": ["の"] }, { "lemmas": ["か"] }],
+        [{ "lemmas": ["だろ"] }, { "lemmas": ["う"] }],
+        [{ "lemmas": ["だ"] }, { "lemmas": ["ろう"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "negative_kesshite",
+      "label": "決して〜ない",
+      "description": "表示强烈的否定意志或客观事实：决不、绝对不。",
+      "category": "否定呼应",
+      "head_atoms": [
+        { "lemmas": ["決して"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["ない"] }],
+        [{ "lemmas": ["ぬ"] }],
+        [{ "lemmas": ["ず"] }],
+        [{ "lemmas": ["まい"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "negative_zettaini",
+      "label": "絶対に〜ない",
+      "description": "断定在任何情况下都不会发生某事：绝对不。",
+      "category": "否定呼应",
+      "head_atoms": [
+        { "lemmas": ["絶対", "ぜったい"] },
+        { "lemmas": ["に"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["ない"] }],
+        [{ "lemmas": ["ぬ"] }],
+        [{ "lemmas": ["ず"] }],
+        [{ "lemmas": ["まい"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "negative_totemo",
+      "label": "とても〜ない",
+      "description": "表示能力或状况上怎么也无法做到：怎么也（无法）……。",
+      "category": "否定呼应",
+      "head_atoms": [
+        { "lemmas": ["とても"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["ない"] }],
+        [{ "lemmas": ["ぬ"] }],
+        [{ "lemmas": ["ず"] }],
+        [{ "lemmas": ["思え"] }, { "lemmas": ["ない"] }],
+        [{ "lemmas": ["思わ"] }, { "lemmas": ["ぬ"] }],
+        [{ "lemmas": ["そう"] }, { "lemmas": ["に"] }, { "lemmas": ["ない"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "surprise_masaka",
+      "label": "まさか〜とは",
+      "description": "表示对出乎意料的事情感到震惊或否认：没想到、该不会……吧。",
+      "category": "惊异呼应",
+      "head_atoms": [
+        { "lemmas": ["まさか"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["と"] }, { "lemmas": ["は"] }],
+        [{ "lemmas": ["ない"] }, { "lemmas": ["の"] }, { "lemmas": ["か"] }],
+        [{ "lemmas": ["まい"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    },
+    {
+      "id": "minimal_semete",
+      "label": "せめて〜よう",
+      "description": "表示哪怕是最低限度也希望实现某种主观愿望：哪怕是……也想。",
+      "category": "期许呼应",
+      "head_atoms": [
+        { "lemmas": ["せめて"] }
+      ],
+      "tail_variants": [
+        [{ "lemmas": ["よう"] }],
+        [{ "lemmas": ["う"] }],
+        [{ "lemmas": ["たい"] }]
+      ],
+      "gap_bunsetsu": [0, 10]
+    }
   ]
 }

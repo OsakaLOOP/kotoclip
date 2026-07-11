@@ -112,6 +112,8 @@ impl Engine {
         // 跨文节表达是独立注解层：画像评分完成后应用，不重写 NLP 文节结构。
         self.profile.apply_expression_rules(&mut annotated)?;
         pipeline::expressions::apply_builtin_expressions(&mut annotated);
+        pipeline::expressions::apply_dictionary_expressions(&mut annotated, &self.dictionary);
+        pipeline::expressions::apply_correlative_expressions(&mut annotated);
         if record_exposure {
             self.profile.record_token_exposures_with_progress(&annotated, |completed, total| {
                 let percent = 97 + ((completed * 2 / total.max(1)) as u8);
