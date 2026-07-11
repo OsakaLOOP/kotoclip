@@ -56,6 +56,9 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- nbest-repl --top-n 5
 
 # 跨文节表达章节扫描
 cargo run -p kotoclip-core --bin kotoclip-cli -- expression-scan --profile data/research-profile.sqlite --source output.md --chapter "## 第一話　冷やし神"
+
+# 交互运行端到端阅读器后端耗时诊断（默认复制临时画像库，不写入真实曝光）
+.\scripts\reader_load_benchmark.ps1
 ```
 
 章节覆盖率审计支持 `--chapter`、`--page-lines`、`--page`、`--start-line`、`--line-count` 和 `--sample-every`。完整参数见：

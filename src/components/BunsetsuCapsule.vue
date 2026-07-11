@@ -7,7 +7,22 @@ const props = defineProps<{
   paragraphId: number;
   tokenIndex: number;
   isDragSelected: boolean;
+  tokens?: AnnotatedToken[];
 }>();
+
+const hasSentencePause = computed(() => {
+  if (!props.tokens || props.token.display_class !== "content") return false;
+  const index = props.tokenIndex;
+  let i = index - 1;
+  let foundPuncs: AnnotatedToken[] = [];
+  while (i >= 0 && props.tokens[i].display_class === "punctuation") {
+    foundPuncs.unshift(props.tokens[i]);
+    i--;
+  }
+  if (foundPuncs.length === 0) return false;
+  const puncStr = foundPuncs.map(t => t.bunsetsu.surface).join("");
+  return /[。！？…].*$/.test(puncStr);
+});
 
 // 根据生词得分和状态计算 CSS 类
 const capsuleClasses = computed(() => {
@@ -16,9 +31,17 @@ const capsuleClasses = computed(() => {
     ? { "has-expression": true, [`expression-${t.expressions[0].position}`]: true }
     : {};
   
+  // 换行符特殊处理
+  if (t.display_class === "line_break") {
+    return {
+      "bunsetsu-capsule": true,
+      "line-break": true,
+      ...expressionClasses,
+    };
+  }
+
   // 标点符号特殊处理
-  const isPunc = t.bunsetsu.morphemes.length === 1 && t.bunsetsu.morphemes[0].pos.major === "記号";
-  if (isPunc) {
+  if (t.display_class === "punctuation") {
     return {
       "bunsetsu-capsule": true,
       "punctuation": true,
@@ -31,6 +54,9 @@ const capsuleClasses = computed(() => {
     return {
       "bunsetsu-capsule": true,
       "is-known": true,
+      "is-selected": t.is_selected,
+      "drag-over": props.isDragSelected,
+      "sentence-pause-before": hasSentencePause.value,
       ...expressionClasses,
     };
   }
@@ -47,6 +73,7 @@ const capsuleClasses = computed(() => {
     [noveltyClass]: true,
     "is-selected": t.is_selected,
     "drag-over": props.isDragSelected,
+    "sentence-pause-before": hasSentencePause.value,
     ...expressionClasses,
   };
 });
@@ -94,7 +121,7 @@ function isExpressionMorpheme(index: number) {
 
 <template>
   <span
-    :class="capsuleClasses"
+    :class="[capsuleClasses, { 'has-headword': headMorphemeIndices.size > 0 }]"
     :data-paragraph-id="paragraphId"
     :data-token-index="tokenIndex"
   >
@@ -102,6 +129,7 @@ function isExpressionMorpheme(index: number) {
     <span
       v-for="(m, idx) in token.bunsetsu.morphemes"
       :key="idx"
+      :data-morpheme-index="idx"
       :class="{ 'head-word-highlight': isHeadMorpheme(idx), 'helper-word': !isHeadMorpheme(idx), 'grammar-match': isGrammarMorpheme(idx), 'expression-anchor': isExpressionMorpheme(idx) }"
     >
       {{ m.surface }}

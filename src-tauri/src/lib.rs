@@ -1,10 +1,10 @@
+pub mod commands;
 pub mod paths;
 pub mod state;
-pub mod commands;
 
-use std::sync::Mutex;
-use state::AppState;
 use kotoclip_core::Engine;
+use state::AppState;
+use std::sync::Mutex;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -43,6 +43,7 @@ pub fn run() {
             commands::add_merge_rule,
             commands::add_expression_rule,
             commands::get_expression_rules,
+            commands::refresh_expression_annotations,
             commands::delete_expression_rule,
             commands::split_token,
             commands::get_candidates,

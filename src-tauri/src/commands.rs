@@ -1,10 +1,10 @@
-use serde::Serialize;
-use tauri::{Emitter, State, Window};
 use crate::state::AppState;
 use kotoclip_core::analysis_progress::AnalysisProgress;
 use kotoclip_core::models::{
     AnnotatedToken, DictEntry, ExportEntry, ExpressionRule, SegmentationCandidate,
 };
+use serde::Serialize;
+use tauri::{Emitter, State, Window};
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,7 +58,9 @@ pub async fn mark_known(
     reading: String,
 ) -> Result<(), String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    engine.mark_known(&base_form, &reading).map_err(|e| e.to_string())
+    engine
+        .mark_known(&base_form, &reading)
+        .map_err(|e| e.to_string())
 }
 
 /// IPC 命令：主动标记单词为“未知”
@@ -69,15 +71,14 @@ pub async fn mark_unknown(
     reading: String,
 ) -> Result<(), String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    engine.mark_unknown(&base_form, &reading).map_err(|e| e.to_string())
+    engine
+        .mark_unknown(&base_form, &reading)
+        .map_err(|e| e.to_string())
 }
 
 /// IPC 命令：手动合并相邻胶囊分词并注册至本地自定义数据库中
 #[tauri::command]
-pub async fn add_merge_rule(
-    state: State<'_, AppState>,
-    parts: Vec<String>,
-) -> Result<(), String> {
+pub async fn add_merge_rule(state: State<'_, AppState>, parts: Vec<String>) -> Result<(), String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     engine.add_merge_rule(&parts).map_err(|e| e.to_string())
 }
@@ -89,7 +90,9 @@ pub async fn add_expression_rule(
     tokens: Vec<AnnotatedToken>,
     label: Option<String>,
     description: Option<String>,
-    slot_indices: Vec<usize>,
+    bunsetsu_states: Vec<String>,
+    morpheme_masks: Vec<Vec<bool>>,
+    gap_after: Option<usize>,
 ) -> Result<ExpressionRule, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     engine
@@ -97,7 +100,9 @@ pub async fn add_expression_rule(
             &tokens,
             label.as_deref(),
             description.as_deref(),
-            &slot_indices,
+            &bunsetsu_states,
+            &morpheme_masks,
+            gap_after,
         )
         .map_err(|e| e.to_string())
 }
@@ -111,10 +116,18 @@ pub async fn get_expression_rules(
 }
 
 #[tauri::command]
-pub async fn delete_expression_rule(
+pub async fn refresh_expression_annotations(
     state: State<'_, AppState>,
-    id: i64,
-) -> Result<bool, String> {
+    tokens: Vec<AnnotatedToken>,
+) -> Result<Vec<AnnotatedToken>, String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    engine
+        .refresh_expression_annotations(tokens)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_expression_rule(state: State<'_, AppState>, id: i64) -> Result<bool, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     engine.delete_expression_rule(id).map_err(|e| e.to_string())
 }
@@ -156,5 +169,6 @@ pub async fn export_selected(
     source_text: String,
     selected_entries: Vec<ExportEntry>,
 ) -> Result<String, String> {
-    kotoclip_core::export::json::export_to_json(&source_text, selected_entries).map_err(|e| e.to_string())
+    kotoclip_core::export::json::export_to_json(&source_text, selected_entries)
+        .map_err(|e| e.to_string())
 }

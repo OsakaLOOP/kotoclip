@@ -4,11 +4,16 @@ import type { AnnotatedToken } from "../types";
 
 export function useDragMerge(
   paragraphs: Ref<Paragraph[]>,
-  onExpressionSelected: (tokens: AnnotatedToken[], paragraphId: number) => Promise<void>
+  onExpressionSelected: (
+    tokens: AnnotatedToken[],
+    paragraphId: number,
+    startMorphemeIdx: number,
+    endMorphemeIdx: number
+  ) => Promise<void>
 ) {
   const isDragging = ref(false);
-  const startKey = ref<{ paragraphId: number; tokenIndex: number } | null>(null);
-  const currentKey = ref<{ paragraphId: number; tokenIndex: number } | null>(null);
+  const startKey = ref<{ paragraphId: number; tokenIndex: number; morphemeIndex: number } | null>(null);
+  const currentKey = ref<{ paragraphId: number; tokenIndex: number; morphemeIndex: number } | null>(null);
 
   /**
    * 判断一个 token 是否处于当前拖拽选中的范围中
@@ -33,16 +38,25 @@ export function useDragMerge(
     if (!capsuleEl) return;
 
     // 跨文节表达可以包含已知词，但不以标点作为选择端点。
-    if (capsuleEl.classList.contains("punctuation")) {
+    if (capsuleEl.classList.contains("punctuation") || capsuleEl.classList.contains("line-break")) {
       return;
     }
 
     const tokenIndex = parseInt(capsuleEl.getAttribute("data-token-index") || "", 10);
     if (isNaN(tokenIndex)) return;
 
+    const morphemeEl = target.closest("[data-morpheme-index]") as HTMLElement;
+    let morphemeIndex = 0;
+    if (morphemeEl) {
+      const idxVal = parseInt(morphemeEl.getAttribute("data-morpheme-index") || "", 10);
+      if (!isNaN(idxVal)) {
+        morphemeIndex = idxVal;
+      }
+    }
+
     isDragging.value = true;
-    startKey.value = { paragraphId, tokenIndex };
-    currentKey.value = { paragraphId, tokenIndex };
+    startKey.value = { paragraphId, tokenIndex, morphemeIndex };
+    currentKey.value = { paragraphId, tokenIndex, morphemeIndex };
 
     // 阻止选择文字的默认行为以防干扰拖拽
     e.preventDefault();
@@ -59,14 +73,23 @@ export function useDragMerge(
     const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
     if (!capsuleEl) return;
 
-    if (capsuleEl.classList.contains("punctuation")) {
+    if (capsuleEl.classList.contains("punctuation") || capsuleEl.classList.contains("line-break")) {
       return;
     }
 
     const tokenIndex = parseInt(capsuleEl.getAttribute("data-token-index") || "", 10);
     if (isNaN(tokenIndex)) return;
 
-    currentKey.value = { paragraphId, tokenIndex };
+    const morphemeEl = target.closest("[data-morpheme-index]") as HTMLElement;
+    let morphemeIndex = 0;
+    if (morphemeEl) {
+      const idxVal = parseInt(morphemeEl.getAttribute("data-morpheme-index") || "", 10);
+      if (!isNaN(idxVal)) {
+        morphemeIndex = idxVal;
+      }
+    }
+
+    currentKey.value = { paragraphId, tokenIndex, morphemeIndex };
   }
 
   /**
@@ -95,7 +118,18 @@ export function useDragMerge(
 
       const selectedTokens = p.tokens.slice(minIdx, maxIdx + 1);
       if (selectedTokens.length > 1) {
-        await onExpressionSelected(selectedTokens, paragraphId);
+        let startMorphemeIdx = 0;
+        let endMorphemeIdx = 0;
+
+        if (start.tokenIndex <= current.tokenIndex) {
+          startMorphemeIdx = start.morphemeIndex;
+          endMorphemeIdx = current.morphemeIndex;
+        } else {
+          startMorphemeIdx = current.morphemeIndex;
+          endMorphemeIdx = start.morphemeIndex;
+        }
+
+        await onExpressionSelected(selectedTokens, paragraphId, startMorphemeIdx, endMorphemeIdx);
       }
     }
   }

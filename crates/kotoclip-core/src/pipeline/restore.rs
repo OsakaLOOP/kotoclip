@@ -12,7 +12,8 @@ pub fn restore_base_form(bunsetsu: &Bunsetsu) -> String {
     if morphemes.len() >= 2 {
         let first = &morphemes[0];
         let second = &morphemes[1];
-        if first.pos.major == "名詞" && first.pos.sub1 == "サ変接続" && second.base_form == "する" {
+        if first.pos.major == "名詞" && first.pos.sub1 == "サ変接続" && second.base_form == "する"
+        {
             // 返回名词形式 "勉強"，在 MDict 中查名词释义比查 "勉強する" 成功率更高
             return first.base_form.clone();
         }

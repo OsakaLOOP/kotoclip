@@ -2,9 +2,7 @@
 
 .paragraph-block {
   font-family: var(--font-ja);
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid transparent;
+  margin-bottom: 1.5rem; /* 段间留白 */
   line-height: 2.2; /* 给嵌套胶囊留出高度 */
   font-size: 1.2rem;
   word-break: break-word;
@@ -12,8 +10,6 @@
   white-space: normal;
   text-align: justify;
   text-align-last: left;
-  transition: opacity 0.25s ease-out;
-  will-change: opacity;
 }
 
 .paragraph-block:last-child {
@@ -21,9 +17,9 @@
   margin-bottom: 0;
 }
 
-/* 段落首个胶囊消除左偏移以实现完美左对齐 */
-.paragraph-block .bunsetsu-capsule:first-child {
-  margin-left: 0;
+/* 对话块样式：如有需要，可以给予对话行微弱的视觉区分，本处保持独立段落表现 */
+.dialogue-block {
+  /* 独立 dialogue 阅读块 */
 }
 
 /* 基础文节胶囊容器 */
@@ -31,36 +27,54 @@
   display: inline-flex;
   align-items: center;
   position: relative;
-  margin: 0.15rem 0.05rem;
-  padding: 0.05rem 0.25rem;
+  margin-right: 0.25em; /* 相邻 content 文节仅保留 0.25em 的行内间距 */
+  margin-left: 0;
+  margin-top: 0.15rem;
+  margin-bottom: 0.15rem;
+  padding: 0.05rem 0.12rem; /* 微小 padding 占位以防 hover 尺寸抖动 */
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent; /* 默认透明边框占位 */
+  background-color: transparent; /* 默认无底色 */
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
   cursor: pointer;
   user-select: none;
   background-clip: padding-box;
 }
 
+/* 句首/句末停顿：句末 。！？…（含后随闭合引号/括号）之后在下一内容文节前增加 0.5em 停顿 */
+.bunsetsu-capsule.sentence-pause-before {
+  margin-left: 0.5em !important;
+}
+
 /* 根据 Novelty 评分进行样式判定 */
-/* 1. 高 Novelty (> 0.6) - 生词胶囊 */
+/* 1. 高 Novelty (> 0.6) - 生词胶囊 (默认无背景/无边框，只在悬浮时浮现) */
 .bunsetsu-capsule.novelty-high {
-  background-color: var(--novelty-high-bg);
-  border-color: var(--novelty-high-border);
+  background-color: transparent;
+  border-color: transparent;
 }
 .bunsetsu-capsule.novelty-high .head-word-highlight {
   color: var(--novelty-high-text);
   font-weight: 600;
 }
+.bunsetsu-capsule.novelty-high:hover {
+  background-color: var(--novelty-high-bg) !important;
+  border-color: var(--novelty-high-border) !important;
+  border-style: solid !important;
+}
 
 /* 2. 中 Novelty (0.2 ~ 0.6) - 可能认识的词 */
 .bunsetsu-capsule.novelty-mid {
-  background-color: var(--novelty-mid-bg);
-  border-color: var(--novelty-mid-border);
-  border-style: dashed;
+  background-color: transparent;
+  border-color: transparent;
 }
 .bunsetsu-capsule.novelty-mid .head-word-highlight {
   color: var(--novelty-mid-text);
   font-weight: 550;
+}
+.bunsetsu-capsule.novelty-mid:hover {
+  background-color: var(--novelty-mid-bg) !important;
+  border-color: var(--novelty-mid-border) !important;
+  border-style: dashed !important;
 }
 
 /* 3. 低 Novelty (< 0.2) - 已知词/简单词 (无可见边框，只在 hover 时显示) */
@@ -72,9 +86,9 @@
   color: var(--text-primary);
 }
 .bunsetsu-capsule.novelty-low:hover {
-  border-color: var(--border-color);
-  border-style: dotted;
-  background-color: var(--bg-secondary);
+  border-color: var(--border-color) !important;
+  border-style: dotted !important;
+  background-color: var(--bg-secondary) !important;
 }
 
 /* 自立语 (核心词) 与 付属语的区分 */
@@ -110,17 +124,36 @@
   pointer-events: none;
 }
 
-/* 选中状态 (用户点击选中准备导出) */
+/* 选中状态：点击选中不显示文节胶囊，仅强化词头字形，对已知词同样生效；没有可识别词头时作用于全部文本 */
 .bunsetsu-capsule.is-selected {
-  outline: 2px solid var(--selection-indicator);
-  outline-offset: 1px;
-  background-color: rgba(10, 132, 255, 0.1) !important;
+  outline: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
-/* 拖拽选中高亮效果 (Drag-Merge 联动) */
+.bunsetsu-capsule.is-selected.has-headword .head-word-highlight {
+  color: var(--selection-indicator) !important;
+  font-weight: bold !important;
+  text-decoration: underline !important;
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 2px;
+}
+
+.bunsetsu-capsule.is-selected:not(.has-headword) > span {
+  color: var(--selection-indicator) !important;
+  font-weight: bold !important;
+  text-decoration: underline !important;
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 2px;
+}
+
+/* 拖拽选中高亮效果 (Drag-Merge 联动)：更清晰但仍低透明的强调背景与轮廓 */
 .bunsetsu-capsule.drag-over {
-  box-shadow: 0 0 0 2px var(--accent-color);
+  box-shadow: none !important;
+  border-color: var(--accent-color) !important;
   background-color: var(--accent-light) !important;
+  border-style: solid !important;
 }
 
 /* 跨文节表达层：连续细线保留各文节的视觉边界，避免生成臃肿大胶囊。 */
@@ -174,7 +207,7 @@
   text-underline-offset: 0.22em;
 }
 
-/* 标记为已掌握的单词 (脱下胶囊，完全变成正文文本) */
+/* 标记为已掌握的单词 (脱下胶囊，完全变成正文文本；但支持选中以强化词形) */
 .bunsetsu-capsule.is-known {
   border-color: transparent !important;
   background-color: transparent !important;
@@ -184,11 +217,11 @@
   margin: 0;
   padding: 0;
 }
-.bunsetsu-capsule.is-known .head-word-highlight {
+.bunsetsu-capsule.is-known:not(.is-selected) .head-word-highlight {
   color: var(--text-primary) !important;
   font-weight: normal !important;
 }
-.bunsetsu-capsule.is-known .helper-word {
+.bunsetsu-capsule.is-known:not(.is-selected) .helper-word {
   color: var(--text-primary) !important;
   opacity: 1 !important;
 }
@@ -196,13 +229,31 @@
   display: none !important; /* 已知词的语法后缀不再单独高亮显示 */
 }
 
-/* 标点符号/符号胶囊 */
+/* 标点符号/符号胶囊 (标点两侧不额外插入间隙，永远不可选、不可拖拽) */
 .bunsetsu-capsule.punctuation {
   cursor: default;
-  padding: 0;
-  margin: 0 0.1rem;
+  padding: 0 !important;
+  margin: 0 !important; /* 标点两侧无额外间距 */
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 .bunsetsu-capsule.punctuation:hover {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* 换行符胶囊 */
+.bunsetsu-capsule.line-break {
+  display: inline;
+  cursor: default;
+  padding: 0 !important;
+  margin: 0 !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.bunsetsu-capsule.line-break:hover {
   background-color: transparent !important;
   border-color: transparent !important;
 }

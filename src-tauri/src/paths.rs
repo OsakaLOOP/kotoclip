@@ -1,6 +1,6 @@
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
 use tauri::path::BaseDirectory;
+use tauri::{AppHandle, Manager};
 
 pub struct AppPaths {
     pub system_dictionary: PathBuf,
@@ -34,11 +34,18 @@ impl AppPaths {
             Some(p) => p,
             None => {
                 // 在 Tauri 2.0 中，使用 PathResolver 的 resolve 方法解析资源路径
-                app.path().resolve("../ipadic/system.dic", BaseDirectory::Resource)
-                    .or_else(|_| app.path().resolve("ipadic/system.dic", BaseDirectory::Resource))
+                app.path()
+                    .resolve("../ipadic/system.dic", BaseDirectory::Resource)
+                    .or_else(|_| {
+                        app.path()
+                            .resolve("ipadic/system.dic", BaseDirectory::Resource)
+                    })
                     .or_else(|_| app.path().resolve("system.dic", BaseDirectory::Resource))
                     .unwrap_or_else(|_| {
-                        let res_dir = app.path().resource_dir().unwrap_or_else(|_| PathBuf::from("."));
+                        let res_dir = app
+                            .path()
+                            .resource_dir()
+                            .unwrap_or_else(|_| PathBuf::from("."));
                         res_dir.join("ipadic").join("system.dic")
                     })
             }
@@ -67,10 +74,21 @@ impl AppPaths {
 
         // A starter database is optional; user dictionaries are never overwritten.
         std::fs::create_dir_all(&dictionary_dir)?;
-        let starter = app.path().resolve("../data/dicts/starter.sqlite", BaseDirectory::Resource)
-            .or_else(|_| app.path().resolve("data/dicts/starter.sqlite", BaseDirectory::Resource))
-            .or_else(|_| app.path().resolve("dicts/starter.sqlite", BaseDirectory::Resource))
-            .or_else(|_| app.path().resolve("starter.sqlite", BaseDirectory::Resource))
+        let starter = app
+            .path()
+            .resolve("../data/dicts/starter.sqlite", BaseDirectory::Resource)
+            .or_else(|_| {
+                app.path()
+                    .resolve("data/dicts/starter.sqlite", BaseDirectory::Resource)
+            })
+            .or_else(|_| {
+                app.path()
+                    .resolve("dicts/starter.sqlite", BaseDirectory::Resource)
+            })
+            .or_else(|_| {
+                app.path()
+                    .resolve("starter.sqlite", BaseDirectory::Resource)
+            })
             .ok()
             .filter(|p| p.exists());
 

@@ -18,47 +18,59 @@ body.eink-mode * {
 body.eink-mode .bunsetsu-capsule {
   border-radius: 0 !important;
   background-color: transparent !important;
+  border: 1px solid transparent !important; /* 默认透明无框占位 */
   margin: 0.1rem 0.15rem;
   padding: 0 0.15rem;
 }
 
-/* 1. 高 Novelty - 实线 1px 黑色边框 */
+/* 1. 高 Novelty 默认无边框 */
 body.eink-mode .bunsetsu-capsule.novelty-high {
-  border: 1px solid #000000 !important;
+  border-color: transparent !important;
 }
 body.eink-mode .bunsetsu-capsule.novelty-high .head-word-highlight {
   color: #000000 !important;
-  font-weight: bold !important;
-  text-decoration: underline;
 }
 
-/* 2. 中 Novelty - 虚线 1px 黑色边框 */
+/* 2. 中 Novelty 默认无边框 */
 body.eink-mode .bunsetsu-capsule.novelty-mid {
-  border: 1px dashed #000000 !important;
+  border-color: transparent !important;
 }
 body.eink-mode .bunsetsu-capsule.novelty-mid .head-word-highlight {
   color: #000000 !important;
-  font-weight: bold !important;
 }
 
-/* 3. 低 Novelty - 无边框 */
+/* 3. 低 Novelty 默认无边框 */
 body.eink-mode .bunsetsu-capsule.novelty-low {
-  border: none !important;
+  border-color: transparent !important;
 }
 
-/* 选中状态 - 粗实线黑边框，或者反色显示 */
-body.eink-mode .bunsetsu-capsule.is-selected {
-  outline: 2px solid #000000 !important;
-  outline-offset: 1px;
-}
-
-/* 拖拽状态 - 反色（黑底白字） */
+/* 悬浮与拖拽 - 统一使用 1px 单色黑色细线 */
+body.eink-mode .bunsetsu-capsule:hover,
 body.eink-mode .bunsetsu-capsule.drag-over {
-  background-color: #000000 !important;
-  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+  background-color: transparent !important;
+  color: #000000 !important;
 }
 body.eink-mode .bunsetsu-capsule.drag-over * {
-  color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* 选中状态 - 默认无边框，清除 outline */
+body.eink-mode .bunsetsu-capsule.is-selected {
+  outline: none !important;
+  border: none !important;
+  background-color: transparent !important;
+}
+
+/* 选中仅以词形粗体和下划线体现 */
+body.eink-mode .bunsetsu-capsule.is-selected.has-headword .head-word-highlight {
+  font-weight: bold !important;
+  text-decoration: underline !important;
+}
+
+body.eink-mode .bunsetsu-capsule.is-selected:not(.has-headword) > span {
+  font-weight: bold !important;
+  text-decoration: underline !important;
 }
 
 /* 语法 Badge - 改为普通文本括号包裹，避免色块 */

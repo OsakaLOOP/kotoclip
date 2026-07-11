@@ -12,7 +12,7 @@ pub fn sort_definitions(mut entries: Vec<DictEntry>, priority_list: &[String]) -
             .iter()
             .position(|name| name.eq_ignore_ascii_case(&a.dict_name))
             .unwrap_or(usize::MAX);
-            
+
         let pos_b = priority_list
             .iter()
             .position(|name| name.eq_ignore_ascii_case(&b.dict_name))

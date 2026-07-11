@@ -3,8 +3,8 @@ use ammonia::Builder;
 use rusqlite::{Connection, OpenFlags};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
-use std::sync::Mutex;
 use std::path::Path;
+use std::sync::Mutex;
 use unicode_normalization::UnicodeNormalization;
 
 const MAX_DEFINITION_BYTES: usize = 512 * 1024;
@@ -31,11 +31,21 @@ impl DictionaryEngine {
         for entry in std::fs::read_dir(path)?.flatten() {
             let file_path = entry.path();
             let ext = file_path.extension().and_then(|s| s.to_str()).unwrap_or("");
-            if !file_path.is_file() || !matches!(ext, "db" | "sqlite") { continue; }
-            let name = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("unknown").to_string();
+            if !file_path.is_file() || !matches!(ext, "db" | "sqlite") {
+                continue;
+            }
+            let name = file_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("unknown")
+                .to_string();
             match Connection::open_with_flags(&file_path, OpenFlags::SQLITE_OPEN_READ_ONLY) {
                 Ok(conn) => {
-                    let compatible = conn.query_row("SELECT 1 FROM pragma_table_info('entries') WHERE name = 'reading'", [], |_| Ok(()));
+                    let compatible = conn.query_row(
+                        "SELECT 1 FROM pragma_table_info('entries') WHERE name = 'reading'",
+                        [],
+                        |_| Ok(()),
+                    );
                     if compatible.is_err() {
                         return Err(format!("词典 {:?} 缺少 reading 列，请先运行 scripts/migrate_dictionary_schema.py", file_path).into());
                     }
@@ -44,31 +54,43 @@ impl DictionaryEngine {
                 Err(error) => log::warn!("无法打开词典 {:?}: {}", file_path, error),
             }
         }
-        Ok(Self { connections, exists_cache: Mutex::new(HashMap::new()) })
+        Ok(Self {
+            connections,
+            exists_cache: Mutex::new(HashMap::new()),
+        })
     }
 
     pub fn stats(&self) -> Vec<DictionaryStats> {
-        self.connections.iter().map(|(name, conn)| {
-            let count = |table: &str| -> usize {
-                conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |row| row.get(0))
+        self.connections
+            .iter()
+            .map(|(name, conn)| {
+                let count = |table: &str| -> usize {
+                    conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |row| {
+                        row.get(0)
+                    })
                     .unwrap_or(0)
-            };
-            DictionaryStats {
-                file_name: name.clone(),
-                entry_count: count("entries"),
-                form_count: count("entry_forms"),
-                reading_count: count("entry_readings"),
-                schema_version: conn.query_row(
-                    "SELECT schema_version FROM metadata ORDER BY rowid DESC LIMIT 1",
-                    [],
-                    |row| row.get(0),
-                ).ok(),
-            }
-        }).collect()
+                };
+                DictionaryStats {
+                    file_name: name.clone(),
+                    entry_count: count("entries"),
+                    form_count: count("entry_forms"),
+                    reading_count: count("entry_readings"),
+                    schema_version: conn
+                        .query_row(
+                            "SELECT schema_version FROM metadata ORDER BY rowid DESC LIMIT 1",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .ok(),
+                }
+            })
+            .collect()
     }
 
     pub fn match_kind(&self, headword: &str, reading: Option<&str>) -> Option<String> {
-        if headword.is_empty() { return None; }
+        if headword.is_empty() {
+            return None;
+        }
         let normalized = normalize_form(headword);
         if self.any_exists(
             "SELECT EXISTS(SELECT 1 FROM entry_forms WHERE normalized_form = ?1)",
@@ -79,10 +101,12 @@ impl DictionaryEngine {
         ) {
             return Some("headword".to_string());
         }
-        if is_kana_query(headword) && self.any_exists(
-            "SELECT EXISTS(SELECT 1 FROM entry_readings WHERE normalized_reading = ?1)",
-            &normalize_reading(headword),
-        ) {
+        if is_kana_query(headword)
+            && self.any_exists(
+                "SELECT EXISTS(SELECT 1 FROM entry_readings WHERE normalized_reading = ?1)",
+                &normalize_reading(headword),
+            )
+        {
             return Some("reading".to_string());
         }
         if let Some(reading) = reading.filter(|value| !value.is_empty() && *value != "*") {
@@ -103,31 +127,87 @@ impl DictionaryEngine {
 
     fn any_exists(&self, sql: &str, value: &str) -> bool {
         self.connections.iter().any(|(_, conn)| {
-            conn.query_row(sql, [value], |row| row.get::<_, bool>(0)).unwrap_or(false)
+            conn.query_row(sql, [value], |row| row.get::<_, bool>(0))
+                .unwrap_or(false)
         })
     }
 
     pub fn contains_exact(&self, word: &str) -> bool {
         let normalized = normalize_form(word);
-        if let Some(value) = self.exists_cache.lock().ok().and_then(|cache| cache.get(&normalized).copied()) { return value; }
+        if let Some(value) = self
+            .exists_cache
+            .lock()
+            .ok()
+            .and_then(|cache| cache.get(&normalized).copied())
+        {
+            return value;
+        }
         let value = self.connections.iter().any(|(_, conn)| {
-            let structured = conn.query_row(
-                "SELECT EXISTS(SELECT 1 FROM entry_forms WHERE normalized_form = ?1)",
-                [&normalized],
-                |row| row.get::<_, bool>(0),
-            ).unwrap_or(false);
-            structured || conn.query_row(
-                "SELECT EXISTS(SELECT 1 FROM entries WHERE headword = ?1)",
-                [word],
-                |row| row.get::<_, bool>(0),
-            ).unwrap_or(false)
+            let structured = conn
+                .prepare_cached(
+                    "SELECT EXISTS(SELECT 1 FROM entry_forms WHERE normalized_form = ?1)",
+                )
+                .and_then(|mut statement| {
+                    statement.query_row([&normalized], |row| row.get::<_, bool>(0))
+                })
+                .unwrap_or(false);
+            structured
+                || conn
+                    .prepare_cached("SELECT EXISTS(SELECT 1 FROM entries WHERE headword = ?1)")
+                    .and_then(|mut statement| {
+                        statement.query_row([word], |row| row.get::<_, bool>(0))
+                    })
+                    .unwrap_or(false)
         });
-        if let Ok(mut cache) = self.exists_cache.lock() { cache.insert(normalized, value); }
+        if let Ok(mut cache) = self.exists_cache.lock() {
+            cache.insert(normalized, value);
+        }
         value
     }
 
+    /// 批量判断词条是否存在，避免章节扫描为每个候选分别往返 SQLite。
+    pub fn contains_exact_batch(&self, words: &HashSet<String>) -> HashSet<String> {
+        const BATCH_SIZE: usize = 2_000;
+        let mut matched = HashSet::new();
+        let candidates: Vec<_> = words
+            .iter()
+            .map(|word| (word.as_str(), normalize_form(word)))
+            .collect();
+
+        for batch in candidates.chunks(BATCH_SIZE) {
+            let Ok(payload) = serde_json::to_string(batch) else {
+                continue;
+            };
+            for (_, connection) in &self.connections {
+                let sql =
+                    "WITH candidates(word, normalized) AS (\
+                         SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') \
+                         FROM json_each(?1)\
+                     ) \
+                     SELECT DISTINCT candidates.word \
+                     FROM candidates JOIN entry_forms \
+                       ON entry_forms.normalized_form = candidates.normalized \
+                     UNION \
+                     SELECT DISTINCT candidates.word \
+                     FROM candidates JOIN entries ON entries.headword = candidates.word";
+                let Ok(mut statement) = connection.prepare(sql) else {
+                    continue;
+                };
+                let Ok(rows) = statement.query_map([&payload], |row| row.get::<_, String>(0))
+                else {
+                    continue;
+                };
+                matched.extend(rows.flatten());
+            }
+        }
+
+        matched
+    }
+
     pub fn lookup(&self, headword: &str, reading: Option<&str>) -> Vec<DictEntry> {
-        if headword.is_empty() { return Vec::new(); }
+        if headword.is_empty() {
+            return Vec::new();
+        }
         let normalized_headword = normalize_form(headword);
         let mut results = self.query_form(&normalized_headword);
         if results.is_empty() && is_kana_query(headword) {
@@ -149,7 +229,9 @@ impl DictionaryEngine {
                 }
             }
         }
-        if results.is_empty() { results = self.lookup_fuzzy(headword); }
+        if results.is_empty() {
+            results = self.lookup_fuzzy(headword);
+        }
         results
     }
 
@@ -175,10 +257,19 @@ impl DictionaryEngine {
     fn query_structured(&self, sql: &str, value: &str, match_type: &str) -> Vec<DictEntry> {
         let mut results = Vec::new();
         for (fallback_name, conn) in &self.connections {
-            let Ok(mut stmt) = conn.prepare(sql) else { continue };
-            let Ok(rows) = stmt.query_map([value], |row| Ok(self.entry(
-                row.get(2).unwrap_or_else(|_| fallback_name.clone()), row.get(0)?, row.get(1)?, match_type
-            ))) else { continue };
+            let Ok(mut stmt) = conn.prepare(sql) else {
+                continue;
+            };
+            let Ok(rows) = stmt.query_map([value], |row| {
+                Ok(self.entry(
+                    row.get(2).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(0)?,
+                    row.get(1)?,
+                    match_type,
+                ))
+            }) else {
+                continue;
+            };
             results.extend(rows.flatten());
         }
         results
@@ -188,10 +279,19 @@ impl DictionaryEngine {
         let sql = format!("SELECT headword, definition, dict_name, reading FROM entries WHERE {column} = ?1 ORDER BY dict_name");
         let mut results = Vec::new();
         for (fallback_name, conn) in &self.connections {
-            let Ok(mut stmt) = conn.prepare(&sql) else { continue };
-            let Ok(rows) = stmt.query_map([value], |row| Ok(self.entry(
-                row.get(2).unwrap_or_else(|_| fallback_name.clone()), row.get(0)?, row.get(1)?, match_type
-            ))) else { continue };
+            let Ok(mut stmt) = conn.prepare(&sql) else {
+                continue;
+            };
+            let Ok(rows) = stmt.query_map([value], |row| {
+                Ok(self.entry(
+                    row.get(2).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(0)?,
+                    row.get(1)?,
+                    match_type,
+                ))
+            }) else {
+                continue;
+            };
             results.extend(rows.flatten());
         }
         results
@@ -202,18 +302,41 @@ impl DictionaryEngine {
         let mut results = Vec::new();
         for (fallback_name, conn) in &self.connections {
             let sql = "SELECT e.headword, e.definition, e.dict_name FROM entries_fts f JOIN entries e ON e.id = f.rowid WHERE f.headword MATCH ?1 LIMIT 5";
-            let Ok(mut stmt) = conn.prepare(sql) else { continue };
-            let Ok(rows) = stmt.query_map([&query], |row| Ok(self.entry(
-                row.get(2).unwrap_or_else(|_| fallback_name.clone()), row.get(0)?, row.get(1)?, "fuzzy"
-            ))) else { continue };
+            let Ok(mut stmt) = conn.prepare(sql) else {
+                continue;
+            };
+            let Ok(rows) = stmt.query_map([&query], |row| {
+                Ok(self.entry(
+                    row.get(2).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(0)?,
+                    row.get(1)?,
+                    "fuzzy",
+                ))
+            }) else {
+                continue;
+            };
             results.extend(rows.flatten());
         }
         results
     }
 
-    fn entry(&self, dict_name: String, headword: String, definition: String, match_type: &str) -> DictEntry {
-        let allowed: HashSet<&str> = ["p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul", "ol", "li", "dl", "dt", "dd", "a"].into_iter().collect();
-        let clean = Builder::default().tags(allowed).clean(&definition).to_string();
+    fn entry(
+        &self,
+        dict_name: String,
+        headword: String,
+        definition: String,
+        match_type: &str,
+    ) -> DictEntry {
+        let allowed: HashSet<&str> = [
+            "p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul", "ol",
+            "li", "dl", "dt", "dd", "a",
+        ]
+        .into_iter()
+        .collect();
+        let clean = Builder::default()
+            .tags(allowed)
+            .clean(&definition)
+            .to_string();
         let definition_html = if clean.len() > MAX_DEFINITION_BYTES {
             let mut limit = MAX_DEFINITION_BYTES;
             while limit > 0 && !clean.is_char_boundary(limit) {
@@ -222,15 +345,31 @@ impl DictionaryEngine {
             let mut truncated = clean[..limit].to_string();
             truncated.push_str("… [内容已截断]");
             truncated
-        } else { clean };
-        DictEntry { dict_name, headword, definition_html, match_type: match_type.to_string() }
+        } else {
+            clean
+        };
+        DictEntry {
+            dict_name,
+            headword,
+            definition_html,
+            match_type: match_type.to_string(),
+        }
     }
 }
 
 fn normalize_reading(value: &str) -> String {
-    normalize_form(value).chars().flat_map(|c| {
-        if ('\u{3041}'..='\u{3096}').contains(&c) { char::from_u32(c as u32 + 0x60).into_iter().collect::<Vec<_>>() } else { vec![c] }
-    }).collect()
+    normalize_form(value)
+        .chars()
+        .flat_map(|c| {
+            if ('\u{3041}'..='\u{3096}').contains(&c) {
+                char::from_u32(c as u32 + 0x60)
+                    .into_iter()
+                    .collect::<Vec<_>>()
+            } else {
+                vec![c]
+            }
+        })
+        .collect()
 }
 
 fn normalize_form(value: &str) -> String {
@@ -241,7 +380,9 @@ fn normalize_form(value: &str) -> String {
             '繋' => '繫',
             _ => character,
         })
-        .filter(|c| !c.is_whitespace() && !matches!(c, '・' | '･' | '-' | '‐' | '‑' | '‒' | '–' | '—' | '―'))
+        .filter(|c| {
+            !c.is_whitespace() && !matches!(c, '・' | '･' | '-' | '‐' | '‑' | '‒' | '–' | '—' | '―')
+        })
         .collect()
 }
 
@@ -260,13 +401,17 @@ fn is_kana_query(value: &str) -> bool {
 fn reading_candidates(headword: &str, reading: &str) -> Vec<String> {
     let normalized = normalize_reading(reading);
     let mut candidates = vec![normalized.clone()];
-    let Some(base_ending) = headword.chars().last().filter(|character| {
-        ('\u{3041}'..='\u{30ff}').contains(character)
-    }) else {
+    let Some(base_ending) = headword
+        .chars()
+        .last()
+        .filter(|character| ('\u{3041}'..='\u{30ff}').contains(character))
+    else {
         return candidates;
     };
     let normalized_ending = normalize_reading(&base_ending.to_string());
-    let Some(ending) = normalized_ending.chars().next() else { return candidates };
+    let Some(ending) = normalized_ending.chars().next() else {
+        return candidates;
+    };
     let mut chars: Vec<char> = normalized.chars().collect();
     if let Some(last) = chars.last_mut() {
         if ('\u{30a1}'..='\u{30ff}').contains(last) && *last != ending {
@@ -302,7 +447,10 @@ mod tests {
 
     #[test]
     fn structured_forms_readings_and_variants_resolve_real_entries() {
-        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let directory = std::env::temp_dir().join(format!("kotoclip-dictionary-{nonce}"));
         std::fs::create_dir_all(&directory).unwrap();
         let database = directory.join("test.sqlite");

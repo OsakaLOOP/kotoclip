@@ -1,9 +1,12 @@
 use super::ProfileEngine;
 use crate::models::AnnotatedToken;
+use crate::performance::TimingCollector;
 use rusqlite::{params, Result};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::time::Instant;
 
 /// 曝光数据记录
+#[derive(Clone)]
 pub struct ExposureRecord {
     pub exposure_count: i32,
     pub is_known: bool,
@@ -15,7 +18,11 @@ impl ProfileEngine {
         self.record_token_exposures_with_progress(tokens, |_, _| {})
     }
 
-    pub fn record_token_exposures_with_progress<F>(&self, tokens: &[AnnotatedToken], mut report: F) -> Result<()>
+    pub fn record_token_exposures_with_progress<F>(
+        &self,
+        tokens: &[AnnotatedToken],
+        mut report: F,
+    ) -> Result<()>
     where
         F: FnMut(usize, usize),
     {
@@ -25,11 +32,13 @@ impl ProfileEngine {
         for token in tokens {
             let head = &token.bunsetsu.head_word;
             if head.pos.major != "記号" && !head.base_form.trim().is_empty() {
-                *exposures.entry((
-                    head.base_form.clone(),
-                    head.reading.clone(),
-                    head.pos.major.clone(),
-                )).or_insert(0) += 1;
+                *exposures
+                    .entry((
+                        head.base_form.clone(),
+                        head.reading.clone(),
+                        head.pos.major.clone(),
+                    ))
+                    .or_insert(0) += 1;
             }
         }
 
@@ -56,6 +65,48 @@ impl ProfileEngine {
             }
         }
         transaction.commit()?;
+        Ok(())
+    }
+
+    /// 性能诊断版曝光记录，将内存聚合和 SQLite 写入分开计时。
+    pub fn record_token_exposures_profiled(
+        &self,
+        tokens: &[AnnotatedToken],
+        timings: &mut TimingCollector,
+    ) -> Result<()> {
+        let aggregation_started = Instant::now();
+        let mut exposures: BTreeMap<(String, String, String), i64> = BTreeMap::new();
+        for token in tokens {
+            let head = &token.bunsetsu.head_word;
+            if head.pos.major != "記号" && !head.base_form.trim().is_empty() {
+                *exposures
+                    .entry((
+                        head.base_form.clone(),
+                        head.reading.clone(),
+                        head.pos.major.clone(),
+                    ))
+                    .or_insert(0) += 1;
+            }
+        }
+        timings.add("曝光聚合", aggregation_started.elapsed());
+
+        let writing_started = Instant::now();
+        let transaction = self.conn.unchecked_transaction()?;
+        {
+            let mut statement = transaction.prepare_cached(
+                "INSERT INTO exposure_history
+                    (base_form, reading, pos, exposure_count, last_seen_at, is_known)
+                 VALUES (?1, ?2, ?3, ?4, datetime('now'), 0)
+                 ON CONFLICT(base_form, reading) DO UPDATE SET
+                    exposure_count = exposure_count + excluded.exposure_count,
+                    last_seen_at = datetime('now')",
+            )?;
+            for ((base_form, reading, pos), count) in exposures {
+                statement.execute(params![base_form, reading, pos, count])?;
+            }
+        }
+        transaction.commit()?;
+        timings.add("曝光 SQLite 写入", writing_started.elapsed());
         Ok(())
     }
 
@@ -101,7 +152,7 @@ impl ProfileEngine {
                 last_seen_at = datetime('now')
         ";
         self.conn.execute(sql, [base_form, reading])?;
-        
+
         // 撤销已知时，也应降低相应汉字的掌握度或做对应清理。
         // 初版暂时静默降低对应汉字置信度。
         if let Err(e) = self.remove_kanji_knowledge_from_word(base_form, reading) {
@@ -127,6 +178,27 @@ impl ProfileEngine {
         } else {
             Ok(None)
         }
+    }
+
+    /// 一次读取评分所需的全部曝光记录，避免章节内逐 token 查询 SQLite。
+    pub fn get_all_exposures(&self) -> Result<HashMap<String, HashMap<String, ExposureRecord>>> {
+        let mut statement = self.conn.prepare_cached(
+            "SELECT base_form, COALESCE(reading, ''), exposure_count, is_known FROM exposure_history",
+        )?;
+        let rows = statement.query_map([], |row| {
+            Ok((
+                (row.get::<_, String>(0)?, row.get::<_, String>(1)?),
+                ExposureRecord {
+                    exposure_count: row.get(2)?,
+                    is_known: row.get(3)?,
+                },
+            ))
+        })?;
+        let mut exposures: HashMap<String, HashMap<String, ExposureRecord>> = HashMap::new();
+        for ((base_form, reading), record) in rows.flatten() {
+            exposures.entry(base_form).or_default().insert(reading, record);
+        }
+        Ok(exposures)
     }
 
     /// 插入一条强制合并分词的短语规则 (表层形序列，以逗号拼接)

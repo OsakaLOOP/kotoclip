@@ -1,2 +1,2 @@
-pub mod lookup;
 pub mod aggregate;
+pub mod lookup;

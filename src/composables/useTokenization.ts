@@ -6,6 +6,14 @@ import { AnnotatedToken, ExpressionRule, SegmentationCandidate } from "../types"
 export interface Paragraph {
   id: number;
   tokens: AnnotatedToken[];
+  isDialogue: boolean;
+}
+
+export interface FrontendAnalysisTiming {
+  listenerSetupMs: number;
+  invokeAndTransferMs: number;
+  paragraphBuildMs: number;
+  totalBeforeRenderMs: number;
 }
 
 export type AnalysisPhase =
@@ -42,6 +50,7 @@ export function useTokenization() {
   const errorMsg = ref<string | null>(null);
   const analysisProgress = ref<AnalysisProgress>(initialProgress());
   const activeRequestId = ref<string | null>(null);
+  const frontendTiming = ref<FrontendAnalysisTiming | null>(null);
 
   /**
    * 分析整页文本
@@ -65,62 +74,180 @@ export function useTokenization() {
       message: "准备分析",
     };
     let unlisten: UnlistenFn | undefined;
+    const totalStartedAt = performance.now();
+    let listenerSetupMs = 0;
+    let invokeAndTransferMs = 0;
 
     try {
       // 先建立监听再调用 IPC，避免丢失最早的阶段事件。
+      const listenerStartedAt = performance.now();
       unlisten = await listen<AnalysisProgress>("analysis-progress", ({ payload }) => {
         if (payload.requestId === activeRequestId.value) {
           analysisProgress.value = payload;
         }
       });
+      listenerSetupMs = performance.now() - listenerStartedAt;
       // 调用 Tauri 命令进行分词与用户画像评分标注
+      const invokeStartedAt = performance.now();
       const allTokens = await invoke<AnnotatedToken[]>("analyze_text", {
         text,
         recordExposure,
         requestId,
       });
+      invokeAndTransferMs = performance.now() - invokeStartedAt;
       if (activeRequestId.value !== requestId) return false;
       
-      // 根据换行符切分为段落结构，方便虚拟列表高效渲染
-      const tempParagraphs: Paragraph[] = [];
-      let currentTokens: AnnotatedToken[] = [];
-      let paragraphId = 0;
-
-      const trimWhitespaceTokens = (tokens: AnnotatedToken[]): AnnotatedToken[] => {
-        const isBlank = (t: AnnotatedToken) => /^\s+$/.test(t.bunsetsu.surface);
-        let start = 0;
-        while (start < tokens.length && isBlank(tokens[start])) {
-          start++;
-        }
-        let end = tokens.length;
-        while (end > start && isBlank(tokens[end - 1])) {
-          end--;
-        }
-        return tokens.slice(start, end);
-      };
-
+      const paragraphBuildStartedAt = performance.now();
+      // 1. 根据 line_break 将 tokens 划分为源行
+      const lines: AnnotatedToken[][] = [];
+      let currentLine: AnnotatedToken[] = [];
       for (const token of allTokens) {
-        // 判断是否为换行符
-        if (token.bunsetsu.surface === "\n" || token.bunsetsu.surface === "\r\n") {
-          tempParagraphs.push({
-            id: paragraphId++,
-            tokens: trimWhitespaceTokens(currentTokens),
-          });
-          currentTokens = [];
+        if (token.display_class === "line_break") {
+          lines.push(currentLine);
+          currentLine = [];
         } else {
-          currentTokens.push(token);
+          currentLine.push(token);
+        }
+      }
+      lines.push(currentLine);
+
+      // 2. 标点跟随上一行调整逻辑 (避头尾合并)
+      for (let idx = 1; idx < lines.length; idx++) {
+        const line = lines[idx];
+        let puncCount = 0;
+        for (const token of line) {
+          if (token.display_class === "punctuation") {
+            const isOpener = token.bunsetsu.surface.trim().startsWith("「") || token.bunsetsu.surface.trim().startsWith("『");
+            if (isOpener) {
+              break;
+            }
+            puncCount++;
+          } else {
+            break;
+          }
+        }
+        if (puncCount > 0) {
+          const puncs = line.splice(0, puncCount);
+          lines[idx - 1].push(...puncs);
         }
       }
 
-      // 将剩余的最后一组 tokens 压入
-      if (currentTokens.length > 0 || tempParagraphs.length === 0) {
+      // 3. 构建阅读块 Paragraph 数组
+      const tempParagraphs: Paragraph[] = [];
+      let currentBlockTokens: AnnotatedToken[] = [];
+      let currentBlockIsDialogue = false;
+      let paragraphId = 0;
+
+      const isLineEmpty = (l: AnnotatedToken[]) => {
+        return l.every(t => /^\s*$/.test(t.bunsetsu.surface));
+      };
+
+      const isLineDialogue = (l: AnnotatedToken[]) => {
+        const firstNonEmpty = l.find(t => t.bunsetsu.surface.trim().length > 0);
+        if (!firstNonEmpty) return false;
+        const text = firstNonEmpty.bunsetsu.surface.trim();
+        return text.startsWith("「") || text.startsWith("『");
+      };
+
+      const trimWhitespaceTokens = (toks: AnnotatedToken[]): AnnotatedToken[] => {
+        const isBlank = (t: AnnotatedToken) => /^\s+$/.test(t.bunsetsu.surface);
+        let start = 0;
+        while (start < toks.length && isBlank(toks[start])) {
+          start++;
+        }
+        let end = toks.length;
+        while (end > start && isBlank(toks[end - 1])) {
+          end--;
+        }
+        return toks.slice(start, end);
+      };
+
+      const flushBlock = () => {
+        const trimmed = trimWhitespaceTokens(currentBlockTokens);
+        if (trimmed.length > 0) {
+          tempParagraphs.push({
+            id: paragraphId++,
+            tokens: trimmed,
+            isDialogue: currentBlockIsDialogue,
+          });
+          currentBlockTokens = [];
+        }
+      };
+
+      let consecutiveEmptyLinesBefore = 0;
+
+      for (let idx = 0; idx < lines.length; idx++) {
+        const line = lines[idx];
+        const isEmpty = isLineEmpty(line);
+
+        if (isEmpty) {
+          consecutiveEmptyLinesBefore++;
+          flushBlock();
+        } else {
+          const isDialogue = isLineDialogue(line);
+
+          if (isDialogue) {
+            flushBlock();
+            const trimmedDial = trimWhitespaceTokens(line);
+            if (trimmedDial.length > 0) {
+              tempParagraphs.push({
+                id: paragraphId++,
+                tokens: trimmedDial,
+                isDialogue: true,
+              });
+            }
+            consecutiveEmptyLinesBefore = 0;
+          } else {
+            if (currentBlockIsDialogue || consecutiveEmptyLinesBefore > 0) {
+              flushBlock();
+            }
+
+            if (currentBlockTokens.length > 0) {
+              currentBlockTokens.push({
+                bunsetsu: {
+                  morphemes: [],
+                  surface: "\n",
+                  head_word: {
+                    surface: "\n",
+                    base_form: "\n",
+                    reading: "",
+                    pos: { major: "改行", sub1: "*", sub2: "*", sub3: "*" }
+                  },
+                  grammar_tags: [],
+                  char_range: [0, 0]
+                },
+                novelty_score: 0,
+                is_selected: false,
+                is_known: true,
+                inference_reason: null,
+                expressions: [],
+                display_class: "line_break"
+              });
+            }
+
+            currentBlockTokens.push(...line);
+            currentBlockIsDialogue = false;
+            consecutiveEmptyLinesBefore = 0;
+          }
+        }
+      }
+      flushBlock();
+
+      if (tempParagraphs.length === 0) {
         tempParagraphs.push({
           id: paragraphId++,
-          tokens: trimWhitespaceTokens(currentTokens),
+          tokens: [],
+          isDialogue: false,
         });
       }
 
       paragraphs.value = tempParagraphs;
+      frontendTiming.value = {
+        listenerSetupMs: Math.round(listenerSetupMs),
+        invokeAndTransferMs: Math.round(invokeAndTransferMs),
+        paragraphBuildMs: Math.round(performance.now() - paragraphBuildStartedAt),
+        totalBeforeRenderMs: Math.round(performance.now() - totalStartedAt),
+      };
       return true;
     } catch (err: any) {
       if (activeRequestId.value === requestId) {
@@ -153,12 +280,30 @@ export function useTokenization() {
     }
   }
 
-  async function addExpressionRule(tokens: AnnotatedToken[], label?: string, description?: string, slotIndices: number[] = []) {
-    return await invoke<ExpressionRule>("add_expression_rule", { tokens, label, description, slotIndices });
+  async function addExpressionRule(
+    tokens: AnnotatedToken[],
+    label?: string,
+    description?: string,
+    bunsetsuStates: ('fixed' | 'slot' | 'any')[] = [],
+    morphemeMasks: boolean[][] = [],
+    gapAfter: number | null = null
+  ) {
+    return await invoke<ExpressionRule>("add_expression_rule", {
+      tokens,
+      label,
+      description,
+      bunsetsuStates,
+      morphemeMasks,
+      gapAfter,
+    });
   }
 
   async function getExpressionRules() {
     return await invoke<ExpressionRule[]>("get_expression_rules");
+  }
+
+  async function refreshExpressionAnnotations(tokens: AnnotatedToken[]) {
+    return await invoke<AnnotatedToken[]>("refresh_expression_annotations", { tokens });
   }
 
   async function deleteExpressionRule(id: number) {
@@ -182,10 +327,12 @@ export function useTokenization() {
     isAnalyzing,
     errorMsg,
     analysisProgress,
+    frontendTiming,
     analyzeText,
     mergeTokens,
     addExpressionRule,
     getExpressionRules,
+    refreshExpressionAnnotations,
     deleteExpressionRule,
     splitToken,
     getCandidates,

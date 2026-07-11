@@ -16,8 +16,23 @@ fn extract_kanji(s: &str) -> Vec<char> {
 fn is_small_kana(c: char) -> bool {
     matches!(
         c,
-        'ゃ' | 'ゅ' | 'ょ' | 'っ' | 'ぁ' | 'ぃ' | 'ぅ' | 'ぇ' | 'ぉ' |
-        'ャ' | 'ュ' | 'ョ' | 'ッ' | 'ァ' | 'ィ' | 'ゥ' | 'ェ' | 'ォ'
+        'ゃ' | 'ゅ'
+            | 'ょ'
+            | 'っ'
+            | 'ぁ'
+            | 'ぃ'
+            | 'ぅ'
+            | 'ぇ'
+            | 'ぉ'
+            | 'ャ'
+            | 'ュ'
+            | 'ョ'
+            | 'ッ'
+            | 'ァ'
+            | 'ィ'
+            | 'ゥ'
+            | 'ェ'
+            | 'ォ'
     )
 }
 
@@ -61,7 +76,7 @@ impl ProfileEngine {
         if kanjis.len() == 2 && word.chars().all(is_kanji) && morae.len() == 4 {
             let r0 = morae[0..2].join("");
             let r1 = morae[2..4].join("");
-            
+
             self.insert_kanji_record(kanjis[0], &r0, 0.8, word)?;
             self.insert_kanji_record(kanjis[1], &r1, 0.8, word)?;
             return Ok(());
@@ -73,7 +88,7 @@ impl ProfileEngine {
             let r0 = morae[0..2].join("");
             let r1 = morae[2..4].join("");
             let r2 = morae[4..6].join("");
-            
+
             self.insert_kanji_record(kanjis[0], &r0, 0.8, word)?;
             self.insert_kanji_record(kanjis[1], &r1, 0.8, word)?;
             self.insert_kanji_record(kanjis[2], &r2, 0.8, word)?;
@@ -107,13 +122,17 @@ impl ProfileEngine {
             self.decrease_kanji_record(kanjis[1], &r1, word)?;
             self.decrease_kanji_record(kanjis[2], &r2, word)?;
         }
-        
+
         Ok(())
     }
 
     /// 基于已知汉字推断生词的“熟练置信度”
     /// 返回值：0.0 (完全未知) 到 1.0 (完全掌握) 之间的置信度
-    pub fn infer_novelty_confidence(&self, word: &str, reading: &str) -> Result<(f32, Option<String>)> {
+    pub fn infer_novelty_confidence(
+        &self,
+        word: &str,
+        reading: &str,
+    ) -> Result<(f32, Option<String>)> {
         let kanjis = extract_kanji(word);
         if kanjis.is_empty() {
             return Ok((0.0, None));
@@ -163,9 +182,15 @@ impl ProfileEngine {
     }
 
     // 内部函数：写入/更新单汉字的读音与掌握置信度
-    fn insert_kanji_record(&self, kanji: char, reading: &str, confidence: f32, source_word: &str) -> Result<()> {
+    fn insert_kanji_record(
+        &self,
+        kanji: char,
+        reading: &str,
+        confidence: f32,
+        source_word: &str,
+    ) -> Result<()> {
         let kanji_str = kanji.to_string();
-        
+
         let select_sql = "SELECT confidence, source_words FROM kanji_knowledge WHERE kanji = ?1 AND reading = ?2";
         let mut stmt = self.conn.prepare(select_sql)?;
         let mut rows = stmt.query_map([&kanji_str, reading], |row| {
@@ -184,12 +209,18 @@ impl ProfileEngine {
             let new_conf = (existing_conf + confidence).min(1.0);
 
             let update_sql = "UPDATE kanji_knowledge SET confidence = ?1, source_words = ?2 WHERE kanji = ?3 AND reading = ?4";
-            self.conn.execute(update_sql, rusqlite::params![new_conf, new_src, &kanji_str, reading])?;
+            self.conn.execute(
+                update_sql,
+                rusqlite::params![new_conf, new_src, &kanji_str, reading],
+            )?;
         } else {
             let words = vec![source_word.to_string()];
             let src_json = serde_json::to_string(&words).unwrap_or_default();
             let insert_sql = "INSERT INTO kanji_knowledge (kanji, reading, confidence, source_words) VALUES (?1, ?2, ?3, ?4)";
-            self.conn.execute(insert_sql, rusqlite::params![&kanji_str, reading, confidence, src_json])?;
+            self.conn.execute(
+                insert_sql,
+                rusqlite::params![&kanji_str, reading, confidence, src_json],
+            )?;
         }
 
         Ok(())
@@ -213,7 +244,7 @@ impl ProfileEngine {
                 words.retain(|w| w != source_word);
             }
             let new_src = serde_json::to_string(&words).unwrap_or_default();
-            
+
             let new_conf = if words.is_empty() {
                 0.0
             } else {
@@ -221,7 +252,10 @@ impl ProfileEngine {
             };
 
             let update_sql = "UPDATE kanji_knowledge SET confidence = ?1, source_words = ?2 WHERE kanji = ?3 AND reading = ?4";
-            self.conn.execute(update_sql, rusqlite::params![new_conf, new_src, &kanji_str, reading])?;
+            self.conn.execute(
+                update_sql,
+                rusqlite::params![new_conf, new_src, &kanji_str, reading],
+            )?;
         }
         Ok(())
     }

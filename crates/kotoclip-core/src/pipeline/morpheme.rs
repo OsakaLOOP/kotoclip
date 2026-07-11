@@ -1,8 +1,8 @@
 use crate::models::{Morpheme, PosTag};
-use vibrato::{Dictionary, Tokenizer};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+use vibrato::{Dictionary, Tokenizer};
 
 /// 形态素分析器，基于 vibrato 库
 pub struct MorphemeAnalyzer {
@@ -55,7 +55,7 @@ impl MorphemeAnalyzer {
         worker.tokenize();
 
         let mut morphemes = Vec::with_capacity(worker.num_tokens());
-        
+
         // 遍历所有 token
         for i in 0..worker.num_tokens() {
             let token = worker.token(i);
@@ -84,11 +84,7 @@ impl MorphemeAnalyzer {
                     .map(|index| {
                         let token = worker.candidate_token(candidate, index);
                         let range = token.range_char();
-                        parse_morpheme(
-                            token.surface(),
-                            token.feature(),
-                            (range.start, range.end),
-                        )
+                        parse_morpheme(token.surface(), token.feature(), (range.start, range.end))
                     })
                     .collect();
                 MorphemeCandidate {

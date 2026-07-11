@@ -16,7 +16,7 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
     if (!p) return;
     
     const token = p.tokens[tokenIndex];
-    if (!token || token.is_known) return; // 已知词不能被选择导出
+    if (!token) return;
 
     token.is_selected = !token.is_selected;
 

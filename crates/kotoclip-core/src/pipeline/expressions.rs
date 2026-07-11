@@ -60,6 +60,7 @@ fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
     tokens
         .iter()
         .enumerate()
+        .filter(|(_, token)| token.display_class == "content")
         .flat_map(|(token_index, token)| {
             token.bunsetsu.morphemes.iter().filter_map(move |morpheme| {
                 if morpheme.surface.trim().is_empty() {
@@ -99,7 +100,12 @@ pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
         }
         for start in 0..=morphemes.len() - pattern.atoms.len() {
             let window = &morphemes[start..start + pattern.atoms.len()];
-            if !pattern.atoms.iter().zip(window).all(|(atom, morpheme)| atom_matches(atom, morpheme)) {
+            if !pattern
+                .atoms
+                .iter()
+                .zip(window)
+                .all(|(atom, morpheme)| atom_matches(atom, morpheme))
+            {
                 continue;
             }
             let start_token = window.first().unwrap().token_index;
@@ -115,7 +121,10 @@ pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                 window.first().unwrap().char_range.0,
                 window.last().unwrap().char_range.1,
             );
-            let surface: String = window.iter().map(|morpheme| morpheme.surface.as_str()).collect();
+            let surface: String = window
+                .iter()
+                .map(|morpheme| morpheme.surface.as_str())
+                .collect();
             let width = end_token - start_token;
             for (offset, token) in tokens[start_token..end_token].iter_mut().enumerate() {
                 let position = if offset == 0 {
@@ -159,46 +168,29 @@ pub fn apply_dictionary_expressions(
     let mut count = 0;
     let mut matched_char_ranges: Vec<(usize, usize)> = Vec::new();
     let mut matches_found: Vec<MatchInfo> = Vec::new();
+    let mut candidates = Vec::new();
+    let mut unique_queries = HashSet::new();
 
-    // 限制跨越的文节数 N 从 4 递减到 2，优先匹配更长范围
+    // 第一阶段只生成合法候选。顺序保持为长窗口优先、起点优先，
+    // 以便批量查询后复用原有的最长范围选择语义。
     for n in (2..=4).rev() {
         if n > tokens.len() {
             continue;
         }
-        'window_loop: for s in 0..=tokens.len() - n {
-            let e = s + n - 1; // 终点文节索引
+        for s in 0..=tokens.len() - n {
+            let e = s + n - 1;
+            if tokens[s..=e]
+                .iter()
+                .any(|token| token.display_class != "content")
+            {
+                continue;
+            }
             let ts = &tokens[s].bunsetsu;
             let te = &tokens[e].bunsetsu;
 
-            // 穷举起点文节中的语素偏移 p 和终点文节中的语素偏移 q
             for p in 0..ts.morphemes.len() {
                 for q in 0..te.morphemes.len() {
-                    let mut sub_morphemes = Vec::new();
-
-                    // 起点文节的后半部分
-                    for m in &ts.morphemes[p..] {
-                        sub_morphemes.push(m);
-                    }
-
-                    // 中间文节的所有语素
-                    for mid in s + 1..e {
-                        for m in &tokens[mid].bunsetsu.morphemes {
-                            sub_morphemes.push(m);
-                        }
-                    }
-
-                    // 终点文节的前半部分
-                    for m in &te.morphemes[..=q] {
-                        sub_morphemes.push(m);
-                    }
-
-                    // 1. 过滤包含无意义字符（如标点或空白）的组合
-                    if sub_morphemes.iter().any(|m| m.surface.trim().is_empty() || m.pos.major == "記号") {
-                        continue;
-                    }
-
-                    // 2. 检查最后一个语素的词性是否合规
-                    let last_m = sub_morphemes.last().unwrap();
+                    let last_m = &te.morphemes[q];
                     let valid_last_pos = matches!(
                         last_m.pos.major.as_str(),
                         "動詞" | "形容詞" | "助動詞" | "名詞"
@@ -207,62 +199,76 @@ pub fn apply_dictionary_expressions(
                         continue;
                     }
 
-                    // 3. 计算本组合精确的 char_range，并执行包含性排重
                     let char_range = (
-                        sub_morphemes.first().unwrap().char_range.0,
-                        sub_morphemes.last().unwrap().char_range.1,
+                        ts.morphemes[p].char_range.0,
+                        te.morphemes[q].char_range.1,
                     );
-
-                    let is_sub_range = matched_char_ranges.iter().any(|&(existing_start, existing_end)| {
-                        existing_start <= char_range.0 && char_range.1 <= existing_end
-                    });
-                    if is_sub_range {
-                        continue;
-                    }
-
-                    // 4. 启发式拼接查询词 (前 len - 1 个语素取 surface，最后一个语素取 base_form)
                     let mut query = String::new();
-                    let len = sub_morphemes.len();
-                    for (idx, m) in sub_morphemes.iter().enumerate() {
-                        if idx + 1 < len {
-                            query.push_str(&m.surface);
+                    let mut surface = String::new();
+                    let mut invalid = false;
+                    for token_index in s..=e {
+                        let morphemes = &tokens[token_index].bunsetsu.morphemes;
+                        let start = if token_index == s { p } else { 0 };
+                        let end = if token_index == e {
+                            q + 1
                         } else {
-                            let base = if m.base_form.is_empty() || m.base_form == "*" {
-                                &m.surface
+                            morphemes.len()
+                        };
+                        for (index, morpheme) in morphemes[start..end].iter().enumerate() {
+                            if morpheme.surface.trim().is_empty() || morpheme.pos.major == "記号" {
+                                invalid = true;
+                                break;
+                            }
+                            surface.push_str(&morpheme.surface);
+                            let is_last = token_index == e && start + index == q;
+                            if is_last && !morpheme.base_form.is_empty() && morpheme.base_form != "*" {
+                                query.push_str(&morpheme.base_form);
                             } else {
-                                &m.base_form
-                            };
-                            query.push_str(base);
+                                query.push_str(&morpheme.surface);
+                            }
+                        }
+                        if invalid {
+                            break;
                         }
                     }
-
-                    // 5. 词典精确匹配
-                    if dictionary.contains_exact(&query) {
-                        // 记录匹配成功的字符区间，供后续更短组合的排重判定
-                        matched_char_ranges.push(char_range);
-
-                        matches_found.push(MatchInfo {
-                            query: query.clone(),
-                            s,
-                            e,
-                            char_range,
-                            surface: sub_morphemes.iter().map(|m| m.surface.as_str()).collect(),
-                        });
-                        continue 'window_loop;
+                    if invalid {
+                        continue;
                     }
+                    unique_queries.insert(query.clone());
+                    candidates.push(MatchInfo { query, s, e, char_range, surface });
                 }
             }
         }
     }
 
-    // 第二阶段：应用匹配到的跨文节表达
+    // 第二阶段一次批量查询所有唯一候选，再按原顺序选择每个窗口首个最长命中。
+    let dictionary_matches = dictionary.contains_exact_batch(&unique_queries);
+    let mut claimed_windows = HashSet::new();
+    for candidate in candidates {
+        if claimed_windows.contains(&(candidate.s, candidate.e))
+            || !dictionary_matches.contains(&candidate.query)
+            || matched_char_ranges.iter().any(|&(start, end)| {
+                start <= candidate.char_range.0 && candidate.char_range.1 <= end
+            })
+        {
+            continue;
+        }
+        claimed_windows.insert((candidate.s, candidate.e));
+        matched_char_ranges.push(candidate.char_range);
+        matches_found.push(candidate);
+    }
+
+    // 第三阶段：应用匹配到的跨文节表达
     for info in matches_found {
         let match_id = format!("dict:{}:{}:{}", info.query, info.s, info.e + 1);
         let width = info.e + 1 - info.s;
 
         // 排重：如果本 token 范围已被其他同等范围的表达标注过，则跳过
         let has_duplicate = tokens[info.s..=info.e].iter().any(|token| {
-            token.expressions.iter().any(|exp| exp.char_range == info.char_range)
+            token
+                .expressions
+                .iter()
+                .any(|exp| exp.char_range == info.char_range)
         });
         if has_duplicate {
             continue;
@@ -332,7 +338,12 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
 
         for h_start in 0..=morphemes.len() - head_len {
             let h_window = &morphemes[h_start..h_start + head_len];
-            if !pattern.head_atoms.iter().zip(h_window).all(|(atom, m)| atom_matches(atom, m)) {
+            if !pattern
+                .head_atoms
+                .iter()
+                .zip(h_window)
+                .all(|(atom, m)| atom_matches(atom, m))
+            {
                 continue;
             }
 
@@ -349,12 +360,26 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                 }
 
                 for t_start in (h_last_morpheme_idx + 1)..=morphemes.len() - tail_len {
+                    let tail_start_token = morphemes[t_start].token_index;
+                    if tail_start_token
+                        > head_end_token + 1 + pattern.gap_bunsetsu.1
+                    {
+                        break;
+                    }
+                    if tail_start_token
+                        < head_end_token + 1 + pattern.gap_bunsetsu.0
+                    {
+                        continue;
+                    }
                     let t_window = &morphemes[t_start..t_start + tail_len];
-                    if !tail_atoms.iter().zip(t_window).all(|(atom, m)| atom_matches(atom, m)) {
+                    if !tail_atoms
+                        .iter()
+                        .zip(t_window)
+                        .all(|(atom, m)| atom_matches(atom, m))
+                    {
                         continue;
                     }
 
-                    let tail_start_token = t_window.first().unwrap().token_index;
                     let tail_end_token = t_window.last().unwrap().token_index + 1;
 
                     if tail_start_token <= head_end_token {
@@ -377,8 +402,10 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                         continue;
                     }
 
-                    let head_surface: String = h_window.iter().map(|m| m.surface.as_str()).collect();
-                    let tail_surface: String = t_window.iter().map(|m| m.surface.as_str()).collect();
+                    let head_surface: String =
+                        h_window.iter().map(|m| m.surface.as_str()).collect();
+                    let tail_surface: String =
+                        t_window.iter().map(|m| m.surface.as_str()).collect();
                     let surface = format!("{}……{}", head_surface, tail_surface);
 
                     let char_range = (
@@ -419,7 +446,9 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
         let m_i = &matches[i];
         let mut is_sub = false;
         for j in 0..matches.len() {
-            if i == j { continue; }
+            if i == j {
+                continue;
+            }
             let m_j = &matches[j];
             if m_j.char_range.0 <= m_i.char_range.0 && m_i.char_range.1 <= m_j.char_range.1 {
                 if m_j.char_range == m_i.char_range {
@@ -473,8 +502,8 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pipeline::Pipeline;
     use crate::dictionary::lookup::DictionaryEngine;
+    use crate::pipeline::Pipeline;
 
     fn get_test_ipadic_path() -> Option<String> {
         if let Ok(env_path) = std::env::var("KOTOCLIP_TEST_IPADIC") {
@@ -496,11 +525,7 @@ mod tests {
     }
 
     fn get_test_dict_dir() -> Option<String> {
-        let candidates = vec![
-            "../../data/dicts",
-            "../data/dicts",
-            "data/dicts",
-        ];
+        let candidates = vec!["../../data/dicts", "../data/dicts", "data/dicts"];
         for c in candidates {
             if std::path::Path::new(c).exists() {
                 return Some(c.to_string());
@@ -540,12 +565,26 @@ mod tests {
         for (text, expected_label) in cases {
             let mut tokens = pipeline.process(text, &[]);
             let count = apply_dictionary_expressions(&mut tokens, &dictionary);
-            println!("Text: '{}', Matched: {}, Expressions: {:?}", text, count, tokens.iter().flat_map(|t| t.expressions.clone()).collect::<Vec<_>>());
-            
+            println!(
+                "Text: '{}', Matched: {}, Expressions: {:?}",
+                text,
+                count,
+                tokens
+                    .iter()
+                    .flat_map(|t| t.expressions.clone())
+                    .collect::<Vec<_>>()
+            );
+
             let found = tokens.iter().any(|t| {
-                t.expressions.iter().any(|exp| exp.label == expected_label && exp.rule_id == -9999)
+                t.expressions
+                    .iter()
+                    .any(|exp| exp.label == expected_label && exp.rule_id == -9999)
             });
-            assert!(found, "无法在文本 '{}' 中匹配到预期的跨文节表达 '{}'", text, expected_label);
+            assert!(
+                found,
+                "无法在文本 '{}' 中匹配到预期的跨文节表达 '{}'",
+                text, expected_label
+            );
         }
     }
 
@@ -562,10 +601,19 @@ mod tests {
         let pipeline = Pipeline::new(&ipadic_path).expect("初始化 pipeline 失败");
 
         let cases = vec![
-            ("まるで、自ら首を差し出しているかのようじゃないか。", "まるで〜ようだ"),
+            (
+                "まるで、自ら首を差し出しているかのようじゃないか。",
+                "まるで〜ようだ",
+            ),
             ("一体どうやってあの体を支えているのか。", "一体〜か"),
-            ("どんなに固定や拘束を解こうとしても、扉が開くことはなかった。", "どんなに〜ても"),
-            ("たとえ俺が斬らなくったって、あいつはいずれ退治される運命だよ。", "たとえ〜ても"),
+            (
+                "どんなに固定や拘束を解こうとしても、扉が開くことはなかった。",
+                "どんなに〜ても",
+            ),
+            (
+                "たとえ俺が斬らなくったって、あいつはいずれ退治される運命だよ。",
+                "たとえ〜ても",
+            ),
             ("絶対に许さない。", "絶対に〜ない"), // 注意：絶対に……ない
             ("せめてその怒りに触れぬよう", "せめて〜よう"),
         ];
@@ -576,17 +624,32 @@ mod tests {
             for (ti, token) in tokens.iter().enumerate() {
                 println!("  Token [{}] surface='{}'", ti, token.bunsetsu.surface);
                 for m in &token.bunsetsu.morphemes {
-                    println!("    Morpheme: surface='{}', base_form='{}', pos='{:?}'", m.surface, m.base_form, m.pos);
+                    println!(
+                        "    Morpheme: surface='{}', base_form='{}', pos='{:?}'",
+                        m.surface, m.base_form, m.pos
+                    );
                 }
             }
             let count = apply_correlative_expressions(&mut tokens);
-            println!("Matched: {}, Expressions: {:?}", count, tokens.iter().flat_map(|t| t.expressions.clone()).collect::<Vec<_>>());
+            println!(
+                "Matched: {}, Expressions: {:?}",
+                count,
+                tokens
+                    .iter()
+                    .flat_map(|t| t.expressions.clone())
+                    .collect::<Vec<_>>()
+            );
 
             let found = tokens.iter().any(|t| {
-                t.expressions.iter().any(|exp| exp.label == expected_label && exp.origin == "correlative")
+                t.expressions
+                    .iter()
+                    .any(|exp| exp.label == expected_label && exp.origin == "correlative")
             });
-            assert!(found, "无法在文本 '{}' 中匹配到预期的非连续呼应表达 '{}'", text, expected_label);
+            assert!(
+                found,
+                "无法在文本 '{}' 中匹配到预期的非连续呼应表达 '{}'",
+                text, expected_label
+            );
         }
     }
 }
-

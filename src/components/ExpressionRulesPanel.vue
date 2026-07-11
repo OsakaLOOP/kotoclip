@@ -12,12 +12,28 @@ const emit = defineEmits<{
 }>();
 
 function patternPreview(rule: ExpressionRule): string {
-  return rule.parts
-    .map((part) => {
-      const text = part.surface_hint || part.lemmas.join("+");
-      return part.is_slot ? `{${text}}` : text;
-    })
-    .join("｜");
+  const formatPart = (part: any, index: number, total: number) => {
+    const text = part.surface_hint || part.lemmas.join("+");
+    let formatted = part.is_slot ? `{${text}}` : text;
+    
+    if (index === 0 && part.alignment === "suffix") {
+      formatted = `～${formatted}`;
+    }
+    if (index === total - 1 && part.alignment === "prefix") {
+      formatted = `${formatted}～`;
+    }
+    return formatted;
+  };
+
+  const len = rule.parts.length;
+  const gap = rule.gap_after;
+  if (gap !== undefined && gap !== null) {
+    const head = rule.parts.slice(0, gap + 1).map((p, idx) => formatPart(p, idx, len)).join(" + ");
+    const tail = rule.parts.slice(gap + 1).map((p, idx) => formatPart(p, idx + gap + 1, len)).join(" + ");
+    return `${head}  ○  ${tail}`;
+  } else {
+    return rule.parts.map((p, idx) => formatPart(p, idx, len)).join(" + ");
+  }
 }
 </script>
 

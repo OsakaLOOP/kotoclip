@@ -22,7 +22,14 @@ const inputText = ref("");
 const showInput = ref(true);
 const einkMode = ref(false);
 const showDevMetrics = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_METRICS === "true";
-const analysisMetrics = ref<{ characterCount: number; durationMs: number } | null>(null);
+const analysisMetrics = ref<{
+  characterCount: number;
+  durationMs: number;
+  listenerSetupMs: number;
+  invokeAndTransferMs: number;
+  paragraphBuildMs: number;
+  renderSetupMs: number;
+} | null>(null);
 
 const scrollContainerRef = ref<HTMLElement | null>(null);
 const { triggerUpdate } = useScrollFocus(scrollContainerRef);
@@ -33,9 +40,11 @@ const {
   isAnalyzing,
   errorMsg,
   analysisProgress,
+  frontendTiming,
   analyzeText,
   addExpressionRule,
   getExpressionRules,
+  refreshExpressionAnnotations,
   deleteExpressionRule,
   splitToken,
   getCandidates,
@@ -73,6 +82,7 @@ const showExportPanel = ref(false);
 const showExpressionRules = ref(false);
 const expressionRules = ref<ExpressionRule[]>([]);
 const expressionDraft = ref<AnnotatedToken[]>([]);
+const expressionDraftMorphemeRange = ref({ startMorphemeIdx: 0, endMorphemeIdx: 0 });
 const showExpressionEditor = ref(false);
 
 async function openExpressionRules() {
@@ -80,20 +90,49 @@ async function openExpressionRules() {
   showExpressionRules.value = true;
 }
 
+async function refreshCurrentExpressionAnnotations() {
+  const tokens = paragraphs.value.flatMap((paragraph) => paragraph.tokens);
+  if (tokens.length === 0) return;
+  const refreshed = await refreshExpressionAnnotations(tokens);
+  let offset = 0;
+  for (const paragraph of paragraphs.value) {
+    const length = paragraph.tokens.length;
+    paragraph.tokens = refreshed.slice(offset, offset + length);
+    offset += length;
+  }
+  await nextTick();
+  virtualizer.value.measure();
+  triggerUpdate();
+}
+
 async function removeExpressionRule(id: number) {
   await deleteExpressionRule(id);
   expressionRules.value = await getExpressionRules();
   if (!showInput.value && inputText.value.trim()) {
-    await triggerAnalysis(false);
+    await refreshCurrentExpressionAnnotations();
   }
 }
 
-async function saveExpressionDraft(label: string, description: string, slotIndices: number[]) {
+async function saveExpressionDraft(
+  label: string,
+  description: string,
+  bunsetsuStates: ('fixed' | 'slot' | 'any')[],
+  morphemeMasks: boolean[][],
+  gapAfter: number | null
+) {
   try {
-    await addExpressionRule(expressionDraft.value, label, description, slotIndices);
+    await addExpressionRule(
+      expressionDraft.value,
+      label,
+      description,
+      bunsetsuStates,
+      morphemeMasks,
+      gapAfter
+    );
     showExpressionEditor.value = false;
     expressionDraft.value = [];
-    await triggerAnalysis(false);
+    expressionDraftMorphemeRange.value = { startMorphemeIdx: 0, endMorphemeIdx: 0 };
+    await refreshCurrentExpressionAnnotations();
   } catch (err) {
     alert(`保存跨文节表达失败：${String(err)}`);
   }
@@ -106,8 +145,9 @@ const {
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
-} = useDragMerge(paragraphs, async (tokens, _paragraphId) => {
-  expressionDraft.value = tokens;
+} = useDragMerge(paragraphs, async (tokens, _paragraphId, startMorphemeIdx, endMorphemeIdx) => {
+  expressionDraft.value = tokens.filter(t => t.display_class === "content");
+  expressionDraftMorphemeRange.value = { startMorphemeIdx, endMorphemeIdx };
   showExpressionEditor.value = true;
 });
 
@@ -157,14 +197,20 @@ async function triggerAnalysis(recordExposure = true) {
   const startedAt = performance.now();
   const succeeded = await analyzeText(sourceText, recordExposure);
   if (succeeded) {
-    analysisMetrics.value = {
-      characterCount: Array.from(sourceText).length,
-      durationMs: Math.round(performance.now() - startedAt),
-    };
+    const renderSetupStartedAt = performance.now();
     showInput.value = false;
     await nextTick();
     virtualizer.value.measure();
     triggerUpdate();
+    await nextTick();
+    analysisMetrics.value = {
+      characterCount: Array.from(sourceText).length,
+      durationMs: Math.round(performance.now() - startedAt),
+      listenerSetupMs: frontendTiming.value?.listenerSetupMs ?? 0,
+      invokeAndTransferMs: frontendTiming.value?.invokeAndTransferMs ?? 0,
+      paragraphBuildMs: frontendTiming.value?.paragraphBuildMs ?? 0,
+      renderSetupMs: Math.round(performance.now() - renderSetupStartedAt),
+    };
   }
 }
 
@@ -192,7 +238,7 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
   const p = paragraphs.value.find((para) => para.id === paragraphId);
   const token = p?.tokens[tokenIndex];
 
-  const isPunc = token && token.bunsetsu.morphemes.length === 1 && token.bunsetsu.morphemes[0].pos.major === "記号";
+  const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
   if (!token || token.is_known || isPunc) {
     tooltipShow.value = false;
     return;
@@ -249,7 +295,7 @@ function handleParagraphClick(e: MouseEvent, paragraphId: number) {
 
   const p = paragraphs.value.find((para) => para.id === paragraphId);
   const token = p?.tokens[tokenIndex];
-  const isPunc = token && token.bunsetsu.morphemes.length === 1 && token.bunsetsu.morphemes[0].pos.major === "記号";
+  const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
   if (!token || isPunc) return;
 
   // 切换该 token 选中状态 (用于 Anki 导出)
@@ -267,7 +313,7 @@ function handleParagraphDblClick(e: MouseEvent, paragraphId: number) {
 
   const p = paragraphs.value.find((para) => para.id === paragraphId);
   const token = p?.tokens[tokenIndex];
-  const isPunc = token && token.bunsetsu.morphemes.length === 1 && token.bunsetsu.morphemes[0].pos.major === "記号";
+  const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
   if (!token || isPunc) return;
 
   // 取消 Tooltip 显示
@@ -391,36 +437,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   toggleSelect(paragraphId, tokenIndex);
 }
 
-function isOpeningPunctuation(token: AnnotatedToken): boolean {
-  if (token.bunsetsu.morphemes.length !== 1) return false;
-  const m = token.bunsetsu.morphemes[0];
-  if (m.pos.major !== "記号") return false;
-  const s = m.surface;
-  return /^[「『（［｛【〈《“‘(]$/.test(s);
-}
 
-function isPunctuation(token: AnnotatedToken): boolean {
-  if (token.bunsetsu.morphemes.length !== 1) return false;
-  return token.bunsetsu.morphemes[0].pos.major === "記号";
-}
-
-function shouldInsertWjBefore(tokens: AnnotatedToken[], index: number): boolean {
-  if (index === 0) return false;
-  const currentToken = tokens[index];
-  if (isPunctuation(currentToken) && !isOpeningPunctuation(currentToken)) {
-    return true;
-  }
-  return false;
-}
-
-function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
-  if (index === tokens.length - 1) return false;
-  const currentToken = tokens[index];
-  if (isOpeningPunctuation(currentToken)) {
-    return true;
-  }
-  return false;
-}
 </script>
 
 <template>
@@ -439,7 +456,9 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
           aria-label="开发者分析指标"
         >
           <span>{{ analysisMetrics.characterCount }} 字</span>
-          <span>{{ analysisMetrics.durationMs }} ms</span>
+          <span :title="`监听 ${analysisMetrics.listenerSetupMs} ms；IPC ${analysisMetrics.invokeAndTransferMs} ms；组段 ${analysisMetrics.paragraphBuildMs} ms；首帧布局 ${analysisMetrics.renderSetupMs} ms`">
+            {{ analysisMetrics.durationMs }} ms
+          </span>
         </div>
         <button class="icon-btn" :class="{ active: showExportPanel }" @click="showExportPanel = !showExportPanel">
           💼 导出本 ({{ selectedKeys.length }})
@@ -518,7 +537,7 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
             }"
             :data-index="virtualRow.index"
             :ref="measureVirtualRow"
-            class="paragraph-block"
+            :class="['paragraph-block', { 'dialogue-block': paragraphs[virtualRow.index].isDialogue }]"
             @mouseover="handleParagraphMouseOver($event, paragraphs[virtualRow.index].id)"
             @mouseleave="handleParagraphMouseLeave"
             @mousedown="handleMouseDown($event, paragraphs[virtualRow.index].id)"
@@ -528,14 +547,13 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
           >
             <template v-if="paragraphs[virtualRow.index].tokens.length > 0">
               <template v-for="(token, tokenIndex) in paragraphs[virtualRow.index].tokens" :key="tokenIndex">
-                <template v-if="shouldInsertWjBefore(paragraphs[virtualRow.index].tokens, tokenIndex)">&#x2060;</template>
                 <BunsetsuCapsule
                   :token="token"
                   :paragraphId="paragraphs[virtualRow.index].id"
                   :tokenIndex="tokenIndex"
                   :isDragSelected="isTokenDragSelected(paragraphs[virtualRow.index].id, tokenIndex)"
+                  :tokens="paragraphs[virtualRow.index].tokens"
                 />
-                <template v-if="shouldInsertWjAfter(paragraphs[virtualRow.index].tokens, tokenIndex)">&#x2060;</template>
               </template>
             </template>
             <template v-else>
@@ -597,6 +615,8 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
     <ExpressionRuleEditor
       :show="showExpressionEditor"
       :tokens="expressionDraft"
+      :startMorphemeIdx="expressionDraftMorphemeRange.startMorphemeIdx"
+      :endMorphemeIdx="expressionDraftMorphemeRange.endMorphemeIdx"
       @cancel="showExpressionEditor = false"
       @save="saveExpressionDraft"
     />

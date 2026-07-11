@@ -160,9 +160,18 @@ pub(crate) fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
     bunsetsu
 }
 
-pub fn resolve_lexical_boundaries<F: Fn(&str) -> bool>(bunsetsus: &mut [Bunsetsu], contains_exact: F) {
+pub fn resolve_lexical_boundaries<F: Fn(&str) -> bool>(
+    bunsetsus: &mut [Bunsetsu],
+    contains_exact: F,
+) {
     for bunsetsu in bunsetsus {
-        let Some(head_index) = bunsetsu.morphemes.iter().position(|m| is_jiritsugo(m) && m.pos.major != "接頭詞") else { continue };
+        let Some(head_index) = bunsetsu
+            .morphemes
+            .iter()
+            .position(|m| is_jiritsugo(m) && m.pos.major != "接頭詞")
+        else {
+            continue;
+        };
         let suffix_start = head_index + 1;
 
         let mut suffix_indices = Vec::new();
@@ -179,7 +188,9 @@ pub fn resolve_lexical_boundaries<F: Fn(&str) -> bool>(bunsetsus: &mut [Bunsetsu
         }
 
         let candidate = bunsetsu.head_word.base_form.clone();
-        if contains_exact(&candidate) { continue; }
+        if contains_exact(&candidate) {
+            continue;
+        }
 
         let root = &bunsetsu.morphemes[head_index];
         bunsetsu.head_word.surface = root.surface.clone();
@@ -210,7 +221,12 @@ mod tests {
     fn test_resolve_lexical_boundaries_splits_on_missing_dict() {
         let m1 = Morpheme {
             surface: "警察".to_string(),
-            pos: PosTag { major: "名詞".to_string(), sub1: "一般".to_string(), sub2: "*".to_string(), sub3: "*".to_string() },
+            pos: PosTag {
+                major: "名詞".to_string(),
+                sub1: "一般".to_string(),
+                sub2: "*".to_string(),
+                sub3: "*".to_string(),
+            },
             base_form: "警察".to_string(),
             reading: "ケイサツ".to_string(),
             conjugation_type: "*".to_string(),
@@ -219,7 +235,12 @@ mod tests {
         };
         let m2 = Morpheme {
             surface: "署".to_string(),
-            pos: PosTag { major: "名詞".to_string(), sub1: "接尾".to_string(), sub2: "*".to_string(), sub3: "*".to_string() },
+            pos: PosTag {
+                major: "名詞".to_string(),
+                sub1: "接尾".to_string(),
+                sub2: "*".to_string(),
+                sub3: "*".to_string(),
+            },
             base_form: "署".to_string(),
             reading: "ショ".to_string(),
             conjugation_type: "*".to_string(),
@@ -228,7 +249,12 @@ mod tests {
         };
         let m3 = Morpheme {
             surface: "に".to_string(),
-            pos: PosTag { major: "助詞".to_string(), sub1: "格助詞".to_string(), sub2: "*".to_string(), sub3: "*".to_string() },
+            pos: PosTag {
+                major: "助詞".to_string(),
+                sub1: "格助詞".to_string(),
+                sub2: "*".to_string(),
+                sub3: "*".to_string(),
+            },
             base_form: "に".to_string(),
             reading: "ニ".to_string(),
             conjugation_type: "*".to_string(),

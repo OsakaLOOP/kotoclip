@@ -1,5 +1,5 @@
-use crate::models::{AnnotatedToken, Morpheme, SegmentationCandidate};
 use super::morpheme::MorphemeCandidate;
+use crate::models::{AnnotatedToken, Morpheme, SegmentationCandidate};
 
 fn token_from_morphemes(morphemes: Vec<Morpheme>, source: &AnnotatedToken) -> AnnotatedToken {
     AnnotatedToken {
@@ -9,6 +9,7 @@ fn token_from_morphemes(morphemes: Vec<Morpheme>, source: &AnnotatedToken) -> An
         is_known: source.is_known,
         inference_reason: source.inference_reason.clone(),
         expressions: Vec::new(),
+        display_class: source.display_class.clone(),
     }
 }
 
@@ -102,6 +103,7 @@ mod tests {
             is_known: false,
             inference_reason: None,
             expressions: Vec::new(),
+            display_class: "content".to_string(),
         }
     }
 

@@ -1,19 +1,22 @@
-pub mod models;
-pub mod pipeline;
+pub mod analysis_progress;
 pub mod dictionary;
-pub mod profile;
 pub mod export;
 pub mod ffi;
-pub mod analysis_progress;
+pub mod models;
+pub mod performance;
+pub mod pipeline;
+pub mod profile;
 
-use std::path::Path;
-use pipeline::Pipeline;
+use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
-use profile::ProfileEngine;
 use models::{
     AnnotatedToken, DictEntry, ExpressionRule, SegmentationCandidate, SegmentationChoice,
 };
-use analysis_progress::{AnalysisPhase, AnalysisProgress};
+use performance::TimingCollector;
+use pipeline::Pipeline;
+use profile::ProfileEngine;
+use std::path::Path;
+use std::time::Instant;
 
 /// Kotoclip 核心引擎，粘合了分词管线、词库检索以及用户历史曝光画像
 pub struct Engine {
@@ -32,7 +35,7 @@ impl Engine {
         let pipeline = Pipeline::new(dict_path)?;
         let dictionary = DictionaryEngine::new(dicts_dir)?;
         let profile = ProfileEngine::new(user_db_path)?;
-        
+
         Ok(Self {
             pipeline,
             dictionary,
@@ -40,8 +43,41 @@ impl Engine {
         })
     }
 
+    /// 诊断专用初始化入口，拆分词法模型、外部词典与画像数据库的真实冷启动耗时。
+    pub fn new_profiled<P1: AsRef<Path>, P2: AsRef<Path>, P3: AsRef<Path>>(
+        dict_path: P1,
+        dicts_dir: P2,
+        user_db_path: P3,
+    ) -> Result<(Self, TimingCollector), Box<dyn std::error::Error>> {
+        let mut timings = TimingCollector::default();
+
+        let started = Instant::now();
+        let pipeline = Pipeline::new(dict_path)?;
+        timings.add("词法模型与语法规则初始化", started.elapsed());
+
+        let started = Instant::now();
+        let dictionary = DictionaryEngine::new(dicts_dir)?;
+        timings.add("外部词典初始化", started.elapsed());
+
+        let started = Instant::now();
+        let profile = ProfileEngine::new(user_db_path)?;
+        timings.add("画像数据库初始化", started.elapsed());
+
+        Ok((
+            Self {
+                pipeline,
+                dictionary,
+                profile,
+            },
+            timings,
+        ))
+    }
+
     /// 解析一段文章，执行完整分词、语法提取，并自动从画像库标注生词分值 (Novelty)
-    pub fn analyze_text(&self, text: &str) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+    pub fn analyze_text(
+        &self,
+        text: &str,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
         self.analyze_text_with_exposure(text, true)
     }
 
@@ -65,7 +101,11 @@ impl Engine {
     where
         F: FnMut(AnalysisProgress),
     {
-        report(AnalysisProgress::stage(AnalysisPhase::Preparing, 1, "准备分析与表达规则"));
+        report(AnalysisProgress::stage(
+            AnalysisPhase::Preparing,
+            1,
+            "准备分析与表达规则",
+        ));
         // 历史 user_merge_rules 不再进入正式 Pipeline。文节边界保持由 NLP 与
         // 词典边界解析器决定；用户拖拽仅创建独立的跨文节表达注解。
         let mut tokens = self.pipeline.process_with_progress(text, &[], &mut report);
@@ -82,6 +122,20 @@ impl Engine {
             "按词典校正词汇边界",
         ));
         for (index, token) in tokens.iter_mut().enumerate() {
+            if token.display_class != "content" {
+                let completed = index + 1;
+                if completed == token_count || completed % report_step == 0 {
+                    let percent = 55 + ((completed * 5 / token_count.max(1)) as u8);
+                    report(AnalysisProgress::counted(
+                        AnalysisPhase::DictionaryMatching,
+                        completed,
+                        token_count,
+                        percent,
+                        "按词典校正词汇边界",
+                    ));
+                }
+                continue;
+            }
             pipeline::bunsetsu::resolve_lexical_boundaries(
                 std::slice::from_mut(&mut token.bunsetsu),
                 |word| self.dictionary.contains_exact(word),
@@ -99,57 +153,146 @@ impl Engine {
             }
         }
         // 调用画像引擎打分标注
-        let mut annotated = self.profile.annotate_tokens_with_progress(tokens, |completed, total| {
-            let percent = 61 + ((completed * 35 / total.max(1)) as u8);
-            report(AnalysisProgress::counted(
-                AnalysisPhase::ProfileScoring,
-                completed,
-                total,
-                percent,
-                "计算词汇熟悉度",
-            ));
-        })?;
+        let mut annotated =
+            self.profile
+                .annotate_tokens_with_progress(tokens, |completed, total| {
+                    let percent = 61 + ((completed * 35 / total.max(1)) as u8);
+                    report(AnalysisProgress::counted(
+                        AnalysisPhase::ProfileScoring,
+                        completed,
+                        total,
+                        percent,
+                        "计算词汇熟悉度",
+                    ));
+                })?;
         // 跨文节表达是独立注解层：画像评分完成后应用，不重写 NLP 文节结构。
         self.profile.apply_expression_rules(&mut annotated)?;
         pipeline::expressions::apply_builtin_expressions(&mut annotated);
         pipeline::expressions::apply_dictionary_expressions(&mut annotated, &self.dictionary);
         pipeline::expressions::apply_correlative_expressions(&mut annotated);
         if record_exposure {
-            self.profile.record_token_exposures_with_progress(&annotated, |completed, total| {
-                let percent = 97 + ((completed * 2 / total.max(1)) as u8);
-                report(AnalysisProgress::counted(
-                    AnalysisPhase::RecordingExposure,
-                    completed,
-                    total,
-                    percent,
-                    "记录本次词汇曝光",
-                ));
-            })?;
+            self.profile
+                .record_token_exposures_with_progress(&annotated, |completed, total| {
+                    let percent = 97 + ((completed * 2 / total.max(1)) as u8);
+                    report(AnalysisProgress::counted(
+                        AnalysisPhase::RecordingExposure,
+                        completed,
+                        total,
+                        percent,
+                        "记录本次词汇曝光",
+                    ));
+                })?;
         }
-        report(AnalysisProgress::stage(AnalysisPhase::Completed, 100, "分析完成"));
+        report(AnalysisProgress::stage(
+            AnalysisPhase::Completed,
+            100,
+            "分析完成",
+        ));
         Ok(annotated)
     }
 
+    /// 诊断专用的完整分析入口。计时紧贴真实函数调用边界，
+    /// 不依赖 UI 进度百分比推断阶段耗时。
+    pub fn analyze_text_profiled(
+        &self,
+        text: &str,
+        record_exposure: bool,
+    ) -> Result<(Vec<AnnotatedToken>, TimingCollector), Box<dyn std::error::Error>> {
+        let mut timings = TimingCollector::default();
+
+        let started = Instant::now();
+        let mut tokens = self.pipeline.process_profiled(text, &[], &mut timings);
+        timings.add("分析管线总计", started.elapsed());
+
+        let started = Instant::now();
+        let segmentation_choices = self.profile.get_segmentation_choices()?;
+        timings.add("分词选择读取", started.elapsed());
+
+        let started = Instant::now();
+        self.pipeline
+            .apply_segmentation_choices(&mut tokens, &segmentation_choices);
+        timings.add("分词选择应用", started.elapsed());
+
+        let started = Instant::now();
+        for token in &mut tokens {
+            if token.display_class != "content" {
+                continue;
+            }
+            pipeline::bunsetsu::resolve_lexical_boundaries(
+                std::slice::from_mut(&mut token.bunsetsu),
+                |word| self.dictionary.contains_exact(word),
+            );
+        }
+        timings.add("词典边界", started.elapsed());
+
+        let started = Instant::now();
+        let mut annotated = self
+            .profile
+            .annotate_tokens_profiled(tokens, &mut timings)?;
+        timings.add("画像评分总计", started.elapsed());
+
+        let started = Instant::now();
+        self.profile.apply_expression_rules(&mut annotated)?;
+        timings.add("自定义表达", started.elapsed());
+
+        let started = Instant::now();
+        pipeline::expressions::apply_builtin_expressions(&mut annotated);
+        timings.add("内置表达", started.elapsed());
+
+        let started = Instant::now();
+        pipeline::expressions::apply_dictionary_expressions(&mut annotated, &self.dictionary);
+        timings.add("词典表达", started.elapsed());
+
+        let started = Instant::now();
+        pipeline::expressions::apply_correlative_expressions(&mut annotated);
+        timings.add("呼应表达", started.elapsed());
+
+        if record_exposure {
+            self.profile
+                .record_token_exposures_profiled(&annotated, &mut timings)?;
+        }
+
+        Ok((annotated, timings))
+    }
+
     /// 记录生词的曝光历史 (由阅读流自动驱动)
-    pub fn record_exposure(&self, base_form: &str, reading: &str, pos: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn record_exposure(
+        &self,
+        base_form: &str,
+        reading: &str,
+        pos: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.profile.record_exposure(base_form, reading, pos)?;
         Ok(())
     }
 
     /// 主动标记单词为“已知” (脱下胶囊)
-    pub fn mark_known(&self, base_form: &str, reading: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn mark_known(
+        &self,
+        base_form: &str,
+        reading: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.profile.mark_known(base_form, reading)?;
         Ok(())
     }
 
     /// 主动标记单词为“未知”
-    pub fn mark_unknown(&self, base_form: &str, reading: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn mark_unknown(
+        &self,
+        base_form: &str,
+        reading: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.profile.mark_unknown(base_form, reading)?;
         Ok(())
     }
 
     /// 从词库中查询单词释义，并按传入的词典优先级顺序列表进行重排聚合
-    pub fn lookup_word(&self, word: &str, reading: Option<&str>, priority_list: &[String]) -> Vec<DictEntry> {
+    pub fn lookup_word(
+        &self,
+        word: &str,
+        reading: Option<&str>,
+        priority_list: &[String],
+    ) -> Vec<DictEntry> {
         let raw_entries = self.dictionary.lookup(word, reading);
         dictionary::aggregate::sort_definitions(raw_entries, priority_list)
     }
@@ -169,13 +312,34 @@ impl Engine {
         tokens: &[AnnotatedToken],
         label: Option<&str>,
         description: Option<&str>,
-        slot_indices: &[usize],
+        bunsetsu_states: &[String],
+        morpheme_masks: &[Vec<bool>],
+        gap_after: Option<usize>,
     ) -> Result<ExpressionRule, Box<dyn std::error::Error>> {
-        self.profile.add_expression_rule(tokens, label, description, slot_indices)
+        self.profile.add_expression_rule(
+            tokens,
+            label,
+            description,
+            bunsetsu_states,
+            morpheme_masks,
+            gap_after,
+        )
     }
 
     pub fn get_expression_rules(&self) -> Result<Vec<ExpressionRule>, Box<dyn std::error::Error>> {
         self.profile.get_expression_rules()
+    }
+
+    /// 仅刷新自定义表达注解，复用已有分词、语法、画像及词典分析结果。
+    pub fn refresh_expression_annotations(
+        &self,
+        mut tokens: Vec<AnnotatedToken>,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        for token in &mut tokens {
+            token.expressions.retain(|expression| expression.origin != "custom");
+        }
+        self.profile.apply_expression_rules(&mut tokens)?;
+        Ok(tokens)
     }
 
     pub fn delete_expression_rule(&self, id: i64) -> Result<bool, Box<dyn std::error::Error>> {
@@ -263,18 +427,30 @@ mod progress_tests {
             return;
         };
 
-        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let directory = std::env::temp_dir().join(format!("kotoclip-progress-{nonce}"));
         let dictionary_directory = directory.join("dicts");
         std::fs::create_dir_all(&dictionary_directory).unwrap();
-        let engine = Engine::new(dict_path, &dictionary_directory, directory.join("profile.sqlite")).unwrap();
+        let engine = Engine::new(
+            dict_path,
+            &dictionary_directory,
+            directory.join("profile.sqlite"),
+        )
+        .unwrap();
         let mut events = Vec::new();
         let tokens = engine
-            .analyze_text_with_progress("七日は警察署へ向かった。", true, |event| events.push(event))
+            .analyze_text_with_progress("七日は警察署へ向かった。", true, |event| {
+                events.push(event)
+            })
             .unwrap();
 
         assert!(!tokens.is_empty());
-        assert!(events.windows(2).all(|pair| pair[0].percent <= pair[1].percent));
+        assert!(events
+            .windows(2)
+            .all(|pair| pair[0].percent <= pair[1].percent));
         for phase in [
             AnalysisPhase::Preparing,
             AnalysisPhase::Tokenizing,
@@ -285,7 +461,10 @@ mod progress_tests {
             AnalysisPhase::RecordingExposure,
             AnalysisPhase::Completed,
         ] {
-            assert!(events.iter().any(|event| event.phase == phase), "缺少进度阶段：{phase:?}");
+            assert!(
+                events.iter().any(|event| event.phase == phase),
+                "缺少进度阶段：{phase:?}"
+            );
         }
         assert_eq!(events.last().unwrap().percent, 100);
 

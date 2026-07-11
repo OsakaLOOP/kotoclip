@@ -42,17 +42,17 @@ fn get_pos_byte(pos: &PosTag) -> u8 {
         return b'T'; // 其他接尾辞 (Tail)
     }
     match pos.major.as_str() {
-        "動詞" => b'V', // Verb
-        "名詞" => b'N', // Noun
+        "動詞" => b'V',   // Verb
+        "名詞" => b'N',   // Noun
         "形容詞" => b'A', // Adjective
         "助動詞" => b'X', // Auxiliary Verb
-        "助詞" => b'P', // Particle
-        "副詞" => b'D', // Adverb
+        "助詞" => b'P',   // Particle
+        "副詞" => b'D',   // Adverb
         "連体詞" => b'R', // Pre-noun Adjectival
         "接続詞" => b'C', // Conjunction
         "感動詞" => b'I', // Interjection
         "接頭詞" => b'H', // Prefix
-        _ => b'O', // Other
+        _ => b'O',        // Other
     }
 }
 
@@ -90,13 +90,11 @@ impl GrammarMatcher {
                 jlpt_level: Some(4),
                 description: "使役形，表示让/令某人做某事 (如: 食べさせる)".to_string(),
                 pos_pattern: "VX".to_string(),
-                constraints: vec![
-                    Constraint {
-                        index: 1,
-                        field: "base_form".to_string(),
-                        values: vec!["せる".to_string(), "させる".to_string()],
-                    },
-                ],
+                constraints: vec![Constraint {
+                    index: 1,
+                    field: "base_form".to_string(),
+                    values: vec!["せる".to_string(), "させる".to_string()],
+                }],
             },
             // 3. 受身/可能 (Passive/Potential) - VX (动词+助动词)
             GrammarPattern {
@@ -106,13 +104,11 @@ impl GrammarMatcher {
                 jlpt_level: Some(4),
                 description: "被动、可能、尊他或自发表达 (如: 食べられる)".to_string(),
                 pos_pattern: "VX".to_string(),
-                constraints: vec![
-                    Constraint {
-                        index: 1,
-                        field: "base_form".to_string(),
-                        values: vec!["れる".to_string(), "られる".to_string()],
-                    },
-                ],
+                constraints: vec![Constraint {
+                    index: 1,
+                    field: "base_form".to_string(),
+                    values: vec!["れる".to_string(), "られる".to_string()],
+                }],
             },
             // 4. 过去否定 (Past Negative) - XX (助动词+助动词)
             GrammarPattern {
@@ -164,13 +160,11 @@ impl GrammarMatcher {
                 jlpt_level: Some(5),
                 description: "第一人称想做某事 (如: 食べたい)".to_string(),
                 pos_pattern: "VX".to_string(),
-                constraints: vec![
-                    Constraint {
-                        index: 1,
-                        field: "base_form".to_string(),
-                        values: vec!["たい".to_string()],
-                    },
-                ],
+                constraints: vec![Constraint {
+                    index: 1,
+                    field: "base_form".to_string(),
+                    values: vec!["たい".to_string()],
+                }],
             },
             // 7. 试图/将要 (Attempt to do) - VXPV (动词意向形+助动词+助词+动词)
             GrammarPattern {
@@ -242,7 +236,10 @@ impl GrammarMatcher {
             }
 
             // 2. 将形态素序列映射为特征字节流
-            let haystack: Vec<u8> = flat_morphemes.iter().map(|m| get_pos_byte(&m.pos)).collect();
+            let haystack: Vec<u8> = flat_morphemes
+                .iter()
+                .map(|m| get_pos_byte(&m.pos))
+                .collect();
 
             // 3. 使用 Aho-Corasick 进行模式快速定位
             // Multiple grammar patterns commonly share a prefix (for example VX and VXX).
@@ -259,7 +256,7 @@ impl GrammarMatcher {
                 if verify_constraints(sub_morphemes, &pattern.constraints) {
                     // 校验通过，准备写入到命中的第一个文节中
                     let target_bunsetsu_idx = morph_to_bunsetsu[start];
-                    
+
                     let tag = GrammarTag {
                         pattern_id: pattern.id.clone(),
                         name_ja: pattern.name_ja.clone(),
@@ -267,7 +264,10 @@ impl GrammarMatcher {
                         jlpt_level: pattern.jlpt_level,
                         description: pattern.description.clone(),
                         morpheme_range: (start, end),
-                        char_range: (sub_morphemes.first().unwrap().char_range.0, sub_morphemes.last().unwrap().char_range.1),
+                        char_range: (
+                            sub_morphemes.first().unwrap().char_range.0,
+                            sub_morphemes.last().unwrap().char_range.1,
+                        ),
                     };
 
                     matched_tags.push((target_bunsetsu_idx, tag));
@@ -279,7 +279,11 @@ impl GrammarMatcher {
         for (target_bunsetsu_idx, tag) in matched_tags {
             let bunsetsu = &mut bunsetsus[target_bunsetsu_idx];
             // 避免重复写入同一个语法标签
-            if !bunsetsu.grammar_tags.iter().any(|t| t.pattern_id == tag.pattern_id) {
+            if !bunsetsu
+                .grammar_tags
+                .iter()
+                .any(|t| t.pattern_id == tag.pattern_id)
+            {
                 bunsetsu.grammar_tags.push(tag);
             }
         }
@@ -289,17 +293,34 @@ impl GrammarMatcher {
 fn validate_patterns(patterns: &[GrammarPattern]) -> bool {
     let mut ids = HashSet::new();
     patterns.iter().all(|pattern| {
-        !pattern.id.is_empty() && !pattern.name_ja.is_empty() && ids.insert(pattern.id.clone())
-            && pattern.pos_pattern.bytes().all(|byte| b"VNAXPDRCIOHT".contains(&byte))
-            && pattern.constraints.iter().all(|constraint| constraint.index < pattern.pos_pattern.len() && !constraint.values.is_empty())
+        !pattern.id.is_empty()
+            && !pattern.name_ja.is_empty()
+            && ids.insert(pattern.id.clone())
+            && pattern
+                .pos_pattern
+                .bytes()
+                .all(|byte| b"VNAXPDRCIOHT".contains(&byte))
+            && pattern.constraints.iter().all(|constraint| {
+                constraint.index < pattern.pos_pattern.len() && !constraint.values.is_empty()
+            })
     })
 }
 
 fn example_patterns() -> Vec<GrammarPattern> {
-    let make = |id: &str, name: &str, pattern: &str, index: usize, values: &[&str], level: u8| GrammarPattern {
-        id: id.to_string(), name_ja: name.to_string(), name_en: name.to_string(), jlpt_level: Some(level),
-        description: format!("例句语法：{}", name), pos_pattern: pattern.to_string(),
-        constraints: vec![Constraint { index, field: "base_form".to_string(), values: values.iter().map(|v| (*v).to_string()).collect() }],
+    let make = |id: &str, name: &str, pattern: &str, index: usize, values: &[&str], level: u8| {
+        GrammarPattern {
+            id: id.to_string(),
+            name_ja: name.to_string(),
+            name_en: name.to_string(),
+            jlpt_level: Some(level),
+            description: format!("例句语法：{}", name),
+            pos_pattern: pattern.to_string(),
+            constraints: vec![Constraint {
+                index,
+                field: "base_form".to_string(),
+                values: values.iter().map(|v| (*v).to_string()).collect(),
+            }],
+        }
     };
     vec![
         make("te_kuru", "〜てくる", "VPV", 2, &["くる", "来る"], 3),

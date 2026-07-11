@@ -73,7 +73,10 @@ fn extract_sentence_and_offset(text: &str, range: (usize, usize)) -> (String, (u
 }
 
 /// 导出所选生词条目为结构化且与 Anki 兼容的 JSON 字符串
-pub fn export_to_json(source_text: &str, entries: Vec<ExportEntry>) -> Result<String, serde_json::Error> {
+pub fn export_to_json(
+    source_text: &str,
+    entries: Vec<ExportEntry>,
+) -> Result<String, serde_json::Error> {
     let canonical_text = crate::pipeline::ruby::prepare_text(source_text).text;
 
     // 1. 去重 (base_form, reading)，保留单上下文
@@ -94,29 +97,35 @@ pub fn export_to_json(source_text: &str, entries: Vec<ExportEntry>) -> Result<St
         // 使用 RFC 3339 格式获取当前 ISO 时间
         exported_at: chrono::Utc::now().to_rfc3339(),
         source_text_hash: hash,
-        entries: unique_entries.into_iter().map(|entry| {
-            let (sentence, highlight) = if let Some(range) = entry.char_range {
-                extract_sentence_and_offset(&canonical_text, range)
-            } else {
-                (entry.context_sentence.clone(), entry.context_highlight)
-            };
+        entries: unique_entries
+            .into_iter()
+            .map(|entry| {
+                let (sentence, highlight) = if let Some(range) = entry.char_range {
+                    extract_sentence_and_offset(&canonical_text, range)
+                } else {
+                    (entry.context_sentence.clone(), entry.context_highlight)
+                };
 
-            let mut jlpt_levels = entry.jlpt_levels.clone();
-            jlpt_levels.sort_unstable();
-            jlpt_levels.dedup();
+                let mut jlpt_levels = entry.jlpt_levels.clone();
+                jlpt_levels.sort_unstable();
+                jlpt_levels.dedup();
 
-            ExportEntryJson {
-                surface: entry.surface,
-                base_form: entry.base_form,
-                reading: entry.reading,
-                pos: entry.pos,
-                grammar_tags: entry.grammar_tags,
-                jlpt_levels,
-                context: ExportContext { sentence, highlight_range: highlight },
-                definitions: entry.definitions,
-                user_note: entry.user_note,
-            }
-        }).collect(),
+                ExportEntryJson {
+                    surface: entry.surface,
+                    base_form: entry.base_form,
+                    reading: entry.reading,
+                    pos: entry.pos,
+                    grammar_tags: entry.grammar_tags,
+                    jlpt_levels,
+                    context: ExportContext {
+                        sentence,
+                        highlight_range: highlight,
+                    },
+                    definitions: entry.definitions,
+                    user_note: entry.user_note,
+                }
+            })
+            .collect(),
     };
     serde_json::to_string_pretty(&root)
 }

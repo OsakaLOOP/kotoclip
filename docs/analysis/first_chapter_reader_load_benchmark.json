@@ -1,0 +1,102 @@
+{
+  "source": "D:\\Downloads\\epub-exp\\source\\七日の喰い神 (ガガガ文庫) (カミツキレイニー)\\output.md",
+  "chapter": "## 第一話　冷やし神",
+  "source_read_ms": 2,
+  "chapter_extract_ms": 0,
+  "engine_initialization_ms": 1108,
+  "analysis_total_ms": 4297,
+  "ipc_payload_serialize_ms": 1274,
+  "end_to_end_ms": 6684,
+  "raw_characters": 48597,
+  "analyzed_characters": 44661,
+  "tokens": 17095,
+  "ipc_payload_bytes": 11796963,
+  "engine_initialization_details": [
+    {
+      "phase": "外部词典初始化",
+      "duration_ms": 3
+    },
+    {
+      "phase": "画像数据库初始化",
+      "duration_ms": 2
+    },
+    {
+      "phase": "词法模型与语法规则初始化",
+      "duration_ms": 1102
+    }
+  ],
+  "analysis_details": [
+    {
+      "phase": "Token 排序",
+      "duration_ms": 1
+    },
+    {
+      "phase": "Token 组装",
+      "duration_ms": 53
+    },
+    {
+      "phase": "内置表达",
+      "duration_ms": 91
+    },
+    {
+      "phase": "准备原文与切分",
+      "duration_ms": 20
+    },
+    {
+      "phase": "分析管线总计",
+      "duration_ms": 2189
+    },
+    {
+      "phase": "分词选择应用",
+      "duration_ms": 1
+    },
+    {
+      "phase": "分词选择读取",
+      "duration_ms": 0
+    },
+    {
+      "phase": "呼应表达",
+      "duration_ms": 91
+    },
+    {
+      "phase": "形态素分析",
+      "duration_ms": 1094
+    },
+    {
+      "phase": "形态素后处理",
+      "duration_ms": 278
+    },
+    {
+      "phase": "文节与振假名",
+      "duration_ms": 623
+    },
+    {
+      "phase": "汉字熟悉度推断",
+      "duration_ms": 361
+    },
+    {
+      "phase": "画像曝光查询",
+      "duration_ms": 0
+    },
+    {
+      "phase": "画像评分总计",
+      "duration_ms": 375
+    },
+    {
+      "phase": "自定义表达",
+      "duration_ms": 61
+    },
+    {
+      "phase": "词典表达",
+      "duration_ms": 1413
+    },
+    {
+      "phase": "词典边界",
+      "duration_ms": 72
+    },
+    {
+      "phase": "语法匹配",
+      "duration_ms": 53
+    }
+  ]
+}

@@ -16,9 +16,10 @@ impl ProfileEngine {
     /// 构造函数：初始化本地用户画像 SQLite 数据库，并建立相应表结构与联合唯一索引
     pub fn new<P: AsRef<Path>>(db_path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let conn = Connection::open(db_path)?;
-        
+
         // 使用 execute_batch 批量初始化用户画像数据表与索引，避免单条 execute 触发 MultipleStatement 限制
-        conn.execute_batch("
+        conn.execute_batch(
+            "
             CREATE TABLE IF NOT EXISTS exposure_history (
                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
                 base_form      TEXT NOT NULL,
@@ -65,7 +66,8 @@ impl ProfileEngine {
 
             CREATE INDEX IF NOT EXISTS idx_kanji_knowledge_char 
             ON kanji_knowledge(kanji);
-        ")?;
+        ",
+        )?;
 
         // 兼容功能开发期间已经创建的本地表达表。
         let _ = conn.execute(
@@ -98,7 +100,9 @@ mod tests {
 
         // 3. 此时推断单字掌握度
         let conf_ken = engine.get_kanji_confidence('剣', "ケン").expect("查询失败");
-        let conf_jutsu = engine.get_kanji_confidence('術', "ジュツ").expect("查询失败");
+        let conf_jutsu = engine
+            .get_kanji_confidence('術', "ジュツ")
+            .expect("查询失败");
         assert!(conf_ken > 0.7, "剣 读 ケン 置信度应大于 0.7");
         assert!(conf_jutsu > 0.7, "術 读 ジュツ 置信度应大于 0.7");
 
@@ -127,21 +131,28 @@ mod tests {
             is_known: false,
             inference_reason: None,
             expressions: Vec::new(),
+            display_class: "content".to_string(),
         };
 
         // 5. 对 Token 进行标注评分
         let annotated = engine
             .annotate_tokens(vec![mock_token])
             .expect("评分标注失败");
-        
+
         let token = &annotated[0];
-        
+
         // 6. 验证推导结果
-        assert!(token.novelty_score < 0.7, "因为掌握了 剣(ケン) 和 術(ジュツ)，生词评分应该被自动拉低");
+        assert!(
+            token.novelty_score < 0.7,
+            "因为掌握了 剣(ケン) 和 術(ジュツ)，生词评分应该被自动拉低"
+        );
         assert!(token.inference_reason.is_some(), "应当给出掌握推导的原因");
-        
+
         let reason = token.inference_reason.as_ref().unwrap();
-        assert!(reason.contains("剣") && reason.contains("術"), "推导原因应当明确包含汉字");
+        assert!(
+            reason.contains("剣") && reason.contains("術"),
+            "推导原因应当明确包含汉字"
+        );
     }
 
     #[test]
@@ -170,14 +181,13 @@ mod tests {
             is_known: false,
             inference_reason: None,
             expressions: Vec::new(),
+            display_class: "content".to_string(),
         };
 
         let first = engine
             .annotate_tokens(vec![mock_token.clone()])
             .expect("首次评分失败");
-        engine
-            .record_token_exposures(&first)
-            .expect("记录曝光失败");
+        engine.record_token_exposures(&first).expect("记录曝光失败");
         let second = engine
             .annotate_tokens(vec![mock_token])
             .expect("再次评分失败");
@@ -191,9 +201,12 @@ mod tests {
 
         let mut progress = Vec::new();
         engine
-            .record_token_exposures_with_progress(&[first[0].clone(), first[0].clone()], |completed, total| {
-                progress.push((completed, total));
-            })
+            .record_token_exposures_with_progress(
+                &[first[0].clone(), first[0].clone()],
+                |completed, total| {
+                    progress.push((completed, total));
+                },
+            )
             .expect("批量记录曝光失败");
         let exposure = engine
             .get_exposure("難語", "ナンゴ")

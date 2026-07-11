@@ -192,8 +192,16 @@ pub fn override_morpheme_readings(
     annotations: &[RubyAnnotation],
 ) {
     let text_chars: Vec<char> = text.chars().collect();
+    override_morpheme_readings_with_chars(&text_chars, morphemes, annotations);
+}
+
+pub fn override_morpheme_readings_with_chars(
+    text_chars: &[char],
+    morphemes: &mut [Morpheme],
+    annotations: &[RubyAnnotation],
+) {
     for morpheme in morphemes {
-        if let Some(reading) = reading_for_range(&text_chars, morpheme.char_range, annotations) {
+        if let Some(reading) = reading_for_range(text_chars, morpheme.char_range, annotations) {
             morpheme.reading = reading;
         }
     }
@@ -205,7 +213,14 @@ pub fn override_bunsetsu_readings(
     annotations: &[RubyAnnotation],
 ) {
     let text_chars: Vec<char> = text.chars().collect();
+    override_bunsetsu_readings_with_chars(&text_chars, bunsetsus, annotations);
+}
 
+pub fn override_bunsetsu_readings_with_chars(
+    text_chars: &[char],
+    bunsetsus: &mut [Bunsetsu],
+    annotations: &[RubyAnnotation],
+) {
     for bunsetsu in bunsetsus {
         // A whole-word annotation is also an explicit lexical boundary. This covers
         // cases where the tokenizer kept the word in one bunsetsu but chose a shorter head.
@@ -214,8 +229,14 @@ pub fn override_bunsetsu_readings(
                 && annotation.char_range.1 <= bunsetsu.char_range.1
                 && bunsetsu.head_word.surface != annotation.base
                 && annotation.base.starts_with(&bunsetsu.head_word.surface)
-                && bunsetsu.morphemes.iter().any(|m| m.char_range.0 == annotation.char_range.0)
-                && bunsetsu.morphemes.iter().any(|m| m.char_range.1 == annotation.char_range.1)
+                && bunsetsu
+                    .morphemes
+                    .iter()
+                    .any(|m| m.char_range.0 == annotation.char_range.0)
+                && bunsetsu
+                    .morphemes
+                    .iter()
+                    .any(|m| m.char_range.1 == annotation.char_range.1)
         }) {
             bunsetsu.head_word.surface = annotation.base.clone();
             bunsetsu.head_word.base_form = annotation.base.clone();
@@ -232,7 +253,7 @@ pub fn override_bunsetsu_readings(
                         bunsetsu.morphemes[start].char_range.0,
                         bunsetsu.morphemes[end].char_range.1,
                     );
-                    if let Some(reading) = reading_for_range(&text_chars, char_range, annotations) {
+                    if let Some(reading) = reading_for_range(text_chars, char_range, annotations) {
                         bunsetsu.head_word.reading = reading;
                     }
                     break;
@@ -267,12 +288,10 @@ pub fn merge_annotated_bunsetsus(
         };
         let end = start + relative_end;
         if end == start
-            || bunsetsus[start..=end]
-                .iter()
-                .any(|bunsetsu| {
-                    bunsetsu.char_range.0 < annotation.char_range.0
-                        || bunsetsu.char_range.1 > annotation.char_range.1
-                })
+            || bunsetsus[start..=end].iter().any(|bunsetsu| {
+                bunsetsu.char_range.0 < annotation.char_range.0
+                    || bunsetsu.char_range.1 > annotation.char_range.1
+            })
         {
             continue;
         }
@@ -336,9 +355,15 @@ mod tests {
 
     #[test]
     fn test_strip_markdown_images() {
-        assert_eq!(strip_markdown_images("这是一个![alt](./img.jpg)图片"), "这是一个图片");
+        assert_eq!(
+            strip_markdown_images("这是一个![alt](./img.jpg)图片"),
+            "这是一个图片"
+        );
         assert_eq!(strip_markdown_images("没有![未闭合"), "没有![未闭合");
-        assert_eq!(strip_markdown_images("普通的[链接](url)"), "普通的[链接](url)");
+        assert_eq!(
+            strip_markdown_images("普通的[链接](url)"),
+            "普通的[链接](url)"
+        );
         assert_eq!(strip_markdown_images("多个![a](b)和![c](d)"), "多个和");
     }
 }
