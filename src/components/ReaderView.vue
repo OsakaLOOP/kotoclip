@@ -16,6 +16,7 @@ import ExportPanel from "./ExportPanel.vue";
 import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
 import ExpressionRulesPanel from "./ExpressionRulesPanel.vue";
 import ExpressionRuleEditor from "./ExpressionRuleEditor.vue";
+import DictionaryContent from "./dictionary/DictionaryContent.vue";
 
 // 状态定义
 const inputText = ref("");
@@ -701,7 +702,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             <div v-else class="modal-defs-container">
               <div v-for="(def, idx) in modalDefinitions" :key="idx" class="dict-section">
                 <div class="dict-name">✦ {{ def.dict_name }}</div>
-                <div class="dict-content html-content" v-html="def.definition_html"></div>
+                <DictionaryContent :entry="def" />
               </div>
             </div>
           </div>

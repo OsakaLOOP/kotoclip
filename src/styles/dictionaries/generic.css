@@ -1,0 +1,42 @@
+.dictionary-content {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.dictionary-module + .dictionary-module {
+  margin-top: 10px;
+}
+
+.dictionary-module__label {
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font: 700 0.7rem var(--font-ui);
+}
+
+.dictionary-module__body > * {
+  max-width: 100%;
+  white-space: normal !important;
+}
+
+.dictionary-module__body a {
+  color: var(--accent-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dictionary-module__body table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dictionary-module__body th,
+.dictionary-module__body td {
+  border: 1px solid var(--border-color);
+  padding: 4px 6px;
+  vertical-align: top;
+}
+
+.dictionary-module__body ul,
+.dictionary-module__body ol {
+  padding-inline-start: 1.4em;
+}

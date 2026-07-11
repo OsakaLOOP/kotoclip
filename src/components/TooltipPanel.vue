@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { AnnotatedToken, DictEntry, DictionaryLink, DictionaryLookup } from "../types";
+import DictionaryContent from "./dictionary/DictionaryContent.vue";
 
 const props = defineProps<{
   show: boolean;
@@ -32,7 +33,7 @@ const dictionaryGroups = computed(() => {
   const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
   for (const entry of props.lookup?.entries ?? []) {
     const hasManagedRelation = entry.links.some((link) => !candidateTargets.has(link.target));
-    if (!entry.definition_html.trim() && !hasManagedRelation) continue;
+    if (!entry.content_blocks.length && !hasManagedRelation) continue;
     const group = groups.get(entry.dict_name) ?? [];
     group.push(entry);
     groups.set(entry.dict_name, group);
@@ -129,7 +130,7 @@ function handleDefinitionClick(event: MouseEvent) {
           <h3>{{ group.name }}</h3>
           <article v-for="entry in group.entries" :key="entry.entry_key" class="dictionary-entry">
             <div class="entry-meta"><strong>{{ entry.headword }}</strong><span>{{ entry.match_type }}</span></div>
-            <div class="dictionary-html" v-html="entry.definition_html"></div>
+            <DictionaryContent :entry="entry" />
             <div v-if="managedLinkGroups(entry).length" class="managed-relations">
               <details v-for="relationGroup in managedLinkGroups(entry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
                 <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
@@ -170,31 +171,6 @@ button:hover, button.active { border-color: var(--accent-color); background: var
 .dictionary-group > h3 { position: sticky; top: 45px; z-index: 1; margin: 0 -4px 8px; padding: 4px; background: var(--glass-bg); color: var(--text-muted); font: 700 .72rem var(--font-ui); }
 .entry-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .entry-meta span, .empty-state { color: var(--text-muted); font: .75rem var(--font-ui); }
-.dictionary-html { color: var(--text-secondary); }
-.dictionary-html :deep(a) { color: var(--accent-color); text-decoration: underline; cursor: pointer; }
-.dictionary-html :deep(*) { max-width: 100%; white-space: normal !important; }
-.dictionary-html :deep(.bss) { color: var(--text-primary); font-size: 1.03em; font-weight: 700; letter-spacing: .03em; }
-.dictionary-html :deep(.annot) { color: var(--text-muted); font-size: .78em; }
-.dictionary-html :deep(.ruby) { margin-inline: .12em; color: var(--text-muted); font-size: .76em; }
-.dictionary-html :deep(.rei) { display: block; margin-top: 4px; padding-left: 9px; border-left: 2px solid var(--border-color); color: var(--text-muted); }
-.dictionary-html :deep(.small) { color: var(--text-muted); font-size: .76em; }
-.dictionary-html :deep(.nk) { font-family: ui-serif, Georgia, serif; letter-spacing: .02em; }
-.dictionary-html :deep(.deco) { display: inline-block; min-width: 1.5em; margin-right: 4px; border-radius: 4px; background: var(--accent-light); color: var(--accent-color); font: 700 .76em/1.5 var(--font-ui); text-align: center; }
-.dictionary-html :deep(.leftnull) { display: grid; grid-template-columns: auto 1fr; column-gap: 7px; }
-.dictionary-html :deep(.lefta) { min-width: 0; }
-.dictionary-html :deep(.leftb) { min-width: 0; padding-left: 10px; border-left: 1px solid var(--border-color); }
-.dictionary-html :deep(.no) { min-width: 1.8em; color: var(--accent-color); font-weight: 700; }
-.dictionary-html :deep(hy) { color: var(--text-primary); font-weight: 600; }
-.dictionary-html :deep(vert), .dictionary-html :deep(v) { font-size: .78em; color: var(--text-muted); }
-.dictionary-html :deep(nh) { color: var(--text-primary); font-weight: 650; }
-.dictionary-html :deep(kh) { display: inline-flex; margin-right: 5px; border-radius: 4px; padding: 1px 5px; background: var(--accent-color); color: var(--bg-primary); font: 700 .72rem var(--font-ui); }
-.dictionary-html :deep(ku) { display: inline-flex; margin-inline: 3px; border-radius: 999px; padding: 1px 6px; background: var(--accent-light); color: var(--accent-color); font: 700 .7rem var(--font-ui); }
-.dictionary-html :deep(.media-omitted) { display: inline-flex; margin-top: 6px; border: 1px dashed var(--border-color); border-radius: 5px; padding: 2px 7px; color: var(--text-muted); font: .72rem var(--font-ui); }
-.dictionary-html :deep(sup) { color: var(--text-muted); font-size: .7em; }
-.dictionary-html :deep(blockquote) { margin: 6px 0; padding-left: 10px; border-left: 2px solid var(--border-color); color: var(--text-muted); }
-.dictionary-html :deep(table) { width: 100%; border-collapse: collapse; }
-.dictionary-html :deep(th), .dictionary-html :deep(td) { border: 1px solid var(--border-color); padding: 4px 6px; vertical-align: top; }
-.dictionary-html :deep(ul), .dictionary-html :deep(ol) { padding-inline-start: 1.4em; }
 .relation-list { margin-top: 8px; }
 .managed-relations { display: grid; gap: 8px; margin-top: 10px; padding-top: 9px; border-top: 1px dotted var(--border-color); }
 .relation-group summary { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-muted); font: 700 .7rem var(--font-ui); cursor: pointer; }

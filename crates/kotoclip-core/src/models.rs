@@ -148,8 +148,17 @@ pub struct DictEntry {
     pub dict_name: String,
     pub headword: String,
     pub definition_html: String,
+    pub style_profile: String,
+    pub content_blocks: Vec<DictionaryContentBlock>,
     pub match_type: String,
     pub links: Vec<DictionaryLink>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DictionaryContentBlock {
+    pub kind: String,
+    pub label: Option<String>,
+    pub html: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
