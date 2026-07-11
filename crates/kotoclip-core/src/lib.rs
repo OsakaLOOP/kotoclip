@@ -299,13 +299,13 @@ impl Engine {
             initial_entries
                 .iter()
                 .filter(|entry| entry.headword == word)
-                .flat_map(|entry| entry.links.clone())
+                .flat_map(|entry| entry.links.iter().filter(|link| link.relation == "candidate").cloned())
                 .collect::<Vec<_>>()
         } else {
             Vec::new()
         };
-        candidates.sort_by(|left, right| left.target.cmp(&right.target));
-        candidates.dedup_by(|left, right| left.target == right.target);
+        let mut seen_candidates = std::collections::HashSet::new();
+        candidates.retain(|candidate| seen_candidates.insert(candidate.target.clone()));
         let selected_target = self
             .profile
             .dictionary_choice(&query_key)

@@ -356,7 +356,7 @@ impl DictionaryEngine {
         let allowed: HashSet<&str> = [
             "p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul", "ol",
             "li", "dl", "dt", "dd", "a", "hy", "table", "thead", "tbody", "tr", "th", "td",
-            "sup", "sub", "small", "blockquote", "code", "mark", "vert", "v",
+            "sup", "sub", "small", "blockquote", "code", "mark", "vert", "v", "nh", "kh", "ku",
         ]
         .into_iter()
         .collect();
@@ -408,6 +408,7 @@ fn extract_dictionary_links(definition: &str) -> Vec<DictionaryLink> {
     let link_re = Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
     let tag_re = Regex::new(r"<[^>]+>").unwrap();
     let mut seen = HashSet::new();
+    let navigation = is_navigation_definition(definition);
     link_re
         .captures_iter(definition)
         .filter_map(|captures| {
@@ -415,32 +416,35 @@ fn extract_dictionary_links(definition: &str) -> Vec<DictionaryLink> {
             if target.is_empty() || !seen.insert(target.clone()) {
                 return None;
             }
-            let label = tag_re.replace_all(captures.get(2)?.as_str(), "").trim().to_string();
+            if navigation && !target.contains('【') && !target.contains('〖') && !target.contains('（') {
+                return None;
+            }
+            let label = if navigation {
+                target.clone()
+            } else {
+                tag_re.replace_all(captures.get(2)?.as_str(), "").trim().to_string()
+            };
             let before = &definition[..captures.get(0)?.start()];
-            let relation = classify_link_relation(before);
+            let relation = if navigation { "candidate" } else { classify_link_relation(before) };
             Some(DictionaryLink { target, label, relation: relation.to_string() })
         })
         .collect()
 }
 
 fn classify_link_relation(before: &str) -> &'static str {
-    let last_parent = before.rfind("親項目");
-    let last_child = before.rfind("子項目");
-    if last_parent.is_some() && last_parent > last_child {
-        return "parent";
-    }
-    if last_child.is_some() && last_child > last_parent {
-        return "child";
-    }
-    let context: String = before
-        .chars()
-        .rev()
-        .take(48)
-        .collect::<String>()
-        .chars()
-        .rev()
-        .collect();
-    if context.contains("対義") || context.contains("反義") || context.contains('⇔') {
+    let boundary = [before.rfind("<br"), before.rfind("</div>"), before.rfind("</p>")]
+        .into_iter()
+        .flatten()
+        .max()
+        .unwrap_or(0);
+    let context = &before[boundary..];
+    if context.contains("親項目") {
+        "parent"
+    } else if context.contains("子項目") {
+        "child"
+    } else if context.contains("句項目") {
+        "phrase"
+    } else if context.contains("対義") || context.contains("反義") || context.contains('⇔') {
         "antonym"
     } else if context.contains("類語") || context.contains("同義") || context.contains("同意") {
         "synonym"
@@ -452,15 +456,35 @@ fn classify_link_relation(before: &str) -> &'static str {
 }
 
 fn remove_managed_links(definition: &str, headword: &str, link_count: usize) -> String {
-    if link_count >= 2 && is_kana_query(headword) {
+    if link_count >= 2 && is_kana_query(headword) && is_navigation_definition(definition) {
         return String::new();
     }
-    let structural = Regex::new(r"(?s)〈(?:親項目|子項目)〉.*?(</p>|$)").unwrap();
+    let structural = Regex::new(r"(?s)〈(?:親項目|子項目|句項目)〉.*?(</p>|$)").unwrap();
     let without_structural = structural.replace_all(definition, "$1");
     let anchors = Regex::new(r#"(?s)(?:⇔|→|⇒|☞)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#).unwrap();
     let without_anchors = anchors.replace_all(&without_structural, "");
+    let figures = Regex::new(r"(?s)<img\s+[^>]*/?>").unwrap();
+    let with_figure_markers = figures.replace_all(&without_anchors, |captures: &regex::Captures<'_>| {
+        let tag = captures.get(0).map(|value| value.as_str()).unwrap_or_default();
+        let label = if tag.contains("gaiji") {
+            "外字"
+        } else if tag.contains("glyph") {
+            "图示"
+        } else {
+            "图版"
+        };
+        format!("<span class=\"media-omitted\">〔{label}〕</span>")
+    });
     let separators = Regex::new(r"(?:\s|&nbsp;|；|;)+(</?(?:br|p)[^>]*>)").unwrap();
-    separators.replace_all(&without_anchors, "$1").into_owned()
+    let normalized = separators.replace_all(&with_figure_markers, "$1");
+    let orphaned_link_separators = Regex::new(r"(?:・|；|;)+\s*([。]|</|<br)").unwrap();
+    orphaned_link_separators.replace_all(&normalized, "$1").into_owned()
+}
+
+fn is_navigation_definition(definition: &str) -> bool {
+    definition.contains('☞')
+        && !definition.contains("class=\"bss\"")
+        && !definition.contains("class='bss'")
 }
 
 fn normalize_reading(value: &str) -> String {
@@ -572,17 +596,20 @@ mod tests {
              INSERT INTO entries VALUES (3, 'つなぐ【繫ぐ】', NULL, '<p>繫ぐ释义</p>', '测试词典');
              INSERT INTO entries VALUES (4, 'いる', NULL, '<p>☞ <a href="entry://いる【入る】">いる【入る】</a><br>☞ <a href="entry://いる【居る】">いる【居る】</a></p>', '测试词典');
              INSERT INTO entries VALUES (5, 'いる【入る】', NULL, '<p><span class="bss">いる</span> 入る释义</p>', '测试词典');
+             INSERT INTO entries VALUES (6, 'こ【子】', NULL, '<p><span class="bss">こ</span>【<hy>子</hy>】<br><div><div class="no">①</div><div class="lefta">子供。⇔<a href="entry://親">親</a>・<a href="entry://祖">祖</a>。</div></div></p>', '测试词典');
              INSERT INTO metadata VALUES (3, '测试词典', '2026-07-11T00:00:00Z');
              INSERT INTO entry_forms VALUES (1, 'けいさつしょ', 'けいさつしょ', 'kana', 1);
              INSERT INTO entry_forms VALUES (2, '警察署', '警察署', 'kanji', 1);
              INSERT INTO entry_forms VALUES (3, '繫ぐ', '繫ぐ', 'kanji', 1);
              INSERT INTO entry_forms VALUES (4, 'いる', 'いる', 'kana', 1);
              INSERT INTO entry_forms VALUES (5, '入る', '入る', 'mixed', 1);
+             INSERT INTO entry_forms VALUES (6, 'こ', 'こ', 'kana', 1);
              INSERT INTO entry_readings VALUES (1, 'けいさつしょ', 'ケイサツショ', 1);
              INSERT INTO entry_readings VALUES (2, 'けいさつしょ', 'ケイサツショ', 1);
              INSERT INTO entry_readings VALUES (3, 'つなぐ', 'ツナグ', 1);
              INSERT INTO entry_readings VALUES (4, 'いる', 'イル', 1);
              INSERT INTO entry_readings VALUES (5, 'いる', 'イル', 1);
+             INSERT INTO entry_readings VALUES (6, 'こ', 'コ', 1);
              INSERT INTO entries_fts(entries_fts) VALUES('rebuild');"#
         ).unwrap();
         drop(connection);
@@ -605,9 +632,14 @@ mod tests {
 
         let navigation = engine.lookup("いる", None);
         assert!(navigation.iter().any(|entry| entry.links.len() == 2));
+        assert!(navigation.iter().flat_map(|entry| &entry.links).all(|link| link.relation == "candidate"));
         let target = engine.lookup("いる【入る】", None);
         assert!(target.iter().any(|entry| entry.definition_html.contains("入る释义")));
         assert!(target.iter().any(|entry| entry.definition_html.contains("class=\"bss\"")));
+
+        let kana_definition = engine.lookup("こ", None);
+        assert!(kana_definition.iter().any(|entry| entry.definition_html.contains("子供")));
+        assert!(kana_definition.iter().flat_map(|entry| &entry.links).all(|link| link.relation == "antonym"));
 
         drop(engine);
         std::fs::remove_dir_all(directory).unwrap();
