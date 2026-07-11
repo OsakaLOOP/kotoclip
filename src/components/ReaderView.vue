@@ -7,7 +7,7 @@ import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
 import { useScrollFocus } from "../composables/useScrollFocus";
-import { DictEntry, ExpressionRule, SegmentationCandidate, AnnotatedToken } from "../types";
+import { DictEntry, DictionaryLookup, ExpressionRule, SegmentationCandidate, AnnotatedToken } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import TooltipPanel from "./TooltipPanel.vue";
@@ -51,7 +51,7 @@ const {
   chooseSegmentation,
 } = useTokenization();
 const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs);
-const { lookupWord } = useDictionary();
+const { lookupWord, chooseDictionaryTarget } = useDictionary();
 
 // 详细释义弹窗状态
 const showDefinitionModal = ref(false);
@@ -64,8 +64,26 @@ const tooltipX = ref(0);
 const tooltipY = ref(0);
 const tooltipPlacement = ref<"above" | "below">("above");
 const tooltipToken = ref<any | null>(null);
-const tooltipDefPreview = ref<string | null>(null);
+const tooltipLookup = ref<DictionaryLookup | null>(null);
+const tooltipLoading = ref(false);
 let tooltipTimeout: number | null = null;
+let tooltipRequestId = 0;
+let tooltipPanelHovered = false;
+
+function cancelTooltipClose() {
+  if (tooltipTimeout) window.clearTimeout(tooltipTimeout);
+  tooltipTimeout = null;
+}
+
+function scheduleTooltipClose(delay = 180) {
+  cancelTooltipClose();
+  tooltipTimeout = window.setTimeout(() => {
+    if (!tooltipPanelHovered) {
+      tooltipShow.value = false;
+      tooltipLookup.value = null;
+    }
+  }, delay);
+}
 
 // 上下文右键菜单状态
 const contextMenuShow = ref(false);
@@ -219,16 +237,11 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
   const target = e.target as HTMLElement;
   const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
   
-  if (tooltipTimeout) {
-    clearTimeout(tooltipTimeout);
-    tooltipTimeout = null;
-  }
+  cancelTooltipClose();
 
   if (!capsuleEl) {
     // 鼠标离开了胶囊，100ms 后关闭
-    tooltipTimeout = window.setTimeout(() => {
-      tooltipShow.value = false;
-    }, 100);
+    scheduleTooltipClose();
     return;
   }
 
@@ -240,6 +253,7 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
 
   const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
   if (!token || token.is_known || isPunc) {
+    ++tooltipRequestId;
     tooltipShow.value = false;
     return;
   }
@@ -248,7 +262,7 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
   tooltipTimeout = window.setTimeout(async () => {
     // 计算悬浮框展示坐标 (相对于视口，防止溢出)
     const rect = capsuleEl.getBoundingClientRect();
-    const tooltipHalfWidth = Math.min(160, Math.max(0, window.innerWidth / 2 - 12));
+    const tooltipHalfWidth = Math.min(230, Math.max(0, window.innerWidth / 2 - 12));
     tooltipX.value = Math.min(
       window.innerWidth - tooltipHalfWidth,
       Math.max(tooltipHalfWidth, rect.left + rect.width / 2)
@@ -257,28 +271,59 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
     tooltipY.value = tooltipPlacement.value === "above" ? rect.top : rect.bottom;
 
     tooltipToken.value = token;
+    tooltipPanelHovered = false;
     tooltipShow.value = true;
-    tooltipDefPreview.value = "正在载入释义...";
+    tooltipLookup.value = null;
+    tooltipLoading.value = true;
+    const requestId = ++tooltipRequestId;
 
     // 异步查询词典释义摘要
-    const defs = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
-    if (defs && defs.length > 0) {
-      // 提取第一个词典的释义，截断多余标签
-      tooltipDefPreview.value = defs[0].definition_html;
-    } else {
-      tooltipDefPreview.value = null;
+    const lookup = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
+    if (requestId === tooltipRequestId && tooltipToken.value === token) {
+      tooltipLookup.value = lookup;
+      tooltipLoading.value = false;
     }
   }, 200);
 }
 
 // 离开段落清除 hover 状态
 function handleParagraphMouseLeave() {
-  if (tooltipTimeout) {
-    clearTimeout(tooltipTimeout);
+  scheduleTooltipClose();
+}
+
+function handleTooltipEnter() {
+  tooltipPanelHovered = true;
+  cancelTooltipClose();
+}
+
+function handleTooltipLeave() {
+  tooltipPanelHovered = false;
+  scheduleTooltipClose(120);
+}
+
+async function navigateTooltip(target: string) {
+  const requestId = ++tooltipRequestId;
+  tooltipLoading.value = true;
+  const lookup = await lookupWord(target);
+  if (requestId === tooltipRequestId) {
+    tooltipLookup.value = lookup;
+    tooltipLoading.value = false;
   }
-  tooltipTimeout = window.setTimeout(() => {
-    tooltipShow.value = false;
-  }, 100);
+}
+
+async function selectTooltipTarget(target: string) {
+  if (!tooltipLookup.value) return;
+  const requestId = ++tooltipRequestId;
+  tooltipLoading.value = true;
+  const lookup = await chooseDictionaryTarget(
+    tooltipLookup.value.query,
+    tooltipLookup.value.reading,
+    target,
+  );
+  if (requestId === tooltipRequestId) {
+    tooltipLookup.value = lookup;
+    tooltipLoading.value = false;
+  }
 }
 
 // 事件委托：段落内的点击 (切换选中/已知)
@@ -317,7 +362,8 @@ function handleParagraphDblClick(e: MouseEvent, paragraphId: number) {
   if (!token || isPunc) return;
 
   // 取消 Tooltip 显示
-  if (tooltipTimeout) clearTimeout(tooltipTimeout);
+  cancelTooltipClose();
+  ++tooltipRequestId;
   tooltipShow.value = false;
 
   // 弹出右键菜单
@@ -385,8 +431,8 @@ async function viewFullDefinition(paragraphId: number, tokenIndex: number) {
   showDefinitionModal.value = true;
   modalDefinitions.value = [];
 
-  const defs = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
-  modalDefinitions.value = defs;
+  const lookup = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
+  modalDefinitions.value = lookup?.entries ?? [];
 }
 
 // 切换 E-ink 降级模式
@@ -404,7 +450,7 @@ function toggleEinkMode() {
 async function executeExport() {
   try {
     const jsonStr = await exportSelected(inputText.value, async (word, reading) => {
-      return await lookupWord(word, reading);
+      return (await lookupWord(word, reading))?.entries ?? [];
     });
 
     // 创建本地 Blob 并触发浏览器下载 (Tauri 环境下可直接调用本地存储，此处通过浏览器 API 下载十分通用)
@@ -571,7 +617,12 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       :y="tooltipY"
       :placement="tooltipPlacement"
       :token="tooltipToken"
-      :definitionPreview="tooltipDefPreview"
+      :lookup="tooltipLookup"
+      :loading="tooltipLoading"
+      @enter="handleTooltipEnter"
+      @leave="handleTooltipLeave"
+      @navigate="navigateTooltip"
+      @select="selectTooltipTarget"
     />
 
     <!-- 4. 双击上下文操作菜单 -->

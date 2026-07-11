@@ -1,9 +1,9 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { DictEntry } from "../types";
+import { DictionaryLookup } from "../types";
 
 export function useDictionary() {
-  const dictionaryResults = ref<DictEntry[]>([]);
+  const dictionaryResults = ref<DictionaryLookup | null>(null);
   const isSearching = ref(false);
   
   // 默认词典优先级顺序列表
@@ -16,13 +16,13 @@ export function useDictionary() {
    */
   async function lookupWord(word: string, reading?: string, priorityList: string[] = defaultPriority) {
     if (!word) {
-      dictionaryResults.value = [];
-      return [];
+      dictionaryResults.value = null;
+      return null;
     }
 
     isSearching.value = true;
     try {
-      const results = await invoke<DictEntry[]>("lookup_word", {
+      const results = await invoke<DictionaryLookup>("lookup_word", {
         word,
         reading,
         priorityList,
@@ -31,16 +31,22 @@ export function useDictionary() {
       return results;
     } catch (err) {
       console.error("Dictionary Lookup Error:", err);
-      dictionaryResults.value = [];
-      return [];
+      dictionaryResults.value = null;
+      return null;
     } finally {
       isSearching.value = false;
     }
+  }
+
+  async function chooseDictionaryTarget(query: string, reading: string | null, target: string) {
+    await invoke("choose_dictionary_target", { query, reading, target });
+    return lookupWord(query, reading ?? undefined);
   }
 
   return {
     dictionaryResults,
     isSearching,
     lookupWord,
+    chooseDictionaryTarget,
   };
 }
