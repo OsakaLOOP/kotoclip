@@ -144,8 +144,26 @@ pub struct ExportEntry {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DictEntry {
+    pub entry_key: String,
     pub dict_name: String,
     pub headword: String,
     pub definition_html: String,
     pub match_type: String,
+    pub links: Vec<DictionaryLink>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryLink {
+    pub target: String,
+    pub label: String,
+    pub relation: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DictionaryLookup {
+    pub query: String,
+    pub reading: Option<String>,
+    pub selected_target: Option<String>,
+    pub candidates: Vec<DictionaryLink>,
+    pub entries: Vec<DictEntry>,
 }

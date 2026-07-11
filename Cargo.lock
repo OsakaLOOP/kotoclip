@@ -2080,6 +2080,7 @@ dependencies = [
  "ammonia",
  "chrono",
  "log",
+ "regex",
  "rusqlite",
  "serde",
  "serde_json",

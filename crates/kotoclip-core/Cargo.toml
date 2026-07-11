@@ -19,3 +19,4 @@ thiserror = "1"
 chrono = { version = "0.4", features = ["serde"] }
 sha2 = "0.10"
 ammonia = "4"
+regex = "1"

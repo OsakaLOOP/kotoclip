@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use kotoclip_core::analysis_progress::AnalysisProgress;
 use kotoclip_core::models::{
-    AnnotatedToken, DictEntry, ExportEntry, ExpressionRule, SegmentationCandidate,
+    AnnotatedToken, DictionaryLookup, ExportEntry, ExpressionRule, SegmentationCandidate,
 };
 use serde::Serialize;
 use tauri::{Emitter, State, Window};
@@ -45,9 +45,22 @@ pub async fn lookup_word(
     word: String,
     reading: Option<String>,
     priority_list: Vec<String>,
-) -> Result<Vec<DictEntry>, String> {
+) -> Result<DictionaryLookup, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     Ok(engine.lookup_word(&word, reading.as_deref(), &priority_list))
+}
+
+#[tauri::command]
+pub async fn choose_dictionary_target(
+    state: State<'_, AppState>,
+    query: String,
+    reading: Option<String>,
+    target: String,
+) -> Result<(), String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    engine
+        .choose_dictionary_target(&query, reading.as_deref(), &target)
+        .map_err(|e| e.to_string())
 }
 
 /// IPC 命令：主动标记单词为“已知”

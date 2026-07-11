@@ -1,15 +1,19 @@
 pub mod exposure;
 pub mod expressions;
+pub mod dictionary;
 pub mod kanji;
 pub mod scoring;
 pub mod segmentation;
 
 use rusqlite::Connection;
 use std::path::Path;
+use std::collections::HashMap;
+use std::sync::Mutex;
 
 /// 用户画像引擎，掌管词汇曝光、已知/未知状态以及汉字音训掌握度推导
 pub struct ProfileEngine {
     conn: Connection,
+    dictionary_choice_cache: Mutex<HashMap<String, String>>,
 }
 
 impl ProfileEngine {
@@ -64,6 +68,12 @@ impl ProfileEngine {
                 selected_at      TEXT NOT NULL DEFAULT (datetime('now'))
             );
 
+            CREATE TABLE IF NOT EXISTS user_dictionary_choices (
+                query_key       TEXT PRIMARY KEY,
+                selected_target TEXT NOT NULL,
+                selected_at     TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
             CREATE INDEX IF NOT EXISTS idx_kanji_knowledge_char 
             ON kanji_knowledge(kanji);
         ",
@@ -79,7 +89,18 @@ impl ProfileEngine {
             [],
         );
 
-        Ok(Self { conn })
+        let dictionary_choice_cache = {
+            let mut statement =
+                conn.prepare("SELECT query_key, selected_target FROM user_dictionary_choices")?;
+            statement
+                .query_map([], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                })?
+                .flatten()
+                .collect()
+        };
+
+        Ok(Self { conn, dictionary_choice_cache: Mutex::new(dictionary_choice_cache) })
     }
 }
 

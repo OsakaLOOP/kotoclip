@@ -10,7 +10,7 @@ pub mod profile;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictEntry, ExpressionRule, SegmentationCandidate, SegmentationChoice,
+    AnnotatedToken, DictionaryLookup, ExpressionRule, SegmentationCandidate, SegmentationChoice,
 };
 use performance::TimingCollector;
 use pipeline::Pipeline;
@@ -292,9 +292,47 @@ impl Engine {
         word: &str,
         reading: Option<&str>,
         priority_list: &[String],
-    ) -> Vec<DictEntry> {
-        let raw_entries = self.dictionary.lookup(word, reading);
-        dictionary::aggregate::sort_definitions(raw_entries, priority_list)
+    ) -> DictionaryLookup {
+        let query_key = dictionary_query_key(word, reading);
+        let initial_entries = self.dictionary.lookup(word, reading);
+        let mut candidates = if is_kana(word) {
+            initial_entries
+                .iter()
+                .filter(|entry| entry.headword == word)
+                .flat_map(|entry| entry.links.clone())
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+        candidates.sort_by(|left, right| left.target.cmp(&right.target));
+        candidates.dedup_by(|left, right| left.target == right.target);
+        let selected_target = self
+            .profile
+            .dictionary_choice(&query_key)
+            .filter(|target| candidates.iter().any(|candidate| &candidate.target == target));
+        let entries = selected_target
+            .as_deref()
+            .map(|target| self.dictionary.lookup(target, reading))
+            .filter(|entries| !entries.is_empty())
+            .unwrap_or(initial_entries);
+        DictionaryLookup {
+            query: word.to_string(),
+            reading: reading.map(str::to_string),
+            selected_target,
+            candidates,
+            entries: dictionary::aggregate::sort_definitions(entries, priority_list),
+        }
+    }
+
+    pub fn choose_dictionary_target(
+        &self,
+        query: &str,
+        reading: Option<&str>,
+        target: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.profile
+            .set_dictionary_choice(&dictionary_query_key(query, reading), target)?;
+        Ok(())
     }
 
     /// 记录用户自定义分词合并规则
@@ -406,6 +444,17 @@ impl Engine {
     ) -> Result<bool, Box<dyn std::error::Error>> {
         Ok(self.profile.delete_segmentation_choice(surface)?)
     }
+}
+
+fn dictionary_query_key(word: &str, reading: Option<&str>) -> String {
+    format!("{}\u{1f}{}", word.trim(), reading.unwrap_or("*"))
+}
+
+fn is_kana(value: &str) -> bool {
+    !value.is_empty()
+        && value.chars().all(|character| {
+            ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー'
+        })
 }
 
 #[cfg(test)]

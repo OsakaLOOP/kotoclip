@@ -1,5 +1,6 @@
-use crate::models::DictEntry;
+use crate::models::{DictEntry, DictionaryLink};
 use ammonia::Builder;
+use regex::Regex;
 use rusqlite::{Connection, OpenFlags};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
@@ -208,6 +209,16 @@ impl DictionaryEngine {
         if headword.is_empty() {
             return Vec::new();
         }
+        if let Some(target) = self.redirect_target(headword) {
+            let redirected = self.lookup_direct(&target, reading);
+            if !redirected.is_empty() {
+                return redirected;
+            }
+        }
+        self.lookup_direct(headword, reading)
+    }
+
+    fn lookup_direct(&self, headword: &str, reading: Option<&str>) -> Vec<DictEntry> {
         let normalized_headword = normalize_form(headword);
         let mut results = self.query_form(&normalized_headword);
         if results.is_empty() && is_kana_query(headword) {
@@ -233,6 +244,20 @@ impl DictionaryEngine {
             results = self.lookup_fuzzy(headword);
         }
         results
+    }
+
+    fn redirect_target(&self, headword: &str) -> Option<String> {
+        for (_, conn) in &self.connections {
+            let target = conn.query_row(
+                "SELECT substr(definition, 9) FROM entries WHERE headword = ?1 AND definition LIKE '@@@LINK=%' LIMIT 1",
+                [headword],
+                |row| row.get::<_, String>(0),
+            );
+            if let Ok(target) = target {
+                return Some(target);
+            }
+        }
+        None
     }
 
     fn query_form(&self, value: &str) -> Vec<DictEntry> {
@@ -327,15 +352,25 @@ impl DictionaryEngine {
         definition: String,
         match_type: &str,
     ) -> DictEntry {
+        let links = extract_dictionary_links(&definition);
         let allowed: HashSet<&str> = [
             "p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul", "ol",
             "li", "dl", "dt", "dd", "a",
         ]
         .into_iter()
         .collect();
+        let link_re = Regex::new(r#"href=(['\"])entry://([^'\"]+)['\"]"#).unwrap();
+        let navigable = link_re
+            .replace_all(&definition, |captures: &regex::Captures<'_>| {
+                format!("href=\"https://kotoclip.invalid/entry/{}\"", &captures[2])
+            })
+            .into_owned();
         let clean = Builder::default()
             .tags(allowed)
-            .clean(&definition)
+            .add_tag_attributes("span", &["class"])
+            .add_tag_attributes("div", &["class"])
+            .add_tag_attributes("p", &["class"])
+            .clean(&navigable)
             .to_string();
         let definition_html = if clean.len() > MAX_DEFINITION_BYTES {
             let mut limit = MAX_DEFINITION_BYTES;
@@ -349,12 +384,48 @@ impl DictionaryEngine {
             clean
         };
         DictEntry {
+            entry_key: format!("{dict_name}\u{1f}{headword}"),
             dict_name,
             headword,
             definition_html,
             match_type: match_type.to_string(),
+            links,
         }
     }
+}
+
+fn extract_dictionary_links(definition: &str) -> Vec<DictionaryLink> {
+    let redirect = definition.strip_prefix("@@@LINK=");
+    if let Some(target) = redirect {
+        return vec![DictionaryLink {
+            target: target.trim().to_string(),
+            label: target.trim().to_string(),
+            relation: "redirect".to_string(),
+        }];
+    }
+    let link_re = Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
+    let tag_re = Regex::new(r"<[^>]+>").unwrap();
+    let mut seen = HashSet::new();
+    link_re
+        .captures_iter(definition)
+        .filter_map(|captures| {
+            let target = captures.get(1)?.as_str().trim().to_string();
+            if target.is_empty() || !seen.insert(target.clone()) {
+                return None;
+            }
+            let label = tag_re.replace_all(captures.get(2)?.as_str(), "").trim().to_string();
+            let before = &definition[..captures.get(0)?.start()];
+            let context: String = before.chars().rev().take(20).collect::<String>().chars().rev().collect();
+            let relation = if context.contains("対義") || context.contains("反義") || context.contains('⇔') {
+                "antonym"
+            } else if context.contains("類語") || context.contains("同義") || context.contains("同意") {
+                "synonym"
+            } else {
+                "related"
+            };
+            Some(DictionaryLink { target, label, relation: relation.to_string() })
+        })
+        .collect()
 }
 
 fn normalize_reading(value: &str) -> String {

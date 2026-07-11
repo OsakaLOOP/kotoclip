@@ -38,6 +38,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::analyze_text,
             commands::lookup_word,
+            commands::choose_dictionary_target,
             commands::mark_known,
             commands::mark_unknown,
             commands::add_merge_rule,
