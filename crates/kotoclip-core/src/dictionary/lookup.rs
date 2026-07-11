@@ -356,13 +356,14 @@ impl DictionaryEngine {
         let allowed: HashSet<&str> = [
             "p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul", "ol",
             "li", "dl", "dt", "dd", "a", "hy", "table", "thead", "tbody", "tr", "th", "td",
-            "sup", "sub", "small", "blockquote", "code", "mark",
+            "sup", "sub", "small", "blockquote", "code", "mark", "vert", "v",
         ]
         .into_iter()
         .collect();
+        let managed_definition = remove_managed_links(&definition, &headword, links.len());
         let link_re = Regex::new(r#"href=(['\"])entry://([^'\"]+)['\"]"#).unwrap();
         let navigable = link_re
-            .replace_all(&definition, |captures: &regex::Captures<'_>| {
+            .replace_all(&managed_definition, |captures: &regex::Captures<'_>| {
                 format!("href=\"https://kotoclip.invalid/entry/{}\"", &captures[2])
             })
             .into_owned();
@@ -416,17 +417,50 @@ fn extract_dictionary_links(definition: &str) -> Vec<DictionaryLink> {
             }
             let label = tag_re.replace_all(captures.get(2)?.as_str(), "").trim().to_string();
             let before = &definition[..captures.get(0)?.start()];
-            let context: String = before.chars().rev().take(20).collect::<String>().chars().rev().collect();
-            let relation = if context.contains("対義") || context.contains("反義") || context.contains('⇔') {
-                "antonym"
-            } else if context.contains("類語") || context.contains("同義") || context.contains("同意") {
-                "synonym"
-            } else {
-                "related"
-            };
+            let relation = classify_link_relation(before);
             Some(DictionaryLink { target, label, relation: relation.to_string() })
         })
         .collect()
+}
+
+fn classify_link_relation(before: &str) -> &'static str {
+    let last_parent = before.rfind("親項目");
+    let last_child = before.rfind("子項目");
+    if last_parent.is_some() && last_parent > last_child {
+        return "parent";
+    }
+    if last_child.is_some() && last_child > last_parent {
+        return "child";
+    }
+    let context: String = before
+        .chars()
+        .rev()
+        .take(48)
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
+    if context.contains("対義") || context.contains("反義") || context.contains('⇔') {
+        "antonym"
+    } else if context.contains("類語") || context.contains("同義") || context.contains("同意") {
+        "synonym"
+    } else if context.contains('→') || context.contains('⇒') || context.contains("参照") {
+        "reference"
+    } else {
+        "related"
+    }
+}
+
+fn remove_managed_links(definition: &str, headword: &str, link_count: usize) -> String {
+    if link_count >= 2 && is_kana_query(headword) {
+        return String::new();
+    }
+    let structural = Regex::new(r"(?s)〈(?:親項目|子項目)〉.*?(</p>|$)").unwrap();
+    let without_structural = structural.replace_all(definition, "$1");
+    let anchors = Regex::new(r#"(?s)(?:⇔|→|⇒|☞)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#).unwrap();
+    let without_anchors = anchors.replace_all(&without_structural, "");
+    let separators = Regex::new(r"(?:\s|&nbsp;|；|;)+(</?(?:br|p)[^>]*>)").unwrap();
+    separators.replace_all(&without_anchors, "$1").into_owned()
 }
 
 fn normalize_reading(value: &str) -> String {

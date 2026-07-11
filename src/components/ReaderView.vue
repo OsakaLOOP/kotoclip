@@ -69,6 +69,7 @@ const tooltipLoading = ref(false);
 let tooltipTimeout: number | null = null;
 let tooltipRequestId = 0;
 let tooltipPanelHovered = false;
+const tooltipHistory = ref<DictionaryLookup[]>([]);
 
 function cancelTooltipClose() {
   if (tooltipTimeout) window.clearTimeout(tooltipTimeout);
@@ -274,6 +275,7 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
     tooltipPanelHovered = false;
     tooltipShow.value = true;
     tooltipLookup.value = null;
+    tooltipHistory.value = [];
     tooltipLoading.value = true;
     const requestId = ++tooltipRequestId;
 
@@ -302,11 +304,21 @@ function handleTooltipLeave() {
 }
 
 async function navigateTooltip(target: string) {
+  if (tooltipLookup.value) tooltipHistory.value.push(tooltipLookup.value);
   const requestId = ++tooltipRequestId;
   tooltipLoading.value = true;
   const lookup = await lookupWord(target);
   if (requestId === tooltipRequestId) {
     tooltipLookup.value = lookup;
+    tooltipLoading.value = false;
+  }
+}
+
+function backTooltip() {
+  const previous = tooltipHistory.value.pop();
+  if (previous) {
+    ++tooltipRequestId;
+    tooltipLookup.value = previous;
     tooltipLoading.value = false;
   }
 }
@@ -623,6 +635,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       @leave="handleTooltipLeave"
       @navigate="navigateTooltip"
       @select="selectTooltipTarget"
+      @back="backTooltip"
+      :can-go-back="tooltipHistory.length > 0"
     />
 
     <!-- 4. 双击上下文操作菜单 -->
