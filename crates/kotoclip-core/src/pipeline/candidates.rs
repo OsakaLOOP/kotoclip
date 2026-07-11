@@ -8,6 +8,7 @@ fn token_from_morphemes(morphemes: Vec<Morpheme>, source: &AnnotatedToken) -> An
         is_selected: false,
         is_known: source.is_known,
         inference_reason: source.inference_reason.clone(),
+        expressions: Vec::new(),
     }
 }
 
@@ -120,6 +121,7 @@ mod tests {
             is_selected: true,
             is_known: false,
             inference_reason: None,
+            expressions: Vec::new(),
         }
     }
 

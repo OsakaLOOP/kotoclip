@@ -7,13 +7,15 @@ import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
 import { useScrollFocus } from "../composables/useScrollFocus";
-import { DictEntry, SegmentationCandidate, AnnotatedToken } from "../types";
+import { DictEntry, ExpressionRule, SegmentationCandidate, AnnotatedToken } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import TooltipPanel from "./TooltipPanel.vue";
 import ContextMenu from "./ContextMenu.vue";
 import ExportPanel from "./ExportPanel.vue";
 import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
+import ExpressionRulesPanel from "./ExpressionRulesPanel.vue";
+import ExpressionRuleEditor from "./ExpressionRuleEditor.vue";
 
 // 状态定义
 const inputText = ref("");
@@ -32,7 +34,9 @@ const {
   errorMsg,
   analysisProgress,
   analyzeText,
-  mergeTokens,
+  addExpressionRule,
+  getExpressionRules,
+  deleteExpressionRule,
   splitToken,
   getCandidates,
 } = useTokenization();
@@ -65,6 +69,34 @@ const candidatesLoading = ref(false);
 
 // 侧边栏导出面板显示状态
 const showExportPanel = ref(false);
+const showExpressionRules = ref(false);
+const expressionRules = ref<ExpressionRule[]>([]);
+const expressionDraft = ref<AnnotatedToken[]>([]);
+const showExpressionEditor = ref(false);
+
+async function openExpressionRules() {
+  expressionRules.value = await getExpressionRules();
+  showExpressionRules.value = true;
+}
+
+async function removeExpressionRule(id: number) {
+  await deleteExpressionRule(id);
+  expressionRules.value = await getExpressionRules();
+  if (!showInput.value && inputText.value.trim()) {
+    await triggerAnalysis(false);
+  }
+}
+
+async function saveExpressionDraft(label: string, description: string, slotIndices: number[]) {
+  try {
+    await addExpressionRule(expressionDraft.value, label, description, slotIndices);
+    showExpressionEditor.value = false;
+    expressionDraft.value = [];
+    await triggerAnalysis(false);
+  } catch (err) {
+    alert(`保存跨文节表达失败：${String(err)}`);
+  }
+}
 
 // 拖拽合并 Composable
 const {
@@ -73,15 +105,9 @@ const {
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
-} = useDragMerge(paragraphs, async (surfaces, _paragraphId) => {
-  try {
-    // 1. 调用后端接口注册自定义规则
-    await mergeTokens(surfaces);
-    // 2. 重新分析全部文本，刷新界面
-    await triggerAnalysis(false);
-  } catch (err) {
-    alert("合并分词失败");
-  }
+} = useDragMerge(paragraphs, async (tokens, _paragraphId) => {
+  expressionDraft.value = tokens;
+  showExpressionEditor.value = true;
 });
 
 // 使用 @tanstack/vue-virtual 虚拟滚动
@@ -405,6 +431,9 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
         <button class="icon-btn" :class="{ active: showExportPanel }" @click="showExportPanel = !showExportPanel">
           💼 导出本 ({{ selectedKeys.length }})
         </button>
+        <button class="icon-btn" :class="{ active: showExpressionRules }" @click="openExpressionRules">
+          ⛓ 表达式
+        </button>
         <button class="icon-btn" :class="{ active: einkMode }" @click="toggleEinkMode">
           🕶 墨水屏
         </button>
@@ -534,7 +563,7 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
     />
 
     <!-- 5. 生词导出侧边栏 -->
-      <ExportPanel
+    <ExportPanel
       :show="showExportPanel"
       :selectedKeys="selectedKeys"
       :paragraphs="paragraphs"
@@ -543,6 +572,20 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
         @clear-all="clearAllSelections"
         @update-note="updateNote"
       @export="executeExport"
+    />
+
+    <ExpressionRulesPanel
+      :show="showExpressionRules"
+      :rules="expressionRules"
+      @close="showExpressionRules = false"
+      @delete="removeExpressionRule"
+    />
+
+    <ExpressionRuleEditor
+      :show="showExpressionEditor"
+      :tokens="expressionDraft"
+      @cancel="showExpressionEditor = false"
+      @save="saveExpressionDraft"
     />
 
     <!-- 6. 详细词典释义弹窗 (Modal) -->

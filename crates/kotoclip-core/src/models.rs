@@ -14,7 +14,54 @@ pub struct GrammarTag {
     pub description: String, pub morpheme_range: (usize, usize), pub char_range: (usize, usize),
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AnnotatedToken { pub bunsetsu: Bunsetsu, pub novelty_score: f32, pub is_selected: bool, pub is_known: bool, pub inference_reason: Option<String> }
+pub struct AnnotatedToken {
+    pub bunsetsu: Bunsetsu,
+    pub novelty_score: f32,
+    pub is_selected: bool,
+    pub is_known: bool,
+    pub inference_reason: Option<String>,
+    #[serde(default)]
+    pub expressions: Vec<ExpressionAnnotation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ExpressionPatternPart {
+    pub lemmas: Vec<String>,
+    pub pos: Vec<String>,
+    pub surface_hint: String,
+    #[serde(default)]
+    pub is_slot: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpressionRule {
+    pub id: i64,
+    pub label: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default = "default_expression_origin")]
+    pub origin: String,
+    pub parts: Vec<ExpressionPatternPart>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpressionAnnotation {
+    pub match_id: String,
+    pub rule_id: i64,
+    pub label: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default = "default_expression_origin")]
+    pub origin: String,
+    pub position: String,
+    pub token_range: (usize, usize),
+    #[serde(default)]
+    pub char_range: (usize, usize),
+    pub surface: String,
+}
+
+fn default_expression_origin() -> String { "custom".to_string() }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SegmentationCandidate { pub tokens: Vec<AnnotatedToken> }
 #[derive(Debug, Clone, Serialize, Deserialize)]

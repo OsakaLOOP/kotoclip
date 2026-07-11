@@ -4,6 +4,7 @@ pub mod grammar;
 pub mod restore;
 pub mod ruby;
 pub mod candidates;
+pub mod expressions;
 
 use crate::models::AnnotatedToken;
 use crate::analysis_progress::{AnalysisPhase, AnalysisProgress};
@@ -98,6 +99,7 @@ impl Pipeline {
                 is_selected: false,
                 is_known: false,
                 inference_reason: None,
+                expressions: Vec::new(),
             }
         }).collect()
     }

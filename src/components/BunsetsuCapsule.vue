@@ -12,13 +12,17 @@ const props = defineProps<{
 // 根据生词得分和状态计算 CSS 类
 const capsuleClasses = computed(() => {
   const t = props.token;
+  const expressionClasses = t.expressions.length > 0
+    ? { "has-expression": true, [`expression-${t.expressions[0].position}`]: true }
+    : {};
   
   // 标点符号特殊处理
   const isPunc = t.bunsetsu.morphemes.length === 1 && t.bunsetsu.morphemes[0].pos.major === "記号";
   if (isPunc) {
     return {
       "bunsetsu-capsule": true,
-      "punctuation": true
+      "punctuation": true,
+      ...expressionClasses,
     };
   }
 
@@ -26,7 +30,8 @@ const capsuleClasses = computed(() => {
   if (t.is_known) {
     return {
       "bunsetsu-capsule": true,
-      "is-known": true
+      "is-known": true,
+      ...expressionClasses,
     };
   }
 
@@ -42,6 +47,7 @@ const capsuleClasses = computed(() => {
     [noveltyClass]: true,
     "is-selected": t.is_selected,
     "drag-over": props.isDragSelected,
+    ...expressionClasses,
   };
 });
 
@@ -76,6 +82,14 @@ function isGrammarMorpheme(index: number) {
   const m = props.token.bunsetsu.morphemes[index];
   return props.token.bunsetsu.grammar_tags.some((tag) => m.char_range[0] >= tag.char_range[0] && m.char_range[1] <= tag.char_range[1]);
 }
+
+function isExpressionMorpheme(index: number) {
+  const morpheme = props.token.bunsetsu.morphemes[index];
+  return props.token.expressions.some((expression) =>
+    morpheme.char_range[0] >= expression.char_range[0]
+    && morpheme.char_range[1] <= expression.char_range[1]
+  );
+}
 </script>
 
 <template>
@@ -88,9 +102,19 @@ function isGrammarMorpheme(index: number) {
     <span
       v-for="(m, idx) in token.bunsetsu.morphemes"
       :key="idx"
-      :class="{ 'head-word-highlight': isHeadMorpheme(idx), 'helper-word': !isHeadMorpheme(idx), 'grammar-match': isGrammarMorpheme(idx) }"
+      :class="{ 'head-word-highlight': isHeadMorpheme(idx), 'helper-word': !isHeadMorpheme(idx), 'grammar-match': isGrammarMorpheme(idx), 'expression-anchor': isExpressionMorpheme(idx) }"
     >
       {{ m.surface }}
+    </span>
+
+    <!-- 跨文节表达使用细连接带，不改变原文节胶囊大小。 -->
+    <span
+      v-for="expression in token.expressions.filter((item) => item.position === 'start' || item.position === 'single')"
+      :key="expression.match_id"
+      class="expression-badge"
+      :title="expression.description || expression.surface"
+    >
+      {{ expression.label }}
     </span>
 
     <!-- 渲染语法 Badge 徽章 -->

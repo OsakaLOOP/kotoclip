@@ -1,9 +1,10 @@
 import { ref, Ref } from "vue";
 import { Paragraph } from "./useTokenization";
+import type { AnnotatedToken } from "../types";
 
 export function useDragMerge(
   paragraphs: Ref<Paragraph[]>,
-  onMergeComplete: (surfaces: string[], paragraphId: number) => Promise<void>
+  onExpressionSelected: (tokens: AnnotatedToken[], paragraphId: number) => Promise<void>
 ) {
   const isDragging = ref(false);
   const startKey = ref<{ paragraphId: number; tokenIndex: number } | null>(null);
@@ -31,8 +32,8 @@ export function useDragMerge(
     const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
     if (!capsuleEl) return;
 
-    // 排除已知词/标点
-    if (capsuleEl.classList.contains("is-known") || capsuleEl.classList.contains("punctuation")) {
+    // 跨文节表达可以包含已知词，但不以标点作为选择端点。
+    if (capsuleEl.classList.contains("punctuation")) {
       return;
     }
 
@@ -58,8 +59,7 @@ export function useDragMerge(
     const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
     if (!capsuleEl) return;
 
-    // 排除已知词/标点
-    if (capsuleEl.classList.contains("is-known") || capsuleEl.classList.contains("punctuation")) {
+    if (capsuleEl.classList.contains("punctuation")) {
       return;
     }
 
@@ -93,20 +93,9 @@ export function useDragMerge(
       const p = paragraphs.value.find((para) => para.id === paragraphId);
       if (!p) return;
 
-      // 提取这些 token 里的所有形态素 surface，保持先后物理顺序
-      const surfacesToMerge: string[] = [];
-      for (let idx = minIdx; idx <= maxIdx; idx++) {
-        const token = p.tokens[idx];
-        if (token) {
-          for (const m of token.bunsetsu.morphemes) {
-            surfacesToMerge.push(m.surface);
-          }
-        }
-      }
-
-      if (surfacesToMerge.length > 1) {
-        // 触发合并回调 (调用 Rust 并重析)
-        await onMergeComplete(surfacesToMerge, paragraphId);
+      const selectedTokens = p.tokens.slice(minIdx, maxIdx + 1);
+      if (selectedTokens.length > 1) {
+        await onExpressionSelected(selectedTokens, paragraphId);
       }
     }
   }

@@ -1,4 +1,5 @@
 pub mod exposure;
+pub mod expressions;
 pub mod kanji;
 pub mod scoring;
 
@@ -45,9 +46,28 @@ impl ProfileEngine {
                 phrase    TEXT NOT NULL UNIQUE
             );
 
+            CREATE TABLE IF NOT EXISTS user_expression_rules (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                label        TEXT NOT NULL,
+                description  TEXT NOT NULL DEFAULT '',
+                origin       TEXT NOT NULL DEFAULT 'custom',
+                pattern_json TEXT NOT NULL UNIQUE,
+                created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
             CREATE INDEX IF NOT EXISTS idx_kanji_knowledge_char 
             ON kanji_knowledge(kanji);
         ")?;
+
+        // 兼容功能开发期间已经创建的本地表达表。
+        let _ = conn.execute(
+            "ALTER TABLE user_expression_rules ADD COLUMN description TEXT NOT NULL DEFAULT ''",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE user_expression_rules ADD COLUMN origin TEXT NOT NULL DEFAULT 'custom'",
+            [],
+        );
 
         Ok(Self { conn })
     }
@@ -98,6 +118,7 @@ mod tests {
             is_selected: false,
             is_known: false,
             inference_reason: None,
+            expressions: Vec::new(),
         };
 
         // 5. 对 Token 进行标注评分
@@ -140,6 +161,7 @@ mod tests {
             is_selected: false,
             is_known: false,
             inference_reason: None,
+            expressions: Vec::new(),
         };
 
         let first = engine

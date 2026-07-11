@@ -2,7 +2,9 @@ use serde::Serialize;
 use tauri::{Emitter, State, Window};
 use crate::state::AppState;
 use kotoclip_core::analysis_progress::AnalysisProgress;
-use kotoclip_core::models::{AnnotatedToken, DictEntry, ExportEntry, SegmentationCandidate};
+use kotoclip_core::models::{
+    AnnotatedToken, DictEntry, ExportEntry, ExpressionRule, SegmentationCandidate,
+};
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -78,6 +80,43 @@ pub async fn add_merge_rule(
 ) -> Result<(), String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     engine.add_merge_rule(&parts).map_err(|e| e.to_string())
+}
+
+/// 保存、列出和删除跨文节表达。表达只作为注解应用，不合并底层 token。
+#[tauri::command]
+pub async fn add_expression_rule(
+    state: State<'_, AppState>,
+    tokens: Vec<AnnotatedToken>,
+    label: Option<String>,
+    description: Option<String>,
+    slot_indices: Vec<usize>,
+) -> Result<ExpressionRule, String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    engine
+        .add_expression_rule(
+            &tokens,
+            label.as_deref(),
+            description.as_deref(),
+            &slot_indices,
+        )
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_expression_rules(
+    state: State<'_, AppState>,
+) -> Result<Vec<ExpressionRule>, String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    engine.get_expression_rules().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_expression_rule(
+    state: State<'_, AppState>,
+    id: i64,
+) -> Result<bool, String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    engine.delete_expression_rule(id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

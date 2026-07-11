@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { AnnotatedToken, SegmentationCandidate } from "../types";
+import { AnnotatedToken, ExpressionRule, SegmentationCandidate } from "../types";
 
 export interface Paragraph {
   id: number;
@@ -153,6 +153,18 @@ export function useTokenization() {
     }
   }
 
+  async function addExpressionRule(tokens: AnnotatedToken[], label?: string, description?: string, slotIndices: number[] = []) {
+    return await invoke<ExpressionRule>("add_expression_rule", { tokens, label, description, slotIndices });
+  }
+
+  async function getExpressionRules() {
+    return await invoke<ExpressionRule[]>("get_expression_rules");
+  }
+
+  async function deleteExpressionRule(id: number) {
+    return await invoke<boolean>("delete_expression_rule", { id });
+  }
+
   async function splitToken(token: AnnotatedToken) {
     return await invoke<AnnotatedToken[]>("split_token", { token });
   }
@@ -168,6 +180,9 @@ export function useTokenization() {
     analysisProgress,
     analyzeText,
     mergeTokens,
+    addExpressionRule,
+    getExpressionRules,
+    deleteExpressionRule,
     splitToken,
     getCandidates,
   };

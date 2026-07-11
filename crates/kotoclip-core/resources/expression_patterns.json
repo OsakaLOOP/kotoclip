@@ -1,0 +1,120 @@
+{
+  "patterns": [
+    {
+      "id": "concessive_nimo_kakawarazu",
+      "label": "にもかかわらず",
+      "description": "前项事实成立，却出现与通常预期相反或不受其影响的后项。",
+      "category": "让步",
+      "atoms": [
+        { "lemmas": ["に"], "pos": "助詞" },
+        { "lemmas": ["も"], "pos": "助詞" },
+        { "lemmas": ["かかわる", "関わる", "拘る"], "pos": "動詞" },
+        { "lemmas": ["ぬ"], "pos": "助動詞" }
+      ]
+    },
+    {
+      "id": "idiom_umu_wo_iwasazu",
+      "label": "有無を言わさず",
+      "description": "对方没有答应、拒绝或辩解的余地；不由分说地采取行动。",
+      "category": "固定表达",
+      "atoms": [
+        { "lemmas": ["有無"], "pos": "名詞" },
+        { "lemmas": ["を"], "pos": "助詞" },
+        { "lemmas": ["言わす", "言う"], "pos": "動詞" },
+        { "lemmas": ["ぬ"], "pos": "助動詞" }
+      ]
+    },
+    {
+      "id": "comparison_ni_makeru_tokoro_ga_ooi",
+      "label": "に負けるところが多い",
+      "description": "在不少方面逊于前接对象；前接名词是比较对象，不属于固定表记。",
+      "category": "比较句式",
+      "atoms": [
+        { "lemmas": ["に"], "pos": "助詞" },
+        { "lemmas": ["負ける"], "pos": "動詞" },
+        { "lemmas": ["ところ", "所"], "pos": "名詞" },
+        { "lemmas": ["が"], "pos": "助詞" },
+        { "lemmas": ["多い"], "pos": "形容詞" }
+      ]
+    },
+    {
+      "id": "sequence_ru_ma_mo_naku",
+      "label": "〜間もなく",
+      "description": "前项刚发生或尚未来得及充分完成，后项便紧接着发生。",
+      "category": "时间关系",
+      "atoms": [
+        { "pos": "動詞" },
+        { "lemmas": ["間もなく"], "pos": "副詞" }
+      ]
+    },
+    {
+      "id": "negative_koto_naku",
+      "label": "〜ことなく",
+      "description": "没有进行前项动作，便发生或持续后项。",
+      "category": "否定方式",
+      "atoms": [
+        { "lemmas": ["こと"], "pos": "名詞" },
+        { "lemmas": ["ない"], "pos": "形容詞" }
+      ]
+    },
+    {
+      "id": "limitation_ni_suginai",
+      "label": "〜にすぎない",
+      "description": "把对象限定在较低或较窄的程度：只不过是、仅仅是。",
+      "category": "限定",
+      "atoms": [
+        { "lemmas": ["に"], "pos": "助詞" },
+        { "lemmas": ["すぎる"], "pos": "動詞" },
+        { "lemmas": ["ない"], "pos": "助動詞" }
+      ]
+    },
+    {
+      "id": "evaluation_ni_shitewa",
+      "label": "〜にしては",
+      "description": "以前接条件或身份作为评价基准，后项结果与通常预期不符。",
+      "category": "评价让步",
+      "atoms": [
+        { "lemmas": ["に"], "pos": "助詞" },
+        { "lemmas": ["する"], "pos": "動詞" },
+        { "lemmas": ["て"], "pos": "助詞" },
+        { "lemmas": ["は"], "pos": "助詞" }
+      ]
+    },
+    {
+      "id": "idiom_nani_ga_nan_demo",
+      "label": "何が何でも",
+      "description": "不论条件和手段如何，无论如何都要实现后项。",
+      "category": "固定表达",
+      "atoms": [
+        { "lemmas": ["何"], "pos": "名詞" },
+        { "lemmas": ["が"], "pos": "助詞" },
+        { "lemmas": ["何"], "pos": "名詞" },
+        { "lemmas": ["でも"], "pos": "助詞" }
+      ]
+    },
+    {
+      "id": "idiom_me_mo_kurezu",
+      "label": "目もくれず",
+      "description": "完全不去看、不予理会某对象，专注于另一行动。",
+      "category": "固定表达",
+      "atoms": [
+        { "lemmas": ["目"], "pos": "名詞" },
+        { "lemmas": ["も"], "pos": "助詞" },
+        { "lemmas": ["くれる"], "pos": "動詞" },
+        { "lemmas": ["ぬ"], "pos": "助動詞" }
+      ]
+    },
+    {
+      "id": "idiom_nasuga_mamani",
+      "label": "なすがままに",
+      "description": "不作抵抗或主动控制，任凭他人或事态摆布。",
+      "category": "固定表达",
+      "atoms": [
+        { "lemmas": ["なす", "為す"] },
+        { "lemmas": ["が"], "pos": "助詞" },
+        { "lemmas": ["まま"], "pos": "名詞" },
+        { "lemmas": ["に"], "pos": "助詞" }
+      ]
+    }
+  ]
+}

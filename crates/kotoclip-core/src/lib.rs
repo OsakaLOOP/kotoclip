@@ -10,7 +10,7 @@ use std::path::Path;
 use pipeline::Pipeline;
 use dictionary::lookup::DictionaryEngine;
 use profile::ProfileEngine;
-use models::{AnnotatedToken, DictEntry, SegmentationCandidate};
+use models::{AnnotatedToken, DictEntry, ExpressionRule, SegmentationCandidate};
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 
 /// Kotoclip 核心引擎，粘合了分词管线、词库检索以及用户历史曝光画像
@@ -63,10 +63,10 @@ impl Engine {
     where
         F: FnMut(AnalysisProgress),
     {
-        report(AnalysisProgress::stage(AnalysisPhase::Preparing, 1, "读取合并规则"));
-        // 先拉取用户自定义的短语合并规则
-        let merge_rules = self.profile.get_merge_rules().unwrap_or_default();
-        let mut tokens = self.pipeline.process_with_progress(text, &merge_rules, &mut report);
+        report(AnalysisProgress::stage(AnalysisPhase::Preparing, 1, "准备分析与表达规则"));
+        // 历史 user_merge_rules 不再进入正式 Pipeline。文节边界保持由 NLP 与
+        // 词典边界解析器决定；用户拖拽仅创建独立的跨文节表达注解。
+        let mut tokens = self.pipeline.process_with_progress(text, &[], &mut report);
         let token_count = tokens.len();
         let report_step = (token_count / 100).max(1);
         report(AnalysisProgress::counted(
@@ -94,7 +94,7 @@ impl Engine {
             }
         }
         // 调用画像引擎打分标注
-        let annotated = self.profile.annotate_tokens_with_progress(tokens, |completed, total| {
+        let mut annotated = self.profile.annotate_tokens_with_progress(tokens, |completed, total| {
             let percent = 61 + ((completed * 35 / total.max(1)) as u8);
             report(AnalysisProgress::counted(
                 AnalysisPhase::ProfileScoring,
@@ -104,6 +104,9 @@ impl Engine {
                 "计算词汇熟悉度",
             ));
         })?;
+        // 跨文节表达是独立注解层：画像评分完成后应用，不重写 NLP 文节结构。
+        self.profile.apply_expression_rules(&mut annotated)?;
+        pipeline::expressions::apply_builtin_expressions(&mut annotated);
         if record_exposure {
             self.profile.record_token_exposures_with_progress(&annotated, |completed, total| {
                 let percent = 97 + ((completed * 2 / total.max(1)) as u8);
@@ -152,6 +155,24 @@ impl Engine {
     /// 获取所有用户自定义分词合并规则
     pub fn get_merge_rules(&self) -> Result<Vec<Vec<String>>, Box<dyn std::error::Error>> {
         self.profile.get_merge_rules()
+    }
+
+    pub fn add_expression_rule(
+        &self,
+        tokens: &[AnnotatedToken],
+        label: Option<&str>,
+        description: Option<&str>,
+        slot_indices: &[usize],
+    ) -> Result<ExpressionRule, Box<dyn std::error::Error>> {
+        self.profile.add_expression_rule(tokens, label, description, slot_indices)
+    }
+
+    pub fn get_expression_rules(&self) -> Result<Vec<ExpressionRule>, Box<dyn std::error::Error>> {
+        self.profile.get_expression_rules()
+    }
+
+    pub fn delete_expression_rule(&self, id: i64) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.profile.delete_expression_rule(id)?)
     }
 
     pub fn split_token(&self, token: &AnnotatedToken) -> Vec<AnnotatedToken> {

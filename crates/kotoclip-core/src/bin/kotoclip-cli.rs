@@ -119,6 +119,11 @@ fn run() -> Result<(), Box<dyn Error>> {
         "analyze" => analyze(&args),
         "audit" => audit(&args),
         "benchmark" => benchmark(&args),
+        "expression-list" => expression_list(&args),
+        "expression-preview" => expression_preview(&args),
+        "expression-scan" => expression_scan(&args),
+        "expression-add" => expression_add(&args),
+        "expression-repl" => expression_repl(&args),
         "repl" => repl(&args),
         "help" | "--help" | "-h" => {
             print_help();
@@ -134,6 +139,14 @@ fn dictionary(args: &CliArgs) -> Result<DictionaryEngine, Box<dyn Error>> {
 
 fn pipeline(args: &CliArgs) -> Result<Pipeline, Box<dyn Error>> {
     Ok(Pipeline::new(args.options.get("system-dict").map_or("ipadic/system.dic", String::as_str))?)
+}
+
+fn engine(args: &CliArgs) -> Result<Engine, Box<dyn Error>> {
+    Ok(Engine::new(
+        args.options.get("system-dict").map_or("ipadic/system.dic", String::as_str),
+        args.options.get("dict-dir").map_or("data/dicts", String::as_str),
+        args.required("profile").map_err(io::Error::other)?,
+    )?)
 }
 
 fn dict_info(args: &CliArgs) -> Result<(), Box<dyn Error>> {
@@ -338,6 +351,168 @@ fn benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn expression_list(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    println!("{}", serde_json::to_string_pretty(&engine(args)?.get_expression_rules()?)?);
+    Ok(())
+}
+
+fn print_expression_tokens(tokens: &[kotoclip_core::models::AnnotatedToken]) {
+    for (index, token) in tokens.iter().enumerate() {
+        let signature = token
+            .bunsetsu
+            .morphemes
+            .iter()
+            .filter(|morpheme| !morpheme.surface.trim().is_empty())
+            .map(|morpheme| {
+                let lemma = if morpheme.base_form == "*" || morpheme.base_form.is_empty() {
+                    &morpheme.surface
+                } else {
+                    &morpheme.base_form
+                };
+                format!("{lemma}/{}", morpheme.pos.major)
+            })
+            .collect::<Vec<_>>()
+            .join("+");
+        let matches = token
+            .expressions
+            .iter()
+            .map(|expression| format!("{}:{}", expression.label, expression.position))
+            .collect::<Vec<_>>()
+            .join(", ");
+        println!(
+            "[{index:>3}] {:<18} {:<42} {}",
+            token.bunsetsu.surface,
+            signature,
+            if matches.is_empty() { "" } else { &matches },
+        );
+    }
+}
+
+fn expression_preview(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let tokens = engine(args)?.analyze_text_with_exposure(&text, false)?;
+    print_expression_tokens(&tokens);
+    Ok(())
+}
+
+fn expression_add(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let engine = engine(args)?;
+    let tokens = engine.analyze_text_with_exposure(&text, false)?;
+    let start = args.usize("start-token", 0).map_err(io::Error::other)?;
+    let end = args.usize("end-token", start + 1).map_err(io::Error::other)?;
+    if start >= end || end >= tokens.len() {
+        return Err(format!("无效 token 范围：{start}..={end}，当前共 {} 个 token", tokens.len()).into());
+    }
+    let slot_indices = parse_index_list(args.options.get("slots").map(String::as_str))?;
+    let rule = engine.add_expression_rule(
+        &tokens[start..=end],
+        args.options.get("label").map(String::as_str),
+        args.options.get("description").map(String::as_str),
+        &slot_indices,
+    )?;
+    println!("{}", serde_json::to_string_pretty(&rule)?);
+    Ok(())
+}
+
+fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let tokens = engine(args)?.analyze_text_with_exposure(&text, false)?;
+    let mut shown = HashSet::new();
+    let mut count = 0;
+    for (index, token) in tokens.iter().enumerate() {
+        for expression in token.expressions.iter().filter(|item| item.position == "start") {
+            if !shown.insert(expression.match_id.clone()) {
+                continue;
+            }
+            let context_start = index.saturating_sub(2);
+            let context_end = (expression.token_range.1 + 3).min(tokens.len());
+            let context: String = tokens[context_start..context_end]
+                .iter()
+                .map(|item| item.bunsetsu.surface.as_str())
+                .collect();
+            println!(
+                "[{}] {}\n  范围: token {}..{} / char {}..{}\n  含义: {}\n  上下文: {}\n",
+                expression.origin,
+                expression.label,
+                expression.token_range.0,
+                expression.token_range.1,
+                expression.char_range.0,
+                expression.char_range.1,
+                expression.description,
+                context.replace(['\n', '\r'], " "),
+            );
+            count += 1;
+        }
+    }
+    println!("共发现 {count} 个跨文节表达命中。");
+    Ok(())
+}
+
+fn expression_repl(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let engine = engine(args)?;
+    let mut current_text = String::new();
+    let mut current_tokens = Vec::new();
+    println!("跨文节表达交互模式");
+    println!("命令：analyze 文本；select 起点 终点 槽位(-或0,1) [标签]；rules；delete ID；show；quit");
+    loop {
+        print!("expr> ");
+        io::stdout().flush()?;
+        let mut line = String::new();
+        if io::stdin().read_line(&mut line)? == 0 { break; }
+        let line = line.trim();
+        if matches!(line, "quit" | "exit" | "q") { break; }
+        if let Some(text) = line.strip_prefix("analyze ") {
+            current_text = text.to_string();
+            current_tokens = engine.analyze_text_with_exposure(&current_text, false)?;
+            print_expression_tokens(&current_tokens);
+        } else if line == "show" {
+            print_expression_tokens(&current_tokens);
+        } else if line == "rules" {
+            println!("{}", serde_json::to_string_pretty(&engine.get_expression_rules()?)?);
+        } else if let Some(value) = line.strip_prefix("delete ") {
+            let id: i64 = value.trim().parse()?;
+            println!("删除规则 {id}：{}", engine.delete_expression_rule(id)?);
+            if !current_text.is_empty() {
+                current_tokens = engine.analyze_text_with_exposure(&current_text, false)?;
+            }
+        } else if let Some(value) = line.strip_prefix("select ") {
+            let mut parts = value.splitn(4, ' ');
+            let start: usize = parts.next().ok_or("缺少起点")?.parse()?;
+            let end: usize = parts.next().ok_or("缺少终点")?.parse()?;
+            let slots = parts.next().ok_or("缺少槽位；无槽位请输入 -")?;
+            let slot_indices = parse_index_list((slots != "-").then_some(slots))?;
+            let label = parts.next();
+            if start >= end || end >= current_tokens.len() {
+                println!("范围无效。请先 analyze，并选择至少两个 token。当前共 {} 个。", current_tokens.len());
+                continue;
+            }
+            let rule = engine.add_expression_rule(
+                &current_tokens[start..=end],
+                label,
+                None,
+                &slot_indices,
+            )?;
+            println!("已保存 #{}：{}", rule.id, rule.label);
+            current_tokens = engine.analyze_text_with_exposure(&current_text, false)?;
+            print_expression_tokens(&current_tokens);
+        } else if !line.is_empty() {
+            println!("无法识别命令。请输入 analyze、select、rules、delete、show 或 quit。");
+        }
+    }
+    Ok(())
+}
+
+fn parse_index_list(value: Option<&str>) -> Result<Vec<usize>, Box<dyn Error>> {
+    value.map_or(Ok(Vec::new()), |value| {
+        value
+            .split(',')
+            .filter(|part| !part.trim().is_empty())
+            .map(|part| Ok(part.trim().parse::<usize>()?))
+            .collect()
+    })
+}
+
 fn repl(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let dictionary = dictionary(args)?;
     let pipeline = pipeline(args)?;
@@ -373,6 +548,35 @@ fn read_text_argument(args: &CliArgs) -> Result<String, Box<dyn Error>> {
     if let Some(text) = args.options.get("text") { return Ok(text.clone()); }
     if let Some(path) = args.options.get("source") { return Ok(std::fs::read_to_string(path)?); }
     Err("需要 --text 或 --source".into())
+}
+
+fn read_text_selection(args: &CliArgs) -> Result<String, Box<dyn Error>> {
+    if let Some(text) = args.options.get("text") {
+        return Ok(text.clone());
+    }
+    let path = args.required("source").map_err(io::Error::other)?;
+    let source = std::fs::read_to_string(path)?;
+    let selected = extract_chapter(
+        &source,
+        args.options.get("chapter").map(String::as_str),
+    )?;
+    let lines: Vec<&str> = selected.lines().collect();
+    let page_lines = args.usize("page-lines", 0).map_err(io::Error::other)?;
+    let page = args.usize("page", 1).map_err(io::Error::other)?.max(1);
+    let start = if page_lines > 0 {
+        (page - 1).saturating_mul(page_lines)
+    } else {
+        args.usize("start-line", 1).map_err(io::Error::other)?.saturating_sub(1)
+    };
+    let count = if page_lines > 0 {
+        page_lines
+    } else {
+        args.usize("line-count", lines.len()).map_err(io::Error::other)?
+    };
+    if start >= lines.len() {
+        return Err(format!("起始行 {} 超出文本范围 {}", start + 1, lines.len()).into());
+    }
+    Ok(lines[start..(start + count).min(lines.len())].join("\n"))
 }
 
 fn extract_chapter<'a>(source: &'a str, chapter: Option<&str>) -> Result<&'a str, Box<dyn Error>> {
@@ -422,6 +626,15 @@ fn print_help() {
         [--json PATH --min-coverage 0.10 --max-misses N]
   benchmark --source PATH --profile PATH [--chapter TITLE]
         [--no-record-exposure] [--json PATH]
+  expression-list --profile PATH
+  expression-preview --profile PATH (--text TEXT | --source PATH)
+        [--chapter TITLE --page-lines N --page N]
+  expression-scan --profile PATH (--text TEXT | --source PATH)
+        [--chapter TITLE --page-lines N --page N]
+  expression-add --profile PATH (--text TEXT | --source PATH)
+        --start-token N --end-token N [--slots 0,1]
+        [--label LABEL --description TEXT]
+  expression-repl --profile PATH
   repl
 "#);
 }
