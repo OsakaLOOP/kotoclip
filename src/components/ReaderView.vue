@@ -238,6 +238,8 @@ async function triggerAnalysis(recordExposure = true) {
 async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
   const target = e.target as HTMLElement;
   const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
+  const relatedCapsule = (e.relatedTarget as HTMLElement | null)?.closest?.("[data-token-index]");
+  if (capsuleEl && relatedCapsule === capsuleEl) return;
   
   cancelTooltipClose();
 

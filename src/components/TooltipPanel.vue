@@ -49,6 +49,23 @@ const activeHeadword = computed(() =>
   ?? "",
 );
 
+const isSourceQuery = computed(() =>
+  !props.lookup || props.lookup.query === props.token?.bunsetsu.head_word.base_form,
+);
+
+const activeReading = computed(() => {
+  const preferred = props.lookup?.entries.find((entry) => entry.is_preferred)?.reading;
+  if (preferred) return preferred;
+  if (props.lookup?.reading) return props.lookup.reading;
+  return isSourceQuery.value ? props.token?.bunsetsu.head_word.reading : null;
+});
+
+const panelMaxHeight = computed(() => {
+  const viewportHeight = typeof window === "undefined" ? 800 : window.innerHeight;
+  const available = props.placement === "above" ? props.y - 20 : viewportHeight - props.y - 20;
+  return `${Math.max(160, Math.min(Math.round(viewportHeight * 0.7), 620, available))}px`;
+});
+
 function relationLabel(relation: string) {
   return ({ candidate: "表记", antonym: "反义", synonym: "近义", parent: "亲项目", child: "子项目", phrase: "惯用句", reference: "参照", related: "关联", redirect: "转至" } as Record<string, string>)[relation] ?? "关联";
 }
@@ -87,7 +104,7 @@ function handleDefinitionClick(event: MouseEvent) {
       v-if="show && token"
       class="tooltip-panel"
       :class="`tooltip-${placement}`"
-      :style="{ left: x + 'px', top: y + 'px' }"
+      :style="{ left: x + 'px', top: y + 'px', maxHeight: panelMaxHeight }"
       role="dialog"
       aria-label="词典释义"
       @mouseenter="emit('enter')"
@@ -98,12 +115,12 @@ function handleDefinitionClick(event: MouseEvent) {
         <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')">‹</button>
         <div class="headword-block">
           <span class="base-form">{{ activeHeadword }}</span>
-          <span v-if="lookup?.reading || token.bunsetsu.head_word.reading" class="reading">【{{ lookup?.reading || token.bunsetsu.head_word.reading }}】</span>
+          <span v-if="activeReading" class="reading">【{{ activeReading }}】</span>
         </div>
-        <span class="tooltip-pos">{{ formattedPos }}</span>
+        <span v-if="isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
       </header>
 
-      <div v-if="token.bunsetsu.grammar_tags.length" class="tooltip-section grammar-list">
+      <div v-if="isSourceQuery && token.bunsetsu.grammar_tags.length" class="tooltip-section grammar-list">
         <div v-for="tag in token.bunsetsu.grammar_tags" :key="tag.pattern_id" class="grammar-desc">
           <strong>「{{ tag.name_ja }}」</strong><span>{{ tag.description }}</span>
         </div>
@@ -152,7 +169,7 @@ function handleDefinitionClick(event: MouseEvent) {
 </template>
 
 <style scoped>
-.tooltip-panel { position: fixed; z-index: 1000; width: min(460px, calc(100vw - 24px)); max-height: min(70vh, 620px); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
+.tooltip-panel { position: fixed; z-index: 1000; width: min(460px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
 .tooltip-above { transform: translate(-50%, -100%) translateY(-8px); }
 .tooltip-below { transform: translate(-50%, 8px); }
 .tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: baseline; padding: 10px 0 8px; background: var(--glass-bg); }
