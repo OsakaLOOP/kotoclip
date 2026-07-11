@@ -10,6 +10,7 @@ pub struct DictionaryPresentation {
     pub style_profile: String,
     pub content_blocks: Vec<DictionaryContentBlock>,
     pub links: Vec<DictionaryLink>,
+    pub reading: Option<String>,
 }
 
 pub fn present(dict_name: &str, headword: &str, definition: &str) -> DictionaryPresentation {
@@ -23,7 +24,12 @@ pub fn present(dict_name: &str, headword: &str, definition: &str) -> DictionaryP
 fn present_daijirin(headword: &str, definition: &str) -> DictionaryPresentation {
     let links = extract_daijirin_links(definition);
     let managed = clean_daijirin_markup(definition, headword, links.len());
-    finish("daijirin", managed, links)
+    let mut presentation = finish("daijirin", managed, links);
+    presentation.reading = headword
+        .find(|character| matches!(character, '【' | '〖' | '（'))
+        .map(|end| headword[..end].trim().to_string())
+        .filter(|reading| is_kana(reading));
+    presentation
 }
 
 fn present_generic(definition: &str) -> DictionaryPresentation {
@@ -59,6 +65,7 @@ fn finish(profile: &str, source: String, links: Vec<DictionaryLink>) -> Dictiona
         style_profile: profile.to_string(),
         content_blocks,
         links,
+        reading: None,
     }
 }
 

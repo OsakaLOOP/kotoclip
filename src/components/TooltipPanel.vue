@@ -128,9 +128,13 @@ function handleDefinitionClick(event: MouseEvent) {
         <div v-else-if="!dictionaryGroups.length" class="empty-state">暂无本地词典释义</div>
         <section v-for="group in dictionaryGroups" :key="group.name" class="dictionary-group">
           <h3>{{ group.name }}</h3>
-          <article v-for="entry in group.entries" :key="entry.entry_key" class="dictionary-entry">
-            <div class="entry-meta"><strong>{{ entry.headword }}</strong><span>{{ entry.match_type }}</span></div>
-            <DictionaryContent :entry="entry" />
+          <details v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry" :open="entry.is_preferred || (!group.entries.some(item => item.is_preferred) && entryIndex === 0)">
+            <summary class="entry-meta">
+              <strong><span v-if="entry.is_preferred" class="preferred-mark" title="读音匹配">★</span>{{ entry.headword }}</strong>
+              <span>{{ entry.reading || (group.entries.length > 1 ? `词条 ${entryIndex + 1}` : entry.match_type) }}</span>
+            </summary>
+            <div class="entry-body">
+              <DictionaryContent :entry="entry" />
             <div v-if="managedLinkGroups(entry).length" class="managed-relations">
               <details v-for="relationGroup in managedLinkGroups(entry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
                 <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
@@ -139,7 +143,8 @@ function handleDefinitionClick(event: MouseEvent) {
                 </div>
               </details>
             </div>
-          </article>
+            </div>
+          </details>
         </section>
       </div>
     </section>
@@ -170,7 +175,10 @@ button:hover, button.active { border-color: var(--accent-color); background: var
 .dictionary-group + .dictionary-group { margin-top: 14px; }
 .dictionary-group > h3 { position: sticky; top: 45px; z-index: 1; margin: 0 -4px 8px; padding: 4px; background: var(--glass-bg); color: var(--text-muted); font: 700 .72rem var(--font-ui); }
 .entry-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.entry-meta { cursor: pointer; }
+.entry-body { padding-top: 3px; }
 .entry-meta span, .empty-state { color: var(--text-muted); font: .75rem var(--font-ui); }
+.entry-meta .preferred-mark { margin-right: 4px; color: var(--accent-color); }
 .relation-list { margin-top: 8px; }
 .managed-relations { display: grid; gap: 8px; margin-top: 10px; padding-top: 9px; border-top: 1px dotted var(--border-color); }
 .relation-group summary { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-muted); font: 700 .7rem var(--font-ui); cursor: pointer; }

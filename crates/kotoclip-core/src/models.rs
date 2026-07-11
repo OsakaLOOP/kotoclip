@@ -147,6 +147,8 @@ pub struct DictEntry {
     pub entry_key: String,
     pub dict_name: String,
     pub headword: String,
+    pub reading: Option<String>,
+    pub is_preferred: bool,
     pub definition_html: String,
     pub style_profile: String,
     pub content_blocks: Vec<DictionaryContentBlock>,

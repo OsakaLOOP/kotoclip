@@ -207,13 +207,26 @@ impl DictionaryEngine {
         if headword.is_empty() {
             return Vec::new();
         }
-        if let Some(target) = self.redirect_target(headword) {
-            let redirected = self.lookup_direct(&target, reading);
-            if !redirected.is_empty() {
-                return redirected;
+        let normalized_reading = reading
+            .filter(|value| !value.is_empty() && *value != "*")
+            .map(normalize_reading);
+        let targets = self.redirect_targets(headword);
+        let mut redirected = Vec::new();
+        let mut seen = HashSet::new();
+        for target in targets {
+            for entry in self.lookup_direct(&target, reading) {
+                if seen.insert(entry.entry_key.clone()) {
+                    redirected.push(entry);
+                }
             }
         }
-        self.lookup_direct(headword, reading)
+        if !redirected.is_empty() {
+            rank_readings(&mut redirected, normalized_reading.as_deref());
+            return redirected;
+        }
+        let mut direct = self.lookup_direct(headword, reading);
+        rank_readings(&mut direct, normalized_reading.as_deref());
+        direct
     }
 
     fn lookup_direct(&self, headword: &str, reading: Option<&str>) -> Vec<DictEntry> {
@@ -244,22 +257,23 @@ impl DictionaryEngine {
         results
     }
 
-    fn redirect_target(&self, headword: &str) -> Option<String> {
+    fn redirect_targets(&self, headword: &str) -> Vec<String> {
+        let mut targets = Vec::new();
         for (_, conn) in &self.connections {
-            let target = conn.query_row(
-                "SELECT substr(definition, 9) FROM entries WHERE headword = ?1 AND definition LIKE '@@@LINK=%' LIMIT 1",
-                [headword],
-                |row| row.get::<_, String>(0),
-            );
-            if let Ok(target) = target {
-                return Some(target);
+            let Ok(mut statement) = conn.prepare(
+                "SELECT substr(definition, 9) FROM entries WHERE headword = ?1 AND definition LIKE '@@@LINK=%' ORDER BY id",
+            ) else {
+                continue;
+            };
+            if let Ok(rows) = statement.query_map([headword], |row| row.get::<_, String>(0)) {
+                targets.extend(rows.flatten());
             }
         }
-        None
+        targets
     }
 
     fn query_form(&self, value: &str) -> Vec<DictEntry> {
-        let sql = "SELECT f.form, e.definition, e.dict_name \
+        let sql = "SELECT e.id, e.headword, e.definition, e.dict_name, e.reading \
                    FROM entry_forms f JOIN entries e ON e.id = f.entry_id \
                    WHERE f.normalized_form = ?1 AND e.definition NOT LIKE '@@@LINK=%' \
                    ORDER BY f.is_primary DESC, e.dict_name LIMIT 10";
@@ -267,10 +281,7 @@ impl DictionaryEngine {
     }
 
     fn query_structured_reading(&self, value: &str) -> Vec<DictEntry> {
-        let sql = "SELECT COALESCE(\
-                       (SELECT f.form FROM entry_forms f \
-                        WHERE f.entry_id = e.id ORDER BY f.is_primary DESC LIMIT 1),\
-                       e.headword), e.definition, e.dict_name \
+        let sql = "SELECT e.id, e.headword, e.definition, e.dict_name, e.reading \
                    FROM entry_readings r JOIN entries e ON e.id = r.entry_id \
                    WHERE r.normalized_reading = ?1 AND e.definition NOT LIKE '@@@LINK=%' \
                    ORDER BY r.is_primary DESC, e.dict_name LIMIT 10";
@@ -285,9 +296,11 @@ impl DictionaryEngine {
             };
             let Ok(rows) = stmt.query_map([value], |row| {
                 Ok(self.entry(
-                    row.get(2).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(3).unwrap_or_else(|_| fallback_name.clone()),
                     row.get(0)?,
                     row.get(1)?,
+                    row.get(2)?,
+                    row.get(4).ok(),
                     match_type,
                 ))
             }) else {
@@ -299,7 +312,7 @@ impl DictionaryEngine {
     }
 
     fn query_exact(&self, column: &str, value: &str, match_type: &str) -> Vec<DictEntry> {
-        let sql = format!("SELECT headword, definition, dict_name, reading FROM entries WHERE {column} = ?1 ORDER BY dict_name");
+        let sql = format!("SELECT id, headword, definition, dict_name, reading FROM entries WHERE {column} = ?1 ORDER BY dict_name, id");
         let mut results = Vec::new();
         for (fallback_name, conn) in &self.connections {
             let Ok(mut stmt) = conn.prepare(&sql) else {
@@ -307,9 +320,11 @@ impl DictionaryEngine {
             };
             let Ok(rows) = stmt.query_map([value], |row| {
                 Ok(self.entry(
-                    row.get(2).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(3).unwrap_or_else(|_| fallback_name.clone()),
                     row.get(0)?,
                     row.get(1)?,
+                    row.get(2)?,
+                    row.get(4).ok(),
                     match_type,
                 ))
             }) else {
@@ -324,15 +339,17 @@ impl DictionaryEngine {
         let query = format!("\"{}\"", word.replace('"', ""));
         let mut results = Vec::new();
         for (fallback_name, conn) in &self.connections {
-            let sql = "SELECT e.headword, e.definition, e.dict_name FROM entries_fts f JOIN entries e ON e.id = f.rowid WHERE f.headword MATCH ?1 LIMIT 5";
+            let sql = "SELECT e.id, e.headword, e.definition, e.dict_name, e.reading FROM entries_fts f JOIN entries e ON e.id = f.rowid WHERE f.headword MATCH ?1 LIMIT 5";
             let Ok(mut stmt) = conn.prepare(sql) else {
                 continue;
             };
             let Ok(rows) = stmt.query_map([&query], |row| {
                 Ok(self.entry(
-                    row.get(2).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(3).unwrap_or_else(|_| fallback_name.clone()),
                     row.get(0)?,
                     row.get(1)?,
+                    row.get(2)?,
+                    row.get(4).ok(),
                     "fuzzy",
                 ))
             }) else {
@@ -346,15 +363,19 @@ impl DictionaryEngine {
     fn entry(
         &self,
         dict_name: String,
+        entry_id: i64,
         headword: String,
         definition: String,
+        structured_reading: Option<String>,
         match_type: &str,
     ) -> DictEntry {
         let presentation = presentation::present(&dict_name, &headword, &definition);
         DictEntry {
-            entry_key: format!("{dict_name}\u{1f}{headword}"),
+            entry_key: format!("{dict_name}\u{1f}{entry_id}"),
             dict_name,
             headword,
+            reading: structured_reading.or(presentation.reading),
+            is_preferred: false,
             definition_html: presentation.definition_html,
             style_profile: presentation.style_profile,
             content_blocks: presentation.content_blocks,
@@ -362,6 +383,18 @@ impl DictionaryEngine {
             links: presentation.links,
         }
     }
+}
+
+fn rank_readings(entries: &mut [DictEntry], requested: Option<&str>) {
+    for entry in entries.iter_mut() {
+        entry.is_preferred = requested.is_some_and(|requested| {
+            entry
+                .reading
+                .as_deref()
+                .is_some_and(|reading| normalize_reading(reading) == requested)
+        });
+    }
+    entries.sort_by_key(|entry| !entry.is_preferred);
 }
 
 fn normalize_reading(value: &str) -> String {
