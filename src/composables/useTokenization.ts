@@ -173,6 +173,10 @@ export function useTokenization() {
     return await invoke<SegmentationCandidate[]>("get_candidates", { token, topN });
   }
 
+  async function chooseSegmentation(source: AnnotatedToken, candidate: SegmentationCandidate) {
+    await invoke("choose_segmentation", { source, candidate });
+  }
+
   return {
     paragraphs,
     isAnalyzing,
@@ -185,5 +189,6 @@ export function useTokenization() {
     deleteExpressionRule,
     splitToken,
     getCandidates,
+    chooseSegmentation,
   };
 }

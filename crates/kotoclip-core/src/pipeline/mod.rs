@@ -32,6 +32,49 @@ impl Pipeline {
         self.process_with_progress(text, merge_rules, &mut |_| {})
     }
 
+    pub fn nbest_candidates(
+        &self,
+        source: &AnnotatedToken,
+        top_n: usize,
+    ) -> Vec<crate::models::SegmentationCandidate> {
+        let paths = self
+            .morpheme_analyzer
+            .analyze_nbest(&source.bunsetsu.surface, top_n);
+        candidates::from_lattice(source, paths)
+    }
+
+    pub fn nbest_morphemes(
+        &self,
+        text: &str,
+        top_n: usize,
+    ) -> Vec<morpheme::MorphemeCandidate> {
+        self.morpheme_analyzer.analyze_nbest(text, top_n)
+    }
+
+    pub fn apply_segmentation_choices(
+        &self,
+        tokens: &mut [AnnotatedToken],
+        choices: &[crate::models::SegmentationChoice],
+    ) {
+        for token in tokens {
+            let Some(choice) = choices
+                .iter()
+                .find(|choice| choice.surface == token.bunsetsu.surface)
+            else {
+                continue;
+            };
+            let offset = token.bunsetsu.char_range.0;
+            let mut morphemes = choice.morphemes.clone();
+            for morpheme in &mut morphemes {
+                morpheme.char_range.0 += offset;
+                morpheme.char_range.1 += offset;
+            }
+            token.bunsetsu = bunsetsu::build_bunsetsu(morphemes);
+            self.grammar_matcher
+                .match_patterns(std::slice::from_mut(&mut token.bunsetsu));
+        }
+    }
+
     pub fn process_with_progress<F>(
         &self,
         text: &str,

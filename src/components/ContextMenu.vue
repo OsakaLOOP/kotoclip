@@ -21,7 +21,7 @@ const emit = defineEmits<{
   (e: "view-definition", paragraphId: number, tokenIndex: number): void;
   (e: "split"): void;
   (e: "load-candidates"): void;
-  (e: "apply-candidate", tokens: AnnotatedToken[]): void;
+  (e: "apply-candidate", candidate: SegmentationCandidate): void;
 }>();
 
 function handleMarkKnown() {
@@ -86,9 +86,12 @@ onUnmounted(() => {
         v-for="(candidate, index) in candidates"
         :key="index"
         class="candidate-item"
-        @click="emit('apply-candidate', candidate.tokens)"
+        @click="emit('apply-candidate', candidate)"
       >
-        {{ candidate.tokens.map((item) => item.bunsetsu.surface).join('｜') }}
+        <span>{{ candidate.tokens.map((item) => item.bunsetsu.surface).join('｜') }}</span>
+        <small :title="candidate.dictionary_evidence.length ? `词典：${candidate.dictionary_evidence.join('、')}` : '无多字词典证据'">
+          {{ index === 0 ? `推荐 · V${candidate.vibrato_rank}` : `V${candidate.vibrato_rank} · Δ${candidate.relative_cost}` }}
+        </small>
       </button>
     </div>
     <div class="menu-divider"></div>
@@ -119,7 +122,7 @@ onUnmounted(() => {
 .context-menu {
   position: fixed;
   z-index: 1100;
-  width: 240px;
+  width: min(360px, calc(100vw - 24px));
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -184,10 +187,15 @@ onUnmounted(() => {
   background: var(--bg-secondary);
   color: var(--text-secondary);
   text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   cursor: pointer;
 }
+
+.candidate-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.candidate-item small { flex: 0 0 auto; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 
 .candidate-item:hover {
   border-color: var(--accent-color);

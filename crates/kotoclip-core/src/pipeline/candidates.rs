@@ -1,5 +1,5 @@
 use crate::models::{AnnotatedToken, Morpheme, SegmentationCandidate};
-use std::collections::HashSet;
+use super::morpheme::MorphemeCandidate;
 
 fn token_from_morphemes(morphemes: Vec<Morpheme>, source: &AnnotatedToken) -> AnnotatedToken {
     AnnotatedToken {
@@ -12,29 +12,6 @@ fn token_from_morphemes(morphemes: Vec<Morpheme>, source: &AnnotatedToken) -> An
     }
 }
 
-fn candidate_from_ranges(
-    source: &AnnotatedToken,
-    ranges: &[(usize, usize)],
-) -> SegmentationCandidate {
-    SegmentationCandidate {
-        tokens: ranges
-            .iter()
-            .map(|&(start, end)| {
-                token_from_morphemes(source.bunsetsu.morphemes[start..end].to_vec(), source)
-            })
-            .collect(),
-    }
-}
-
-fn candidate_key(candidate: &SegmentationCandidate) -> String {
-    candidate
-        .tokens
-        .iter()
-        .map(|token| token.bunsetsu.surface.as_str())
-        .collect::<Vec<_>>()
-        .join("\u{1f}")
-}
-
 pub fn split_token(source: &AnnotatedToken) -> Vec<AnnotatedToken> {
     source
         .bunsetsu
@@ -45,34 +22,37 @@ pub fn split_token(source: &AnnotatedToken) -> Vec<AnnotatedToken> {
         .collect()
 }
 
-/// Generate deterministic alternatives from real morpheme boundaries.
-/// The all-morpheme split is first, followed by every binary split ordered
-/// from left to right. Duplicate surface segmentations are removed.
-pub fn get_candidates(source: &AnnotatedToken, top_n: usize) -> Vec<SegmentationCandidate> {
-    let count = source.bunsetsu.morphemes.len();
-    if count < 2 || top_n == 0 {
-        return Vec::new();
-    }
-
-    let mut candidates = Vec::new();
-    let mut seen = HashSet::new();
-    let all_ranges: Vec<(usize, usize)> = (0..count).map(|index| (index, index + 1)).collect();
-    let all_split = candidate_from_ranges(source, &all_ranges);
-    seen.insert(candidate_key(&all_split));
-    candidates.push(all_split);
-
-    for boundary in 1..count {
-        let candidate = candidate_from_ranges(source, &[(0, boundary), (boundary, count)]);
-        if seen.insert(candidate_key(&candidate)) {
-            candidates.push(candidate);
-        }
-        if candidates.len() >= top_n {
-            break;
-        }
-    }
-
-    candidates.truncate(top_n);
-    candidates
+/// 将真实 lattice 路径转换成 UI 可应用的 token 序列，并把局部字符范围
+/// 平移回原文范围。这里不再合成任意边界候选。
+pub fn from_lattice(
+    source: &AnnotatedToken,
+    paths: Vec<MorphemeCandidate>,
+) -> Vec<SegmentationCandidate> {
+    let best_cost = paths.first().map_or(0, |path| path.total_cost);
+    let offset = source.bunsetsu.char_range.0;
+    paths
+        .into_iter()
+        .enumerate()
+        .map(|(vibrato_rank, mut path)| {
+            for morpheme in &mut path.morphemes {
+                morpheme.char_range.0 += offset;
+                morpheme.char_range.1 += offset;
+            }
+            SegmentationCandidate {
+                tokens: path
+                    .morphemes
+                    .into_iter()
+                    .map(|morpheme| token_from_morphemes(vec![morpheme], source))
+                    .collect(),
+                total_cost: path.total_cost,
+                relative_cost: path.total_cost.saturating_sub(best_cost),
+                source: "vibrato_lattice".to_string(),
+                vibrato_rank: vibrato_rank + 1,
+                rank_score: i64::from(path.total_cost),
+                dictionary_evidence: Vec::new(),
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -126,8 +106,15 @@ mod tests {
     }
 
     #[test]
-    fn generates_real_boundary_candidates() {
-        let candidates = get_candidates(&source_token(), 3);
+    fn converts_lattice_candidates_without_inventing_boundaries() {
+        let source = source_token();
+        let candidates = from_lattice(
+            &source,
+            vec![MorphemeCandidate {
+                morphemes: source.bunsetsu.morphemes.clone(),
+                total_cost: 42,
+            }],
+        );
         let surfaces: Vec<Vec<&str>> = candidates
             .iter()
             .map(|candidate| {
@@ -139,8 +126,8 @@ mod tests {
             })
             .collect();
 
-        assert_eq!(surfaces[0], vec!["警", "察", "署"]);
-        assert_eq!(surfaces[1], vec!["警", "察署"]);
-        assert_eq!(surfaces[2], vec!["警察", "署"]);
+        assert_eq!(surfaces, vec![vec!["警", "察", "署"]]);
+        assert_eq!(candidates[0].total_cost, 42);
+        assert_eq!(candidates[0].source, "vibrato_lattice");
     }
 }

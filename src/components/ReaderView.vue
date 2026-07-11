@@ -39,6 +39,7 @@ const {
   deleteExpressionRule,
   splitToken,
   getCandidates,
+  chooseSegmentation,
 } = useTokenization();
 const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs);
 const { lookupWord } = useDictionary();
@@ -292,6 +293,18 @@ function replaceContextToken(replacement: AnnotatedToken[]) {
   clearAllSelections();
   contextMenuShow.value = false;
   virtualizer.value.measure();
+}
+
+async function applyContextCandidate(candidate: SegmentationCandidate) {
+  if (!contextMenuToken.value) return;
+  try {
+    await chooseSegmentation(contextMenuToken.value, candidate);
+    contextMenuShow.value = false;
+    await triggerAnalysis(false);
+  } catch (err) {
+    console.error("Candidate Apply Error:", err);
+    alert(`应用 N-best 候选失败：${String(err)}`);
+  }
 }
 
 async function splitContextToken() {
@@ -559,7 +572,7 @@ function shouldInsertWjAfter(tokens: AnnotatedToken[], index: number): boolean {
       @view-definition="viewFullDefinition"
       @split="splitContextToken"
       @load-candidates="loadContextCandidates"
-      @apply-candidate="replaceContextToken"
+      @apply-candidate="applyContextCandidate"
     />
 
     <!-- 5. 生词导出侧边栏 -->

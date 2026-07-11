@@ -46,6 +46,7 @@ pub fn run() {
             commands::delete_expression_rule,
             commands::split_token,
             commands::get_candidates,
+            commands::choose_segmentation,
             commands::export_selected,
         ])
         .run(tauri::generate_context!())

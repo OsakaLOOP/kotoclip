@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-vibrato = "0.5"
+vibrato = { path = "../../vendor/vibrato", version = "0.5.2" }
 aho-corasick = "1.1"
 rusqlite = { version = "0.31", features = ["bundled", "bundled-full"] }
 serde = { version = "1", features = ["derive"] }

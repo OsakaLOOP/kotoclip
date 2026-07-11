@@ -4497,8 +4497,6 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vibrato"
 version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b02279291f68f435d84407eae0a99a8ac3dea4c2ff1f9efc86ab2431d13606bd"
 dependencies = [
  "bincode",
  "crawdad",

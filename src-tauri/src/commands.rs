@@ -138,6 +138,18 @@ pub async fn get_candidates(
     Ok(engine.get_candidates(&token, top_n))
 }
 
+#[tauri::command]
+pub async fn choose_segmentation(
+    state: State<'_, AppState>,
+    source: AnnotatedToken,
+    candidate: SegmentationCandidate,
+) -> Result<(), String> {
+    let engine = state.engine.lock().map_err(|e| e.to_string())?;
+    engine
+        .choose_segmentation(&source, &candidate)
+        .map_err(|e| e.to_string())
+}
+
 /// IPC 命令：打包所选生词生成 Anki 格式的导出 JSON 字符串
 #[tauri::command]
 pub async fn export_selected(

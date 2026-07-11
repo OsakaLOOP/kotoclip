@@ -10,7 +10,9 @@ use std::path::Path;
 use pipeline::Pipeline;
 use dictionary::lookup::DictionaryEngine;
 use profile::ProfileEngine;
-use models::{AnnotatedToken, DictEntry, ExpressionRule, SegmentationCandidate};
+use models::{
+    AnnotatedToken, DictEntry, ExpressionRule, SegmentationCandidate, SegmentationChoice,
+};
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 
 /// Kotoclip 核心引擎，粘合了分词管线、词库检索以及用户历史曝光画像
@@ -67,6 +69,9 @@ impl Engine {
         // 历史 user_merge_rules 不再进入正式 Pipeline。文节边界保持由 NLP 与
         // 词典边界解析器决定；用户拖拽仅创建独立的跨文节表达注解。
         let mut tokens = self.pipeline.process_with_progress(text, &[], &mut report);
+        let segmentation_choices = self.profile.get_segmentation_choices()?;
+        self.pipeline
+            .apply_segmentation_choices(&mut tokens, &segmentation_choices);
         let token_count = tokens.len();
         let report_step = (token_count / 100).max(1);
         report(AnalysisProgress::counted(
@@ -184,7 +189,56 @@ impl Engine {
         token: &AnnotatedToken,
         top_n: usize,
     ) -> Vec<SegmentationCandidate> {
-        pipeline::candidates::get_candidates(token, top_n)
+        if top_n == 0 {
+            return Vec::new();
+        }
+        // 先保留较宽的真实 lattice 候选池，再用外部词典证据重排。
+        // 原始 Vibrato rank/cost 始终保留，词典层不伪装成 Viterbi 成本。
+        let pool_size = top_n.saturating_mul(4).max(top_n);
+        let mut candidates = self.pipeline.nbest_candidates(token, pool_size);
+        for candidate in &mut candidates {
+            let mut bonus = 0_i64;
+            for item in &candidate.tokens {
+                let head = &item.bunsetsu.head_word;
+                let chars = head.base_form.chars().count();
+                if chars >= 2 && self.dictionary.contains_exact(&head.base_form) {
+                    candidate.dictionary_evidence.push(head.base_form.clone());
+                    bonus += (chars * chars) as i64 * 1800;
+                }
+            }
+            candidate.dictionary_evidence.sort();
+            candidate.dictionary_evidence.dedup();
+            candidate.rank_score = i64::from(candidate.total_cost) - bonus;
+        }
+        candidates.sort_by(|left, right| {
+            left.rank_score
+                .cmp(&right.rank_score)
+                .then_with(|| left.total_cost.cmp(&right.total_cost))
+                .then_with(|| left.vibrato_rank.cmp(&right.vibrato_rank))
+        });
+        candidates.truncate(top_n);
+        candidates
+    }
+
+    pub fn choose_segmentation(
+        &self,
+        source: &AnnotatedToken,
+        candidate: &SegmentationCandidate,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.profile.set_segmentation_choice(source, candidate)
+    }
+
+    pub fn get_segmentation_choices(
+        &self,
+    ) -> Result<Vec<SegmentationChoice>, Box<dyn std::error::Error>> {
+        self.profile.get_segmentation_choices()
+    }
+
+    pub fn delete_segmentation_choice(
+        &self,
+        surface: &str,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.profile.delete_segmentation_choice(surface)?)
     }
 }
 

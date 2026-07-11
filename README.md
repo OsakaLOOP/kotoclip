@@ -35,6 +35,13 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- analyze --text "七日は警察
 
 # 交互研究
 cargo run -p kotoclip-core --bin kotoclip-cli -- repl
+
+# 真实 Vibrato lattice N-best 与交互比较
+cargo run -p kotoclip-core --bin kotoclip-cli -- nbest --text "七日" --top-n 5
+cargo run -p kotoclip-core --bin kotoclip-cli -- nbest-repl --top-n 5
+
+# 跨文节表达章节扫描
+cargo run -p kotoclip-core --bin kotoclip-cli -- expression-scan --profile data/research-profile.sqlite --source output.md --chapter "## 第一話　冷やし神"
 ```
 
 章节覆盖率审计支持 `--chapter`、`--page-lines`、`--page`、`--start-line`、`--line-count` 和 `--sample-every`。完整参数见：

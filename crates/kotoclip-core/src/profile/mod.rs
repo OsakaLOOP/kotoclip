@@ -2,6 +2,7 @@ pub mod exposure;
 pub mod expressions;
 pub mod kanji;
 pub mod scoring;
+pub mod segmentation;
 
 use rusqlite::Connection;
 use std::path::Path;
@@ -53,6 +54,13 @@ impl ProfileEngine {
                 origin       TEXT NOT NULL DEFAULT 'custom',
                 pattern_json TEXT NOT NULL UNIQUE,
                 created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS user_segmentation_choices (
+                surface          TEXT PRIMARY KEY,
+                morphemes_json   TEXT NOT NULL,
+                selected_cost    INTEGER NOT NULL,
+                selected_at      TEXT NOT NULL DEFAULT (datetime('now'))
             );
 
             CREATE INDEX IF NOT EXISTS idx_kanji_knowledge_char 

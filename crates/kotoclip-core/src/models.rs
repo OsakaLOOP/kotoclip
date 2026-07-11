@@ -63,7 +63,23 @@ pub struct ExpressionAnnotation {
 
 fn default_expression_origin() -> String { "custom".to_string() }
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SegmentationCandidate { pub tokens: Vec<AnnotatedToken> }
+pub struct SegmentationCandidate {
+    pub tokens: Vec<AnnotatedToken>,
+    pub total_cost: i32,
+    pub relative_cost: i32,
+    pub source: String,
+    pub vibrato_rank: usize,
+    pub rank_score: i64,
+    pub dictionary_evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SegmentationChoice {
+    pub surface: String,
+    pub morphemes: Vec<Morpheme>,
+    pub selected_cost: i32,
+    pub selected_at: String,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportEntry {
     pub surface: String, pub base_form: String, pub reading: String, pub pos: String, pub grammar_tags: Vec<String>,

@@ -110,6 +110,21 @@
 
 ## 阶段三：best-N
 
-状态：未开始。
+状态：原始可用初版完成，双重策略与人工清洗待迭代。
 
-目标：研究 Vibrato 原库的 lattice 与成本模型；优先实现有分数的真正 N-best。若维护 fork 不可行，则在语素序列上实现可解释的状态机候选，并通过同一 CLI 比较。
+- 官方 Vibrato 0.5.2 已 vendoring 到 `vendor/vibrato`，保留 MIT/Apache-2.0 许可证。
+- fork 在完整 lattice 上为每个节点保存前 K 个带成本前驱，并从 EOS 回溯真实完整路径；候选 0 与原 `tokenize()` 一致。
+- `SegmentationCandidate` 保留总成本、相对成本、Vibrato 原始 rank 和 `vibrato_lattice` 来源。
+- UI 右键候选显示推荐顺序、原始 Viterbi rank 与成本差；选择后持久化到 `user_segmentation_choices`，后续分析在文节内部恢复所选语素/POS/读音并重新匹配语法。
+- CLI 提供 `nbest`、`nbest-repl`、`nbest-rank`、`nbest-choose` 和 `nbest-choices`。
+
+### 交互观察
+
+- `七日`：V1 为 `七｜日`（cost 781），整体词 `七日／ナノカ` 为 V2（cost 5706）。外部词典证据可将 V2 提升为推荐，但不改写原始成本。
+- `警察署`：lattice 中没有整体节点，N-best 不能生成词典不存在的词；继续由外部词典边界层处理。
+- `取り調べ`：动词路径与名词路径成本只差 358，是有语境判定价值的 POS 歧义。
+- `有無を言わさず`：候选包含 `言わす＋ぬ` 与 `言う＋す＋ぬ` 等真实路径，可用于人工比较。
+
+### 后续策略
+
+原始 lattice N-best 已可用。下一轮再组合两类证据：Vibrato 成本与词典/表达状态机重排；推荐结果保留人工选择和撤销入口，不直接覆盖原始 rank。非连续表达如 `どんなに…たところで` 由独立 NFA 处理，不伪装成分词候选。

@@ -119,6 +119,11 @@ fn run() -> Result<(), Box<dyn Error>> {
         "analyze" => analyze(&args),
         "audit" => audit(&args),
         "benchmark" => benchmark(&args),
+        "nbest" => nbest(&args),
+        "nbest-rank" => nbest_rank(&args),
+        "nbest-choose" => nbest_choose(&args),
+        "nbest-choices" => nbest_choices(&args),
+        "nbest-repl" => nbest_repl(&args),
         "expression-list" => expression_list(&args),
         "expression-preview" => expression_preview(&args),
         "expression-scan" => expression_scan(&args),
@@ -348,6 +353,104 @@ fn benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         println!("基准报告已写入：{output}");
     }
     println!("{json}");
+    Ok(())
+}
+
+fn print_nbest(pipeline: &Pipeline, text: &str, top_n: usize) {
+    let candidates = pipeline.nbest_morphemes(text, top_n);
+    let best = candidates.first().map_or(0, |candidate| candidate.total_cost);
+    for (index, candidate) in candidates.iter().enumerate() {
+        let segmentation = candidate
+            .morphemes
+            .iter()
+            .map(|morpheme| {
+                format!(
+                    "{}/{}:{}",
+                    morpheme.surface, morpheme.base_form, morpheme.pos.major
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("｜");
+        println!(
+            "#{:<2} cost={:<8} delta={:<8} {}",
+            index + 1,
+            candidate.total_cost,
+            candidate.total_cost.saturating_sub(best),
+            segmentation,
+        );
+    }
+}
+
+fn nbest(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let top_n = args.usize("top-n", 5).map_err(io::Error::other)?.max(1);
+    print_nbest(&pipeline(args)?, &text, top_n);
+    Ok(())
+}
+
+fn nbest_repl(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let pipeline = pipeline(args)?;
+    let top_n = args.usize("top-n", 5).map_err(io::Error::other)?.max(1);
+    println!("Vibrato lattice N-best 交互模式；直接输入日文，quit 退出。候选数：{top_n}");
+    loop {
+        print!("nbest> ");
+        io::stdout().flush()?;
+        let mut line = String::new();
+        if io::stdin().read_line(&mut line)? == 0 { break; }
+        let line = line.trim();
+        if matches!(line, "quit" | "exit" | "q") { break; }
+        if !line.is_empty() {
+            print_nbest(&pipeline, line, top_n);
+        }
+    }
+    Ok(())
+}
+
+fn nbest_rank(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let engine = engine(args)?;
+    let tokens = engine.analyze_text_with_exposure(&text, false)?;
+    for (index, token) in tokens.iter().enumerate() {
+        println!("[{index}] {} / {}", token.bunsetsu.surface, token.bunsetsu.head_word.base_form);
+    }
+    let index = args.usize("token", 0).map_err(io::Error::other)?;
+    let token = tokens.get(index).ok_or_else(|| format!("token 索引 {index} 超出范围"))?;
+    let top_n = args.usize("top-n", 5).map_err(io::Error::other)?.max(1);
+    println!("{}", serde_json::to_string_pretty(&engine.get_candidates(token, top_n))?);
+    Ok(())
+}
+
+fn nbest_choose(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let engine = engine(args)?;
+    let tokens = engine.analyze_text_with_exposure(&text, false)?;
+    let token_index = args.usize("token", 0).map_err(io::Error::other)?;
+    let token = tokens
+        .get(token_index)
+        .ok_or_else(|| format!("token 索引 {token_index} 超出范围"))?;
+    let pool = args.usize("top-n", 5).map_err(io::Error::other)?.max(1);
+    let candidates = engine.get_candidates(token, pool);
+    let candidate_index = args.usize("candidate", 1).map_err(io::Error::other)?.saturating_sub(1);
+    let candidate = candidates
+        .get(candidate_index)
+        .ok_or_else(|| format!("候选索引 {} 超出范围", candidate_index + 1))?;
+    engine.choose_segmentation(token, candidate)?;
+    println!(
+        "已保存：{} -> {} (V{}, cost={})",
+        token.bunsetsu.surface,
+        candidate.tokens.iter().map(|item| item.bunsetsu.surface.as_str()).collect::<Vec<_>>().join("｜"),
+        candidate.vibrato_rank,
+        candidate.total_cost,
+    );
+    Ok(())
+}
+
+fn nbest_choices(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let engine = engine(args)?;
+    if let Some(surface) = args.options.get("delete") {
+        println!("删除 {surface}：{}", engine.delete_segmentation_choice(surface)?);
+    }
+    println!("{}", serde_json::to_string_pretty(&engine.get_segmentation_choices()?)?);
     Ok(())
 }
 
@@ -626,6 +729,13 @@ fn print_help() {
         [--json PATH --min-coverage 0.10 --max-misses N]
   benchmark --source PATH --profile PATH [--chapter TITLE]
         [--no-record-exposure] [--json PATH]
+  nbest (--text TEXT | --source PATH) [--top-n N]
+  nbest-rank --profile PATH (--text TEXT | --source PATH)
+        [--token N --top-n N]
+  nbest-choose --profile PATH (--text TEXT | --source PATH)
+        [--token N --candidate N --top-n N]
+  nbest-choices --profile PATH [--delete SURFACE]
+  nbest-repl [--top-n N]
   expression-list --profile PATH
   expression-preview --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N]
