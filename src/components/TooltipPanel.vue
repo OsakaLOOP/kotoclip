@@ -25,6 +25,16 @@ const formattedPos = computed(() => {
   return [head.pos.major, head.pos.sub1].filter((part) => part && part !== "*").join(" · ");
 });
 
+const dictionaryGroups = computed(() => {
+  const groups = new Map<string, NonNullable<typeof props.lookup>["entries"]>();
+  for (const entry of props.lookup?.entries ?? []) {
+    const group = groups.get(entry.dict_name) ?? [];
+    group.push(entry);
+    groups.set(entry.dict_name, group);
+  }
+  return [...groups.entries()].map(([name, entries]) => ({ name, entries }));
+});
+
 function handleDefinitionClick(event: MouseEvent) {
   const anchor = (event.target as HTMLElement).closest("a") as HTMLAnchorElement | null;
   if (!anchor) return;
@@ -80,18 +90,16 @@ function handleDefinitionClick(event: MouseEvent) {
         <div class="section-title">词典释义</div>
         <div v-if="loading" class="empty-state">正在载入释义…</div>
         <div v-else-if="!lookup?.entries.length" class="empty-state">暂无本地词典释义</div>
-        <article v-for="entry in lookup?.entries ?? []" :key="entry.entry_key" class="dictionary-entry">
-          <div class="entry-meta"><strong>{{ entry.headword }}</strong><span>{{ entry.dict_name }}</span></div>
-          <div class="dictionary-html" v-html="entry.definition_html"></div>
-          <div v-if="entry.links.some(link => link.relation !== 'related')" class="relation-list">
-            <button
-              v-for="link in entry.links.filter(link => link.relation !== 'related')"
-              :key="`${link.relation}:${link.target}`"
-              type="button"
-              @click="emit('navigate', link.target)"
-            >{{ link.relation === 'antonym' ? '反义' : '近义' }} · {{ link.label }}</button>
-          </div>
-        </article>
+        <section v-for="group in dictionaryGroups" :key="group.name" class="dictionary-group">
+          <h3>{{ group.name }}</h3>
+          <article v-for="entry in group.entries" :key="entry.entry_key" class="dictionary-entry">
+            <div class="entry-meta"><strong>{{ entry.headword }}</strong><span>{{ entry.match_type }}</span></div>
+            <div class="dictionary-html" v-html="entry.definition_html"></div>
+            <div v-if="entry.links.some(link => link.relation !== 'related')" class="relation-list">
+              <button v-for="link in entry.links.filter(link => link.relation !== 'related')" :key="`${link.relation}:${link.target}`" type="button" @click="emit('navigate', link.target)">{{ link.relation === 'antonym' ? '反义' : '近义' }} · {{ link.label }}</button>
+            </div>
+          </article>
+        </section>
       </div>
     </section>
   </Transition>
@@ -113,11 +121,21 @@ function handleDefinitionClick(event: MouseEvent) {
 button { border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 9px; background: var(--bg-card); color: var(--accent-color); cursor: pointer; }
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 .dictionary-entry + .dictionary-entry { border-top: 1px dashed var(--border-color); margin-top: 12px; padding-top: 12px; }
+.dictionary-group + .dictionary-group { margin-top: 14px; }
+.dictionary-group > h3 { position: sticky; top: 45px; z-index: 1; margin: 0 -4px 8px; padding: 4px; background: var(--glass-bg); color: var(--text-muted); font: 700 .72rem var(--font-ui); }
 .entry-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .entry-meta span, .empty-state { color: var(--text-muted); font: .75rem var(--font-ui); }
 .dictionary-html { color: var(--text-secondary); }
 .dictionary-html :deep(a) { color: var(--accent-color); text-decoration: underline; cursor: pointer; }
 .dictionary-html :deep(*) { max-width: 100%; white-space: normal !important; }
+.dictionary-html :deep(.bss) { color: var(--text-primary); font-size: 1.03em; font-weight: 700; letter-spacing: .03em; }
+.dictionary-html :deep(.annot) { color: var(--text-muted); font-size: .78em; }
+.dictionary-html :deep(.leftnull), .dictionary-html :deep(.lefta) { display: grid; gap: 4px; }
+.dictionary-html :deep(.no) { float: left; min-width: 1.8em; color: var(--accent-color); font-weight: 700; }
+.dictionary-html :deep(hy) { color: var(--text-primary); font-weight: 600; }
+.dictionary-html :deep(table) { width: 100%; border-collapse: collapse; }
+.dictionary-html :deep(th), .dictionary-html :deep(td) { border: 1px solid var(--border-color); padding: 4px 6px; vertical-align: top; }
+.dictionary-html :deep(ul), .dictionary-html :deep(ol) { padding-inline-start: 1.4em; }
 .relation-list { margin-top: 8px; }
 .fade-enter-active, .fade-leave-active { transition: opacity .12s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }

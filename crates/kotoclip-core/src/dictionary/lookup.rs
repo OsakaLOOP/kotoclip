@@ -355,7 +355,8 @@ impl DictionaryEngine {
         let links = extract_dictionary_links(&definition);
         let allowed: HashSet<&str> = [
             "p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul", "ol",
-            "li", "dl", "dt", "dd", "a",
+            "li", "dl", "dt", "dd", "a", "hy", "table", "thead", "tbody", "tr", "th", "td",
+            "sup", "sub", "small", "blockquote", "code", "mark",
         ]
         .into_iter()
         .collect();
@@ -527,7 +528,7 @@ mod tests {
         let database = directory.join("test.sqlite");
         let connection = Connection::open(&database).unwrap();
         connection.execute_batch(
-            "CREATE TABLE entries (id INTEGER PRIMARY KEY, headword TEXT NOT NULL, reading TEXT, definition TEXT NOT NULL, dict_name TEXT NOT NULL);
+            r#"CREATE TABLE entries (id INTEGER PRIMARY KEY, headword TEXT NOT NULL, reading TEXT, definition TEXT NOT NULL, dict_name TEXT NOT NULL);
              CREATE TABLE metadata (schema_version INTEGER NOT NULL, source_name TEXT NOT NULL, imported_at TEXT NOT NULL);
              CREATE TABLE entry_forms (entry_id INTEGER NOT NULL, form TEXT NOT NULL, normalized_form TEXT NOT NULL, form_type TEXT NOT NULL, is_primary INTEGER NOT NULL, PRIMARY KEY(entry_id, normalized_form));
              CREATE TABLE entry_readings (entry_id INTEGER NOT NULL, reading TEXT NOT NULL, normalized_reading TEXT NOT NULL, is_primary INTEGER NOT NULL, PRIMARY KEY(entry_id, normalized_reading));
@@ -535,14 +536,20 @@ mod tests {
              INSERT INTO entries VALUES (1, 'けいさつしょ', NULL, '@@@LINK=けいさつしょ【警察署】', '测试词典');
              INSERT INTO entries VALUES (2, 'けいさつしょ【警察署】', NULL, '<p>警察署释义</p>', '测试词典');
              INSERT INTO entries VALUES (3, 'つなぐ【繫ぐ】', NULL, '<p>繫ぐ释义</p>', '测试词典');
+             INSERT INTO entries VALUES (4, 'いる', NULL, '<p>☞ <a href="entry://いる【入る】">いる【入る】</a><br>☞ <a href="entry://いる【居る】">いる【居る】</a></p>', '测试词典');
+             INSERT INTO entries VALUES (5, 'いる【入る】', NULL, '<p><span class="bss">いる</span> 入る释义</p>', '测试词典');
              INSERT INTO metadata VALUES (3, '测试词典', '2026-07-11T00:00:00Z');
              INSERT INTO entry_forms VALUES (1, 'けいさつしょ', 'けいさつしょ', 'kana', 1);
              INSERT INTO entry_forms VALUES (2, '警察署', '警察署', 'kanji', 1);
              INSERT INTO entry_forms VALUES (3, '繫ぐ', '繫ぐ', 'kanji', 1);
+             INSERT INTO entry_forms VALUES (4, 'いる', 'いる', 'kana', 1);
+             INSERT INTO entry_forms VALUES (5, '入る', '入る', 'mixed', 1);
              INSERT INTO entry_readings VALUES (1, 'けいさつしょ', 'ケイサツショ', 1);
              INSERT INTO entry_readings VALUES (2, 'けいさつしょ', 'ケイサツショ', 1);
              INSERT INTO entry_readings VALUES (3, 'つなぐ', 'ツナグ', 1);
-             INSERT INTO entries_fts(entries_fts) VALUES('rebuild');"
+             INSERT INTO entry_readings VALUES (4, 'いる', 'イル', 1);
+             INSERT INTO entry_readings VALUES (5, 'いる', 'イル', 1);
+             INSERT INTO entries_fts(entries_fts) VALUES('rebuild');"#
         ).unwrap();
         drop(connection);
 
@@ -561,6 +568,12 @@ mod tests {
         assert_eq!(variant.len(), 1);
         assert_eq!(variant[0].headword, "繫ぐ");
         assert!(engine.contains_exact("繋ぐ"));
+
+        let navigation = engine.lookup("いる", None);
+        assert!(navigation.iter().any(|entry| entry.links.len() == 2));
+        let target = engine.lookup("いる【入る】", None);
+        assert!(target.iter().any(|entry| entry.definition_html.contains("入る释义")));
+        assert!(target.iter().any(|entry| entry.definition_html.contains("class=\"bss\"")));
 
         drop(engine);
         std::fs::remove_dir_all(directory).unwrap();

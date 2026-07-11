@@ -1,0 +1,76 @@
+"""审计悬浮词典所依赖的真实词典形态与第一话代表查询。"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sqlite3
+from collections import Counter
+from pathlib import Path
+
+
+def chapter_text(path: Path, heading: str) -> str:
+    text = path.read_text(encoding="utf-8")
+    start = text.index(heading)
+    rest = text[start + len(heading) :]
+    end = re.search(r"^##\s+", rest, re.MULTILINE)
+    return rest[: end.start() if end else None]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dict", dest="dictionary", type=Path, required=True)
+    parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument("--chapter", default="## 第一話　冷やし神")
+    args = parser.parse_args()
+
+    chapter = chapter_text(args.source, args.chapter)
+    required_source_terms = ["七日", "冷やし神", "いる", "繋", "警察署"]
+    missing_source = [term for term in required_source_terms if term not in chapter]
+
+    connection = sqlite3.connect(args.dictionary)
+    entry_count = connection.execute("SELECT count(*) FROM entries").fetchone()[0]
+    checks: dict[str, bool] = {}
+    for query in ["ボリューム", "ひやし", "七日"]:
+        checks[f"redirect:{query}"] = bool(
+            connection.execute(
+                "SELECT 1 FROM entries WHERE headword = ? AND definition LIKE '@@@LINK=%' LIMIT 1",
+                (query,),
+            ).fetchone()
+        )
+    for query in ["いる", "ある", "かみ"]:
+        row = connection.execute(
+            "SELECT definition FROM entries WHERE headword = ? AND definition LIKE '%entry://%' LIMIT 1",
+            (query,),
+        ).fetchone()
+        checks[f"kana-navigation:{query}"] = bool(row and row[0].count("entry://") >= 2)
+
+    tags: Counter[str] = Counter()
+    link_entries = 0
+    sample_step = max(entry_count // 2500, 1)
+    for (definition,) in connection.execute(
+        "SELECT definition FROM entries WHERE id % ? = 0 LIMIT 2500", (sample_step,)
+    ):
+        tags.update(tag.lower() for tag in re.findall(r"<\s*/?\s*([a-zA-Z][\w:-]*)", definition))
+        link_entries += int("entry://" in definition)
+
+    report = {
+        "dictionary": str(args.dictionary),
+        "entry_count": entry_count,
+        "stratified_sample_size": 2500,
+        "sample_link_entries": link_entries,
+        "sample_tags": dict(tags.most_common(20)),
+        "chapter": args.chapter,
+        "chapter_characters": len(chapter),
+        "source_terms": {term: term in chapter for term in required_source_terms},
+        "dictionary_checks": checks,
+    }
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    if missing_source or not all(checks.values()) or entry_count == 0:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
