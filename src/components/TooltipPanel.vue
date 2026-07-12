@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionaryChoiceBar from "./dictionary/DictionaryChoiceBar.vue";
@@ -78,6 +78,32 @@ const dictionaryGroups = computed(() => {
   }
   return [...groups.entries()].map(([name, entries]) => ({ name, entries }));
 });
+
+const dictionarySourceNames = ref(["三省堂Super大辞林3.1"]);
+const definitionViewportRef = ref<HTMLElement | null>(null);
+const cachedContentHeight = ref(0);
+
+watch(
+  dictionaryGroups,
+  (groups) => {
+    if (groups.length) dictionarySourceNames.value = groups.map((group) => group.name);
+  },
+  { immediate: true },
+);
+
+watch(
+  [() => props.loading, dictionaryGroups],
+  async ([loading, groups]) => {
+    if (loading || !groups.length) return;
+    await nextTick();
+    const height = definitionViewportRef.value?.scrollHeight ?? 0;
+    if (height) cachedContentHeight.value = height;
+  },
+  { flush: "post" },
+);
+
+const dictionarySourceLabel = computed(() => dictionarySourceNames.value.join(" · "));
+const loadingContentHeight = computed(() => `${cachedContentHeight.value || 220}px`);
 
 const activeEntry = computed(() => visibleEntries.value.find((entry) => entry.is_preferred) ?? visibleEntries.value[0]);
 
@@ -198,11 +224,20 @@ function handleDefinitionClick(event: MouseEvent) {
       />
 
       <div v-if="loading || dictionaryGroups.length || !lookup?.candidates.length" class="tooltip-section definitions" @click="handleDefinitionClick">
-        <div v-if="!loading" class="section-title">词典释义</div>
-        <LoadingSkeleton v-if="loading" variant="dictionary" />
-        <div v-else-if="!dictionaryGroups.length" class="empty-state">暂无本地词典释义</div>
-        <section v-for="group in dictionaryGroups" :key="group.name" class="dictionary-group">
-          <h3>{{ group.name }}</h3>
+        <div class="definition-heading">
+          <span class="section-title">词典释义</span>
+          <span class="dictionary-sources">{{ dictionarySourceLabel }}</span>
+        </div>
+        <div
+          ref="definitionViewportRef"
+          class="definition-viewport"
+          :class="{ 'is-loading': loading }"
+          :style="loading ? { height: loadingContentHeight } : undefined"
+        >
+          <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
+          <div v-else-if="!dictionaryGroups.length" class="empty-state">暂无本地词典释义</div>
+          <section v-for="group in dictionaryGroups" :key="group.name" class="dictionary-group">
+          <h3 v-if="dictionaryGroups.length > 1">{{ group.name }}</h3>
           <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
             <div class="entry-meta">
               <strong><span v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" title="读音匹配">★</span>{{ entry.headword }}</strong>
@@ -220,7 +255,8 @@ function handleDefinitionClick(event: MouseEvent) {
             </div>
             </div>
           </article>
-        </section>
+          </section>
+        </div>
       </div>
     </section>
   </Transition>
@@ -237,6 +273,11 @@ function handleDefinitionClick(event: MouseEvent) {
 .reading, .tooltip-pos { color: var(--text-muted); font-size: .78rem; }
 .tooltip-section { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px; }
 .section-title { margin-bottom: 7px; color: var(--text-muted); font: 700 .72rem var(--font-ui); letter-spacing: .04em; }
+.definition-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.definition-heading .section-title { margin: 0; }
+.dictionary-sources { overflow: hidden; color: var(--text-muted); font: 700 .72rem var(--font-ja); text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.definition-viewport.is-loading { overflow: hidden; }
+.definition-skeleton { height: 100%; }
 .grammar-desc { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
 .grammar-desc strong { color: var(--novelty-high-text); }
 .grammar-desc span { color: var(--text-secondary); }
