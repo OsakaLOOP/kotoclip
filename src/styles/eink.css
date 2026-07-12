@@ -85,17 +85,6 @@ body.eink-mode .grammar-match {
   text-decoration: underline;
 }
 
-body.eink-mode .bunsetsu-capsule.has-expression::after {
-  height: 1px;
-  background: #000;
-}
-
-body.eink-mode .expression-badge {
-  background: #fff;
-  color: #000;
-  border: 1px solid #000;
-}
-
 body.eink-mode .expression-anchor {
   text-decoration-color: #000;
 }

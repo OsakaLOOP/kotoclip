@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { AnnotatedToken, ExpressionAnnotation } from "../types";
+import { AnnotatedToken } from "../types";
 
 const props = defineProps<{
   token: AnnotatedToken;
@@ -9,14 +9,6 @@ const props = defineProps<{
   isDragSelected: boolean;
   tokens?: AnnotatedToken[];
 }>();
-
-const emit = defineEmits<{
-  (event: "lookup-expression", expression: ExpressionAnnotation, target: HTMLElement): void;
-}>();
-
-function handleExpressionLookup(expression: ExpressionAnnotation, event: MouseEvent) {
-  emit("lookup-expression", expression, event.currentTarget as HTMLElement);
-}
 
 const hasSentencePause = computed(() => {
   if (!props.tokens || props.token.display_class !== "content") return false;
@@ -37,7 +29,6 @@ const capsuleClasses = computed(() => {
   const t = props.token;
   const expressionClasses = t.expressions.length > 0
     ? {
-        "has-expression": true,
         [`expression-${t.expressions[0].position}`]: true,
         [`expression-type-${t.expressions[0].expression_type}`]: true,
         [`expression-boundary-${t.expressions[0].boundary_effect}`]: true,
@@ -146,17 +137,6 @@ function isExpressionMorpheme(index: number) {
       :class="{ 'head-word-highlight': isHeadMorpheme(idx), 'helper-word': !isHeadMorpheme(idx), 'grammar-match': isGrammarMorpheme(idx), 'expression-anchor': isExpressionMorpheme(idx) }"
     >
       {{ m.surface }}
-    </span>
-
-    <!-- 跨文节表达使用细连接带，不改变原文节胶囊大小。 -->
-    <span
-      v-for="expression in token.expressions.filter((item) => item.position === 'start' || item.position === 'single')"
-      :key="expression.match_id"
-      class="expression-badge"
-      :title="expression.description || expression.surface"
-      @click.stop="handleExpressionLookup(expression, $event)"
-    >
-      {{ expression.label }}
     </span>
 
     <!-- 渲染语法 Badge 徽章 -->

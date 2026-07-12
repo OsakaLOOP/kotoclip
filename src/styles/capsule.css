@@ -182,50 +182,6 @@
 }
 
 /* 跨文节表达层：连续细线保留各文节的视觉边界，避免生成臃肿大胶囊。 */
-.bunsetsu-capsule.has-expression {
-  margin-bottom: 0.38rem;
-}
-
-.bunsetsu-capsule.has-expression::after {
-  content: "";
-  position: absolute;
-  left: -0.08rem;
-  right: -0.08rem;
-  bottom: -0.24rem;
-  height: 2px;
-  background: #6d4aa2;
-  pointer-events: none;
-}
-
-.bunsetsu-capsule.expression-start::after {
-  left: 0.15rem;
-  border-radius: 2px 0 0 2px;
-}
-
-.bunsetsu-capsule.expression-end::after {
-  right: 0.15rem;
-  border-radius: 0 2px 2px 0;
-}
-
-.expression-badge {
-  position: absolute;
-  left: 0.1rem;
-  bottom: -1.05rem;
-  z-index: 2;
-  max-width: 12rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 0.22rem;
-  border-radius: 3px;
-  background: #f1ebf8;
-  color: #5b3b88;
-  font-size: 0.58rem;
-  line-height: 1.2;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
 .expression-anchor {
   text-decoration-line: underline;
   text-decoration-style: dotted;
