@@ -13,16 +13,6 @@ fn token_from_morphemes(morphemes: Vec<Morpheme>, source: &AnnotatedToken) -> An
     }
 }
 
-pub fn split_token(source: &AnnotatedToken) -> Vec<AnnotatedToken> {
-    source
-        .bunsetsu
-        .morphemes
-        .iter()
-        .cloned()
-        .map(|morpheme| token_from_morphemes(vec![morpheme], source))
-        .collect()
-}
-
 /// 将真实 lattice 路径转换成 UI 可应用的 token 序列，并把局部字符范围
 /// 平移回原文范围。这里不再合成任意边界候选。
 pub fn from_lattice(

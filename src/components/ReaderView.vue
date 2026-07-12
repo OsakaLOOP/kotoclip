@@ -7,7 +7,7 @@ import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
 import { useScrollFocus } from "../composables/useScrollFocus";
-import { DictEntry, DictionaryLookup, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, SegmentationCandidate, AnnotatedToken } from "../types";
+import { DictEntry, DictionaryLookup, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, Morpheme, SegmentationCandidate, AnnotatedToken } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import TooltipPanel from "./TooltipPanel.vue";
@@ -48,7 +48,6 @@ const {
   addExpressionRule,
   getExpressionRules,
   deleteExpressionRule,
-  splitToken,
   getCandidates,
   chooseSegmentation,
 } = useTokenization();
@@ -364,26 +363,80 @@ function handleParagraphClick(e: MouseEvent, paragraphId: number) {
   toggleSelect(paragraphId, tokenIndex);
 }
 
-// 双击段落：弹出上下文菜单
+// 双击语素：合并后的词汇单位仍保留原始 morpheme，按实际点击项下钻查词。
 function handleParagraphDblClick(e: MouseEvent, paragraphId: number) {
   const target = e.target as HTMLElement;
+  const morphemeEl = target.closest("[data-morpheme-index]") as HTMLElement;
   const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
-  if (!capsuleEl) return;
+  if (!capsuleEl || !morphemeEl) return;
 
   const tokenIndex = parseInt(capsuleEl.getAttribute("data-token-index") || "", 10);
-  if (isNaN(tokenIndex)) return;
+  const morphemeIndex = parseInt(morphemeEl.getAttribute("data-morpheme-index") || "", 10);
+  if (isNaN(tokenIndex) || isNaN(morphemeIndex)) return;
 
   const p = paragraphs.value.find((para) => para.id === paragraphId);
   const token = p?.tokens[tokenIndex];
   const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
   if (!token || isPunc) return;
+  const morpheme = token.bunsetsu.morphemes[morphemeIndex];
+  if (!morpheme) return;
 
-  // 取消 Tooltip 显示
   cancelTooltipClose();
-  ++tooltipRequestId;
-  tooltipShow.value = false;
+  const rect = morphemeEl.getBoundingClientRect();
+  const tooltipHalfWidth = Math.min(230, Math.max(0, window.innerWidth / 2 - 12));
+  tooltipX.value = Math.min(
+    window.innerWidth - tooltipHalfWidth,
+    Math.max(tooltipHalfWidth, rect.left + rect.width / 2)
+  );
+  tooltipPlacement.value = rect.top >= 340 ? "above" : "below";
+  tooltipY.value = tooltipPlacement.value === "above" ? rect.top : rect.bottom;
+  tooltipToken.value = tokenForMorphemeLookup(token, morpheme);
+  tooltipPanelHovered = false;
+  tooltipShow.value = true;
+  tooltipLookup.value = null;
+  tooltipHistory.value = [];
+  tooltipLoading.value = true;
+  const requestId = ++tooltipRequestId;
+  const baseForm = morpheme.base_form && morpheme.base_form !== "*"
+    ? morpheme.base_form
+    : morpheme.surface;
+  void lookupWord(baseForm, morpheme.reading).then((lookup) => {
+    if (requestId === tooltipRequestId) {
+      tooltipLookup.value = lookup;
+      tooltipLoading.value = false;
+    }
+  });
+}
 
-  // 弹出右键菜单
+function tokenForMorphemeLookup(token: AnnotatedToken, morpheme: Morpheme): AnnotatedToken {
+  return {
+    ...token,
+    bunsetsu: {
+      ...token.bunsetsu,
+      head_word: {
+        surface: morpheme.surface,
+        base_form: morpheme.base_form && morpheme.base_form !== "*"
+          ? morpheme.base_form
+          : morpheme.surface,
+        reading: morpheme.reading,
+        pos: morpheme.pos,
+      },
+      grammar_tags: [],
+    },
+  };
+}
+
+// 右键保留词条操作和 N-best 分词候选；双击不再承担拆分入口。
+function handleParagraphContextMenu(e: MouseEvent, paragraphId: number) {
+  const target = e.target as HTMLElement;
+  const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
+  if (!capsuleEl) return;
+  const tokenIndex = parseInt(capsuleEl.getAttribute("data-token-index") || "", 10);
+  if (isNaN(tokenIndex)) return;
+  const p = paragraphs.value.find((para) => para.id === paragraphId);
+  const token = p?.tokens[tokenIndex];
+  const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
+  if (!token || isPunc) return;
   contextMenuX.value = e.clientX;
   contextMenuY.value = e.clientY;
   contextMenuToken.value = token;
@@ -391,17 +444,6 @@ function handleParagraphDblClick(e: MouseEvent, paragraphId: number) {
   contextMenuTokenIndex.value = tokenIndex;
   contextMenuCandidates.value = [];
   contextMenuShow.value = true;
-}
-
-function replaceContextToken(replacement: AnnotatedToken[]) {
-  const paragraph = paragraphs.value.find(
-    (item) => item.id === contextMenuParagraphId.value
-  );
-  if (!paragraph || replacement.length === 0) return;
-  paragraph.tokens.splice(contextMenuTokenIndex.value, 1, ...replacement);
-  clearAllSelections();
-  contextMenuShow.value = false;
-  virtualizer.value.measure();
 }
 
 async function applyContextCandidate(candidate: SegmentationCandidate) {
@@ -413,15 +455,6 @@ async function applyContextCandidate(candidate: SegmentationCandidate) {
   } catch (err) {
     console.error("Candidate Apply Error:", err);
     alert(`应用 N-best 候选失败：${String(err)}`);
-  }
-}
-
-async function splitContextToken() {
-  if (!contextMenuToken.value) return;
-  try {
-    replaceContextToken(await splitToken(contextMenuToken.value));
-  } catch (err) {
-    console.error("Split Token Error:", err);
   }
 }
 
@@ -607,6 +640,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             @mousemove="handleMouseMove($event, paragraphs[virtualRow.index].id)"
             @click="handleParagraphClick($event, paragraphs[virtualRow.index].id)"
             @dblclick="handleParagraphDblClick($event, paragraphs[virtualRow.index].id)"
+            @contextmenu.prevent="handleParagraphContextMenu($event, paragraphs[virtualRow.index].id)"
           >
             <template v-if="paragraphs[virtualRow.index].tokens.length > 0">
               <template v-for="(token, tokenIndex) in paragraphs[virtualRow.index].tokens" :key="tokenIndex">
@@ -658,7 +692,6 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       @mark-known="markAsKnown"
       @mark-unknown="markAsUnknown"
       @view-definition="viewFullDefinition"
-      @split="splitContextToken"
       @load-candidates="loadContextCandidates"
       @apply-candidate="applyContextCandidate"
     />

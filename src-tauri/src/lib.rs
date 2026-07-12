@@ -46,7 +46,6 @@ pub fn run() {
             commands::get_expression_rules,
             commands::refresh_expression_annotations,
             commands::delete_expression_rule,
-            commands::split_token,
             commands::get_candidates,
             commands::choose_segmentation,
             commands::export_selected,

@@ -19,7 +19,6 @@ const emit = defineEmits<{
   (e: "mark-known", paragraphId: number, tokenIndex: number): void;
   (e: "mark-unknown", paragraphId: number, tokenIndex: number): void;
   (e: "view-definition", paragraphId: number, tokenIndex: number): void;
-  (e: "split"): void;
   (e: "load-candidates"): void;
   (e: "apply-candidate", candidate: SegmentationCandidate): void;
 }>();
@@ -67,10 +66,6 @@ onUnmounted(() => {
   >
     <div class="menu-header">{{ token.bunsetsu.surface }}</div>
     <div class="menu-divider"></div>
-
-    <button class="menu-item" @click="emit('split')">
-      <span class="icon">拆</span> 拆为形态素
-    </button>
 
     <button
       class="menu-item"

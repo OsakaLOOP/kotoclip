@@ -441,10 +441,6 @@ impl Engine {
         Ok(self.profile.delete_expression_rule(id)?)
     }
 
-    pub fn split_token(&self, token: &AnnotatedToken) -> Vec<AnnotatedToken> {
-        pipeline::candidates::split_token(token)
-    }
-
     pub fn get_candidates(
         &self,
         token: &AnnotatedToken,

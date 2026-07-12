@@ -322,10 +322,6 @@ export function useTokenization() {
     return await invoke<boolean>("delete_expression_rule", { id });
   }
 
-  async function splitToken(token: AnnotatedToken) {
-    return await invoke<AnnotatedToken[]>("split_token", { token });
-  }
-
   async function getCandidates(token: AnnotatedToken, topN = 5) {
     return await invoke<SegmentationCandidate[]>("get_candidates", { token, topN });
   }
@@ -346,7 +342,6 @@ export function useTokenization() {
     getExpressionRules,
     refreshExpressionAnnotations,
     deleteExpressionRule,
-    splitToken,
     getCandidates,
     chooseSegmentation,
   };

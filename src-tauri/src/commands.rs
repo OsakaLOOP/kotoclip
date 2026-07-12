@@ -165,15 +165,6 @@ pub async fn delete_expression_rule(state: State<'_, AppState>, id: i64) -> Resu
 }
 
 #[tauri::command]
-pub async fn split_token(
-    state: State<'_, AppState>,
-    token: AnnotatedToken,
-) -> Result<Vec<AnnotatedToken>, String> {
-    let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    Ok(engine.split_token(&token))
-}
-
-#[tauri::command]
 pub async fn get_candidates(
     state: State<'_, AppState>,
     token: AnnotatedToken,
