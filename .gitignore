@@ -14,7 +14,8 @@ dist-ssr
 *.local
 
 # Local NLP dictionaries and generated runtime databases
-/data/
+/data/*
+!/data/baselines/
 /ipadic/
 *.dic
 *.mdx

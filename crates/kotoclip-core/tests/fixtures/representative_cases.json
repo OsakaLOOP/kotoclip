@@ -1,0 +1,324 @@
+[
+  {
+    "id": "A1_hiyashigami",
+    "category": "word_formation",
+    "description": "冷やし神 (xx神 构词)",
+    "text": "冷やし神が座っている。",
+    "expected_observed": {
+      "bunsetsu": ["冷やし神が", "座っている", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["冷やし神が", "座って", "いる。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "A2_utaigami",
+    "category": "word_formation",
+    "description": "歌い神 (xx神 构词)",
+    "text": "歌い神の声が聞こえる。",
+    "expected_observed": {
+      "bunsetsu": ["歌い神の", "声が", "聞こえる", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["歌い神の", "声が", "聞こえる。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "A3_tabehoudai",
+    "category": "word_formation",
+    "description": "食べ放題 (复合接尾辞 构词)",
+    "text": "食べ放題に行く。",
+    "expected_observed": {
+      "bunsetsu": ["食べ放題に", "行く", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["食べ放題に", "行く。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "A4_tachiyomi",
+    "category": "word_formation",
+    "description": "立ち読み (复合名词 构词)",
+    "text": "本を立ち読みする。",
+    "expected_observed": {
+      "bunsetsu": ["本を", "立ち読み", "する", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["本を", "立ち読みする。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "B1_tabakokusai",
+    "category": "derived_adjective",
+    "description": "煙草臭い (名词+接尾形容词)",
+    "text": "部屋が煙草臭い。",
+    "expected_observed": {
+      "bunsetsu": ["部屋が", "煙草", "臭い", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["部屋が", "煙草臭い。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "B2_kodomoppoi",
+    "category": "derived_adjective",
+    "description": "子供っぽい (名词+接尾形容词)",
+    "text": "子供っぽい行動。",
+    "expected_observed": {
+      "bunsetsu": ["子供", "っぽい", "行動", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["子供っぽい", "行動。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "B3_otokorashii",
+    "category": "derived_adjective",
+    "description": "男らしい (名词+接尾词)",
+    "text": "男らしい態度。",
+    "expected_observed": {
+      "bunsetsu": ["男らしい", "態度", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["男らしい", "態度。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "B4_migurushii",
+    "category": "derived_adjective",
+    "description": "見苦しい (动词连用形+接尾形容词)",
+    "text": "見苦しい言い訳。",
+    "expected_observed": {
+      "bunsetsu": ["見苦しい", "言い訳", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["見苦しい", "言い訳。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "C1_daiichiwa",
+    "category": "ordinal_counter",
+    "description": "第一話 (序数词助数词)",
+    "text": "第一話を読む。",
+    "expected_observed": {
+      "bunsetsu": ["第一話を", "読む", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["第一話を", "読む。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "C2_dainikai",
+    "category": "ordinal_counter",
+    "description": "第二回 (序数词助数词)",
+    "text": "第二回大会。",
+    "expected_observed": {
+      "bunsetsu": ["第二回", "大会", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["第二回", "大会。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "C3_suzensatsu",
+    "category": "ordinal_counter",
+    "description": "数千冊 (可变量词短语)",
+    "text": "本を数千冊集める。",
+    "expected_observed": {
+      "bunsetsu": ["本を", "数", "千冊", "集める", "。"],
+      "expressions": []
+    },
+    "expected_target": {
+      "bunsetsu": ["本を", "数千冊", "集める。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "D1_yarukotonai_false",
+    "category": "grammar_false_positive",
+    "description": "やることない (〜ことなく误报)",
+    "text": "やることないから帰る。",
+    "expected_observed": {
+      "bunsetsu": ["やること", "ないから", "帰る", "。"],
+      "expressions": ["〜ことなく"]
+    },
+    "expected_target": {
+      "bunsetsu": ["やること", "ないから", "帰る。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "D2_surukotonaku_true",
+    "category": "grammar_true_positive",
+    "description": "することなく (〜ことなく正确匹配)",
+    "text": "何一つすることなく一日が終わった。",
+    "expected_observed": {
+      "bunsetsu": ["何一つ", "すること", "なく", "一日が", "終わった", "。"],
+      "expressions": ["〜ことなく"]
+    },
+    "expected_target": {
+      "bunsetsu": ["何一つ", "する", "ことなく", "一日が", "終わった。"],
+      "expressions": ["〜ことなく"]
+    }
+  },
+  {
+    "id": "D3_danger_setsumei_false",
+    "category": "grammar_false_positive",
+    "description": "危険はありませんと説明されたところで (どんなに〜ても尾项误选)",
+    "text": "どんなに危険はありませんと説明されたところで、信じる。",
+    "expected_observed": {
+      "bunsetsu": ["どんなに", "危険は", "ありませんと", "説明", "されたところで", "、", "信じる", "。"],
+      "expressions": ["どんなに〜ても"]
+    },
+    "expected_target": {
+      "bunsetsu": ["どんなに", "危険は", "ありませんと", "説明された", "ところで、", "信じる。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "D4_danger_temo_true",
+    "category": "grammar_true_positive",
+    "description": "どんなに危険であっても (どんなに〜ても正确匹配)",
+    "text": "どんなに危険であっても、行くべきだ。",
+    "expected_observed": {
+      "bunsetsu": ["どんなに", "危険であっても", "、", "行くべきだ", "。"],
+      "expressions": ["どんなに〜ても"]
+    },
+    "expected_target": {
+      "bunsetsu": ["どんなに", "危険であっても、", "行くべきだ。"],
+      "expressions": ["どんなに〜ても"]
+    }
+  },
+  {
+    "id": "E1_otokogatatsu_false",
+    "category": "idiom_false_positive",
+    "description": "男が立つ (普通主谓误报)",
+    "text": "男が立つ。",
+    "expected_observed": {
+      "bunsetsu": ["男が", "立つ", "。"],
+      "expressions": ["男が立つ"]
+    },
+    "expected_target": {
+      "bunsetsu": ["男が", "立つ。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "E2_nakaniiru_false",
+    "category": "idiom_false_positive",
+    "description": "中に入る (普通补宾误报)",
+    "text": "部屋の中に入る。",
+    "expected_observed": {
+      "bunsetsu": ["部屋の中に", "入る", "。"],
+      "expressions": ["中に入る"]
+    },
+    "expected_target": {
+      "bunsetsu": ["部屋の", "中に", "入る。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "E3_koewokiku_false",
+    "category": "idiom_false_positive",
+    "description": "声を聞く (普通动宾误报)",
+    "text": "鳥の声を聞く。",
+    "expected_observed": {
+      "bunsetsu": ["鳥の", "声を", "聞く", "。"],
+      "expressions": ["声を聞く"]
+    },
+    "expected_target": {
+      "bunsetsu": ["鳥の", "声を", "聞く。"],
+      "expressions": []
+    }
+  },
+  {
+    "id": "E4_mimiwokatamakeru_true",
+    "category": "idiom_true_positive",
+    "description": "耳を傾ける (惯用语正确匹配)",
+    "text": "彼の話に耳を傾ける。",
+    "expected_observed": {
+      "bunsetsu": ["彼の", "話に", "耳を", "傾ける", "。"],
+      "expressions": ["耳を傾ける"]
+    },
+    "expected_target": {
+      "bunsetsu": ["彼の", "話に", "耳を傾ける。"],
+      "expressions": ["耳を傾ける"]
+    }
+  },
+  {
+    "id": "E5_teowohiku_true",
+    "category": "idiom_true_positive",
+    "description": "手を引く (惯用语正确匹配)",
+    "text": "この事業から手を引く。",
+    "expected_observed": {
+      "bunsetsu": ["この", "事業から", "手を", "引く", "。"],
+      "expressions": ["手を引く"]
+    },
+    "expected_target": {
+      "bunsetsu": ["この", "事業から", "手を引く。"],
+      "expressions": ["手を引く"]
+    }
+  },
+  {
+    "id": "F1_kuchiwohiraku_range",
+    "category": "highlight_range",
+    "description": "口を開くたびに (显示范围吞入助动词/接尾辞)",
+    "text": "彼は口を開くたびに嘘をつく。",
+    "expected_observed": {
+      "bunsetsu": ["彼は", "口を", "開くたびに", "嘘を", "つく", "。"],
+      "expressions": ["口を開く"]
+    },
+    "expected_target": {
+      "bunsetsu": ["彼は", "口を", "開くたびに", "嘘を", "つく。"],
+      "expressions": ["口を開く"]
+    }
+  },
+  {
+    "id": "F2_kiwotsukau_range",
+    "category": "highlight_range",
+    "description": "気を遣うことも (显示范围吞入系词/助词)",
+    "text": "気を遣うことも大切だ。",
+    "expected_observed": {
+      "bunsetsu": ["気を", "遣うことも", "大切だ", "。"],
+      "expressions": ["気を遣う"]
+    },
+    "expected_target": {
+      "bunsetsu": ["気を遣うことも", "大切だ。"],
+      "expressions": ["気を遣う"]
+    }
+  },
+  {
+    "id": "F3_mewohanasu_range",
+    "category": "highlight_range",
+    "description": "目を離すなよ (显示范围吞入语气词)",
+    "text": "目を離すなよ。",
+    "expected_observed": {
+      "bunsetsu": ["目を", "離すなよ", "。"],
+      "expressions": ["目を離す"]
+    },
+    "expected_target": {
+      "bunsetsu": ["目を離すなよ。"],
+      "expressions": ["目を離す"]
+    }
+  }
+]

@@ -739,11 +739,26 @@ fn expression_add(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[derive(Serialize)]
+struct ScanItem {
+    match_id: String,
+    label: String,
+    origin: String,
+    description: String,
+    surface: String,
+    token_range: (usize, usize),
+    char_range: (usize, usize),
+    context: String,
+}
+
 fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let text = read_text_selection(args)?;
     let tokens = engine(args)?.analyze_text_with_exposure(&text, false)?;
     let mut shown = HashSet::new();
     let mut count = 0;
+    let mut items = Vec::new();
+    let write_json = args.options.get("json");
+
     for (index, token) in tokens.iter().enumerate() {
         for expression in token
             .expressions
@@ -759,20 +774,41 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                 .iter()
                 .map(|item| item.bunsetsu.surface.as_str())
                 .collect();
-            println!(
-                "[{}] {}\n  范围: token {}..{} / char {}..{}\n  含义: {}\n  上下文: {}\n",
-                expression.origin,
-                expression.label,
-                expression.token_range.0,
-                expression.token_range.1,
-                expression.char_range.0,
-                expression.char_range.1,
-                expression.description,
-                context.replace(['\n', '\r'], " "),
-            );
+            let clean_context = context.replace(['\n', '\r'], " ");
+
+            if write_json.is_some() {
+                items.push(ScanItem {
+                    match_id: expression.match_id.clone(),
+                    label: expression.label.clone(),
+                    origin: expression.origin.clone(),
+                    description: expression.description.clone(),
+                    surface: expression.surface.clone(),
+                    token_range: expression.token_range,
+                    char_range: expression.char_range,
+                    context: clean_context,
+                });
+            } else {
+                println!(
+                    "[{}] {}\n  范围: token {}..{} / char {}..{}\n  含义: {}\n  上下文: {}\n",
+                    expression.origin,
+                    expression.label,
+                    expression.token_range.0,
+                    expression.token_range.1,
+                    expression.char_range.0,
+                    expression.char_range.1,
+                    expression.description,
+                    clean_context,
+                );
+            }
             count += 1;
         }
     }
+
+    if let Some(json_path) = write_json {
+        let json_data = serde_json::to_string_pretty(&items)?;
+        std::fs::write(json_path, &json_data)?;
+    }
+
     println!("共发现 {count} 个跨文节表达命中。");
     Ok(())
 }

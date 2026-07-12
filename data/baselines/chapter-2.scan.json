@@ -1,0 +1,1154 @@
+[
+  {
+    "match_id": "dict:目を覚ます:176:178",
+    "label": "目を覚ます",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を覚まし",
+    "token_range": [
+      174,
+      176
+    ],
+    "char_range": [
+      465,
+      470
+    ],
+    "context": "七日は気づいて目を覚ましてしまう。  "
+  },
+  {
+    "match_id": "dict:敵わない:237:239",
+    "label": "敵わない",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "敵わなかっ",
+    "token_range": [
+      235,
+      237
+    ],
+    "char_range": [
+      617,
+      622
+    ],
+    "context": "並の刃物では敵わなかった。武器の使用に関しては"
+  },
+  {
+    "match_id": "dict:息を殺す:298:300",
+    "label": "息を殺す",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "息を殺し",
+    "token_range": [
+      296,
+      298
+    ],
+    "char_range": [
+      776,
+      780
+    ],
+    "context": " 　息を殺して天井の板を外し"
+  },
+  {
+    "match_id": "dict:顔を出す:306:308",
+    "label": "顔を出す",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "顔を出す",
+    "token_range": [
+      304,
+      306
+    ],
+    "char_range": [
+      801,
+      805
+    ],
+    "context": "ラティメリアがひょっこり顔を出す。  "
+  },
+  {
+    "match_id": "dict:目を覚ます:335:337",
+    "label": "目を覚ます",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を覚まし",
+    "token_range": [
+      333,
+      335
+    ],
+    "char_range": [
+      864,
+      869
+    ],
+    "context": "一瞬のうちに、目を覚ました。  "
+  },
+  {
+    "match_id": "dict:踵を返す:741:743",
+    "label": "踵を返す",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "踵を返し",
+    "token_range": [
+      737,
+      739
+    ],
+    "char_range": [
+      1824,
+      1828
+    ],
+    "context": "言い捨てて、踵を返した七日は部屋に入り"
+  },
+  {
+    "match_id": "dict:息を吹き返す:929:931",
+    "label": "息を吹き返す",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "息を吹き返し",
+    "token_range": [
+      925,
+      927
+    ],
+    "char_range": [
+      2353,
+      2359
+    ],
+    "context": "寝かした途端、息を吹き返したのだ。  "
+  },
+  {
+    "match_id": "dict:ことにする:1021:1023",
+    "label": "ことにする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "ことにし",
+    "token_range": [
+      1017,
+      1019
+    ],
+    "char_range": [
+      2599,
+      2603
+    ],
+    "context": "、看護することにしたのだ。  "
+  },
+  {
+    "match_id": "correlative:rhetorical_ittai:1122:1127",
+    "label": "一体〜か",
+    "origin": "correlative",
+    "description": "究竟呼应｜强调疑问或反问语气；到底、究竟如何。",
+    "surface": "一体……か",
+    "token_range": [
+      1118,
+      1123
+    ],
+    "char_range": [
+      2876,
+      2895
+    ],
+    "context": "なかった。一体どうやって名付ければいいのだろうか。もぐもぐとクチバシを"
+  },
+  {
+    "match_id": "dict:我に返る:1497:1499",
+    "label": "我に返る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "我に返る",
+    "token_range": [
+      1491,
+      1493
+    ],
+    "char_range": [
+      3866,
+      3870
+    ],
+    "context": "とラティメリアは我に返る。恐るべし濃厚"
+  },
+  {
+    "match_id": "dict:ことにする:1559:1561",
+    "label": "ことにする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "ことにする",
+    "token_range": [
+      1551,
+      1553
+    ],
+    "char_range": [
+      4045,
+      4050
+    ],
+    "context": "溜まったカラメルソースごといただくことにする。カップを持ち上げ"
+  },
+  {
+    "match_id": "dict:人目を忍ぶ:1931:1933",
+    "label": "人目を忍ぶ",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "人目を忍ん",
+    "token_range": [
+      1922,
+      1924
+    ],
+    "char_range": [
+      4988,
+      4993
+    ],
+    "context": "自分が、人目を忍んで盗み食いとは。 "
+  },
+  {
+    "match_id": "dict:気にする:2179:2181",
+    "label": "気にする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "気にし",
+    "token_range": [
+      2170,
+      2172
+    ],
+    "char_range": [
+      5642,
+      5645
+    ],
+    "context": "しているウミネコのことを気にしてしまう。  "
+  },
+  {
+    "match_id": "builtin:negative_koto_naku:2192:2194",
+    "label": "〜ことなく",
+    "origin": "builtin",
+    "description": "否定方式｜没有进行前项动作，便发生或持续后项。",
+    "surface": "ことない",
+    "token_range": [
+      2183,
+      2185
+    ],
+    "char_range": [
+      5682,
+      5686
+    ],
+    "context": "難しいんだよね。つけたことないから」  "
+  },
+  {
+    "match_id": "dict:情が移る:2350:2352",
+    "label": "情が移る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "情が移る",
+    "token_range": [
+      2341,
+      2343
+    ],
+    "char_range": [
+      6090,
+      6094
+    ],
+    "context": "思うぞ。情が移る」  "
+  },
+  {
+    "match_id": "dict:気がする:2986:2988",
+    "label": "気がする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "気がし",
+    "token_range": [
+      2974,
+      2976
+    ],
+    "char_range": [
+      7667,
+      7670
+    ],
+    "context": "、影が揺れた気がした。ラティメリアは顔を"
+  },
+  {
+    "match_id": "dict:日に焼ける:3193:3195",
+    "label": "日に焼ける",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "日に焼け",
+    "token_range": [
+      3181,
+      3183
+    ],
+    "char_range": [
+      8190,
+      8194
+    ],
+    "context": "柄シャツに日に焼けたその姿は、"
+  },
+  {
+    "match_id": "dict:名乗りを上げる:3367:3369",
+    "label": "名乗りを上げる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "名乗りを上げ",
+    "token_range": [
+      3354,
+      3356
+    ],
+    "char_range": [
+      8633,
+      8639
+    ],
+    "context": "団体が対抗馬として名乗りを上げたのだ。二組は、"
+  },
+  {
+    "match_id": "dict:耳を塞ぐ:3542:3544",
+    "label": "耳を塞ぐ",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "耳を塞い",
+    "token_range": [
+      3528,
+      3530
+    ],
+    "char_range": [
+      9086,
+      9090
+    ],
+    "context": "　ゲンゴロウが耳を塞いで、車内へと避難"
+  },
+  {
+    "match_id": "dict:中に入る:3701:3703",
+    "label": "中に入る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "中に入る",
+    "token_range": [
+      3686,
+      3688
+    ],
+    "char_range": [
+      9474,
+      9478
+    ],
+    "context": "開け、中に入る。こもった熱気と"
+  },
+  {
+    "match_id": "dict:目を覚ます:4056:4058",
+    "label": "目を覚ます",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を覚ます",
+    "token_range": [
+      4041,
+      4043
+    ],
+    "char_range": [
+      10386,
+      10391
+    ],
+    "context": "〝お昼寝から目を覚ますたび、お日さまに尋ねるの"
+  },
+  {
+    "match_id": "dict:目を覚ます:4070:4072",
+    "label": "目を覚ます",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を覚ます",
+    "token_range": [
+      4055,
+      4057
+    ],
+    "char_range": [
+      10420,
+      10425
+    ],
+    "context": "〝お昼寝から目を覚ますたび、がっかりする"
+  },
+  {
+    "match_id": "dict:待ちに待った:4084:4086",
+    "label": "待ちに待った",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "待ちに待った",
+    "token_range": [
+      4069,
+      4071
+    ],
+    "char_range": [
+      10448,
+      10454
+    ],
+    "context": " 　待ちに待った日曜日が訪れると、"
+  },
+  {
+    "match_id": "correlative:simile_marude:4399:4402",
+    "label": "まるで〜ようだ",
+    "origin": "correlative",
+    "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
+    "surface": "まるで……よう",
+    "token_range": [
+      4384,
+      4387
+    ],
+    "char_range": [
+      11194,
+      11204
+    ],
+    "context": "している様は、まるで一枚の絵のように優雅な光景だった。"
+  },
+  {
+    "match_id": "dict:鈴を転がすよう:4563:4565",
+    "label": "鈴を転がすよう",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "鈴を転がすよう",
+    "token_range": [
+      4547,
+      4549
+    ],
+    "char_range": [
+      11634,
+      11641
+    ],
+    "context": " 　鈴を転がすような声で、少女は"
+  },
+  {
+    "match_id": "correlative:simile_marude:4608:4613",
+    "label": "まるで〜ようだ",
+    "origin": "correlative",
+    "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
+    "surface": "まるで……よう",
+    "token_range": [
+      4591,
+      4596
+    ],
+    "char_range": [
+      11751,
+      11772
+    ],
+    "context": " 　まるでヨーロッパの屋敷に飾られた人形のよう。  "
+  },
+  {
+    "match_id": "builtin:concessive_nimo_kakawarazu:5208:5210",
+    "label": "にもかかわらず",
+    "origin": "builtin",
+    "description": "让步｜前项事实成立，却出现与通常预期相反或不受其影响的后项。",
+    "surface": "にもかかわらず",
+    "token_range": [
+      5189,
+      5191
+    ],
+    "char_range": [
+      13169,
+      13176
+    ],
+    "context": "絶叫のど真ん中にいたのにもかかわらず、小さな寝息を"
+  },
+  {
+    "match_id": "dict:身を投げる:5336:5338",
+    "label": "身を投げる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "身を投げる",
+    "token_range": [
+      5317,
+      5319
+    ],
+    "char_range": [
+      13508,
+      13513
+    ],
+    "context": "向こうへ真っ逆さまに身を投げる。  "
+  },
+  {
+    "match_id": "dict:目を配る:5461:5463",
+    "label": "目を配る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を配り",
+    "token_range": [
+      5442,
+      5444
+    ],
+    "char_range": [
+      13805,
+      13809
+    ],
+    "context": "廊下の置物などに目を配りながら、ついでのように答える"
+  },
+  {
+    "match_id": "dict:胸を張る:5837:5839",
+    "label": "胸を張る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "胸を張っ",
+    "token_range": [
+      5818,
+      5820
+    ],
+    "char_range": [
+      14751,
+      14755
+    ],
+    "context": " 　胸を張って否定して、"
+  },
+  {
+    "match_id": "dict:息を殺す:6083:6085",
+    "label": "息を殺す",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "息を殺し",
+    "token_range": [
+      6064,
+      6066
+    ],
+    "char_range": [
+      15360,
+      15364
+    ],
+    "context": "犯人は物陰で息を殺し、主人が来るのを"
+  },
+  {
+    "match_id": "builtin:sequence_ru_ma_mo_naku:6122:6124",
+    "label": "〜間もなく",
+    "origin": "builtin",
+    "description": "时间关系｜前项刚发生或尚未来得及充分完成，后项便紧接着发生。",
+    "surface": "上げる間もなく",
+    "token_range": [
+      6102,
+      6104
+    ],
+    "char_range": [
+      15453,
+      15460
+    ],
+    "context": "主人は声を上げる間もなく、そこに倒れ"
+  },
+  {
+    "match_id": "builtin:negative_koto_naku:6158:6160",
+    "label": "〜ことなく",
+    "origin": "builtin",
+    "description": "否定方式｜没有进行前项动作，便发生或持续后项。",
+    "surface": "ことなく",
+    "token_range": [
+      6138,
+      6140
+    ],
+    "char_range": [
+      15533,
+      15537
+    ],
+    "context": "書斎を物色することなく、忍び足で廊下へ"
+  },
+  {
+    "match_id": "correlative:negative_kesshite:7233:7237",
+    "label": "決して〜ない",
+    "origin": "correlative",
+    "description": "否定呼应｜表示强烈的否定意志或客观事实：决不、绝对不。",
+    "surface": "決して……なかっ",
+    "token_range": [
+      7210,
+      7214
+    ],
+    "char_range": [
+      18153,
+      18168
+    ],
+    "context": "話だと、決して屋敷から出ようとしなかったみたい。ずっと待っていたのね"
+  },
+  {
+    "match_id": "dict:癖になる:7414:7416",
+    "label": "癖になる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "癖になる",
+    "token_range": [
+      7390,
+      7392
+    ],
+    "char_range": [
+      18662,
+      18666
+    ],
+    "context": "悲しみってね、癖になるのよ」  "
+  },
+  {
+    "match_id": "dict:光を放つ:7526:7528",
+    "label": "光を放つ",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "光を放ち",
+    "token_range": [
+      7502,
+      7504
+    ],
+    "char_range": [
+      18907,
+      18911
+    ],
+    "context": "　映写機が光を放ち、壁に四角い"
+  },
+  {
+    "match_id": "correlative:simile_marude:7641:7643",
+    "label": "まるで〜ようだ",
+    "origin": "correlative",
+    "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
+    "surface": "まるで……よう",
+    "token_range": [
+      7617,
+      7619
+    ],
+    "char_range": [
+      19185,
+      19198
+    ],
+    "context": " 　まるでじゃれ合っているようだ。音はなかったが"
+  },
+  {
+    "match_id": "dict:耳に障る:8131:8133",
+    "label": "耳に障る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "耳に障っ",
+    "token_range": [
+      8107,
+      8109
+    ],
+    "char_range": [
+      20400,
+      20404
+    ],
+    "context": "、いやに耳に障った。  "
+  },
+  {
+    "match_id": "dict:気にする:8218:8220",
+    "label": "気にする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "気にする",
+    "token_range": [
+      8192,
+      8194
+    ],
+    "char_range": [
+      20607,
+      20611
+    ],
+    "context": "神はラティメリアを気にする様子もなく、"
+  },
+  {
+    "match_id": "dict:目を丸くする:8740:8743",
+    "label": "目を丸くする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を丸くし",
+    "token_range": [
+      8713,
+      8716
+    ],
+    "char_range": [
+      21909,
+      21914
+    ],
+    "context": "歌い神は目を丸くした。  "
+  },
+  {
+    "match_id": "dict:ことにする:8947:8949",
+    "label": "ことにする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "ことにし",
+    "token_range": [
+      8920,
+      8922
+    ],
+    "char_range": [
+      22461,
+      22465
+    ],
+    "context": "盗んだロリポップをあげることにした。歌い神は"
+  },
+  {
+    "match_id": "dict:目が合う:9022:9024",
+    "label": "目が合う",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目が合う",
+    "token_range": [
+      8995,
+      8997
+    ],
+    "char_range": [
+      22680,
+      22684
+    ],
+    "context": "うかがい、目が合うとすぐに逸らす。"
+  },
+  {
+    "match_id": "correlative:simile_marude:9030:9032",
+    "label": "まるで〜ようだ",
+    "origin": "correlative",
+    "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
+    "surface": "まるで……よう",
+    "token_range": [
+      9003,
+      9005
+    ],
+    "char_range": [
+      22695,
+      22704
+    ],
+    "context": " 　まるで小動物のようだ。この少女の"
+  },
+  {
+    "match_id": "dict:横になる:9567:9569",
+    "label": "横になる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "横になる",
+    "token_range": [
+      9539,
+      9541
+    ],
+    "char_range": [
+      23978,
+      23982
+    ],
+    "context": "、テーブルの上に横になる。  "
+  },
+  {
+    "match_id": "dict:横になる:9621:9623",
+    "label": "横になる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "横になっ",
+    "token_range": [
+      9592,
+      9594
+    ],
+    "char_range": [
+      24092,
+      24096
+    ],
+    "context": "歌い神は横になったまま、どこかぼんやりと"
+  },
+  {
+    "match_id": "dict:横になる:9797:9799",
+    "label": "横になる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "横になる",
+    "token_range": [
+      9768,
+      9770
+    ],
+    "char_range": [
+      24521,
+      24525
+    ],
+    "context": "歌い神が横になるテーブルの下に、"
+  },
+  {
+    "match_id": "dict:耳を立てる:10237:10239",
+    "label": "耳を立てる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "耳を立て",
+    "token_range": [
+      10208,
+      10210
+    ],
+    "char_range": [
+      25630,
+      25634
+    ],
+    "context": "　ラティメリアは耳を立てた。顔の側の"
+  },
+  {
+    "match_id": "dict:目を覚ます:10362:10364",
+    "label": "目を覚ます",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を覚ます",
+    "token_range": [
+      10332,
+      10334
+    ],
+    "char_range": [
+      25951,
+      25956
+    ],
+    "context": "召されていた。目を覚ますことは、二度とない"
+  },
+  {
+    "match_id": "dict:年を経る:10555:10557",
+    "label": "年を経る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "年を経",
+    "token_range": [
+      10524,
+      10526
+    ],
+    "char_range": [
+      26456,
+      26459
+    ],
+    "context": "。一〇年を経てしっぽが割れ、"
+  },
+  {
+    "match_id": "dict:目を離す:11299:11301",
+    "label": "目を離す",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を離せ",
+    "token_range": [
+      11263,
+      11265
+    ],
+    "char_range": [
+      28283,
+      28287
+    ],
+    "context": " 　目を離せばその瞬間に距離を"
+  },
+  {
+    "match_id": "dict:身を引く:11439:11441",
+    "label": "身を引く",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "身を引き",
+    "token_range": [
+      11402,
+      11404
+    ],
+    "char_range": [
+      28625,
+      28629
+    ],
+    "context": "、七日は身を引き、かろうじて避ける"
+  },
+  {
+    "match_id": "dict:手に入れる:11518:11520",
+    "label": "手に入れる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "手に入れ",
+    "token_range": [
+      11480,
+      11482
+    ],
+    "char_range": [
+      28821,
+      28825
+    ],
+    "context": "持つ敏捷性を手に入れたラティメリアは、一層"
+  },
+  {
+    "match_id": "dict:手を入れる:11800:11802",
+    "label": "手を入れる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "手を入れる",
+    "token_range": [
+      11762,
+      11764
+    ],
+    "char_range": [
+      29537,
+      29542
+    ],
+    "context": "七日が内ポケットに手を入れるその前に、"
+  },
+  {
+    "match_id": "dict:宙に浮く:11975:11977",
+    "label": "宙に浮く",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "宙に浮い",
+    "token_range": [
+      11937,
+      11939
+    ],
+    "char_range": [
+      29957,
+      29961
+    ],
+    "context": "ラティメリアは、宙に浮いた巾着を掴んだ。"
+  },
+  {
+    "match_id": "dict:質に取る:12001:12003",
+    "label": "質に取る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "質に取ら",
+    "token_range": [
+      11963,
+      11965
+    ],
+    "char_range": [
+      30018,
+      30022
+    ],
+    "context": "。今まで質に取られていた弱点を、とうとう"
+  },
+  {
+    "match_id": "dict:息が詰まる:12206:12208",
+    "label": "息が詰まる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "息が詰まる",
+    "token_range": [
+      12168,
+      12170
+    ],
+    "char_range": [
+      30474,
+      30479
+    ],
+    "context": "した衝撃で息が詰まる。倒れたラティメリアの"
+  },
+  {
+    "match_id": "dict:息をつく:12516:12518",
+    "label": "息をつく",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "息をつい",
+    "token_range": [
+      12478,
+      12480
+    ],
+    "char_range": [
+      31236,
+      31240
+    ],
+    "context": " 　息をついた七日はラティメリアの上から足を"
+  },
+  {
+    "match_id": "dict:年甲斐もない:12943:12945",
+    "label": "年甲斐もない",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "年甲斐もなく",
+    "token_range": [
+      12903,
+      12905
+    ],
+    "char_range": [
+      32268,
+      32274
+    ],
+    "context": "叫んだ。年甲斐もなくピンク色のＴシャツは痛々しいが"
+  },
+  {
+    "match_id": "dict:指を差す:13055:13057",
+    "label": "指を差す",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "指を差さ",
+    "token_range": [
+      13015,
+      13017
+    ],
+    "char_range": [
+      32566,
+      32570
+    ],
+    "context": " 　指を差され、大勢の視線が"
+  },
+  {
+    "match_id": "dict:胸を張る:13198:13200",
+    "label": "胸を張る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "胸を張っ",
+    "token_range": [
+      13158,
+      13160
+    ],
+    "char_range": [
+      32882,
+      32886
+    ],
+    "context": "、ずいと胸を張った。  "
+  },
+  {
+    "match_id": "correlative:rhetorical_ittai:13220:13223",
+    "label": "一体〜か",
+    "origin": "correlative",
+    "description": "究竟呼应｜强调疑问或反问语气；到底、究竟如何。",
+    "surface": "一体……だ",
+    "token_range": [
+      13180,
+      13183
+    ],
+    "char_range": [
+      32925,
+      32933
+    ],
+    "context": " 「一体誰の差し金だ。白状なさい。"
+  },
+  {
+    "match_id": "dict:糸を引く:13232:13234",
+    "label": "糸を引く",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "糸を引い",
+    "token_range": [
+      13192,
+      13194
+    ],
+    "char_range": [
+      32961,
+      32965
+    ],
+    "context": "どうせ裏で糸を引いているのは、あの不動産屋だろう"
+  },
+  {
+    "match_id": "dict:男が立つ:13336:13338",
+    "label": "男が立つ",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "男が立つ",
+    "token_range": [
+      13296,
+      13298
+    ],
+    "char_range": [
+      33224,
+      33228
+    ],
+    "context": "、リーダー格の男が立つ。  "
+  },
+  {
+    "match_id": "dict:背を向ける:13425:13427",
+    "label": "背を向ける",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "背を向け",
+    "token_range": [
+      13384,
+      13386
+    ],
+    "char_range": [
+      33443,
+      33447
+    ],
+    "context": "暴れるゲンゴロウに背を向けて、リーダーは七日へと"
+  },
+  {
+    "match_id": "builtin:negative_koto_naku:13514:13516",
+    "label": "〜ことなく",
+    "origin": "builtin",
+    "description": "否定方式｜没有进行前项动作，便发生或持续后项。",
+    "surface": "ことない",
+    "token_range": [
+      13472,
+      13474
+    ],
+    "char_range": [
+      33666,
+      33670
+    ],
+    "context": "。他にやることないんですかね。あんたらにとって、"
+  },
+  {
+    "match_id": "dict:目を丸くする:14601:14604",
+    "label": "目を丸くする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "目を丸くし",
+    "token_range": [
+      14558,
+      14561
+    ],
+    "char_range": [
+      36444,
+      36449
+    ],
+    "context": "歌い神は目を丸くした。  "
+  },
+  {
+    "match_id": "dict:好きにする:14681:14683",
+    "label": "好きにする",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "好きにしろ",
+    "token_range": [
+      14638,
+      14640
+    ],
+    "char_range": [
+      36623,
+      36628
+    ],
+    "context": "七日は「好きにしろ」と答えて"
+  },
+  {
+    "match_id": "dict:首を横に振る:14833:14836",
+    "label": "首を横に振る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "首を横に振る",
+    "token_range": [
+      14790,
+      14793
+    ],
+    "char_range": [
+      36975,
+      36981
+    ],
+    "context": "　カラメルは首を横に振る。  "
+  },
+  {
+    "match_id": "dict:手に入る:15104:15106",
+    "label": "手に入る",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "手に入ら",
+    "token_range": [
+      15061,
+      15063
+    ],
+    "char_range": [
+      37639,
+      37643
+    ],
+    "context": "今日はもう手に入らねえよ」  "
+  },
+  {
+    "match_id": "dict:何でもない:15207:15209",
+    "label": "何でもない",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "何でもない",
+    "token_range": [
+      15164,
+      15166
+    ],
+    "char_range": [
+      37892,
+      37897
+    ],
+    "context": "　七日は何でもないように答える。 "
+  },
+  {
+    "match_id": "dict:タオルを投げる:15518:15520",
+    "label": "タオルを投げる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "タオルを投げ",
+    "token_range": [
+      15474,
+      15476
+    ],
+    "char_range": [
+      38662,
+      38668
+    ],
+    "context": "　頭にタオルを投げ返されて、ラティメリアは"
+  },
+  {
+    "match_id": "dict:癖になる:15640:15642",
+    "label": "癖になる",
+    "origin": "dictionary",
+    "description": "词典惯用语｜在本地词典中匹配到的固定跨文节表达。",
+    "surface": "癖になる",
+    "token_range": [
+      15596,
+      15598
+    ],
+    "char_range": [
+      38946,
+      38950
+    ],
+    "context": "悲しみってね、癖になるのよ」  "
+  }
+]

@@ -918,4 +918,94 @@ mod tests {
             );
         }
     }
+
+    #[derive(Deserialize)]
+    struct ExpectedObserved {
+        bunsetsu: Vec<String>,
+        expressions: Vec<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct TestCase {
+        id: String,
+        text: String,
+        expected_observed: ExpectedObserved,
+    }
+
+    #[test]
+    fn test_representative_cases() {
+        let ipadic_path = match get_test_ipadic_path() {
+            Some(p) => p,
+            None => {
+                println!("跳过测试：未找到 IPADIC system.dic");
+                return;
+            }
+        };
+        let dict_dir = match get_test_dict_dir() {
+            Some(d) => d,
+            None => {
+                println!("跳过测试：未找到 data/dicts 目录");
+                return;
+            }
+        };
+
+        let pipeline = Pipeline::new(&ipadic_path).expect("初始化 pipeline 失败");
+        let dictionary = DictionaryEngine::new(&dict_dir).expect("初始化 dictionary 失败");
+
+        let json_str = include_str!("../../tests/fixtures/representative_cases.json");
+        let cases: Vec<TestCase> = serde_json::from_str(json_str).expect("解析 test_cases JSON 失败");
+
+        let mut printed_placeholders = false;
+
+        for case in &cases {
+            let mut tokens = pipeline.process(&case.text, &[]);
+            for token in &mut tokens {
+                if token.display_class == "content" {
+                    crate::pipeline::bunsetsu::resolve_lexical_boundaries(
+                        std::slice::from_mut(&mut token.bunsetsu),
+                        |word| dictionary.contains_exact(word),
+                    );
+                }
+            }
+            apply_builtin_expressions(&mut tokens);
+            apply_dictionary_expressions(&mut tokens, &dictionary);
+            apply_correlative_expressions(&mut tokens);
+            resolve_expression_conflicts(&mut tokens);
+            let tokens = apply_expression_boundaries(tokens);
+
+            let actual_bunsetsu: Vec<String> = tokens.iter().map(|t| t.bunsetsu.surface.clone()).collect();
+            let mut actual_expressions: Vec<String> = tokens
+                .iter()
+                .flat_map(|t| t.expressions.iter().map(|exp| exp.label.clone()))
+                .collect();
+            actual_expressions.sort();
+            actual_expressions.dedup();
+
+            if case.expected_observed.bunsetsu.is_empty() {
+                if !printed_placeholders {
+                    println!("\n=== 代表性案例当前运行 Observed 输出 ===");
+                    printed_placeholders = true;
+                }
+                println!(
+                    "ID: {} ->\n  \"expected_observed\": {{\n    \"bunsetsu\": {:?},\n    \"expressions\": {:?}\n  }},",
+                    case.id, actual_bunsetsu, actual_expressions
+                );
+            } else {
+                assert_eq!(
+                    actual_bunsetsu, case.expected_observed.bunsetsu,
+                    "用例 {} 的文节切分不一致",
+                    case.id
+                );
+                assert_eq!(
+                    actual_expressions, case.expected_observed.expressions,
+                    "用例 {} 的表达式匹配不一致",
+                    case.id
+                );
+            }
+        }
+
+        if printed_placeholders {
+            panic!("发现 Observed 占位为空的测试例，请将上述打印的 actual 输出反填至 representative_cases.json");
+        }
+    }
 }

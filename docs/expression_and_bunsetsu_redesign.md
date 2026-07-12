@@ -253,11 +253,24 @@ output:
 
 ## 8. 实施顺序
 
-### 阶段 A：固定基线
+### 阶段 A：固定基线 [已完成]
 
-- 将前三话 CLI 输出保存为可再生成的审计数据，不提交受版权保护的全文。
-- 建立最小正反例集，至少包含本文件列出的构词、自由句法、语法误报和精确范围案例。
-- CLI 增加候选层、拒绝原因、精确语素范围和最终决策输出。
+- **审计 JSON 基线**：使用 `--json` 静默导出模式，重新扫描了前三话小说文本的跨文节表达匹配。扫描基线保存在 `data/baselines/chapter-1.scan.json`（112项）、`chapter-2.scan.json`（72项）和 `chapter-3.scan.json`（65项），并已在 `.gitignore` 中解除过滤，正式纳入 Git 仓库跟踪。
+- **代表性正反例集**：在 `crates/kotoclip-core/tests/fixtures/representative_cases.json` 中定义了 23 个最具代表性的极简用例（涵盖构词合并、派生形容词、量词槽、普通句法误报、语法构式误报、呼应尾项误选、以及高亮范围吞入等），同时记录了当前的切分/匹配输出（`expected_observed`）以及未来的设计期望结果（`expected_target`）。
+- **可机器自动验证**：在 `crates/kotoclip-core/src/pipeline/expressions.rs` 的测试模块中编写了 `test_representative_cases` 单元测试。它会从 JSON 中载入这 23 个测试句，运行当前的分析流程，并与 `expected_observed` 字段做严格比对。
+
+#### 阶段 A 回归与测试使用方法
+
+1. **运行代表性用例自动测试**：
+   ```powershell
+   cargo test -p kotoclip-core test_representative_cases -- --nocapture
+   ```
+   如果重构引起了当前行为的变化，测试会失败。可以通过比对 `expected_observed` 和实际生成结果，在后续阶段有步骤地将 `expected_observed` 演进并最终向 `expected_target` 靠拢。
+2. **静默导出章节表达命中（生成审计数据）**：
+   ```powershell
+   cargo run -p kotoclip-core --bin kotoclip-cli -- expression-scan --profile data/baselines/temp.sqlite --source "path/to/source.md" --chapter "## 章节名" --json output.json
+   ```
+   指定 `--json` 选项时，终端不会打印大量的匹配上下文，只输出命中项总计汇总行，极大便利了自动化回归脚本审计。
 
 ### 阶段 B：构词层
 
