@@ -14,6 +14,13 @@ struct AnalysisProgressEvent {
     progress: AnalysisProgress,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnalysisResponse {
+    pub tokens: Vec<AnnotatedToken>,
+    pub backend_duration_ms: u64,
+}
+
 /// IPC 命令：分析日语文本并进行生词等级判定
 #[tauri::command]
 pub async fn analyze_text(
@@ -22,10 +29,11 @@ pub async fn analyze_text(
     text: String,
     record_exposure: Option<bool>,
     request_id: Option<String>,
-) -> Result<Vec<AnnotatedToken>, String> {
+) -> Result<AnalysisResponse, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     let request_id = request_id.unwrap_or_else(|| "legacy".to_string());
-    engine
+    let started = std::time::Instant::now();
+    let tokens = engine
         .analyze_text_with_progress(&text, record_exposure.unwrap_or(true), |progress| {
             let _ = window.emit(
                 "analysis-progress",
@@ -35,7 +43,12 @@ pub async fn analyze_text(
                 },
             );
         })
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    let backend_duration_ms = started.elapsed().as_millis() as u64;
+    Ok(AnalysisResponse {
+        tokens,
+        backend_duration_ms,
+    })
 }
 
 /// IPC 命令：查词，并按照多词词典优先级重排序

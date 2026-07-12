@@ -14,6 +14,8 @@ export interface FrontendAnalysisTiming {
   invokeAndTransferMs: number;
   paragraphBuildMs: number;
   totalBeforeRenderMs: number;
+  backendDurationMs: number;
+  ipcAndParseMs: number;
 }
 
 export type AnalysisPhase =
@@ -89,11 +91,13 @@ export function useTokenization() {
       listenerSetupMs = performance.now() - listenerStartedAt;
       // 调用 Tauri 命令进行分词与用户画像评分标注
       const invokeStartedAt = performance.now();
-      const allTokens = await invoke<AnnotatedToken[]>("analyze_text", {
+      const response = await invoke<{ tokens: AnnotatedToken[]; backendDurationMs: number }>("analyze_text", {
         text,
         recordExposure,
         requestId,
       });
+      const allTokens = response.tokens;
+      const backendDurationMs = response.backendDurationMs;
       invokeAndTransferMs = performance.now() - invokeStartedAt;
       if (activeRequestId.value !== requestId) return false;
       
@@ -247,6 +251,8 @@ export function useTokenization() {
         invokeAndTransferMs: Math.round(invokeAndTransferMs),
         paragraphBuildMs: Math.round(performance.now() - paragraphBuildStartedAt),
         totalBeforeRenderMs: Math.round(performance.now() - totalStartedAt),
+        backendDurationMs: backendDurationMs,
+        ipcAndParseMs: Math.max(0, Math.round(invokeAndTransferMs - backendDurationMs)),
       };
       return true;
     } catch (err: any) {

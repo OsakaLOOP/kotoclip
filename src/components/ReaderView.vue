@@ -30,6 +30,8 @@ const analysisMetrics = ref<{
   invokeAndTransferMs: number;
   paragraphBuildMs: number;
   renderSetupMs: number;
+  backendDurationMs: number;
+  ipcAndParseMs: number;
 } | null>(null);
 
 const scrollContainerRef = ref<HTMLElement | null>(null);
@@ -213,6 +215,14 @@ async function triggerAnalysis(recordExposure = true) {
     virtualizer.value.measure();
     triggerUpdate();
     await nextTick();
+    
+    // 覆盖盲区二：等待浏览器真正的 Layout 与 Paint 绘制完成
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        setTimeout(resolve, 0);
+      });
+    });
+    
     analysisMetrics.value = {
       characterCount: Array.from(sourceText).length,
       durationMs: Math.round(performance.now() - startedAt),
@@ -220,6 +230,8 @@ async function triggerAnalysis(recordExposure = true) {
       invokeAndTransferMs: frontendTiming.value?.invokeAndTransferMs ?? 0,
       paragraphBuildMs: frontendTiming.value?.paragraphBuildMs ?? 0,
       renderSetupMs: Math.round(performance.now() - renderSetupStartedAt),
+      backendDurationMs: frontendTiming.value?.backendDurationMs ?? 0,
+      ipcAndParseMs: frontendTiming.value?.ipcAndParseMs ?? 0,
     };
   }
 }
@@ -537,7 +549,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           aria-label="开发者分析指标"
         >
           <span>{{ analysisMetrics.characterCount }} 字</span>
-          <span :title="`监听 ${analysisMetrics.listenerSetupMs} ms；IPC ${analysisMetrics.invokeAndTransferMs} ms；组段 ${analysisMetrics.paragraphBuildMs} ms；首帧布局 ${analysisMetrics.renderSetupMs} ms`">
+          <span :title="`监听 ${analysisMetrics.listenerSetupMs} ms；后端 ${analysisMetrics.backendDurationMs} ms；IPC/解析 ${analysisMetrics.ipcAndParseMs} ms；IPC传输+后端 ${analysisMetrics.invokeAndTransferMs} ms；组段 ${analysisMetrics.paragraphBuildMs} ms；首帧布局/绘制 ${analysisMetrics.renderSetupMs} ms`">
             {{ analysisMetrics.durationMs }} ms
           </span>
         </div>
