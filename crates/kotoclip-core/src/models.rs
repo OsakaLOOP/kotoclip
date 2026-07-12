@@ -58,6 +58,12 @@ pub struct AnnotatedToken {
 pub struct ExpressionPatternPart {
     pub lemmas: Vec<String>,
     pub pos: Vec<String>,
+    #[serde(default)]
+    pub pos_details: Vec<PosTag>,
+    #[serde(default)]
+    pub conjugation_types: Vec<String>,
+    #[serde(default)]
+    pub conjugation_forms: Vec<String>,
     pub surface_hint: String,
     #[serde(default)]
     pub is_slot: bool,
@@ -79,6 +85,12 @@ pub struct ExpressionRule {
     pub description: String,
     #[serde(default = "default_expression_origin")]
     pub origin: String,
+    #[serde(default = "default_expression_kind")]
+    pub expression_type: String,
+    #[serde(default = "default_expression_priority")]
+    pub priority: i32,
+    #[serde(default = "default_boundary_effect")]
+    pub boundary_effect: String,
     pub parts: Vec<ExpressionPatternPart>,
     #[serde(default)]
     pub gap_after: Option<usize>,
@@ -100,6 +112,14 @@ pub struct ExpressionAnnotation {
     pub description: String,
     #[serde(default = "default_expression_origin")]
     pub origin: String,
+    #[serde(default = "default_expression_kind")]
+    pub expression_type: String,
+    #[serde(default = "default_expression_priority")]
+    pub priority: i32,
+    #[serde(default = "default_boundary_effect")]
+    pub boundary_effect: String,
+    #[serde(default)]
+    pub confidence: f32,
     pub position: String,
     pub token_range: (usize, usize),
     #[serde(default)]
@@ -109,6 +129,18 @@ pub struct ExpressionAnnotation {
 
 fn default_expression_origin() -> String {
     "custom".to_string()
+}
+
+fn default_expression_kind() -> String {
+    "grammar_construction".to_string()
+}
+
+fn default_expression_priority() -> i32 {
+    50
+}
+
+fn default_boundary_effect() -> String {
+    "annotate_only".to_string()
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SegmentationCandidate {

@@ -2,8 +2,8 @@ pub mod analysis_progress;
 pub mod dictionary;
 pub mod export;
 pub mod ffi;
-pub mod models;
 pub mod llm;
+pub mod models;
 pub mod performance;
 pub mod pipeline;
 pub mod profile;
@@ -27,6 +27,18 @@ pub struct Engine {
 }
 
 impl Engine {
+    /// 统一应用用户、内置、词典与非连续表达候选，并在单一出口消解优先级。
+    fn apply_expression_analysis(
+        &self,
+        tokens: &mut [AnnotatedToken],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.profile.apply_expression_rules(tokens)?;
+        pipeline::expressions::apply_builtin_expressions(tokens);
+        pipeline::expressions::apply_dictionary_expressions(tokens, &self.dictionary);
+        pipeline::expressions::apply_correlative_expressions(tokens);
+        pipeline::expressions::resolve_expression_conflicts(tokens);
+        Ok(())
+    }
     /// 从对应路径初始化整个引擎 (包括形态素字典、SQLite 词典群目录以及用户数据 SQLite 文件)
     pub fn new<P1: AsRef<Path>, P2: AsRef<Path>, P3: AsRef<Path>>(
         dict_path: P1,
@@ -167,10 +179,7 @@ impl Engine {
                     ));
                 })?;
         // 跨文节表达是独立注解层：画像评分完成后应用，不重写 NLP 文节结构。
-        self.profile.apply_expression_rules(&mut annotated)?;
-        pipeline::expressions::apply_builtin_expressions(&mut annotated);
-        pipeline::expressions::apply_dictionary_expressions(&mut annotated, &self.dictionary);
-        pipeline::expressions::apply_correlative_expressions(&mut annotated);
+        self.apply_expression_analysis(&mut annotated)?;
         if record_exposure {
             self.profile
                 .record_token_exposures_with_progress(&annotated, |completed, total| {
@@ -300,17 +309,24 @@ impl Engine {
             initial_entries
                 .iter()
                 .filter(|entry| entry.headword == word)
-                .flat_map(|entry| entry.links.iter().filter(|link| link.relation == "candidate").cloned())
+                .flat_map(|entry| {
+                    entry
+                        .links
+                        .iter()
+                        .filter(|link| link.relation == "candidate")
+                        .cloned()
+                })
                 .collect::<Vec<_>>()
         } else {
             Vec::new()
         };
         let mut seen_candidates = std::collections::HashSet::new();
         candidates.retain(|candidate| seen_candidates.insert(candidate.target.clone()));
-        let selected_target = self
-            .profile
-            .dictionary_choice(&query_key)
-            .filter(|target| candidates.iter().any(|candidate| &candidate.target == target));
+        let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
+            candidates
+                .iter()
+                .any(|candidate| &candidate.target == target)
+        });
         let entries = selected_target
             .as_deref()
             .map(|target| self.dictionary.lookup(target, reading))
@@ -362,6 +378,38 @@ impl Engine {
             bunsetsu_states,
             morpheme_masks,
             gap_after,
+            if gap_after.is_some() {
+                "correlative"
+            } else {
+                "grammar_construction"
+            },
+            50,
+            "annotate_only",
+        )
+    }
+
+    pub fn add_configured_expression_rule(
+        &self,
+        tokens: &[AnnotatedToken],
+        label: Option<&str>,
+        description: Option<&str>,
+        bunsetsu_states: &[String],
+        morpheme_masks: &[Vec<bool>],
+        gap_after: Option<usize>,
+        expression_type: &str,
+        priority: i32,
+        boundary_effect: &str,
+    ) -> Result<ExpressionRule, Box<dyn std::error::Error>> {
+        self.profile.add_expression_rule(
+            tokens,
+            label,
+            description,
+            bunsetsu_states,
+            morpheme_masks,
+            gap_after,
+            expression_type,
+            priority,
+            boundary_effect,
         )
     }
 
@@ -375,7 +423,9 @@ impl Engine {
         mut tokens: Vec<AnnotatedToken>,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
         for token in &mut tokens {
-            token.expressions.retain(|expression| expression.origin != "custom");
+            token
+                .expressions
+                .retain(|expression| expression.origin != "custom");
         }
         self.profile.apply_expression_rules(&mut tokens)?;
         Ok(tokens)
@@ -453,9 +503,9 @@ fn dictionary_query_key(word: &str, reading: Option<&str>) -> String {
 
 fn is_kana(value: &str) -> bool {
     !value.is_empty()
-        && value.chars().all(|character| {
-            ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー'
-        })
+        && value
+            .chars()
+            .all(|character| ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー')
 }
 
 #[cfg(test)]

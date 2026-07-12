@@ -31,6 +31,19 @@ fn parts_match(actual: &ExpressionPatternPart, expected: &ExpressionPatternPart)
     if expected.is_any {
         return true;
     }
+    let range_matches = |actual_start: usize, expected_start: usize, len: usize| {
+        let actual_end = actual_start + len;
+        let expected_end = expected_start + len;
+        (expected.pos_details.is_empty()
+            || actual.pos_details[actual_start..actual_end]
+                == expected.pos_details[expected_start..expected_end])
+            && (expected.conjugation_types.is_empty()
+                || actual.conjugation_types[actual_start..actual_end]
+                    == expected.conjugation_types[expected_start..expected_end])
+            && (expected.conjugation_forms.is_empty()
+                || actual.conjugation_forms[actual_start..actual_end]
+                    == expected.conjugation_forms[expected_start..expected_end])
+    };
     match expected.alignment.as_str() {
         "suffix" => {
             if actual.pos.len() < expected.pos.len() {
@@ -38,6 +51,7 @@ fn parts_match(actual: &ExpressionPatternPart, expected: &ExpressionPatternPart)
             }
             let off = actual.pos.len() - expected.pos.len();
             actual.pos[off..] == expected.pos[..]
+                && range_matches(off, 0, expected.pos.len())
                 && (expected.is_slot || actual.lemmas[off..] == expected.lemmas[..])
         }
         "prefix" => {
@@ -45,10 +59,15 @@ fn parts_match(actual: &ExpressionPatternPart, expected: &ExpressionPatternPart)
                 return false;
             }
             actual.pos[..expected.pos.len()] == expected.pos[..]
+                && range_matches(0, 0, expected.pos.len())
                 && (expected.is_slot
                     || actual.lemmas[..expected.lemmas.len()] == expected.lemmas[..])
         }
-        _ => actual.pos == expected.pos && (expected.is_slot || actual.lemmas == expected.lemmas),
+        _ => {
+            actual.pos == expected.pos
+                && range_matches(0, 0, expected.pos.len())
+                && (expected.is_slot || actual.lemmas == expected.lemmas)
+        }
     }
 }
 
@@ -60,17 +79,26 @@ fn token_part(token: &AnnotatedToken) -> ExpressionPatternPart {
         .filter(|morpheme| !morpheme.surface.trim().is_empty());
     let mut lemmas = Vec::new();
     let mut pos = Vec::new();
+    let mut pos_details = Vec::new();
+    let mut conjugation_types = Vec::new();
+    let mut conjugation_forms = Vec::new();
     for morpheme in morphemes {
         if let Some(lemma) =
             structural_lemma(&morpheme.surface, &morpheme.base_form, &morpheme.pos.major)
         {
             lemmas.push(lemma);
             pos.push(morpheme.pos.major.clone());
+            pos_details.push(morpheme.pos.clone());
+            conjugation_types.push(morpheme.conjugation_type.clone());
+            conjugation_forms.push(morpheme.conjugation_form.clone());
         }
     }
     ExpressionPatternPart {
         lemmas,
         pos,
+        pos_details,
+        conjugation_types,
+        conjugation_forms,
         surface_hint: token.bunsetsu.surface.clone(),
         is_slot: false,
         alignment: "full".to_string(),
@@ -81,6 +109,9 @@ fn token_part(token: &AnnotatedToken) -> ExpressionPatternPart {
 fn token_part_masked(token: &AnnotatedToken, mask: &[bool]) -> ExpressionPatternPart {
     let mut lemmas = Vec::new();
     let mut pos = Vec::new();
+    let mut pos_details = Vec::new();
+    let mut conjugation_types = Vec::new();
+    let mut conjugation_forms = Vec::new();
     let mut selected_indices = Vec::new();
     let mut total_non_empty_count = 0;
     for (idx, morpheme) in token.bunsetsu.morphemes.iter().enumerate() {
@@ -94,6 +125,9 @@ fn token_part_masked(token: &AnnotatedToken, mask: &[bool]) -> ExpressionPattern
             {
                 lemmas.push(lemma);
                 pos.push(morpheme.pos.major.clone());
+                pos_details.push(morpheme.pos.clone());
+                conjugation_types.push(morpheme.conjugation_type.clone());
+                conjugation_forms.push(morpheme.conjugation_form.clone());
                 selected_indices.push(total_non_empty_count);
             }
         }
@@ -120,6 +154,9 @@ fn token_part_masked(token: &AnnotatedToken, mask: &[bool]) -> ExpressionPattern
     ExpressionPatternPart {
         lemmas,
         pos,
+        pos_details,
+        conjugation_types,
+        conjugation_forms,
         surface_hint: token.bunsetsu.surface.clone(),
         is_slot: false,
         alignment,
@@ -130,15 +167,30 @@ fn token_part_masked(token: &AnnotatedToken, mask: &[bool]) -> ExpressionPattern
 fn canonical_part(part: &ExpressionPatternPart) -> ExpressionPatternPart {
     let mut lemmas = Vec::new();
     let mut pos = Vec::new();
-    for (lemma, major) in part.lemmas.iter().zip(&part.pos) {
+    let mut pos_details = Vec::new();
+    let mut conjugation_types = Vec::new();
+    let mut conjugation_forms = Vec::new();
+    for (index, (lemma, major)) in part.lemmas.iter().zip(&part.pos).enumerate() {
         if let Some(lemma) = structural_lemma(lemma, lemma, major) {
             lemmas.push(lemma);
             pos.push(major.clone());
+            if let Some(detail) = part.pos_details.get(index) {
+                pos_details.push(detail.clone());
+            }
+            if let Some(value) = part.conjugation_types.get(index) {
+                conjugation_types.push(value.clone());
+            }
+            if let Some(value) = part.conjugation_forms.get(index) {
+                conjugation_forms.push(value.clone());
+            }
         }
     }
     ExpressionPatternPart {
         lemmas,
         pos,
+        pos_details,
+        conjugation_types,
+        conjugation_forms,
         surface_hint: part.surface_hint.clone(),
         is_slot: part.is_slot,
         alignment: part.alignment.clone(),
@@ -160,8 +212,17 @@ fn default_label(tokens: &[AnnotatedToken]) -> String {
 
 fn parse_pattern_json(
     json: &str,
-) -> Result<(Vec<ExpressionPatternPart>, Option<usize>, (usize, usize)), Box<dyn std::error::Error>>
-{
+) -> Result<
+    (
+        Vec<ExpressionPatternPart>,
+        Option<usize>,
+        (usize, usize),
+        String,
+        i32,
+        String,
+    ),
+    Box<dyn std::error::Error>,
+> {
     #[derive(Deserialize)]
     struct Envelope {
         parts: Vec<ExpressionPatternPart>,
@@ -169,18 +230,47 @@ fn parse_pattern_json(
         gap_after: Option<usize>,
         #[serde(default = "default_gap_range_local")]
         gap_bunsetsu: (usize, usize),
+        #[serde(default = "default_kind_local")]
+        expression_type: String,
+        #[serde(default = "default_priority_local")]
+        priority: i32,
+        #[serde(default = "default_boundary_effect_local")]
+        boundary_effect: String,
     }
 
     fn default_gap_range_local() -> (usize, usize) {
         (0, 10)
     }
+    fn default_kind_local() -> String {
+        "grammar_construction".to_string()
+    }
+    fn default_priority_local() -> i32 {
+        50
+    }
+    fn default_boundary_effect_local() -> String {
+        "annotate_only".to_string()
+    }
 
     if let Ok(env) = serde_json::from_str::<Envelope>(json) {
-        return Ok((env.parts, env.gap_after, env.gap_bunsetsu));
+        return Ok((
+            env.parts,
+            env.gap_after,
+            env.gap_bunsetsu,
+            env.expression_type,
+            env.priority,
+            env.boundary_effect,
+        ));
     }
 
     let parts: Vec<ExpressionPatternPart> = serde_json::from_str(json)?;
-    Ok((parts, None, (0, 10)))
+    Ok((
+        parts,
+        None,
+        (0, 10),
+        "grammar_construction".to_string(),
+        50,
+        "annotate_only".to_string(),
+    ))
 }
 
 impl ProfileEngine {
@@ -194,9 +284,24 @@ impl ProfileEngine {
         bunsetsu_states: &[String],
         morpheme_masks: &[Vec<bool>],
         gap_after: Option<usize>,
+        expression_type: &str,
+        priority: i32,
+        boundary_effect: &str,
     ) -> Result<ExpressionRule, Box<dyn std::error::Error>> {
-        if tokens.len() < 2 {
-            return Err("跨文节表达至少需要两个文节".into());
+        if tokens.is_empty() {
+            return Err("表达规则至少需要一个文节".into());
+        }
+        if !matches!(
+            expression_type,
+            "lexical_unit" | "idiom" | "grammar_construction" | "correlative"
+        ) {
+            return Err("未知的表达类型".into());
+        }
+        if expression_type == "correlative" && gap_after.is_none() {
+            return Err("非连续呼应必须配置前后锚点之间的间隔".into());
+        }
+        if expression_type != "lexical_unit" && boundary_effect != "annotate_only" {
+            return Err("只有词汇单位可以改变边界".into());
         }
         if tokens.iter().any(|token| {
             token.bunsetsu.surface.contains(['\n', '\r']) || token.bunsetsu.morphemes.is_empty()
@@ -258,12 +363,18 @@ impl ProfileEngine {
             parts: &'a [ExpressionPatternPart],
             gap_after: Option<usize>,
             gap_bunsetsu: (usize, usize),
+            expression_type: &'a str,
+            priority: i32,
+            boundary_effect: &'a str,
         }
 
         let envelope = ExpressionPatternEnvelope {
             parts: &parts,
             gap_after,
             gap_bunsetsu: (0, 10),
+            expression_type,
+            priority,
+            boundary_effect,
         };
 
         let pattern_json = serde_json::to_string(&envelope)?;
@@ -315,12 +426,16 @@ impl ProfileEngine {
             .optional()?;
         row.map(
             |(id, label, description, origin, pattern_json, created_at)| {
-                let (parts, gap_after, gap_bunsetsu) = parse_pattern_json(&pattern_json)?;
+                let (parts, gap_after, gap_bunsetsu, expression_type, priority, boundary_effect) =
+                    parse_pattern_json(&pattern_json)?;
                 Ok(ExpressionRule {
                     id,
                     label,
                     description,
                     origin,
+                    expression_type,
+                    priority,
+                    boundary_effect,
                     parts,
                     gap_after,
                     gap_bunsetsu,
@@ -349,12 +464,16 @@ impl ProfileEngine {
         let mut rules = Vec::new();
         for row in rows {
             let (id, label, description, origin, pattern_json, created_at) = row?;
-            let (parts, gap_after, gap_bunsetsu) = parse_pattern_json(&pattern_json)?;
+            let (parts, gap_after, gap_bunsetsu, expression_type, priority, boundary_effect) =
+                parse_pattern_json(&pattern_json)?;
             rules.push(ExpressionRule {
                 id,
                 label,
                 description,
                 origin,
+                expression_type,
+                priority,
+                boundary_effect,
                 parts,
                 gap_after,
                 gap_bunsetsu,
@@ -520,6 +639,10 @@ impl ProfileEngine {
                                 label: rule.label.clone(),
                                 description: rule.description.clone(),
                                 origin: rule.origin.clone(),
+                                expression_type: rule.expression_type.clone(),
+                                priority: rule.priority,
+                                boundary_effect: rule.boundary_effect.clone(),
+                                confidence: 1.0,
                                 position: position.to_string(),
                                 token_range: (orig_h_start, orig_t_end),
                                 char_range,
@@ -612,6 +735,10 @@ impl ProfileEngine {
                             label: rule.label.clone(),
                             description: rule.description.clone(),
                             origin: rule.origin.clone(),
+                            expression_type: rule.expression_type.clone(),
+                            priority: rule.priority,
+                            boundary_effect: rule.boundary_effect.clone(),
+                            confidence: 1.0,
                             position: position.to_string(),
                             token_range: (orig_start, orig_end),
                             char_range,

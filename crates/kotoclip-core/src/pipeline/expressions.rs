@@ -2,6 +2,27 @@ use crate::models::{AnnotatedToken, ExpressionAnnotation};
 use serde::Deserialize;
 use std::collections::HashSet;
 
+/// 对所有候选来源执行统一的优先级排序与同类范围排重。
+pub fn resolve_expression_conflicts(tokens: &mut [AnnotatedToken]) {
+    for token in tokens {
+        token.expressions.sort_by(|left, right| {
+            right
+                .priority
+                .cmp(&left.priority)
+                .then_with(|| right.confidence.total_cmp(&left.confidence))
+                .then_with(|| {
+                    let left_width = left.char_range.1.saturating_sub(left.char_range.0);
+                    let right_width = right.char_range.1.saturating_sub(right.char_range.0);
+                    right_width.cmp(&left_width)
+                })
+        });
+        let mut seen = HashSet::new();
+        token
+            .expressions
+            .retain(|item| seen.insert((item.expression_type.clone(), item.char_range)));
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct ExpressionCatalog {
     patterns: Vec<BuiltinExpressionPattern>,
@@ -40,6 +61,16 @@ struct ExpressionAtom {
     lemmas: Vec<String>,
     #[serde(default)]
     pos: Option<String>,
+    #[serde(default)]
+    pos_sub1: Option<String>,
+    #[serde(default)]
+    pos_sub2: Option<String>,
+    #[serde(default)]
+    pos_sub3: Option<String>,
+    #[serde(default)]
+    conjugation_type: Option<String>,
+    #[serde(default)]
+    conjugation_forms: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -48,7 +79,13 @@ struct FlatMorpheme {
     surface: String,
     lemma: String,
     pos: String,
+    pos_sub1: String,
+    pos_sub2: String,
+    pos_sub3: String,
+    conjugation_type: String,
+    conjugation_form: String,
     char_range: (usize, usize),
+    is_boundary: bool,
 }
 
 fn catalog() -> ExpressionCatalog {
@@ -60,24 +97,49 @@ fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
     tokens
         .iter()
         .enumerate()
-        .filter(|(_, token)| token.display_class == "content")
         .flat_map(|(token_index, token)| {
-            token.bunsetsu.morphemes.iter().filter_map(move |morpheme| {
-                if morpheme.surface.trim().is_empty() {
-                    return None;
-                }
-                Some(FlatMorpheme {
+            if token.display_class != "content" {
+                return vec![FlatMorpheme {
                     token_index,
-                    surface: morpheme.surface.clone(),
-                    lemma: if morpheme.base_form.is_empty() || morpheme.base_form == "*" {
-                        morpheme.surface.clone()
-                    } else {
-                        morpheme.base_form.clone()
-                    },
-                    pos: morpheme.pos.major.clone(),
-                    char_range: morpheme.char_range,
+                    surface: token.bunsetsu.surface.clone(),
+                    lemma: token.bunsetsu.surface.clone(),
+                    pos: "記号".to_string(),
+                    pos_sub1: String::new(),
+                    pos_sub2: String::new(),
+                    pos_sub3: String::new(),
+                    conjugation_type: String::new(),
+                    conjugation_form: String::new(),
+                    char_range: token.bunsetsu.char_range,
+                    is_boundary: true,
+                }];
+            }
+            token
+                .bunsetsu
+                .morphemes
+                .iter()
+                .filter_map(move |morpheme| {
+                    if morpheme.surface.trim().is_empty() {
+                        return None;
+                    }
+                    Some(FlatMorpheme {
+                        token_index,
+                        surface: morpheme.surface.clone(),
+                        lemma: if morpheme.base_form.is_empty() || morpheme.base_form == "*" {
+                            morpheme.surface.clone()
+                        } else {
+                            morpheme.base_form.clone()
+                        },
+                        pos: morpheme.pos.major.clone(),
+                        pos_sub1: morpheme.pos.sub1.clone(),
+                        pos_sub2: morpheme.pos.sub2.clone(),
+                        pos_sub3: morpheme.pos.sub3.clone(),
+                        conjugation_type: morpheme.conjugation_type.clone(),
+                        conjugation_form: morpheme.conjugation_form.clone(),
+                        char_range: morpheme.char_range,
+                        is_boundary: false,
+                    })
                 })
-            })
+                .collect()
         })
         .collect()
 }
@@ -85,6 +147,27 @@ fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
 fn atom_matches(atom: &ExpressionAtom, morpheme: &FlatMorpheme) -> bool {
     (atom.lemmas.is_empty() || atom.lemmas.iter().any(|lemma| lemma == &morpheme.lemma))
         && atom.pos.as_ref().map_or(true, |pos| pos == &morpheme.pos)
+        && atom
+            .pos_sub1
+            .as_ref()
+            .map_or(true, |pos| pos == &morpheme.pos_sub1)
+        && atom
+            .pos_sub2
+            .as_ref()
+            .map_or(true, |pos| pos == &morpheme.pos_sub2)
+        && atom
+            .pos_sub3
+            .as_ref()
+            .map_or(true, |pos| pos == &morpheme.pos_sub3)
+        && atom
+            .conjugation_type
+            .as_ref()
+            .map_or(true, |value| value == &morpheme.conjugation_type)
+        && (atom.conjugation_forms.is_empty()
+            || atom
+                .conjugation_forms
+                .iter()
+                .any(|value| value == &morpheme.conjugation_form))
 }
 
 /// 在跨文节的完整语素流上运行确定性状态机。匹配范围从第一个锚点语素开始，
@@ -140,6 +223,10 @@ pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                     label: pattern.label.clone(),
                     description: format!("{}｜{}", pattern.category, pattern.description),
                     origin: "builtin".to_string(),
+                    expression_type: "grammar_construction".to_string(),
+                    priority: 60,
+                    boundary_effect: "annotate_only".to_string(),
+                    confidence: 0.95,
                     position: position.to_string(),
                     token_range: (start_token, end_token),
                     char_range,
@@ -158,6 +245,43 @@ struct MatchInfo {
     e: usize,
     char_range: (usize, usize),
     surface: String,
+    expression_type: String,
+    boundary_effect: String,
+    priority: i32,
+    confidence: f32,
+}
+
+/// 词典存在性只提供候选证据；组合方式决定候选能否成为正式结果。
+/// 以助词起始的「に＋つく」「と＋する」等普通句法不进入自动表达层。
+fn classify_dictionary_composition(
+    morphemes: &[&crate::models::Morpheme],
+) -> Option<(&'static str, &'static str, i32, f32)> {
+    let first = morphemes.first()?;
+    if first.pos.major == "助詞" || first.pos.major == "助動詞" {
+        return None;
+    }
+    let particle_count = morphemes.iter().filter(|m| m.pos.major == "助詞").count();
+    if particle_count > 0 {
+        let has_content_head = matches!(first.pos.major.as_str(), "名詞" | "動詞" | "形容詞");
+        let has_predicate = morphemes
+            .iter()
+            .skip(1)
+            .any(|m| matches!(m.pos.major.as_str(), "動詞" | "形容詞"));
+        if morphemes.len() >= 3 && has_content_head && has_predicate {
+            return Some(("idiom", "annotate_only", 70, 0.82));
+        }
+        return None;
+    }
+    if first.pos.sub1 == "代名詞" {
+        return None;
+    }
+    let lexical_shape = morphemes.iter().all(|m| {
+        matches!(m.pos.major.as_str(), "名詞" | "接頭詞")
+            || (m.pos.major == "動詞" && m.pos.sub1 != "自立")
+    }) || (morphemes.len() >= 2
+        && first.pos.major == "名詞"
+        && morphemes.last().is_some_and(|m| m.pos.major == "動詞"));
+    lexical_shape.then_some(("lexical_unit", "merge_lexical_unit", 90, 0.9))
 }
 
 /// 基于本地词典自动匹配的跨文节固定表达扫描
@@ -199,13 +323,11 @@ pub fn apply_dictionary_expressions(
                         continue;
                     }
 
-                    let char_range = (
-                        ts.morphemes[p].char_range.0,
-                        te.morphemes[q].char_range.1,
-                    );
+                    let char_range = (ts.morphemes[p].char_range.0, te.morphemes[q].char_range.1);
                     let mut query = String::new();
                     let mut surface = String::new();
                     let mut invalid = false;
+                    let mut selected_morphemes = Vec::new();
                     for token_index in s..=e {
                         let morphemes = &tokens[token_index].bunsetsu.morphemes;
                         let start = if token_index == s { p } else { 0 };
@@ -215,13 +337,18 @@ pub fn apply_dictionary_expressions(
                             morphemes.len()
                         };
                         for (index, morpheme) in morphemes[start..end].iter().enumerate() {
-                            if morpheme.surface.trim().is_empty() || morpheme.pos.major == "記号" {
+                            if morpheme.surface.trim().is_empty() || morpheme.pos.major == "記号"
+                            {
                                 invalid = true;
                                 break;
                             }
+                            selected_morphemes.push(morpheme);
                             surface.push_str(&morpheme.surface);
                             let is_last = token_index == e && start + index == q;
-                            if is_last && !morpheme.base_form.is_empty() && morpheme.base_form != "*" {
+                            if is_last
+                                && !morpheme.base_form.is_empty()
+                                && morpheme.base_form != "*"
+                            {
                                 query.push_str(&morpheme.base_form);
                             } else {
                                 query.push_str(&morpheme.surface);
@@ -234,8 +361,23 @@ pub fn apply_dictionary_expressions(
                     if invalid {
                         continue;
                     }
+                    let Some((expression_type, boundary_effect, priority, confidence)) =
+                        classify_dictionary_composition(&selected_morphemes)
+                    else {
+                        continue;
+                    };
                     unique_queries.insert(query.clone());
-                    candidates.push(MatchInfo { query, s, e, char_range, surface });
+                    candidates.push(MatchInfo {
+                        query,
+                        s,
+                        e,
+                        char_range,
+                        surface,
+                        expression_type: expression_type.to_string(),
+                        boundary_effect: boundary_effect.to_string(),
+                        priority,
+                        confidence,
+                    });
                 }
             }
         }
@@ -288,6 +430,10 @@ pub fn apply_dictionary_expressions(
                 label: info.query.clone(),
                 description: "词典惯用语｜在本地词典中匹配到的固定跨文节表达。".to_string(),
                 origin: "dictionary".to_string(),
+                expression_type: info.expression_type.clone(),
+                priority: info.priority,
+                boundary_effect: info.boundary_effect.clone(),
+                confidence: info.confidence,
                 position: position.to_string(),
                 token_range: (info.s, info.e + 1),
                 char_range: info.char_range,
@@ -301,7 +447,8 @@ pub fn apply_dictionary_expressions(
 }
 
 fn is_sentence_boundary(morpheme: &FlatMorpheme) -> bool {
-    morpheme.lemma == "。"
+    morpheme.is_boundary
+        || morpheme.lemma == "。"
         || morpheme.lemma == "！"
         || morpheme.lemma == "？"
         || morpheme.surface.contains('。')
@@ -361,14 +508,10 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
 
                 for t_start in (h_last_morpheme_idx + 1)..=morphemes.len() - tail_len {
                     let tail_start_token = morphemes[t_start].token_index;
-                    if tail_start_token
-                        > head_end_token + 1 + pattern.gap_bunsetsu.1
-                    {
+                    if tail_start_token > head_end_token + 1 + pattern.gap_bunsetsu.1 {
                         break;
                     }
-                    if tail_start_token
-                        < head_end_token + 1 + pattern.gap_bunsetsu.0
-                    {
+                    if tail_start_token < head_end_token + 1 + pattern.gap_bunsetsu.0 {
                         continue;
                     }
                     let t_window = &morphemes[t_start..t_start + tail_len];
@@ -426,7 +569,8 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                     };
 
                     if let Some(ref current_best) = best_match {
-                        if cand.end_token > current_best.end_token {
+                        // 呼应结构优先连接同一局部句法域内最近的相容尾项。
+                        if cand.end_token < current_best.end_token {
                             best_match = Some(cand);
                         }
                     } else {
@@ -487,6 +631,10 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                 label: m.label.clone(),
                 description: format!("{}｜{}", m.category, m.description),
                 origin: "correlative".to_string(),
+                expression_type: "correlative".to_string(),
+                priority: 40,
+                boundary_effect: "annotate_only".to_string(),
+                confidence: 0.9,
                 position: position.to_string(),
                 token_range: (m.start_token, m.end_token),
                 char_range: m.char_range,
