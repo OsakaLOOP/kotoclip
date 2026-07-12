@@ -340,6 +340,22 @@ pub fn merge_annotated_bunsetsus(
             .iter()
             .flat_map(|bunsetsu| bunsetsu.morphemes.iter().cloned())
             .collect();
+        let mut word_formations = Vec::new();
+        let mut morpheme_offset = 0;
+        for bunsetsu in &bunsetsus[start..=end] {
+            for formation in &bunsetsu.word_formations {
+                let mut formation = formation.clone();
+                formation.morpheme_range.0 += morpheme_offset;
+                formation.morpheme_range.1 += morpheme_offset;
+                formation.head_morpheme += morpheme_offset;
+                for capture in &mut formation.captures {
+                    capture.morpheme_range.0 += morpheme_offset;
+                    capture.morpheme_range.1 += morpheme_offset;
+                }
+                word_formations.push(formation);
+            }
+            morpheme_offset += bunsetsu.morphemes.len();
+        }
         let merged = Bunsetsu {
             morphemes,
             surface: annotation.base.clone(),
@@ -350,6 +366,7 @@ pub fn merge_annotated_bunsetsus(
                 pos,
             },
             grammar_tags: Vec::new(),
+            word_formations,
             char_range: annotation.char_range,
         };
         bunsetsus.splice(start..=end, [merged]);

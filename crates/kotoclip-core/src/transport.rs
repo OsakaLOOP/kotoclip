@@ -6,6 +6,7 @@
 
 use crate::models::{
     AnnotatedToken, Bunsetsu, ExpressionAnnotation, GrammarTag, HeadWord, Morpheme, PosTag,
+    WordFormationAnnotation, WordFormationCapture,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -35,6 +36,8 @@ pub struct CompactBunsetsu {
     pub h: CompactHeadWord,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub g: Vec<CompactGrammarTag>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub w: Vec<CompactWordFormation>,
     pub c: (usize, usize),
 }
 
@@ -65,6 +68,30 @@ pub struct CompactGrammarTag {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub l: Option<u8>,
     pub d: u32,
+    pub m: (usize, usize),
+    pub c: (usize, usize),
+}
+
+#[derive(Serialize)]
+pub struct CompactWordFormation {
+    pub i: u32,
+    pub k: u32,
+    pub s: u32,
+    pub b: u32,
+    pub r: u32,
+    pub o: [u32; 4],
+    pub m: (usize, usize),
+    pub c: (usize, usize),
+    pub h: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub p: Vec<CompactWordFormationCapture>,
+    pub q: u8,
+}
+
+#[derive(Serialize)]
+pub struct CompactWordFormationCapture {
+    pub n: u32,
+    pub s: u32,
     pub m: (usize, usize),
     pub c: (usize, usize),
 }
@@ -145,6 +172,31 @@ impl StringTable {
         }
     }
 
+    fn word_formation_capture(&mut self, value: &WordFormationCapture) -> CompactWordFormationCapture {
+        CompactWordFormationCapture {
+            n: self.intern(&value.name),
+            s: self.intern(&value.surface),
+            m: value.morpheme_range,
+            c: value.char_range,
+        }
+    }
+
+    fn word_formation(&mut self, value: &WordFormationAnnotation) -> CompactWordFormation {
+        CompactWordFormation {
+            i: self.intern(&value.rule_id),
+            k: self.intern(&value.category),
+            s: self.intern(&value.surface),
+            b: self.intern(&value.base_form),
+            r: self.intern(&value.reading),
+            o: self.position(&value.output_pos),
+            m: value.morpheme_range,
+            c: value.char_range,
+            h: value.head_morpheme,
+            p: value.captures.iter().map(|item| self.word_formation_capture(item)).collect(),
+            q: value.confidence,
+        }
+    }
+
     fn bunsetsu(&mut self, value: &Bunsetsu) -> CompactBunsetsu {
         CompactBunsetsu {
             m: value
@@ -159,6 +211,7 @@ impl StringTable {
                 .iter()
                 .map(|item| self.grammar_tag(item))
                 .collect(),
+            w: value.word_formations.iter().map(|item| self.word_formation(item)).collect(),
             c: value.char_range,
         }
     }
@@ -237,6 +290,7 @@ mod tests {
                     pos: position,
                 },
                 grammar_tags: Vec::new(),
+                word_formations: Vec::new(),
                 char_range: (0, 1),
             },
             novelty_score: 1.0,

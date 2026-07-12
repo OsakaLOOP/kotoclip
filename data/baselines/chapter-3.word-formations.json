@@ -1,0 +1,9359 @@
+{
+  "schema_version": 1,
+  "accepted_count": 170,
+  "rejected_count": 6153,
+  "conflict_count": 1,
+  "items": [
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "何度",
+        "base_form": "何度",
+        "reading": "ナンド",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          1079,
+          1081
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "度",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              1080,
+              1081
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "何",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              1079,
+              1080
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "何/名詞",
+        "度/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          9,
+          11
+        ],
+        "char_range": [
+          1133,
+          1135
+        ],
+        "head_morpheme": 10,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              10,
+              11
+            ],
+            "char_range": [
+              1134,
+              1135
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              9,
+              10
+            ],
+            "char_range": [
+              1133,
+              1134
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          1512,
+          1514
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              1513,
+              1514
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              1512,
+              1513
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "五秒",
+        "base_form": "五秒",
+        "reading": "ゴビョウ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          2171,
+          2173
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "秒",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              2172,
+              2173
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "五",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              2171,
+              2172
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "五/名詞",
+        "秒/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一〇秒",
+        "base_form": "一〇秒",
+        "reading": "イチレイビョウ",
+        "morpheme_range": [
+          0,
+          3
+        ],
+        "char_range": [
+          2174,
+          2177
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "秒",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              2176,
+              2177
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一〇",
+            "morpheme_range": [
+              0,
+              2
+            ],
+            "char_range": [
+              2174,
+              2176
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "〇/名詞",
+        "秒/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "四時間",
+        "base_form": "四時間",
+        "reading": "ヨンジカン",
+        "morpheme_range": [
+          9,
+          11
+        ],
+        "char_range": [
+          2464,
+          2467
+        ],
+        "head_morpheme": 10,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "時間",
+            "morpheme_range": [
+              10,
+              11
+            ],
+            "char_range": [
+              2465,
+              2467
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "四",
+            "morpheme_range": [
+              9,
+              10
+            ],
+            "char_range": [
+              2464,
+              2465
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "四/名詞",
+        "時間/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "三日",
+        "base_form": "三日",
+        "reading": "サンニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          2636,
+          2638
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              2637,
+              2638
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "三",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              2636,
+              2637
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "三/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "三人",
+        "base_form": "三人",
+        "reading": "サンニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          2641,
+          2643
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              2642,
+              2643
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "三",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              2641,
+              2642
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "三/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "八畳",
+        "base_form": "八畳",
+        "reading": "ハチジョウ",
+        "morpheme_range": [
+          4,
+          6
+        ],
+        "char_range": [
+          2906,
+          2908
+        ],
+        "head_morpheme": 5,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "畳",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              2907,
+              2908
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "八",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              2906,
+              2907
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "八/名詞",
+        "畳/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一面",
+        "base_form": "一面",
+        "reading": "イチメン",
+        "morpheme_range": [
+          4,
+          6
+        ],
+        "char_range": [
+          3403,
+          3405
+        ],
+        "head_morpheme": 5,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "面",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              3404,
+              3405
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              3403,
+              3404
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "面/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一犯",
+        "base_form": "一犯",
+        "reading": "イチハン",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          3546,
+          3548
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "犯",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              3547,
+              3548
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              3546,
+              3547
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "犯/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          4506,
+          4508
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              4507,
+              4508
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              4506,
+              4507
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          4,
+          6
+        ],
+        "char_range": [
+          5072,
+          5074
+        ],
+        "head_morpheme": 5,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              5073,
+              5074
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              5072,
+              5073
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "数か所",
+        "base_form": "数か所",
+        "reading": "スウカショ",
+        "morpheme_range": [
+          6,
+          8
+        ],
+        "char_range": [
+          5235,
+          5238
+        ],
+        "head_morpheme": 7,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "か所",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              5236,
+              5238
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "数",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              5235,
+              5236
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "数/名詞",
+        "か所/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "三件",
+        "base_form": "三件",
+        "reading": "サンケン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          5639,
+          5641
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "件",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              5640,
+              5641
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "三",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              5639,
+              5640
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "三/名詞",
+        "件/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一面",
+        "base_form": "一面",
+        "reading": "イチメン",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          5717,
+          5719
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "面",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              5718,
+              5719
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              5717,
+              5718
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "面/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          5892,
+          5894
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              5893,
+              5894
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              5892,
+              5893
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          6048,
+          6050
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              6049,
+              6050
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              6048,
+              6049
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          6203,
+          6205
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              6204,
+              6205
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              6203,
+              6204
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          6541,
+          6543
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              6542,
+              6543
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              6541,
+              6542
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "二人",
+        "base_form": "二人",
+        "reading": "ニニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          6561,
+          6563
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              6562,
+              6563
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "二",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              6561,
+              6562
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "二/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          6839,
+          6841
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              6840,
+              6841
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              6839,
+              6840
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "deity_by_godan_action",
+        "category": "action_deity",
+        "surface": "喰い神",
+        "base_form": "喰い神",
+        "reading": "クイシン",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          6905,
+          6908
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "action",
+            "surface": "喰い",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              6905,
+              6907
+            ]
+          },
+          {
+            "name": "class_name",
+            "surface": "神",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              6907,
+              6908
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "一般",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "喰う/動詞",
+        "神/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          6941,
+          6943
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              6942,
+              6943
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              6941,
+              6942
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "deity_by_godan_action",
+        "category": "action_deity",
+        "surface": "喰い神",
+        "base_form": "喰い神",
+        "reading": "クイシン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          7408,
+          7411
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "action",
+            "surface": "喰い",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              7408,
+              7410
+            ]
+          },
+          {
+            "name": "class_name",
+            "surface": "神",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              7410,
+              7411
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "一般",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "喰う/動詞",
+        "神/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          7472,
+          7474
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              7473,
+              7474
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              7472,
+              7473
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          8781,
+          8783
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              8782,
+              8783
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              8781,
+              8782
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          8887,
+          8889
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              8888,
+              8889
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              8887,
+              8888
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "三流",
+        "base_form": "三流",
+        "reading": "サンリュウ",
+        "morpheme_range": [
+          10,
+          12
+        ],
+        "char_range": [
+          9038,
+          9040
+        ],
+        "head_morpheme": 11,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "流",
+            "morpheme_range": [
+              11,
+              12
+            ],
+            "char_range": [
+              9039,
+              9040
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "三",
+            "morpheme_range": [
+              10,
+              11
+            ],
+            "char_range": [
+              9038,
+              9039
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "三/名詞",
+        "流/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          9072,
+          9074
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              9073,
+              9074
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              9072,
+              9073
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          9186,
+          9188
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              9187,
+              9188
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              9186,
+              9187
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          9254,
+          9256
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              9255,
+              9256
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              9254,
+              9255
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "八階",
+        "base_form": "八階",
+        "reading": "ハチカイ",
+        "morpheme_range": [
+          4,
+          6
+        ],
+        "char_range": [
+          9284,
+          9286
+        ],
+        "head_morpheme": 5,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "階",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              9285,
+              9286
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "八",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              9284,
+              9285
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "八/名詞",
+        "階/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          9447,
+          9449
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              9448,
+              9449
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              9447,
+              9448
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          9478,
+          9480
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              9479,
+              9480
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              9478,
+              9479
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          9722,
+          9724
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              9723,
+              9724
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              9722,
+              9723
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          13,
+          15
+        ],
+        "char_range": [
+          9887,
+          9889
+        ],
+        "head_morpheme": 14,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              14,
+              15
+            ],
+            "char_range": [
+              9888,
+              9889
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              13,
+              14
+            ],
+            "char_range": [
+              9887,
+              9888
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          9916,
+          9918
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              9917,
+              9918
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              9916,
+              9917
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          9944,
+          9946
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              9945,
+              9946
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              9944,
+              9945
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一歩",
+        "base_form": "一歩",
+        "reading": "イチホ",
+        "morpheme_range": [
+          4,
+          6
+        ],
+        "char_range": [
+          10142,
+          10144
+        ],
+        "head_morpheme": 5,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "歩",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              10143,
+              10144
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              10142,
+              10143
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "歩/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一階",
+        "base_form": "一階",
+        "reading": "イチカイ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          11726,
+          11728
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "階",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              11727,
+              11728
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              11726,
+              11727
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "階/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "数段",
+        "base_form": "数段",
+        "reading": "スウダン",
+        "morpheme_range": [
+          6,
+          8
+        ],
+        "char_range": [
+          12442,
+          12444
+        ],
+        "head_morpheme": 7,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "段",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              12443,
+              12444
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "数",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              12442,
+              12443
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "数/名詞",
+        "段/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          13326,
+          13328
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              13327,
+              13328
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              13326,
+              13327
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一本",
+        "base_form": "一本",
+        "reading": "イチホン",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          13496,
+          13498
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "本",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              13497,
+              13498
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              13496,
+              13497
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "本/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "三度",
+        "base_form": "三度",
+        "reading": "サンド",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          13555,
+          13557
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "度",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              13556,
+              13557
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "三",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              13555,
+              13556
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "三/名詞",
+        "度/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一歩",
+        "base_form": "一歩",
+        "reading": "イチホ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          13573,
+          13575
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "歩",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              13574,
+              13575
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              13573,
+              13574
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "歩/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一本",
+        "base_form": "一本",
+        "reading": "イチホン",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          13639,
+          13641
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "本",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              13640,
+              13641
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              13639,
+              13640
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "本/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "deity_by_godan_action",
+        "category": "action_deity",
+        "surface": "喰い神",
+        "base_form": "喰い神",
+        "reading": "クイカミ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          14378,
+          14381
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "action",
+            "surface": "喰い",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              14378,
+              14380
+            ]
+          },
+          {
+            "name": "class_name",
+            "surface": "神",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              14380,
+              14381
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "一般",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "喰う/動詞",
+        "神/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          8,
+          10
+        ],
+        "char_range": [
+          14654,
+          14656
+        ],
+        "head_morpheme": 9,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              9,
+              10
+            ],
+            "char_range": [
+              14655,
+              14656
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              8,
+              9
+            ],
+            "char_range": [
+              14654,
+              14655
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          14744,
+          14746
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              14745,
+              14746
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              14744,
+              14745
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          14782,
+          14784
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              14783,
+              14784
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              14782,
+              14783
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          15078,
+          15080
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              15079,
+              15080
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              15078,
+              15079
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          15116,
+          15118
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              15117,
+              15118
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              15116,
+              15117
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          15238,
+          15240
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              15239,
+              15240
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              15238,
+              15239
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "deity_by_godan_action",
+        "category": "action_deity",
+        "surface": "喰い神",
+        "base_form": "喰い神",
+        "reading": "クイカミ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          15301,
+          15304
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "action",
+            "surface": "喰い",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              15301,
+              15303
+            ]
+          },
+          {
+            "name": "class_name",
+            "surface": "神",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              15303,
+              15304
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "一般",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "喰う/動詞",
+        "神/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "二人",
+        "base_form": "二人",
+        "reading": "ニニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          15466,
+          15468
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              15467,
+              15468
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "二",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              15466,
+              15467
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "二/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          15595,
+          15597
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              15596,
+              15597
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              15595,
+              15596
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          15738,
+          15740
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              15739,
+              15740
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              15738,
+              15739
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          15785,
+          15787
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              15786,
+              15787
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              15785,
+              15786
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          15852,
+          15854
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              15853,
+              15854
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              15852,
+              15853
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          16024,
+          16026
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              16025,
+              16026
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              16024,
+              16025
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          5,
+          7
+        ],
+        "char_range": [
+          16077,
+          16079
+        ],
+        "head_morpheme": 6,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              16078,
+              16079
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              16077,
+              16078
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          16251,
+          16253
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              16252,
+              16253
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              16251,
+              16252
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          16301,
+          16303
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              16302,
+              16303
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              16301,
+              16302
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          6,
+          8
+        ],
+        "char_range": [
+          16340,
+          16342
+        ],
+        "head_morpheme": 7,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              16341,
+              16342
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              16340,
+              16341
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          16503,
+          16505
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              16504,
+              16505
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              16503,
+              16504
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          16554,
+          16556
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              16555,
+              16556
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              16554,
+              16555
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          6,
+          8
+        ],
+        "char_range": [
+          17128,
+          17130
+        ],
+        "head_morpheme": 7,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              17129,
+              17130
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              17128,
+              17129
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          17246,
+          17248
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              17247,
+              17248
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              17246,
+              17247
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          17367,
+          17369
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              17368,
+              17369
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              17367,
+              17368
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一枚",
+        "base_form": "一枚",
+        "reading": "イチマイ",
+        "morpheme_range": [
+          10,
+          12
+        ],
+        "char_range": [
+          17469,
+          17471
+        ],
+        "head_morpheme": 11,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "枚",
+            "morpheme_range": [
+              11,
+              12
+            ],
+            "char_range": [
+              17470,
+              17471
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              10,
+              11
+            ],
+            "char_range": [
+              17469,
+              17470
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "枚/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          7,
+          9
+        ],
+        "char_range": [
+          17748,
+          17750
+        ],
+        "head_morpheme": 8,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              8,
+              9
+            ],
+            "char_range": [
+              17749,
+              17750
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              17748,
+              17749
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          12,
+          14
+        ],
+        "char_range": [
+          17781,
+          17783
+        ],
+        "head_morpheme": 13,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              13,
+              14
+            ],
+            "char_range": [
+              17782,
+              17783
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              12,
+              13
+            ],
+            "char_range": [
+              17781,
+              17782
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          18404,
+          18406
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              18405,
+              18406
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              18404,
+              18405
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          18417,
+          18419
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              18418,
+              18419
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              18417,
+              18418
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          18773,
+          18775
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              18774,
+              18775
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              18773,
+              18774
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          18827,
+          18829
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              18828,
+              18829
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              18827,
+              18828
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "二体",
+        "base_form": "二体",
+        "reading": "ニタイ",
+        "morpheme_range": [
+          6,
+          8
+        ],
+        "char_range": [
+          18945,
+          18947
+        ],
+        "head_morpheme": 7,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "体",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              18946,
+              18947
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "二",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              18945,
+              18946
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "二/名詞",
+        "体/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          19221,
+          19223
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              19222,
+              19223
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              19221,
+              19222
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          19752,
+          19754
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              19753,
+              19754
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              19752,
+              19753
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          20459,
+          20461
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              20460,
+              20461
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              20459,
+              20460
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          20505,
+          20507
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              20506,
+              20507
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              20505,
+              20506
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          20628,
+          20630
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              20629,
+              20630
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              20628,
+              20629
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          20731,
+          20733
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              20732,
+              20733
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              20731,
+              20732
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          20882,
+          20884
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              20883,
+              20884
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              20882,
+              20883
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          20945,
+          20947
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              20946,
+              20947
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              20945,
+              20946
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          21107,
+          21109
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              21108,
+              21109
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              21107,
+              21108
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          21212,
+          21214
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              21213,
+              21214
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              21212,
+              21213
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          21223,
+          21225
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              21224,
+              21225
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              21223,
+              21224
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          21373,
+          21375
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              21374,
+              21375
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              21373,
+              21374
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          21517,
+          21519
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              21518,
+              21519
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              21517,
+              21518
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          21634,
+          21636
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              21635,
+              21636
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              21634,
+              21635
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          21797,
+          21799
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              21798,
+              21799
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              21797,
+              21798
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          22034,
+          22036
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              22035,
+              22036
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              22034,
+              22035
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          13,
+          15
+        ],
+        "char_range": [
+          23063,
+          23065
+        ],
+        "head_morpheme": 14,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              14,
+              15
+            ],
+            "char_range": [
+              23064,
+              23065
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              13,
+              14
+            ],
+            "char_range": [
+              23063,
+              23064
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          23146,
+          23148
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              23147,
+              23148
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              23146,
+              23147
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          23234,
+          23236
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              23235,
+              23236
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              23234,
+              23235
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一杯",
+        "base_form": "一杯",
+        "reading": "イチハイ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          23311,
+          23313
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "杯",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              23312,
+              23313
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              23311,
+              23312
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "杯/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          23359,
+          23361
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              23360,
+              23361
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              23359,
+              23360
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          23911,
+          23913
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              23912,
+              23913
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              23911,
+              23912
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          24070,
+          24072
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              24071,
+              24072
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              24070,
+              24071
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          25449,
+          25451
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              25450,
+              25451
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              25449,
+              25450
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          25780,
+          25782
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              25781,
+              25782
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              25780,
+              25781
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          25791,
+          25793
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              25792,
+              25793
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              25791,
+              25792
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          25913,
+          25915
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              25914,
+              25915
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              25913,
+              25914
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          26023,
+          26025
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26024,
+              26025
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              26023,
+              26024
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          26071,
+          26073
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              26072,
+              26073
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26071,
+              26072
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          26160,
+          26162
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26161,
+              26162
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              26160,
+              26161
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          26273,
+          26275
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26274,
+              26275
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              26273,
+              26274
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          5,
+          7
+        ],
+        "char_range": [
+          26407,
+          26409
+        ],
+        "head_morpheme": 6,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              26408,
+              26409
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              26407,
+              26408
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          26459,
+          26461
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26460,
+              26461
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              26459,
+              26460
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          26605,
+          26607
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              26606,
+              26607
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              26605,
+              26606
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          8,
+          10
+        ],
+        "char_range": [
+          26687,
+          26689
+        ],
+        "head_morpheme": 9,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              9,
+              10
+            ],
+            "char_range": [
+              26688,
+              26689
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              8,
+              9
+            ],
+            "char_range": [
+              26687,
+              26688
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          26782,
+          26784
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              26783,
+              26784
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26782,
+              26783
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          26877,
+          26879
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26878,
+              26879
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              26877,
+              26878
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          26914,
+          26916
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              26915,
+              26916
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              26914,
+              26915
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "二階",
+        "base_form": "二階",
+        "reading": "ニカイ",
+        "morpheme_range": [
+          5,
+          7
+        ],
+        "char_range": [
+          27090,
+          27092
+        ],
+        "head_morpheme": 6,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "階",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              27091,
+              27092
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "二",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              27090,
+              27091
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "二/名詞",
+        "階/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          5,
+          7
+        ],
+        "char_range": [
+          27271,
+          27273
+        ],
+        "head_morpheme": 6,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              27272,
+              27273
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              27271,
+              27272
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          27549,
+          27551
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              27550,
+              27551
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              27549,
+              27550
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          27600,
+          27602
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              27601,
+              27602
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              27600,
+              27601
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          27613,
+          27615
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              27614,
+              27615
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              27613,
+              27614
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          27719,
+          27721
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              27720,
+              27721
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              27719,
+              27720
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          27751,
+          27753
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              27752,
+              27753
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              27751,
+              27752
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          27790,
+          27792
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              27791,
+              27792
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              27790,
+              27791
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "deity_by_godan_action",
+        "category": "action_deity",
+        "surface": "喰い神",
+        "base_form": "喰い神",
+        "reading": "クイシン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          27962,
+          27965
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "action",
+            "surface": "喰い",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              27962,
+              27964
+            ]
+          },
+          {
+            "name": "class_name",
+            "surface": "神",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              27964,
+              27965
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "一般",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "喰う/動詞",
+        "神/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          28082,
+          28084
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              28083,
+              28084
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              28082,
+              28083
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          28144,
+          28146
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              28145,
+              28146
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              28144,
+              28145
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          28690,
+          28692
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              28691,
+              28692
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              28690,
+              28691
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          29015,
+          29017
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29016,
+              29017
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              29015,
+              29016
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          6,
+          8
+        ],
+        "char_range": [
+          29055,
+          29057
+        ],
+        "head_morpheme": 7,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              29056,
+              29057
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              29055,
+              29056
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          29123,
+          29125
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              29124,
+              29125
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              29123,
+              29124
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "二人",
+        "base_form": "二人",
+        "reading": "ニニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          29190,
+          29192
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29191,
+              29192
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "二",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              29190,
+              29191
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "二/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          29215,
+          29217
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29216,
+              29217
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              29215,
+              29216
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          29445,
+          29447
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              29446,
+              29447
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29445,
+              29446
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          29518,
+          29520
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              29519,
+              29520
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              29518,
+              29519
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          29564,
+          29566
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29565,
+              29566
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              29564,
+              29565
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          29618,
+          29620
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              29619,
+              29620
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29618,
+              29619
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          29858,
+          29860
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              29859,
+              29860
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              29858,
+              29859
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          29923,
+          29925
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29924,
+              29925
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              29923,
+              29924
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          29987,
+          29989
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              29988,
+              29989
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              29987,
+              29988
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          30035,
+          30037
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              30036,
+              30037
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              30035,
+              30036
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          30178,
+          30180
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              30179,
+              30180
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              30178,
+              30179
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          30536,
+          30538
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              30537,
+              30538
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              30536,
+              30537
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          30551,
+          30553
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              30552,
+              30553
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              30551,
+              30552
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          30589,
+          30591
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              30590,
+              30591
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              30589,
+              30590
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          7,
+          9
+        ],
+        "char_range": [
+          30660,
+          30662
+        ],
+        "head_morpheme": 8,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              8,
+              9
+            ],
+            "char_range": [
+              30661,
+              30662
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              30660,
+              30661
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          30725,
+          30727
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              30726,
+              30727
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              30725,
+              30726
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一日",
+        "base_form": "一日",
+        "reading": "イチニチ",
+        "morpheme_range": [
+          4,
+          6
+        ],
+        "char_range": [
+          30897,
+          30899
+        ],
+        "head_morpheme": 5,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              30898,
+              30899
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              30897,
+              30898
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "一人",
+        "base_form": "一人",
+        "reading": "イチニン",
+        "morpheme_range": [
+          5,
+          7
+        ],
+        "char_range": [
+          30923,
+          30925
+        ],
+        "head_morpheme": 6,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              30924,
+              30925
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "一",
+            "morpheme_range": [
+              5,
+              6
+            ],
+            "char_range": [
+              30923,
+              30924
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "一/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          31053,
+          31055
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              31054,
+              31055
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              31053,
+              31054
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          31100,
+          31102
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              31101,
+              31102
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              31100,
+              31101
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "三人",
+        "base_form": "三人",
+        "reading": "サンニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          31159,
+          31161
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              31160,
+              31161
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "三",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              31159,
+              31160
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "三/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          31280,
+          31282
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              31281,
+              31282
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              31280,
+              31281
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          31303,
+          31305
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              31304,
+              31305
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              31303,
+              31304
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          31467,
+          31469
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              31468,
+              31469
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              31467,
+              31468
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          31614,
+          31616
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              31615,
+              31616
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              31614,
+              31615
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          31962,
+          31964
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              31963,
+              31964
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              31962,
+              31963
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          32019,
+          32021
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              32020,
+              32021
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              32019,
+              32020
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          32068,
+          32070
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              32069,
+              32070
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              32068,
+              32069
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          3,
+          5
+        ],
+        "char_range": [
+          32133,
+          32135
+        ],
+        "head_morpheme": 4,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              4,
+              5
+            ],
+            "char_range": [
+              32134,
+              32135
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              32133,
+              32134
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          32203,
+          32205
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              32204,
+              32205
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              32203,
+              32204
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          32628,
+          32630
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              32629,
+              32630
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              32628,
+              32629
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          32878,
+          32880
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              32879,
+              32880
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              32878,
+              32879
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          2,
+          4
+        ],
+        "char_range": [
+          33027,
+          33029
+        ],
+        "head_morpheme": 3,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              3,
+              4
+            ],
+            "char_range": [
+              33028,
+              33029
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              33027,
+              33028
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "deity_by_godan_action",
+        "category": "action_deity",
+        "surface": "喰い神",
+        "base_form": "喰い神",
+        "reading": "クイカミ",
+        "morpheme_range": [
+          6,
+          8
+        ],
+        "char_range": [
+          33061,
+          33064
+        ],
+        "head_morpheme": 7,
+        "captures": [
+          {
+            "name": "action",
+            "surface": "喰い",
+            "morpheme_range": [
+              6,
+              7
+            ],
+            "char_range": [
+              33061,
+              33063
+            ]
+          },
+          {
+            "name": "class_name",
+            "surface": "神",
+            "morpheme_range": [
+              7,
+              8
+            ],
+            "char_range": [
+              33063,
+              33064
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "一般",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "喰う/動詞",
+        "神/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          33113,
+          33115
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              33114,
+              33115
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              33113,
+              33114
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "二人",
+        "base_form": "二人",
+        "reading": "ニニン",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          33139,
+          33141
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "人",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              33140,
+              33141
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "二",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              33139,
+              33140
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "二/名詞",
+        "人/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          1,
+          3
+        ],
+        "char_range": [
+          33157,
+          33159
+        ],
+        "head_morpheme": 2,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              2,
+              3
+            ],
+            "char_range": [
+              33158,
+              33159
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              33157,
+              33158
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "numeric_counter",
+        "category": "numeric_counter",
+        "surface": "七日",
+        "base_form": "七日",
+        "reading": "ナナニチ",
+        "morpheme_range": [
+          11,
+          13
+        ],
+        "char_range": [
+          33227,
+          33229
+        ],
+        "head_morpheme": 12,
+        "captures": [
+          {
+            "name": "counter",
+            "surface": "日",
+            "morpheme_range": [
+              12,
+              13
+            ],
+            "char_range": [
+              33228,
+              33229
+            ]
+          },
+          {
+            "name": "number",
+            "surface": "七",
+            "morpheme_range": [
+              11,
+              12
+            ],
+            "char_range": [
+              33227,
+              33228
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "数",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "七/名詞",
+        "日/名詞"
+      ]
+    },
+    {
+      "formation": {
+        "rule_id": "deity_by_godan_action",
+        "category": "action_deity",
+        "surface": "喰い神",
+        "base_form": "喰い神",
+        "reading": "クイカミ",
+        "morpheme_range": [
+          0,
+          2
+        ],
+        "char_range": [
+          33305,
+          33308
+        ],
+        "head_morpheme": 1,
+        "captures": [
+          {
+            "name": "action",
+            "surface": "喰い",
+            "morpheme_range": [
+              0,
+              1
+            ],
+            "char_range": [
+              33305,
+              33307
+            ]
+          },
+          {
+            "name": "class_name",
+            "surface": "神",
+            "morpheme_range": [
+              1,
+              2
+            ],
+            "char_range": [
+              33307,
+              33308
+            ]
+          }
+        ],
+        "confidence": 95
+      },
+      "output_pos": {
+        "major": "名詞",
+        "sub1": "一般",
+        "sub2": "*",
+        "sub3": "*"
+      },
+      "morpheme_signature": [
+        "喰う/動詞",
+        "神/名詞"
+      ]
+    }
+  ]
+}

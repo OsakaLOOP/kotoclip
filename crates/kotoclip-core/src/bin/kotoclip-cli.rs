@@ -152,6 +152,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "expression-list" => expression_list(&args),
         "expression-preview" => expression_preview(&args),
         "expression-scan" => expression_scan(&args),
+        "word-formation-scan" => word_formation_scan(&args),
         "expression-verify" => expression_verify(&args),
         "expression-add" => expression_add(&args),
         "expression-repl" => expression_repl(&args),
@@ -814,6 +815,98 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 }
 
 #[derive(Serialize)]
+struct WordFormationScanItem {
+    formation: kotoclip_core::models::WordFormationAnnotation,
+    output_pos: kotoclip_core::models::PosTag,
+    morpheme_signature: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct WordFormationRejectedItem {
+    rule_id: String,
+    morpheme_range: (usize, usize),
+    char_range: (usize, usize),
+    reason: String,
+    morpheme_signature: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct WordFormationScanReport {
+    schema_version: u32,
+    accepted_count: usize,
+    rejected_count: usize,
+    conflict_count: usize,
+    items: Vec<WordFormationScanItem>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    rejected: Vec<WordFormationRejectedItem>,
+}
+
+fn word_formation_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    // 保持与其他研究命令相同的临时 profile 调用契约，审计本身不会写入它。
+    args.required("profile").map_err(io::Error::other)?;
+    let text = read_text_selection(args)?;
+    let pipeline = pipeline(args)?;
+    let include_rejected = args.flags.contains("include-rejected");
+    let mut items = Vec::new();
+    let mut rejected = Vec::new();
+    let mut rejected_count = 0;
+    let mut conflict_count = 0;
+    for segment in pipeline.inspect_word_formations(&text) {
+        conflict_count += segment.result.conflicts;
+        for formation in segment.result.accepted {
+            let signature = segment.morphemes[formation.morpheme_range.0..formation.morpheme_range.1]
+                .iter()
+                .map(|morpheme| format!("{}/{}", morpheme.base_form, morpheme.pos.major))
+                .collect();
+            items.push(WordFormationScanItem {
+                formation: formation.annotation,
+                output_pos: formation.output_pos,
+                morpheme_signature: signature,
+            });
+        }
+        if include_rejected {
+            rejected_count += segment.result.rejected.len();
+            for item in segment.result.rejected {
+                let end = item.morpheme_range.1.min(segment.morphemes.len());
+                let signature = segment.morphemes[item.morpheme_range.0.min(end)..end]
+                    .iter()
+                    .map(|morpheme| format!("{}/{}", morpheme.base_form, morpheme.pos.major))
+                    .collect();
+                let char_range = if item.morpheme_range.0 < end {
+                    (
+                        segment.morphemes[item.morpheme_range.0].char_range.0,
+                        segment.morphemes[end - 1].char_range.1,
+                    )
+                } else {
+                    (0, 0)
+                };
+                rejected.push(WordFormationRejectedItem {
+                    rule_id: item.rule_id,
+                    morpheme_range: item.morpheme_range,
+                    char_range,
+                    reason: item.reason,
+                    morpheme_signature: signature,
+                });
+            }
+        }
+    }
+    let accepted_count = items.len();
+    if let Some(path) = args.options.get("json") {
+        let report = WordFormationScanReport {
+            schema_version: 1,
+            accepted_count,
+            rejected_count,
+            conflict_count,
+            items,
+            rejected,
+        };
+        std::fs::write(path, serde_json::to_string_pretty(&report)?)?;
+    }
+    println!("构词审计：接受 {accepted_count}，拒绝 {rejected_count}，冲突 {conflict_count}。");
+    Ok(())
+}
+
+#[derive(Serialize)]
 struct VerifyItem {
     id: usize,
     match_id: String,
@@ -1337,7 +1430,9 @@ fn print_help() {
   expression-preview --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N]
   expression-scan --profile PATH (--text TEXT | --source PATH)
-        [--chapter TITLE --page-lines N --page N]
+        [--chapter TITLE --page-lines N --page N] [--json PATH]
+  word-formation-scan --profile PATH (--text TEXT | --source PATH)
+        [--chapter TITLE --page-lines N --page N] [--json PATH --include-rejected]
   expression-verify --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N] [--json PATH]
   expression-add --profile PATH (--text TEXT | --source PATH)

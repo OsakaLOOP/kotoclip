@@ -422,6 +422,7 @@ function tokenForMorphemeLookup(token: AnnotatedToken, morpheme: Morpheme): Anno
         pos: morpheme.pos,
       },
       grammar_tags: [],
+      word_formations: [],
     },
   };
 }

@@ -31,6 +31,8 @@ pub struct Bunsetsu {
     pub surface: String,
     pub head_word: HeadWord,
     pub grammar_tags: Vec<GrammarTag>,
+    #[serde(default)]
+    pub word_formations: Vec<WordFormationAnnotation>,
     pub char_range: (usize, usize),
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,6 +49,31 @@ pub struct GrammarTag {
     pub name_en: String,
     pub jlpt_level: Option<u8>,
     pub description: String,
+    pub morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+}
+
+/// 由构词规则确认的连续语素单位。范围相对于所属文节的 morphemes，字符范围仍相对于全文。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WordFormationAnnotation {
+    pub rule_id: String,
+    pub category: String,
+    pub surface: String,
+    pub base_form: String,
+    pub reading: String,
+    pub output_pos: PosTag,
+    pub morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+    pub head_morpheme: usize,
+    #[serde(default)]
+    pub captures: Vec<WordFormationCapture>,
+    pub confidence: u8,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WordFormationCapture {
+    pub name: String,
+    pub surface: String,
     pub morpheme_range: (usize, usize),
     pub char_range: (usize, usize),
 }

@@ -57,6 +57,7 @@ interface CompactBunsetsu {
   s: number;
   h: CompactHeadWord;
   g?: CompactGrammarTag[];
+  w?: CompactWordFormation[];
   c: [number, number];
 }
 
@@ -72,6 +73,8 @@ interface CompactMorpheme {
 
 interface CompactHeadWord { s: number; b: number; r: number; p: [number, number, number, number]; }
 interface CompactGrammarTag { i: number; j: number; e: number; l?: number; d: number; m: [number, number]; c: [number, number]; }
+interface CompactWordFormation { i: number; k: number; s: number; b: number; r: number; o: [number, number, number, number]; m: [number, number]; c: [number, number]; h: number; p?: CompactWordFormationCapture[]; q: number; }
+interface CompactWordFormationCapture { n: number; s: number; m: [number, number]; c: [number, number]; }
 interface CompactExpression { m: number; i: number; l: number; d: number; o: number; t: number; p: number; b: number; c: number; q: number; r: [number, number]; a: [number, number]; s: number; }
 
 /** 将热路径的字符串表 IPC 模型恢复为现有组件使用的 AnnotatedToken。 */
@@ -94,6 +97,14 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
       grammar_tags: (token.b.g ?? []).map((tag) => ({
         pattern_id: stringAt(tag.i), name_ja: stringAt(tag.j), name_en: stringAt(tag.e), jlpt_level: tag.l ?? null,
         description: stringAt(tag.d), morpheme_range: tag.m, char_range: tag.c,
+      })),
+      word_formations: (token.b.w ?? []).map((formation) => ({
+        rule_id: stringAt(formation.i), category: stringAt(formation.k), surface: stringAt(formation.s),
+        base_form: stringAt(formation.b), reading: stringAt(formation.r), output_pos: position(formation.o), morpheme_range: formation.m,
+        char_range: formation.c, head_morpheme: formation.h, confidence: formation.q,
+        captures: (formation.p ?? []).map((capture) => ({
+          name: stringAt(capture.n), surface: stringAt(capture.s), morpheme_range: capture.m, char_range: capture.c,
+        })),
       })),
       char_range: token.b.c,
     },
@@ -293,6 +304,7 @@ export function useTokenization() {
                     pos: { major: "改行", sub1: "*", sub2: "*", sub3: "*" }
                   },
                   grammar_tags: [],
+                  word_formations: [],
                   char_range: [0, 0]
                 },
                 novelty_score: 0,

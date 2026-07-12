@@ -1,4 +1,5 @@
-use crate::models::{Bunsetsu, GrammarTag, HeadWord, Morpheme};
+use crate::models::{Bunsetsu, GrammarTag, HeadWord, Morpheme, WordFormationAnnotation};
+use super::word_formation::AcceptedWordFormation;
 
 /// 判断形态素是否是自立语 (能够独立构成词意的词，如动词、名词、形容词等)
 fn is_jiritsugo(m: &Morpheme) -> bool {
@@ -21,13 +22,18 @@ fn is_punctuation(m: &Morpheme) -> bool {
 }
 
 /// 基于词性状态机，将形态素序列聚合成文节 (Bunsetsu) 列表，并在此阶段应用用户自定义合并规则
-pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsetsu> {
+pub fn chunk(
+    morphemes: &[Morpheme],
+    merge_rules: &[Vec<String>],
+    formations: &[AcceptedWordFormation],
+) -> Vec<Bunsetsu> {
     if morphemes.is_empty() {
         return Vec::new();
     }
 
     let mut bunsetsus = Vec::new();
     let mut current_morphemes: Vec<Morpheme> = Vec::new();
+    let mut current_formations: Vec<WordFormationAnnotation> = Vec::new();
     let mut i = 0;
     let n = morphemes.len();
 
@@ -54,8 +60,9 @@ pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsets
         if matched_rule_len > 0 {
             // 如果在匹配前，current_morphemes 中有暂存数据，先结算它们
             if !current_morphemes.is_empty() {
-                bunsetsus.push(build_bunsetsu(current_morphemes));
+                bunsetsus.push(build_bunsetsu_with_formations(current_morphemes, current_formations));
                 current_morphemes = Vec::new();
+                current_formations = Vec::new();
             }
 
             // 将匹配到的这组形态素强制聚合并输出为一个独立文节
@@ -67,6 +74,27 @@ pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsets
 
             // 跳转索引并继续
             i += matched_rule_len;
+            continue;
+        }
+
+        if let Some(formation) = formations.iter().find(|formation| formation.morpheme_range.0 == i) {
+            if !current_morphemes.is_empty() {
+                bunsetsus.push(build_bunsetsu_with_formations(current_morphemes, current_formations));
+                current_morphemes = Vec::new();
+                current_formations = Vec::new();
+            }
+            let start = formation.morpheme_range.0;
+            let end = formation.morpheme_range.1;
+            current_morphemes.extend_from_slice(&morphemes[start..end]);
+            let mut annotation = formation.annotation.clone();
+            annotation.morpheme_range = (0, end - start);
+            annotation.head_morpheme -= start;
+            for capture in &mut annotation.captures {
+                capture.morpheme_range.0 -= start;
+                capture.morpheme_range.1 -= start;
+            }
+            current_formations.push(annotation);
+            i = end;
             continue;
         }
 
@@ -86,8 +114,9 @@ pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsets
         let is_prev_prefix = current_morphemes[current_morphemes.len() - 1].pos.major == "接頭詞";
 
         if is_m_punc || is_prev_punc || (is_m_jiritsugo && !is_prev_prefix) {
-            bunsetsus.push(build_bunsetsu(current_morphemes));
+            bunsetsus.push(build_bunsetsu_with_formations(current_morphemes, current_formations));
             current_morphemes = Vec::new();
+            current_formations = Vec::new();
         }
 
         current_morphemes.push(m_clone);
@@ -95,7 +124,7 @@ pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsets
     }
 
     if !current_morphemes.is_empty() {
-        bunsetsus.push(build_bunsetsu(current_morphemes));
+        bunsetsus.push(build_bunsetsu_with_formations(current_morphemes, current_formations));
     }
 
     bunsetsus
@@ -103,6 +132,13 @@ pub fn chunk(morphemes: &[Morpheme], merge_rules: &[Vec<String>]) -> Vec<Bunsets
 
 /// 构造单个文节，并提取其核心自立语 (HeadWord) 与属性
 pub(crate) fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
+    build_bunsetsu_with_formations(morphemes, Vec::new())
+}
+
+pub(crate) fn build_bunsetsu_with_formations(
+    morphemes: Vec<Morpheme>,
+    word_formations: Vec<WordFormationAnnotation>,
+) -> Bunsetsu {
     // 拼接表层形
     let surface: String = morphemes.iter().map(|m| m.surface.as_str()).collect();
 
@@ -153,10 +189,19 @@ pub(crate) fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
         surface,
         head_word,
         grammar_tags: Vec::new(), // 在后续的语法匹配阶段填充
+        word_formations,
         char_range: (start, end),
     };
 
     bunsetsu.head_word.base_form = super::restore::restore_base_form(&bunsetsu);
+    if let Some(formation) = bunsetsu.word_formations.iter().find(|formation| {
+        formation.morpheme_range.0 <= head_index && head_index < formation.morpheme_range.1
+    }) {
+        bunsetsu.head_word.surface = formation.surface.clone();
+        bunsetsu.head_word.base_form = formation.base_form.clone();
+        bunsetsu.head_word.reading = formation.reading.clone();
+        bunsetsu.head_word.pos = formation.output_pos.clone();
+    }
     bunsetsu
 }
 
@@ -165,6 +210,9 @@ pub fn resolve_lexical_boundaries<F: Fn(&str) -> bool>(
     contains_exact: F,
 ) {
     for bunsetsu in bunsetsus {
+        if !bunsetsu.word_formations.is_empty() {
+            continue;
+        }
         let Some(head_index) = bunsetsu
             .morphemes
             .iter()

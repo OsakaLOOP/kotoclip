@@ -8,6 +8,9 @@
       "bunsetsu": ["冷やし神が", "座っている", "。"],
       "expressions": []
     },
+    "expected_stage_b": {
+      "word_formations": ["deity_by_godan_action"]
+    },
     "expected_target": {
       "bunsetsu": ["冷やし神が", "座って", "いる。"],
       "expressions": []
@@ -22,6 +25,9 @@
       "bunsetsu": ["歌い神の", "声が", "聞こえる", "。"],
       "expressions": []
     },
+    "expected_stage_b": {
+      "word_formations": ["deity_by_godan_action"]
+    },
     "expected_target": {
       "bunsetsu": ["歌い神の", "声が", "聞こえる。"],
       "expressions": []
@@ -35,6 +41,9 @@
     "expected_observed": {
       "bunsetsu": ["食べ放題に", "行く", "。"],
       "expressions": []
+    },
+    "expected_stage_b": {
+      "word_formations": ["renyou_houdai"]
     },
     "expected_target": {
       "bunsetsu": ["食べ放題に", "行く。"],
@@ -64,6 +73,10 @@
       "bunsetsu": ["部屋が", "煙草", "臭い", "。"],
       "expressions": []
     },
+    "expected_stage_b": {
+      "bunsetsu": ["部屋が", "煙草臭い", "。"],
+      "word_formations": ["noun_adjectival_suffix"]
+    },
     "expected_target": {
       "bunsetsu": ["部屋が", "煙草臭い。"],
       "expressions": []
@@ -77,6 +90,10 @@
     "expected_observed": {
       "bunsetsu": ["子供", "っぽい", "行動", "。"],
       "expressions": []
+    },
+    "expected_stage_b": {
+      "bunsetsu": ["子供っぽい", "行動", "。"],
+      "word_formations": ["noun_adjectival_suffix"]
     },
     "expected_target": {
       "bunsetsu": ["子供っぽい", "行動。"],
@@ -120,6 +137,9 @@
       "bunsetsu": ["第一話を", "読む", "。"],
       "expressions": []
     },
+    "expected_stage_b": {
+      "word_formations": ["ordinal_counter"]
+    },
     "expected_target": {
       "bunsetsu": ["第一話を", "読む。"],
       "expressions": []
@@ -134,6 +154,9 @@
       "bunsetsu": ["第二回", "大会", "。"],
       "expressions": []
     },
+    "expected_stage_b": {
+      "word_formations": ["ordinal_counter"]
+    },
     "expected_target": {
       "bunsetsu": ["第二回", "大会。"],
       "expressions": []
@@ -147,6 +170,10 @@
     "expected_observed": {
       "bunsetsu": ["本を", "数", "千冊", "集める", "。"],
       "expressions": []
+    },
+    "expected_stage_b": {
+      "bunsetsu": ["本を", "数千冊", "集める", "。"],
+      "word_formations": ["numeric_counter"]
     },
     "expected_target": {
       "bunsetsu": ["本を", "数千冊", "集める。"],

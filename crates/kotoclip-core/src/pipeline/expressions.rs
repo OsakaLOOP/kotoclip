@@ -79,6 +79,23 @@ pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<Annotated
                 .iter()
                 .flat_map(|token| token.bunsetsu.grammar_tags.clone())
                 .collect();
+            let mut word_formations = Vec::new();
+            let mut morpheme_offset = 0;
+            for token in &tokens[range.0..range.1] {
+                for formation in &token.bunsetsu.word_formations {
+                    let mut formation = formation.clone();
+                    formation.morpheme_range.0 += morpheme_offset;
+                    formation.morpheme_range.1 += morpheme_offset;
+                    formation.head_morpheme += morpheme_offset;
+                    for capture in &mut formation.captures {
+                        capture.morpheme_range.0 += morpheme_offset;
+                        capture.morpheme_range.1 += morpheme_offset;
+                    }
+                    word_formations.push(formation);
+                }
+                morpheme_offset += token.bunsetsu.morphemes.len();
+            }
+            merged.bunsetsu.word_formations = word_formations;
             if let Some(expression) = tokens[range.0..range.1]
                 .iter()
                 .flat_map(|token| &token.expressions)
@@ -930,6 +947,15 @@ mod tests {
         id: String,
         text: String,
         expected_observed: ExpectedObserved,
+        #[serde(default)]
+        expected_stage_b: Option<ExpectedStageB>,
+    }
+
+    #[derive(Deserialize)]
+    struct ExpectedStageB {
+        #[serde(default)]
+        bunsetsu: Option<Vec<String>>,
+        word_formations: Vec<String>,
     }
 
     #[test]
@@ -974,6 +1000,11 @@ mod tests {
             let tokens = apply_expression_boundaries(tokens);
 
             let actual_bunsetsu: Vec<String> = tokens.iter().map(|t| t.bunsetsu.surface.clone()).collect();
+            let mut actual_word_formations: Vec<String> = tokens
+                .iter()
+                .flat_map(|t| t.bunsetsu.word_formations.iter().map(|item| item.rule_id.clone()))
+                .collect();
+            actual_word_formations.sort();
             let mut actual_expressions: Vec<String> = tokens
                 .iter()
                 .flat_map(|t| t.expressions.iter().map(|exp| exp.label.clone()))
@@ -981,7 +1012,12 @@ mod tests {
             actual_expressions.sort();
             actual_expressions.dedup();
 
-            if case.expected_observed.bunsetsu.is_empty() {
+            if let Some(expected_stage_b) = &case.expected_stage_b {
+                if let Some(expected_bunsetsu) = &expected_stage_b.bunsetsu {
+                    assert_eq!(actual_bunsetsu, *expected_bunsetsu, "用例 {} 的阶段 B 文节切分不一致", case.id);
+                }
+                assert_eq!(actual_word_formations, expected_stage_b.word_formations, "用例 {} 的阶段 B 构词规则不一致", case.id);
+            } else if case.expected_observed.bunsetsu.is_empty() {
                 if !printed_placeholders {
                     println!("\n=== 代表性案例当前运行 Observed 输出 ===");
                     printed_placeholders = true;

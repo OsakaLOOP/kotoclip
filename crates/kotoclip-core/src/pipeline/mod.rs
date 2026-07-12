@@ -5,6 +5,7 @@ pub mod grammar;
 pub mod morpheme;
 pub mod restore;
 pub mod ruby;
+pub mod word_formation;
 
 use crate::analysis_progress::{AnalysisPhase, AnalysisProgress};
 use crate::models::AnnotatedToken;
@@ -17,6 +18,14 @@ use std::time::Instant;
 pub struct Pipeline {
     morpheme_analyzer: morpheme::MorphemeAnalyzer,
     grammar_matcher: grammar::GrammarMatcher,
+    word_formation_matcher: word_formation::WordFormationMatcher,
+}
+
+/// 构词审计专用输出；不写画像，也不运行表达层。
+pub struct WordFormationSegment {
+    pub char_range: (usize, usize),
+    pub morphemes: Vec<crate::models::Morpheme>,
+    pub result: word_formation::WordFormationMatchResult,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,15 +144,42 @@ impl Pipeline {
     pub fn new<P: AsRef<Path>>(dict_path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let morpheme_analyzer = morpheme::MorphemeAnalyzer::new(dict_path)?;
         let grammar_matcher = grammar::GrammarMatcher::new()?;
+        let word_formation_matcher = word_formation::WordFormationMatcher::new()?;
         Ok(Self {
             morpheme_analyzer,
             grammar_matcher,
+            word_formation_matcher,
         })
     }
 
     /// 执行完整的 NLP 管线：形態素解析 -> 文節组块 -> 语法匹配 -> 辞書形还原 (应用自定义合并规则)
     pub fn process(&self, text: &str, merge_rules: &[Vec<String>]) -> Vec<AnnotatedToken> {
         self.process_with_progress(text, merge_rules, &mut |_| {})
+    }
+
+    pub fn inspect_word_formations(&self, text: &str) -> Vec<WordFormationSegment> {
+        let prepared = ruby::prepare_text(text);
+        let prepared_chars: Vec<char> = prepared.text.chars().collect();
+        segment_text(&prepared_chars)
+            .into_iter()
+            .filter(|segment| segment.seg_type == SegmentType::Content)
+            .filter_map(|segment| {
+                let segment_text: String = prepared_chars[segment.start_char_idx..segment.end_char_idx].iter().collect();
+                if segment_text.is_empty() {
+                    return None;
+                }
+                let mut morphemes = self.morpheme_analyzer.analyze(&segment_text);
+                for morpheme in &mut morphemes {
+                    morpheme.char_range.0 += segment.start_char_idx;
+                    morpheme.char_range.1 += segment.start_char_idx;
+                }
+                Some(WordFormationSegment {
+                    char_range: (segment.start_char_idx, segment.end_char_idx),
+                    result: self.word_formation_matcher.match_morphemes(&morphemes),
+                    morphemes,
+                })
+            })
+            .collect()
     }
 
     pub fn nbest_candidates(
@@ -185,7 +221,13 @@ impl Pipeline {
                 morpheme.char_range.0 += offset;
                 morpheme.char_range.1 += offset;
             }
-            token.bunsetsu = bunsetsu::build_bunsetsu(morphemes);
+            let formations = self.word_formation_matcher.match_morphemes(&morphemes);
+            let annotations = formations
+                .accepted
+                .into_iter()
+                .map(|item| item.annotation)
+                .collect();
+            token.bunsetsu = bunsetsu::build_bunsetsu_with_formations(morphemes, annotations);
             self.grammar_matcher
                 .match_patterns(std::slice::from_mut(&mut token.bunsetsu));
         }
@@ -299,7 +341,8 @@ impl Pipeline {
                     }
 
                     let chunking_started = Instant::now();
-                    let bunsetsus = bunsetsu::chunk(&morphemes, merge_rules);
+                    let formations = self.word_formation_matcher.match_morphemes(&morphemes);
+                    let bunsetsus = bunsetsu::chunk(&morphemes, merge_rules, &formations.accepted);
                     let mut bunsetsus =
                         ruby::merge_annotated_bunsetsus(bunsetsus, segment_annotations);
                     ruby::override_bunsetsu_readings_with_chars(
@@ -375,6 +418,7 @@ impl Pipeline {
                             },
                         },
                         grammar_tags: Vec::new(),
+                        word_formations: Vec::new(),
                         char_range: (seg.start_char_idx, seg.end_char_idx),
                     };
 

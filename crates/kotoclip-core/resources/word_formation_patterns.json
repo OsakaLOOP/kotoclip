@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "id": "deity_by_godan_action",
+      "category": "action_deity",
+      "priority": 100,
+      "atoms": [
+        {
+          "pos": { "major": "動詞", "sub1": "自立" },
+          "conjugation_type_prefixes": ["五段"],
+          "conjugation_forms": ["連用形"],
+          "capture": "action",
+          "normalization": "surface"
+        },
+        {
+          "surfaces": ["神"],
+          "pos": { "major": "名詞" },
+          "capture": "class_name",
+          "normalization": "base_form"
+        }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 95
+      }
+    },
+    {
+      "id": "renyou_houdai",
+      "category": "verbal_nominal_suffix",
+      "priority": 90,
+      "atoms": [
+        {
+          "pos": { "major": "動詞", "sub1": "自立" },
+          "conjugation_forms": ["連用形"],
+          "capture": "action",
+          "normalization": "surface"
+        },
+        {
+          "surfaces": ["放題"],
+          "pos": { "major": "名詞", "sub1": "接尾" },
+          "capture": "suffix",
+          "normalization": "base_form"
+        }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 95
+      }
+    },
+    {
+      "id": "noun_adjectival_suffix",
+      "category": "derived_adjective",
+      "priority": 80,
+      "atoms": [
+        {
+          "pos": { "major": "名詞" },
+          "capture": "base",
+          "normalization": "surface"
+        },
+        {
+          "pos": { "major": "形容詞", "sub1": "接尾" },
+          "capture": "suffix",
+          "normalization": "base_form"
+        }
+      ],
+      "output": {
+        "pos": { "major": "形容詞", "sub1": "自立", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 90
+      }
+    },
+    {
+      "id": "ordinal_counter",
+      "category": "ordinal_counter",
+      "priority": 85,
+      "atoms": [
+        { "surfaces": ["第"], "pos": { "major": "接頭詞", "sub1": "数接続" } },
+        { "pos": { "major": "名詞", "sub1": "数" }, "min": 1, "max": 4, "capture": "number", "normalization": "surface" },
+        { "pos": { "major": "名詞", "sub1": "接尾", "sub2": "助数詞" }, "capture": "counter", "normalization": "base_form" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "数", "sub2": "*", "sub3": "*" },
+        "head_atom": 2,
+        "confidence": 95
+      }
+    },
+    {
+      "id": "numeric_counter",
+      "category": "numeric_counter",
+      "priority": 75,
+      "atoms": [
+        { "pos": { "major": "名詞", "sub1": "数" }, "min": 1, "max": 4, "capture": "number", "normalization": "surface" },
+        { "pos": { "major": "名詞", "sub1": "接尾", "sub2": "助数詞" }, "capture": "counter", "normalization": "base_form" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "数", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 95
+      }
+    }
+  ]
+}
