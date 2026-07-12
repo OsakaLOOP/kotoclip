@@ -153,6 +153,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "expression-preview" => expression_preview(&args),
         "expression-scan" => expression_scan(&args),
         "word-formation-scan" => word_formation_scan(&args),
+        "bunsetsu-scan" => bunsetsu_scan(&args),
         "expression-verify" => expression_verify(&args),
         "expression-add" => expression_add(&args),
         "expression-repl" => expression_repl(&args),
@@ -906,6 +907,29 @@ fn word_formation_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn bunsetsu_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    args.required("profile").map_err(io::Error::other)?;
+    let text = read_text_selection(args)?;
+    let pipeline = pipeline(args)?;
+    let include_alternatives = args.flags.contains("include-alternatives");
+    let mut reports = pipeline.inspect_bunsetsu(&text);
+    if !include_alternatives {
+        for report in &mut reports {
+            for boundary in &mut report.boundaries {
+                boundary.alternatives.clear();
+            }
+        }
+    }
+    let bunsetsu_count: usize = reports.iter().map(|report| report.bunsetsus.len()).sum();
+    let determined: usize = reports.iter().map(|report| report.boundaries.len()).sum();
+    let unresolved: usize = reports.iter().map(|report| report.unresolved_boundaries).sum();
+    if let Some(path) = args.options.get("json") {
+        std::fs::write(path, serde_json::to_string_pretty(&reports)?)?;
+    }
+    println!("文节审计：文节 {bunsetsu_count}，确定边界 {determined}，未决边界 {unresolved}。");
+    Ok(())
+}
+
 #[derive(Serialize)]
 struct VerifyItem {
     id: usize,
@@ -1433,6 +1457,8 @@ fn print_help() {
         [--chapter TITLE --page-lines N --page N] [--json PATH]
   word-formation-scan --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N] [--json PATH --include-rejected]
+  bunsetsu-scan --profile PATH (--text TEXT | --source PATH)
+        [--chapter TITLE --page-lines N --page N] [--json PATH --include-alternatives]
   expression-verify --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N] [--json PATH]
   expression-add --profile PATH (--text TEXT | --source PATH)

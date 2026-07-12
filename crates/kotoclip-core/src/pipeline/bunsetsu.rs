@@ -1,5 +1,48 @@
-use crate::models::{Bunsetsu, GrammarTag, HeadWord, Morpheme, WordFormationAnnotation};
+use crate::models::{
+    Bunsetsu, BunsetsuAnalysisReport, BunsetsuBoundaryDecision, BunsetsuFunction,
+    BunsetsuFunctionAnnotation, GrammarTag, HeadWord, Morpheme, WordFormationAnnotation,
+};
 use super::word_formation::AcceptedWordFormation;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct BunsetsuCatalog {
+    schema_version: u32,
+    weights: BoundaryWeights,
+    formal_nouns: Vec<String>,
+    relational_nouns: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct BoundaryWeights {
+    hard: i32,
+    structural: i32,
+    default_split: i32,
+    default_join: i32,
+}
+
+pub struct BunsetsuAnalyzer {
+    catalog: BunsetsuCatalog,
+}
+
+impl BunsetsuAnalyzer {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        let catalog: BunsetsuCatalog = serde_json::from_str(include_str!("../../resources/bunsetsu_patterns.json"))?;
+        if catalog.schema_version != 1 || catalog.weights.hard <= catalog.weights.structural {
+            return Err("文节规则目录版本或权重非法".into());
+        }
+        Ok(Self { catalog })
+    }
+
+    pub fn analyze(
+        &self,
+        morphemes: &[Morpheme],
+        merge_rules: &[Vec<String>],
+        formations: &[AcceptedWordFormation],
+    ) -> BunsetsuAnalysisReport {
+        analyze_with_catalog(morphemes, merge_rules, formations, &self.catalog)
+    }
+}
 
 /// 判断形态素是否是自立语 (能够独立构成词意的词，如动词、名词、形容词等)
 fn is_jiritsugo(m: &Morpheme) -> bool {
@@ -27,13 +70,29 @@ pub fn chunk(
     merge_rules: &[Vec<String>],
     formations: &[AcceptedWordFormation],
 ) -> Vec<Bunsetsu> {
+    BunsetsuAnalyzer::new()
+        .expect("内置文节规则必须有效")
+        .analyze(morphemes, merge_rules, formations)
+        .bunsetsus
+}
+
+fn analyze_with_catalog(
+    morphemes: &[Morpheme],
+    merge_rules: &[Vec<String>],
+    formations: &[AcceptedWordFormation],
+    catalog: &BunsetsuCatalog,
+) -> BunsetsuAnalysisReport {
     if morphemes.is_empty() {
-        return Vec::new();
+        return BunsetsuAnalysisReport {
+            bunsetsus: Vec::new(), boundaries: Vec::new(), unresolved_boundaries: 0,
+            reconstruction_ok: true, range_integrity_ok: true,
+        };
     }
 
     let mut bunsetsus = Vec::new();
     let mut current_morphemes: Vec<Morpheme> = Vec::new();
     let mut current_formations: Vec<WordFormationAnnotation> = Vec::new();
+    let mut boundaries = Vec::new();
     let mut i = 0;
     let n = morphemes.len();
 
@@ -86,6 +145,15 @@ pub fn chunk(
             let start = formation.morpheme_range.0;
             let end = formation.morpheme_range.1;
             current_morphemes.extend_from_slice(&morphemes[start..end]);
+            for boundary in start + 1..end {
+                boundaries.push(BunsetsuBoundaryDecision {
+                    morpheme_index: boundary,
+                    decision: "join".to_string(),
+                    score: catalog.weights.hard,
+                    evidence: vec!["word_formation_atomic".to_string()],
+                    alternatives: Vec::new(),
+                });
+            }
             let mut annotation = formation.annotation.clone();
             annotation.morpheme_range = (0, end - start);
             annotation.head_morpheme -= start;
@@ -113,7 +181,46 @@ pub fn chunk(
         let is_prev_punc = is_punctuation(&current_morphemes[current_morphemes.len() - 1]);
         let is_prev_prefix = current_morphemes[current_morphemes.len() - 1].pos.major == "接頭詞";
 
-        if is_m_punc || is_prev_punc || (is_m_jiritsugo && !is_prev_prefix) {
+        let previous = &current_morphemes[current_morphemes.len() - 1];
+        let current_has_predicate = current_morphemes.iter().any(|item| {
+            matches!(item.pos.major.as_str(), "動詞" | "形容詞" | "助動詞")
+        });
+        let is_formal_noun = catalog.formal_nouns.iter().any(|value| value == &m.base_form);
+        let is_relational_after_no = previous.base_form == "の"
+            && catalog.relational_nouns.iter().any(|value| value == &m.base_form);
+        let is_functional = matches!(m.pos.major.as_str(), "助詞" | "助動詞")
+            || m.pos.sub1 == "非自立" || m.pos.sub1 == "接尾";
+        let is_sahen_predicate = m.base_form == "する"
+            && current_morphemes.iter().rev().find(|item| item.pos.major != "記号")
+                .is_some_and(|item| item.pos.major == "名詞");
+        let formal_noun_predicate = m.base_form == "ない"
+            && current_morphemes.iter().any(|item| catalog.formal_nouns.iter().any(|value| value == &item.base_form));
+        let (split, score, evidence) = if is_m_punc || is_prev_punc {
+            (true, catalog.weights.hard, "hard_symbol_boundary")
+        } else if is_formal_noun && current_has_predicate {
+            (true, catalog.weights.structural, "formal_noun_starts_functional_bunsetsu")
+        } else if is_relational_after_no {
+            (true, catalog.weights.structural, "relational_noun_after_no")
+        } else if is_sahen_predicate {
+            (false, catalog.weights.structural, "nominal_predicate_with_suru")
+        } else if formal_noun_predicate {
+            (false, catalog.weights.structural, "formal_noun_negative_predicate")
+        } else if is_functional || is_prev_prefix {
+            (false, catalog.weights.structural, "functional_attachment")
+        } else if is_m_jiritsugo {
+            (true, catalog.weights.default_split, "new_independent_core")
+        } else {
+            (false, catalog.weights.default_join, "default_attachment")
+        };
+        boundaries.push(BunsetsuBoundaryDecision {
+            morpheme_index: i,
+            decision: if split { "split" } else { "join" }.to_string(),
+            score,
+            evidence: vec![evidence.to_string()],
+            alternatives: vec![if split { "join" } else { "split" }.to_string()],
+        });
+
+        if split {
             bunsetsus.push(build_bunsetsu_with_formations(current_morphemes, current_formations));
             current_morphemes = Vec::new();
             current_formations = Vec::new();
@@ -127,7 +234,50 @@ pub fn chunk(
         bunsetsus.push(build_bunsetsu_with_formations(current_morphemes, current_formations));
     }
 
-    bunsetsus
+    for bunsetsu in &mut bunsetsus {
+        bunsetsu.function = Some(infer_function(bunsetsu));
+    }
+    let reconstructed: String = bunsetsus.iter().map(|bunsetsu| bunsetsu.surface.as_str()).collect();
+    let expected: String = morphemes.iter().map(|morpheme| morpheme.surface.as_str()).collect();
+    let range_integrity_ok = bunsetsus.iter().all(|bunsetsu| {
+        bunsetsu.char_range.0 <= bunsetsu.char_range.1
+            && bunsetsu.morphemes.first().is_some_and(|item| item.char_range.0 == bunsetsu.char_range.0)
+            && bunsetsu.morphemes.last().is_some_and(|item| item.char_range.1 == bunsetsu.char_range.1)
+    });
+    BunsetsuAnalysisReport {
+        bunsetsus,
+        boundaries,
+        unresolved_boundaries: 0,
+        reconstruction_ok: reconstructed == expected,
+        range_integrity_ok,
+    }
+}
+
+fn infer_function(bunsetsu: &Bunsetsu) -> BunsetsuFunctionAnnotation {
+    let last = bunsetsu.morphemes.last();
+    let head = &bunsetsu.head_word.pos;
+    let (function, confidence, evidence) = if last.is_some_and(|item| item.pos.major == "助詞" && item.pos.sub1 == "格助詞") {
+        (BunsetsuFunction::CasePhrase, 90, "ends_with_case_particle")
+    } else if last.is_some_and(|item| item.base_form == "の" && item.pos.major == "助詞") {
+        (BunsetsuFunction::Adnominal, 85, "ends_with_adnominal_no")
+    } else if last.is_some_and(|item| item.pos.major == "助詞" && item.pos.sub1 == "接続助詞") {
+        (BunsetsuFunction::Conjunctive, 85, "ends_with_conjunctive_particle")
+    } else if matches!(head.major.as_str(), "動詞" | "形容詞")
+        || bunsetsu.morphemes.iter().any(|item| matches!(item.pos.major.as_str(), "動詞" | "形容詞" | "助動詞")) {
+        (BunsetsuFunction::Predicate, 90, "predicate_core")
+    } else if head.major == "副詞" {
+        (BunsetsuFunction::Adverbial, 85, "adverbial_core")
+    } else if head.major == "名詞" {
+        (BunsetsuFunction::Nominal, 75, "nominal_core")
+    } else {
+        (BunsetsuFunction::Unknown, 40, "insufficient_local_evidence")
+    };
+    BunsetsuFunctionAnnotation {
+        function,
+        confidence,
+        evidence: vec![evidence.to_string()],
+        syntax_evidence: Vec::new(),
+    }
 }
 
 /// 构造单个文节，并提取其核心自立语 (HeadWord) 与属性
@@ -190,6 +340,7 @@ pub(crate) fn build_bunsetsu_with_formations(
         head_word,
         grammar_tags: Vec::new(), // 在后续的语法匹配阶段填充
         word_formations,
+        function: None,
         char_range: (start, end),
     };
 

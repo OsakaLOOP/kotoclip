@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "weights": {
+    "hard": 1000,
+    "structural": 200,
+    "default_split": 80,
+    "default_join": 40
+  },
+  "formal_nouns": ["こと", "もの", "ところ", "わけ", "ため", "はず", "つもり"],
+  "relational_nouns": ["中", "上", "下", "前", "後", "ため"]
+}

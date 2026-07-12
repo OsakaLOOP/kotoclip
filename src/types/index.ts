@@ -3,8 +3,10 @@ export interface PosTag { major: string; sub1: string; sub2: string; sub3: strin
 export interface GrammarTag { pattern_id: string; name_ja: string; name_en: string; jlpt_level: number | null; description: string; morpheme_range: [number, number]; char_range: [number, number]; }
 export interface WordFormationCapture { name: string; surface: string; morpheme_range: [number, number]; char_range: [number, number]; }
 export interface WordFormationAnnotation { rule_id: string; category: string; surface: string; base_form: string; reading: string; output_pos: PosTag; morpheme_range: [number, number]; char_range: [number, number]; head_morpheme: number; captures: WordFormationCapture[]; confidence: number; }
+export type BunsetsuFunction = "predicate" | "case_phrase" | "adnominal" | "adverbial" | "conjunctive" | "nominal" | "standalone" | "unknown";
+export interface BunsetsuFunctionAnnotation { function: BunsetsuFunction; confidence: number; evidence: string[]; syntax_evidence: string[]; }
 export interface HeadWord { surface: string; base_form: string; reading: string; pos: PosTag; }
-export interface Bunsetsu { morphemes: Morpheme[]; surface: string; head_word: HeadWord; grammar_tags: GrammarTag[]; word_formations: WordFormationAnnotation[]; char_range: [number, number]; }
+export interface Bunsetsu { morphemes: Morpheme[]; surface: string; head_word: HeadWord; grammar_tags: GrammarTag[]; word_formations: WordFormationAnnotation[]; function?: BunsetsuFunctionAnnotation | null; char_range: [number, number]; }
 export type ExpressionType = "lexical_unit" | "idiom" | "grammar_construction" | "correlative";
 export type ExpressionBoundaryEffect = "merge_lexical_unit" | "regroup_bunsetsu" | "annotate_only";
 export interface ExpressionPatternPart { lemmas: string[]; pos: string[]; pos_details: PosTag[]; conjugation_types: string[]; conjugation_forms: string[]; surface_hint: string; is_slot: boolean; alignment?: "full" | "suffix" | "prefix"; is_any?: boolean; }

@@ -6,7 +6,7 @@
 
 use crate::models::{
     AnnotatedToken, Bunsetsu, ExpressionAnnotation, GrammarTag, HeadWord, Morpheme, PosTag,
-    WordFormationAnnotation, WordFormationCapture,
+    BunsetsuFunctionAnnotation, WordFormationAnnotation, WordFormationCapture,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -38,6 +38,8 @@ pub struct CompactBunsetsu {
     pub g: Vec<CompactGrammarTag>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub w: Vec<CompactWordFormation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub u: Option<CompactBunsetsuFunction>,
     pub c: (usize, usize),
 }
 
@@ -94,6 +96,13 @@ pub struct CompactWordFormationCapture {
     pub s: u32,
     pub m: (usize, usize),
     pub c: (usize, usize),
+}
+
+#[derive(Serialize)]
+pub struct CompactBunsetsuFunction {
+    pub f: u32,
+    pub c: u8,
+    pub e: Vec<u32>,
 }
 
 #[derive(Serialize)]
@@ -197,6 +206,23 @@ impl StringTable {
         }
     }
 
+    fn bunsetsu_function(&mut self, value: &BunsetsuFunctionAnnotation) -> CompactBunsetsuFunction {
+        CompactBunsetsuFunction {
+            f: self.intern(match value.function {
+                crate::models::BunsetsuFunction::Predicate => "predicate",
+                crate::models::BunsetsuFunction::CasePhrase => "case_phrase",
+                crate::models::BunsetsuFunction::Adnominal => "adnominal",
+                crate::models::BunsetsuFunction::Adverbial => "adverbial",
+                crate::models::BunsetsuFunction::Conjunctive => "conjunctive",
+                crate::models::BunsetsuFunction::Nominal => "nominal",
+                crate::models::BunsetsuFunction::Standalone => "standalone",
+                crate::models::BunsetsuFunction::Unknown => "unknown",
+            }),
+            c: value.confidence,
+            e: value.evidence.iter().map(|item| self.intern(item)).collect(),
+        }
+    }
+
     fn bunsetsu(&mut self, value: &Bunsetsu) -> CompactBunsetsu {
         CompactBunsetsu {
             m: value
@@ -212,6 +238,7 @@ impl StringTable {
                 .map(|item| self.grammar_tag(item))
                 .collect(),
             w: value.word_formations.iter().map(|item| self.word_formation(item)).collect(),
+            u: value.function.as_ref().map(|item| self.bunsetsu_function(item)),
             c: value.char_range,
         }
     }
@@ -291,6 +318,7 @@ mod tests {
                 },
                 grammar_tags: Vec::new(),
                 word_formations: Vec::new(),
+                function: None,
                 char_range: (0, 1),
             },
             novelty_score: 1.0,

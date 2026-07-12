@@ -33,7 +33,50 @@ pub struct Bunsetsu {
     pub grammar_tags: Vec<GrammarTag>,
     #[serde(default)]
     pub word_formations: Vec<WordFormationAnnotation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub function: Option<BunsetsuFunctionAnnotation>,
     pub char_range: (usize, usize),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum BunsetsuFunction {
+    Predicate,
+    CasePhrase,
+    Adnominal,
+    Adverbial,
+    Conjunctive,
+    Nominal,
+    Standalone,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BunsetsuFunctionAnnotation {
+    pub function: BunsetsuFunction,
+    pub confidence: u8,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub syntax_evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BunsetsuBoundaryDecision {
+    pub morpheme_index: usize,
+    pub decision: String,
+    pub score: i32,
+    pub evidence: Vec<String>,
+    pub alternatives: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BunsetsuAnalysisReport {
+    pub bunsetsus: Vec<Bunsetsu>,
+    pub boundaries: Vec<BunsetsuBoundaryDecision>,
+    pub unresolved_boundaries: usize,
+    pub reconstruction_ok: bool,
+    pub range_integrity_ok: bool,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HeadWord {

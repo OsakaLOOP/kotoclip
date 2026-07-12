@@ -949,6 +949,8 @@ mod tests {
         expected_observed: ExpectedObserved,
         #[serde(default)]
         expected_stage_b: Option<ExpectedStageB>,
+        #[serde(default)]
+        expected_stage_c: Option<ExpectedStageC>,
     }
 
     #[derive(Deserialize)]
@@ -956,6 +958,13 @@ mod tests {
         #[serde(default)]
         bunsetsu: Option<Vec<String>>,
         word_formations: Vec<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct ExpectedStageC {
+        bunsetsu: Vec<String>,
+        #[serde(default)]
+        functions: Vec<String>,
     }
 
     #[test]
@@ -1011,6 +1020,26 @@ mod tests {
                 .collect();
             actual_expressions.sort();
             actual_expressions.dedup();
+
+            if let Some(expected_stage_c) = &case.expected_stage_c {
+                assert_eq!(actual_bunsetsu, expected_stage_c.bunsetsu, "用例 {} 的阶段 C 文节切分不一致", case.id);
+                if !expected_stage_c.functions.is_empty() {
+                    let actual_functions: Vec<String> = tokens.iter().filter(|token| token.display_class == "content").map(|token| {
+                        token.bunsetsu.function.as_ref().map_or("unknown", |annotation| match annotation.function {
+                            crate::models::BunsetsuFunction::Predicate => "predicate",
+                            crate::models::BunsetsuFunction::CasePhrase => "case_phrase",
+                            crate::models::BunsetsuFunction::Adnominal => "adnominal",
+                            crate::models::BunsetsuFunction::Adverbial => "adverbial",
+                            crate::models::BunsetsuFunction::Conjunctive => "conjunctive",
+                            crate::models::BunsetsuFunction::Nominal => "nominal",
+                            crate::models::BunsetsuFunction::Standalone => "standalone",
+                            crate::models::BunsetsuFunction::Unknown => "unknown",
+                        }).to_string()
+                    }).collect();
+                    assert_eq!(actual_functions, expected_stage_c.functions, "用例 {} 的阶段 C 功能标签不一致", case.id);
+                }
+                continue;
+            }
 
             if let Some(expected_stage_b) = &case.expected_stage_b {
                 if let Some(expected_bunsetsu) = &expected_stage_b.bunsetsu {

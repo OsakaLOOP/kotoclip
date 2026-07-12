@@ -367,6 +367,7 @@ pub fn merge_annotated_bunsetsus(
             },
             grammar_tags: Vec::new(),
             word_formations,
+            function: None,
             char_range: annotation.char_range,
         };
         bunsetsus.splice(start..=end, [merged]);

@@ -87,6 +87,7 @@ mod tests {
                 },
                 grammar_tags: Vec::new(),
                 word_formations: Vec::new(),
+                function: None,
                 char_range: (0, 3),
             },
             novelty_score: 0.8,

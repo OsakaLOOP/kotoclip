@@ -58,6 +58,7 @@ interface CompactBunsetsu {
   h: CompactHeadWord;
   g?: CompactGrammarTag[];
   w?: CompactWordFormation[];
+  u?: CompactBunsetsuFunction;
   c: [number, number];
 }
 
@@ -75,6 +76,7 @@ interface CompactHeadWord { s: number; b: number; r: number; p: [number, number,
 interface CompactGrammarTag { i: number; j: number; e: number; l?: number; d: number; m: [number, number]; c: [number, number]; }
 interface CompactWordFormation { i: number; k: number; s: number; b: number; r: number; o: [number, number, number, number]; m: [number, number]; c: [number, number]; h: number; p?: CompactWordFormationCapture[]; q: number; }
 interface CompactWordFormationCapture { n: number; s: number; m: [number, number]; c: [number, number]; }
+interface CompactBunsetsuFunction { f: number; c: number; e: number[]; }
 interface CompactExpression { m: number; i: number; l: number; d: number; o: number; t: number; p: number; b: number; c: number; q: number; r: [number, number]; a: [number, number]; s: number; }
 
 /** 将热路径的字符串表 IPC 模型恢复为现有组件使用的 AnnotatedToken。 */
@@ -106,6 +108,12 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
           name: stringAt(capture.n), surface: stringAt(capture.s), morpheme_range: capture.m, char_range: capture.c,
         })),
       })),
+      function: token.b.u === undefined ? null : {
+        function: stringAt(token.b.u.f) as import("../types").BunsetsuFunction,
+        confidence: token.b.u.c,
+        evidence: token.b.u.e.map(stringAt),
+        syntax_evidence: [],
+      },
       char_range: token.b.c,
     },
     novelty_score: token.n,

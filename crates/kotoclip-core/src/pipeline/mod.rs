@@ -19,6 +19,7 @@ pub struct Pipeline {
     morpheme_analyzer: morpheme::MorphemeAnalyzer,
     grammar_matcher: grammar::GrammarMatcher,
     word_formation_matcher: word_formation::WordFormationMatcher,
+    bunsetsu_analyzer: bunsetsu::BunsetsuAnalyzer,
 }
 
 /// 构词审计专用输出；不写画像，也不运行表达层。
@@ -145,10 +146,12 @@ impl Pipeline {
         let morpheme_analyzer = morpheme::MorphemeAnalyzer::new(dict_path)?;
         let grammar_matcher = grammar::GrammarMatcher::new()?;
         let word_formation_matcher = word_formation::WordFormationMatcher::new()?;
+        let bunsetsu_analyzer = bunsetsu::BunsetsuAnalyzer::new()?;
         Ok(Self {
             morpheme_analyzer,
             grammar_matcher,
             word_formation_matcher,
+            bunsetsu_analyzer,
         })
     }
 
@@ -178,6 +181,26 @@ impl Pipeline {
                     result: self.word_formation_matcher.match_morphemes(&morphemes),
                     morphemes,
                 })
+            })
+            .collect()
+    }
+
+    pub fn inspect_bunsetsu(&self, text: &str) -> Vec<crate::models::BunsetsuAnalysisReport> {
+        let prepared = ruby::prepare_text(text);
+        let prepared_chars: Vec<char> = prepared.text.chars().collect();
+        segment_text(&prepared_chars)
+            .into_iter()
+            .filter(|segment| segment.seg_type == SegmentType::Content)
+            .filter_map(|segment| {
+                let segment_text: String = prepared_chars[segment.start_char_idx..segment.end_char_idx].iter().collect();
+                if segment_text.is_empty() { return None; }
+                let mut morphemes = self.morpheme_analyzer.analyze(&segment_text);
+                for morpheme in &mut morphemes {
+                    morpheme.char_range.0 += segment.start_char_idx;
+                    morpheme.char_range.1 += segment.start_char_idx;
+                }
+                let formations = self.word_formation_matcher.match_morphemes(&morphemes);
+                Some(self.bunsetsu_analyzer.analyze(&morphemes, &[], &formations.accepted))
             })
             .collect()
     }
@@ -342,7 +365,10 @@ impl Pipeline {
 
                     let chunking_started = Instant::now();
                     let formations = self.word_formation_matcher.match_morphemes(&morphemes);
-                    let bunsetsus = bunsetsu::chunk(&morphemes, merge_rules, &formations.accepted);
+                    let bunsetsus = self
+                        .bunsetsu_analyzer
+                        .analyze(&morphemes, merge_rules, &formations.accepted)
+                        .bunsetsus;
                     let mut bunsetsus =
                         ruby::merge_annotated_bunsetsus(bunsetsus, segment_annotations);
                     ruby::override_bunsetsu_readings_with_chars(
@@ -419,6 +445,7 @@ impl Pipeline {
                         },
                         grammar_tags: Vec::new(),
                         word_formations: Vec::new(),
+                        function: None,
                         char_range: (seg.start_char_idx, seg.end_char_idx),
                     };
 
