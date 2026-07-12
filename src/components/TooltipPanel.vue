@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { AnnotatedToken, DictEntry, DictionaryLink, DictionaryLookup } from "../types";
+import { computed, ref, watch } from "vue";
+import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
+import DictionaryChoiceBar from "./dictionary/DictionaryChoiceBar.vue";
+import LoadingSkeleton from "./common/LoadingSkeleton.vue";
 
 const props = defineProps<{
   show: boolean;
@@ -28,10 +30,46 @@ const formattedPos = computed(() => {
   return [head.pos.major, head.pos.sub1].filter((part) => part && part !== "*").join(" · ");
 });
 
+function normalizeReading(value: string | null | undefined) {
+  return Array.from(value ?? "").map((character) =>
+    character >= "ぁ" && character <= "ゖ"
+      ? String.fromCharCode(character.charCodeAt(0) + 0x60)
+      : character,
+  ).join("");
+}
+
+const readingChoices = computed(() => {
+  const choices = new Map<string, { label: string; preferred: boolean }>();
+  for (const entry of props.lookup?.entries ?? []) {
+    if (!entry.reading) continue;
+    const key = normalizeReading(entry.reading);
+    const existing = choices.get(key);
+    choices.set(key, { label: existing?.label ?? entry.reading, preferred: Boolean(existing?.preferred || entry.is_preferred) });
+  }
+  return [...choices.entries()].map(([key, value]) => ({ key, ...value }));
+});
+
+const selectedReadingKey = ref<string | null>(null);
+watch(
+  () => props.lookup,
+  () => {
+    const choices = readingChoices.value;
+    const preferred = choices.find((choice) => choice.preferred)?.key;
+    const requested = normalizeReading(props.lookup?.reading);
+    selectedReadingKey.value = preferred ?? choices.find((choice) => choice.key === requested)?.key ?? choices[0]?.key ?? null;
+  },
+  { immediate: true },
+);
+
+const visibleEntries = computed(() => {
+  if (readingChoices.value.length <= 1 || !selectedReadingKey.value) return props.lookup?.entries ?? [];
+  return (props.lookup?.entries ?? []).filter((entry) => normalizeReading(entry.reading) === selectedReadingKey.value);
+});
+
 const dictionaryGroups = computed(() => {
   const groups = new Map<string, NonNullable<typeof props.lookup>["entries"]>();
   const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
-  for (const entry of props.lookup?.entries ?? []) {
+  for (const entry of visibleEntries.value) {
     const hasManagedRelation = entry.links.some((link) => !candidateTargets.has(link.target));
     if (!entry.content_blocks.length && !hasManagedRelation) continue;
     const group = groups.get(entry.dict_name) ?? [];
@@ -41,9 +79,11 @@ const dictionaryGroups = computed(() => {
   return [...groups.entries()].map(([name, entries]) => ({ name, entries }));
 });
 
+const activeEntry = computed(() => visibleEntries.value.find((entry) => entry.is_preferred) ?? visibleEntries.value[0]);
+
 const activeHeadword = computed(() =>
   props.lookup?.selected_target
-  ?? props.lookup?.entries[0]?.headword
+  ?? activeEntry.value?.headword
   ?? props.lookup?.query
   ?? props.token?.bunsetsu.head_word.base_form
   ?? "",
@@ -54,8 +94,7 @@ const isSourceQuery = computed(() =>
 );
 
 const activeReading = computed(() => {
-  const preferred = props.lookup?.entries.find((entry) => entry.is_preferred)?.reading;
-  if (preferred) return preferred;
+  if (activeEntry.value?.reading) return activeEntry.value.reading;
   if (props.lookup?.reading) return props.lookup.reading;
   return isSourceQuery.value ? props.token?.bunsetsu.head_word.reading : null;
 });
@@ -74,6 +113,24 @@ function candidateLabel(candidate: DictionaryLink) {
   const match = candidate.target.match(/[【〖（](.*?)[】〗）]$/u);
   return match?.[1] || candidate.label || candidate.target;
 }
+
+const candidateOptions = computed<DictionaryChoiceOption[]>(() =>
+  (props.lookup?.candidates ?? []).map((candidate) => ({
+    key: candidate.target,
+    label: candidateLabel(candidate),
+    active: props.lookup?.selected_target === candidate.target,
+  })),
+);
+
+const readingOptions = computed<DictionaryChoiceOption[]>(() =>
+  readingChoices.value.map((choice) => ({
+    key: choice.key,
+    label: choice.label,
+    active: selectedReadingKey.value === choice.key,
+    preferred: choice.preferred,
+    title: choice.preferred ? "与正文读音匹配" : "其他收录读音",
+  })),
+);
 
 function managedLinkGroups(entry: DictEntry) {
   const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
@@ -126,30 +183,31 @@ function handleDefinitionClick(event: MouseEvent) {
         </div>
       </div>
 
-      <details v-if="lookup?.candidates.length" class="tooltip-section candidate-section" :open="lookup.candidates.length <= 8">
-        <summary><span class="section-title">表记候选</span><span>{{ lookup.candidates.length }} 项</span></summary>
-        <div class="candidate-list">
-          <button
-            v-for="candidate in lookup.candidates"
-            :key="candidate.target"
-            type="button"
-            :class="{ active: lookup.selected_target === candidate.target }"
-            @click="emit('select', candidate.target)"
-          >{{ candidateLabel(candidate) }}</button>
-        </div>
-      </details>
+      <DictionaryChoiceBar
+        v-if="candidateOptions.length"
+        label="表记"
+        :options="candidateOptions"
+        @select="emit('select', $event)"
+      />
+
+      <DictionaryChoiceBar
+        v-if="readingOptions.length > 1"
+        label="读音"
+        :options="readingOptions"
+        @select="selectedReadingKey = $event"
+      />
 
       <div v-if="loading || dictionaryGroups.length || !lookup?.candidates.length" class="tooltip-section definitions" @click="handleDefinitionClick">
-        <div class="section-title">词典释义</div>
-        <div v-if="loading" class="empty-state">正在载入释义…</div>
+        <div v-if="!loading" class="section-title">词典释义</div>
+        <LoadingSkeleton v-if="loading" variant="dictionary" />
         <div v-else-if="!dictionaryGroups.length" class="empty-state">暂无本地词典释义</div>
         <section v-for="group in dictionaryGroups" :key="group.name" class="dictionary-group">
           <h3>{{ group.name }}</h3>
-          <details v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry" :open="entry.is_preferred || (!group.entries.some(item => item.is_preferred) && entryIndex === 0)">
-            <summary class="entry-meta">
-              <strong><span v-if="entry.is_preferred" class="preferred-mark" title="读音匹配">★</span>{{ entry.headword }}</strong>
-              <span>{{ entry.reading || (group.entries.length > 1 ? `词条 ${entryIndex + 1}` : entry.match_type) }}</span>
-            </summary>
+          <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
+            <div class="entry-meta">
+              <strong><span v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" title="读音匹配">★</span>{{ entry.headword }}</strong>
+              <span v-if="group.entries.length > 1">释义 {{ entryIndex + 1 }}</span>
+            </div>
             <div class="entry-body">
               <DictionaryContent :entry="entry" />
             <div v-if="managedLinkGroups(entry).length" class="managed-relations">
@@ -161,7 +219,7 @@ function handleDefinitionClick(event: MouseEvent) {
               </details>
             </div>
             </div>
-          </details>
+          </article>
         </section>
       </div>
     </section>
@@ -172,7 +230,7 @@ function handleDefinitionClick(event: MouseEvent) {
 .tooltip-panel { position: fixed; z-index: 1000; width: min(460px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
 .tooltip-above { transform: translate(-50%, -100%) translateY(-8px); }
 .tooltip-below { transform: translate(-50%, 8px); }
-.tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: baseline; padding: 10px 0 8px; background: var(--glass-bg); }
+.tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: baseline; margin: -14px -14px 6px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 76%, transparent 100%); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent); backdrop-filter: blur(18px); }
 .headword-block { flex: 1; min-width: 0; }
 .back-button { flex: 0 0 28px; padding: 0; font-size: 1.35rem; line-height: 26px; }
 .base-form { color: var(--accent-color); font-size: 1.25rem; font-weight: 700; }
@@ -182,17 +240,13 @@ function handleDefinitionClick(event: MouseEvent) {
 .grammar-desc { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
 .grammar-desc strong { color: var(--novelty-high-text); }
 .grammar-desc span { color: var(--text-secondary); }
-.candidate-section summary { display: flex; justify-content: space-between; cursor: pointer; color: var(--text-muted); font: .75rem var(--font-ui); }
-.candidate-section summary .section-title { margin: 0; }
-.candidate-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; max-height: 180px; overflow: auto; margin-top: 8px; padding-right: 3px; }
 .relation-list { display: flex; flex-wrap: wrap; gap: 6px; }
 button { border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 9px; background: var(--bg-card); color: var(--accent-color); cursor: pointer; }
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 .dictionary-entry + .dictionary-entry { border-top: 1px dashed var(--border-color); margin-top: 12px; padding-top: 12px; }
 .dictionary-group + .dictionary-group { margin-top: 14px; }
-.dictionary-group > h3 { position: sticky; top: 45px; z-index: 1; margin: 0 -4px 8px; padding: 4px; background: var(--glass-bg); color: var(--text-muted); font: 700 .72rem var(--font-ui); }
+.dictionary-group > h3 { position: sticky; top: 49px; z-index: 2; display: flex; width: max-content; max-width: calc(100% - 12px); margin: 0 0 10px 2px; padding: 4px 10px; border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--bg-primary) 84%, transparent); box-shadow: 0 3px 10px color-mix(in srgb, var(--text-primary) 7%, transparent); backdrop-filter: blur(14px); color: var(--text-muted); font: 700 .72rem var(--font-ui); }
 .entry-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
-.entry-meta { cursor: pointer; }
 .entry-body { padding-top: 3px; }
 .entry-meta span, .empty-state { color: var(--text-muted); font: .75rem var(--font-ui); }
 .entry-meta .preferred-mark { margin-right: 4px; color: var(--accent-color); }
