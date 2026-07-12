@@ -151,6 +151,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "expression-list" => expression_list(&args),
         "expression-preview" => expression_preview(&args),
         "expression-scan" => expression_scan(&args),
+        "expression-verify" => expression_verify(&args),
         "expression-add" => expression_add(&args),
         "expression-repl" => expression_repl(&args),
         "repl" => repl(&args),
@@ -774,6 +775,264 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[derive(Serialize)]
+struct VerifyItem {
+    id: usize,
+    match_id: String,
+    label: String,
+    origin: String,
+    description: String,
+    surface: String,
+    token_range: (usize, usize),
+    char_range: (usize, usize),
+    context: String,
+    decision: VerifyDecision,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Serialize)]
+enum VerifyDecision {
+    Pending,
+    Verified,
+    Incorrect,
+}
+
+fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let engine = engine(args)?;
+    let tokens = engine.analyze_text_with_exposure(&text, false)?;
+
+    let mut items = Vec::new();
+    let mut seen = HashSet::new();
+
+    for token in &tokens {
+        for expression in &token.expressions {
+            if expression.position == "start" && seen.insert(expression.match_id.clone()) {
+                let context_start = expression.token_range.0.saturating_sub(6);
+                let context_end = (expression.token_range.1 + 6).min(tokens.len());
+                let left_context: String = tokens[context_start..expression.token_range.0]
+                    .iter()
+                    .map(|t| t.bunsetsu.surface.as_str())
+                    .collect();
+                let match_surface: String = tokens[expression.token_range.0..expression.token_range.1]
+                    .iter()
+                    .map(|t| t.bunsetsu.surface.as_str())
+                    .collect();
+                let right_context: String = tokens[expression.token_range.1..context_end]
+                    .iter()
+                    .map(|t| t.bunsetsu.surface.as_str())
+                    .collect();
+                let context = format!(
+                    "{}【{}】{}",
+                    left_context.replace('\n', " "),
+                    match_surface,
+                    right_context.replace('\n', " ")
+                );
+
+                items.push(VerifyItem {
+                    id: 0,
+                    match_id: expression.match_id.clone(),
+                    label: expression.label.clone(),
+                    origin: expression.origin.clone(),
+                    description: expression.description.clone(),
+                    surface: expression.surface.clone(),
+                    token_range: expression.token_range,
+                    char_range: expression.char_range,
+                    context,
+                    decision: VerifyDecision::Pending,
+                });
+            }
+        }
+    }
+
+    // Sort items by token range start index to process sequentially
+    items.sort_by_key(|item| item.token_range.0);
+
+    for (idx, item) in items.iter_mut().enumerate() {
+        item.id = idx + 1;
+    }
+
+    if items.is_empty() {
+        println!("未检测到任何跨文节聚合项目。");
+        return Ok(());
+    }
+
+    let page_size = 5;
+    let total_pages = (items.len() + page_size - 1) / page_size;
+    let mut current_page = 0;
+
+    println!("开始交互式跨文节聚合项目验证。总共 {} 个项目，共 {} 页。", items.len(), total_pages);
+    println!("输入指令：");
+    println!("  y / all y     一键确认当前页所有待验证项为 Verified");
+    println!("  <id> y        确认指定序号的项目为 Verified");
+    println!("  <id> n        标记指定序号的项目为 Incorrect (分词/范围有误)");
+    println!("  <id> d        查看指定序号项目的底层分词与文节详情");
+    println!("  n / next      下一页");
+    println!("  p / prev      上一页");
+    println!("  q / quit      结束验证并保存报告");
+
+    loop {
+        let start_idx = current_page * page_size;
+        let end_idx = (start_idx + page_size).min(items.len());
+
+        println!("\n=== 第 {} / {} 页 ===", current_page + 1, total_pages);
+        for item in &items[start_idx..end_idx] {
+            let status_str = match item.decision {
+                VerifyDecision::Pending => "\x1b[33m[Pending]\x1b[0m",
+                VerifyDecision::Verified => "\x1b[32m[Verified]\x1b[0m",
+                VerifyDecision::Incorrect => "\x1b[31m[Incorrect]\x1b[0m",
+            };
+            println!(
+                "[{}] {} {} ({}) - {}\n    上下文: {}",
+                item.id, status_str, item.label, item.origin, item.description, item.context
+            );
+        }
+
+        print!("\n(y/all y/n/p/q/<id> y/n/d) verify> ");
+        io::stdout().flush()?;
+        let mut line = String::new();
+        if io::stdin().read_line(&mut line)? == 0 {
+            break;
+        }
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        if line == "q" || line == "quit" {
+            break;
+        } else if line == "n" || line == "next" {
+            if current_page + 1 < total_pages {
+                current_page += 1;
+            } else {
+                println!("已经是最后一页。");
+            }
+        } else if line == "p" || line == "prev" {
+            if current_page > 0 {
+                current_page -= 1;
+            } else {
+                println!("已经是第一页。");
+            }
+        } else if line == "y" || line == "all y" {
+            for item in &mut items[start_idx..end_idx] {
+                if item.decision == VerifyDecision::Pending {
+                    item.decision = VerifyDecision::Verified;
+                }
+            }
+            println!("已将当前页所有待验证项标记为 Verified。");
+            if current_page + 1 < total_pages {
+                current_page += 1;
+            }
+        } else {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() == 2 {
+                if let Ok(id) = parts[0].parse::<usize>() {
+                    if id > 0 && id <= items.len() {
+                        let op = parts[1];
+                        let item_idx = id - 1;
+                        match op {
+                            "y" => {
+                                items[item_idx].decision = VerifyDecision::Verified;
+                                println!("已标记项目 [{}] 为 Verified。", id);
+                            }
+                            "n" => {
+                                items[item_idx].decision = VerifyDecision::Incorrect;
+                                println!("已标记项目 [{}] 为 Incorrect。", id);
+                            }
+                            "d" => {
+                                let item = &items[item_idx];
+                                println!("\n--------------------------------------------------------------------------------");
+                                println!("底层分词与文节结构 (项目 [{}]):", item.id);
+                                for token_idx in item.token_range.0..item.token_range.1 {
+                                    let token = &tokens[token_idx];
+                                    println!("  文节 [{}] (表层: {}):", token_idx, token.bunsetsu.surface);
+                                    for (m_idx, morpheme) in token.bunsetsu.morphemes.iter().enumerate() {
+                                        println!(
+                                            "    语素 [{}] '{}' (原形: '{}', 词性: {}-{}-{}-{})",
+                                            m_idx,
+                                            morpheme.surface,
+                                            morpheme.base_form,
+                                            morpheme.pos.major,
+                                            morpheme.pos.sub1,
+                                            morpheme.pos.sub2,
+                                            morpheme.pos.sub3
+                                        );
+                                    }
+                                }
+                                println!("--------------------------------------------------------------------------------");
+                            }
+                            _ => {
+                                println!("未知操作。请输入 y, n 或 d。例如：1 d");
+                            }
+                        }
+                    } else {
+                        println!("项目序号 {} 超出范围 (1..={})", id, items.len());
+                    }
+                } else {
+                    println!("无法解析序号。请输入类似 1 y 或 1 d 的指令。");
+                }
+            } else {
+                println!("无法识别指令。请输入 y, all y, next, prev, quit 或 <id> y/n/d");
+            }
+        }
+    }
+
+    let total = items.len();
+    let verified = items.iter().filter(|i| i.decision == VerifyDecision::Verified).count();
+    let incorrect = items.iter().filter(|i| i.decision == VerifyDecision::Incorrect).count();
+    let pending = items.iter().filter(|i| i.decision == VerifyDecision::Pending).count();
+    let pass_rate = if total - pending > 0 {
+        (verified as f64) / ((total - pending) as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    println!("\n================================================================================");
+    println!("验证报告总结:");
+    println!("- 总计项目数: {}", total);
+    println!("- 确认无误 (Verified): {}", verified);
+    println!("- 分词/范围有误 (Incorrect): {}", incorrect);
+    println!("- 未处理 (Pending): {}", pending);
+    if total - pending > 0 {
+        println!("- 确认通过率 (Verified / Audited): {:.2}%", pass_rate);
+    }
+
+    if incorrect > 0 {
+        println!("\n有误项目详情 (Incorrect):");
+        for item in items.iter().filter(|i| i.decision == VerifyDecision::Incorrect) {
+            println!("  [{}] {} ({}) - {}", item.id, item.label, item.origin, item.surface);
+            println!("    上下文: {}", item.context);
+        }
+    }
+    println!("================================================================================");
+
+    if let Some(json_path) = args.options.get("json") {
+        #[derive(Serialize)]
+        struct VerifyReport {
+            total: usize,
+            verified: usize,
+            incorrect: usize,
+            pending: usize,
+            pass_rate: f64,
+            items: Vec<VerifyItem>,
+        }
+
+        let report = VerifyReport {
+            total,
+            verified,
+            incorrect,
+            pending,
+            pass_rate,
+            items,
+        };
+
+        let json_data = serde_json::to_string_pretty(&report)?;
+        std::fs::write(json_path, &json_data)?;
+        println!("完整验证报告已写入 JSON 文件：{}", json_path);
+    }
+
+    Ok(())
+}
+
 fn expression_repl(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let engine = engine(args)?;
     let mut current_text = String::new();
@@ -1016,6 +1275,8 @@ fn print_help() {
         [--chapter TITLE --page-lines N --page N]
   expression-scan --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N]
+  expression-verify --profile PATH (--text TEXT | --source PATH)
+        [--chapter TITLE --page-lines N --page N] [--json PATH]
   expression-add --profile PATH (--text TEXT | --source PATH)
         --start-token N --end-token N [--slots 0,1]
         [--label LABEL --description TEXT]
