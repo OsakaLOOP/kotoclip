@@ -92,12 +92,13 @@ impl ProfileEngine {
         let dictionary_choice_cache = {
             let mut statement =
                 conn.prepare("SELECT query_key, selected_target FROM user_dictionary_choices")?;
-            statement
+            let choices = statement
                 .query_map([], |row| {
                     Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
                 })?
                 .flatten()
-                .collect()
+                .collect();
+            choices
         };
 
         Ok(Self { conn, dictionary_choice_cache: Mutex::new(dictionary_choice_cache) })

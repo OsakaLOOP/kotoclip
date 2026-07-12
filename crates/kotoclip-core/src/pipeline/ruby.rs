@@ -1,4 +1,5 @@
 use crate::models::{Bunsetsu, HeadWord, Morpheme};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RubyAnnotation {
@@ -221,7 +222,15 @@ pub fn override_bunsetsu_readings_with_chars(
     bunsetsus: &mut [Bunsetsu],
     annotations: &[RubyAnnotation],
 ) {
+    let document_readings = document_reading_map(annotations);
     for bunsetsu in bunsetsus {
+        if let Some(reading) = document_readings
+            .get(&bunsetsu.head_word.surface)
+            .or_else(|| document_readings.get(&bunsetsu.head_word.base_form))
+        {
+            bunsetsu.head_word.reading = reading.clone();
+            continue;
+        }
         // A whole-word annotation is also an explicit lexical boundary. This covers
         // cases where the tokenizer kept the word in one bunsetsu but chose a shorter head.
         if let Some(annotation) = annotations.iter().find(|annotation| {
@@ -264,6 +273,36 @@ pub fn override_bunsetsu_readings_with_chars(
             }
         }
     }
+}
+
+/// 将相邻的显式 ruby 合成为文档内词级读音。仅传播至少两个字符的词，
+/// 避免把「七《なの》」这类单字局部读音应用到所有普通单字。
+fn document_reading_map(annotations: &[RubyAnnotation]) -> HashMap<String, String> {
+    let mut readings = HashMap::new();
+    let mut index = 0;
+    while index < annotations.len() {
+        let mut end = index + 1;
+        while end < annotations.len()
+            && annotations[end - 1].char_range.1 == annotations[end].char_range.0
+        {
+            end += 1;
+        }
+        let base: String = annotations[index..end]
+            .iter()
+            .map(|annotation| annotation.base.as_str())
+            .collect::<Vec<_>>()
+            .concat();
+        let reading: String = annotations[index..end]
+            .iter()
+            .map(|annotation| annotation.reading.as_str())
+            .collect::<Vec<_>>()
+            .concat();
+        if base.chars().count() >= 2 {
+            readings.insert(base, reading);
+        }
+        index = end;
+    }
+    readings
 }
 
 /// Treats a whole-word ruby span as a lexical boundary when IPADIC split the
@@ -351,6 +390,14 @@ mod tests {
             &prepared.annotations,
         );
         assert_eq!(reading.as_deref(), Some("カガミ"));
+    }
+
+    #[test]
+    fn combines_adjacent_ruby_into_document_word_reading() {
+        let prepared = prepare_text("七《なの》日《か》と七日");
+        let readings = document_reading_map(&prepared.annotations);
+        assert_eq!(readings.get("七日").map(String::as_str), Some("ナノカ"));
+        assert!(!readings.contains_key("七"));
     }
 
     #[test]

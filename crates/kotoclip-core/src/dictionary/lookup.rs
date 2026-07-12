@@ -265,15 +265,17 @@ impl DictionaryEngine {
             ) else {
                 continue;
             };
-            if let Ok(rows) = statement.query_map([headword], |row| row.get::<_, String>(0)) {
-                targets.extend(rows.flatten());
-            }
+            let rows = statement
+                .query_map([headword], |row| row.get::<_, String>(0))
+                .map(|rows| rows.flatten().collect::<Vec<_>>())
+                .unwrap_or_default();
+            targets.extend(rows);
         }
         targets
     }
 
     fn query_form(&self, value: &str) -> Vec<DictEntry> {
-        let sql = "SELECT e.id, e.headword, e.definition, e.dict_name, e.reading \
+        let sql = "SELECT e.id, f.form, e.headword, e.definition, e.dict_name, e.reading \
                    FROM entry_forms f JOIN entries e ON e.id = f.entry_id \
                    WHERE f.normalized_form = ?1 AND e.definition NOT LIKE '@@@LINK=%' \
                    ORDER BY f.is_primary DESC, e.dict_name LIMIT 10";
@@ -281,7 +283,10 @@ impl DictionaryEngine {
     }
 
     fn query_structured_reading(&self, value: &str) -> Vec<DictEntry> {
-        let sql = "SELECT e.id, e.headword, e.definition, e.dict_name, e.reading \
+        let sql = "SELECT e.id, COALESCE(\
+                       (SELECT f.form FROM entry_forms f \
+                        WHERE f.entry_id = e.id ORDER BY f.is_primary DESC LIMIT 1),\
+                       e.headword), e.headword, e.definition, e.dict_name, e.reading \
                    FROM entry_readings r JOIN entries e ON e.id = r.entry_id \
                    WHERE r.normalized_reading = ?1 AND e.definition NOT LIKE '@@@LINK=%' \
                    ORDER BY r.is_primary DESC, e.dict_name LIMIT 10";
@@ -296,11 +301,12 @@ impl DictionaryEngine {
             };
             let Ok(rows) = stmt.query_map([value], |row| {
                 Ok(self.entry(
-                    row.get(3).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(4).unwrap_or_else(|_| fallback_name.clone()),
                     row.get(0)?,
                     row.get(1)?,
                     row.get(2)?,
-                    row.get(4).ok(),
+                    row.get(3)?,
+                    row.get(5).ok(),
                     match_type,
                 ))
             }) else {
@@ -312,7 +318,7 @@ impl DictionaryEngine {
     }
 
     fn query_exact(&self, column: &str, value: &str, match_type: &str) -> Vec<DictEntry> {
-        let sql = format!("SELECT id, headword, definition, dict_name, reading FROM entries WHERE {column} = ?1 ORDER BY dict_name, id");
+        let sql = format!("SELECT id, COALESCE((SELECT f.form FROM entry_forms f WHERE f.entry_id = entries.id ORDER BY f.is_primary DESC LIMIT 1), headword), headword, definition, dict_name, reading FROM entries WHERE {column} = ?1 ORDER BY dict_name, id");
         let mut results = Vec::new();
         for (fallback_name, conn) in &self.connections {
             let Ok(mut stmt) = conn.prepare(&sql) else {
@@ -320,11 +326,12 @@ impl DictionaryEngine {
             };
             let Ok(rows) = stmt.query_map([value], |row| {
                 Ok(self.entry(
-                    row.get(3).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(4).unwrap_or_else(|_| fallback_name.clone()),
                     row.get(0)?,
                     row.get(1)?,
                     row.get(2)?,
-                    row.get(4).ok(),
+                    row.get(3)?,
+                    row.get(5).ok(),
                     match_type,
                 ))
             }) else {
@@ -339,17 +346,18 @@ impl DictionaryEngine {
         let query = format!("\"{}\"", word.replace('"', ""));
         let mut results = Vec::new();
         for (fallback_name, conn) in &self.connections {
-            let sql = "SELECT e.id, e.headword, e.definition, e.dict_name, e.reading FROM entries_fts f JOIN entries e ON e.id = f.rowid WHERE f.headword MATCH ?1 LIMIT 5";
+            let sql = "SELECT e.id, COALESCE((SELECT ef.form FROM entry_forms ef WHERE ef.entry_id = e.id ORDER BY ef.is_primary DESC LIMIT 1), e.headword), e.headword, e.definition, e.dict_name, e.reading FROM entries_fts f JOIN entries e ON e.id = f.rowid WHERE f.headword MATCH ?1 LIMIT 5";
             let Ok(mut stmt) = conn.prepare(sql) else {
                 continue;
             };
             let Ok(rows) = stmt.query_map([&query], |row| {
                 Ok(self.entry(
-                    row.get(3).unwrap_or_else(|_| fallback_name.clone()),
+                    row.get(4).unwrap_or_else(|_| fallback_name.clone()),
                     row.get(0)?,
                     row.get(1)?,
                     row.get(2)?,
-                    row.get(4).ok(),
+                    row.get(3)?,
+                    row.get(5).ok(),
                     "fuzzy",
                 ))
             }) else {
@@ -365,11 +373,12 @@ impl DictionaryEngine {
         dict_name: String,
         entry_id: i64,
         headword: String,
+        raw_headword: String,
         definition: String,
         structured_reading: Option<String>,
         match_type: &str,
     ) -> DictEntry {
-        let presentation = presentation::present(&dict_name, &headword, &definition);
+        let presentation = presentation::present(&dict_name, &raw_headword, &definition);
         DictEntry {
             entry_key: format!("{dict_name}\u{1f}{entry_id}"),
             dict_name,
@@ -501,13 +510,13 @@ mod tests {
              CREATE TABLE entry_forms (entry_id INTEGER NOT NULL, form TEXT NOT NULL, normalized_form TEXT NOT NULL, form_type TEXT NOT NULL, is_primary INTEGER NOT NULL, PRIMARY KEY(entry_id, normalized_form));
              CREATE TABLE entry_readings (entry_id INTEGER NOT NULL, reading TEXT NOT NULL, normalized_reading TEXT NOT NULL, is_primary INTEGER NOT NULL, PRIMARY KEY(entry_id, normalized_reading));
              CREATE VIRTUAL TABLE entries_fts USING fts5(headword, definition, content='entries', content_rowid='id', tokenize='trigram');
-             INSERT INTO entries VALUES (1, 'けいさつしょ', NULL, '@@@LINK=けいさつしょ【警察署】', '测试词典');
-             INSERT INTO entries VALUES (2, 'けいさつしょ【警察署】', NULL, '<p>警察署释义</p>', '测试词典');
-             INSERT INTO entries VALUES (3, 'つなぐ【繫ぐ】', NULL, '<p>繫ぐ释义</p>', '测试词典');
-             INSERT INTO entries VALUES (4, 'いる', NULL, '<p>☞ <a href="entry://いる【入る】">いる【入る】</a><br>☞ <a href="entry://いる【居る】">いる【居る】</a></p>', '测试词典');
-             INSERT INTO entries VALUES (5, 'いる【入る】', NULL, '<p><span class="bss">いる</span> 入る释义</p>', '测试词典');
-             INSERT INTO entries VALUES (6, 'こ【子】', NULL, '<p><span class="bss">こ</span>【<hy>子</hy>】<br><div><div class="no">①</div><div class="lefta">子供。⇔<a href="entry://親">親</a>・<a href="entry://祖">祖</a>。</div></div></p>', '测试词典');
-             INSERT INTO metadata VALUES (3, '测试词典', '2026-07-11T00:00:00Z');
+             INSERT INTO entries VALUES (1, 'けいさつしょ', NULL, '@@@LINK=けいさつしょ【警察署】', '三省堂Super大辞林3.1');
+             INSERT INTO entries VALUES (2, 'けいさつしょ【警察署】', NULL, '<p>警察署释义</p>', '三省堂Super大辞林3.1');
+             INSERT INTO entries VALUES (3, 'つなぐ【繫ぐ】', NULL, '<p>繫ぐ释义</p>', '三省堂Super大辞林3.1');
+             INSERT INTO entries VALUES (4, 'いる', NULL, '<p>☞ <a href="entry://いる【入る】">いる【入る】</a><br>☞ <a href="entry://いる【居る】">いる【居る】</a></p>', '三省堂Super大辞林3.1');
+             INSERT INTO entries VALUES (5, 'いる【入る】', NULL, '<p><span class="bss">いる</span> 入る释义</p>', '三省堂Super大辞林3.1');
+             INSERT INTO entries VALUES (6, 'こ【子】', NULL, '<p><span class="bss">こ</span>【<hy>子</hy>】<br><div><div class="no">①</div><div class="lefta">子供。⇔<a href="entry://親">親</a>・<a href="entry://祖">祖</a>。</div></div></p>', '三省堂Super大辞林3.1');
+             INSERT INTO metadata VALUES (3, '三省堂Super大辞林3.1', '2026-07-11T00:00:00Z');
              INSERT INTO entry_forms VALUES (1, 'けいさつしょ', 'けいさつしょ', 'kana', 1);
              INSERT INTO entry_forms VALUES (2, '警察署', '警察署', 'kanji', 1);
              INSERT INTO entry_forms VALUES (3, '繫ぐ', '繫ぐ', 'kanji', 1);

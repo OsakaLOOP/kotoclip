@@ -535,7 +535,7 @@ mod tests {
             }
         };
 
-        let text = "七日は屈《かが》み、鬼怒川の腰元にぶら下がる键を夺う。\n  ついでに胸ポケットの煙草《たばこ》ももらっておいた。と、突然手首を掴まれる。\n\n  \u{3000}鋭い痛みに顔をしかめながらも、鬼怒川是眼光鋭く、七日を睨《にら》みつけていた。\n\n  「......古《ふる》川《かわ》。俺の名を覚えておけ。貴様、絶対に──」";
+        let text = "七《なの》日《か》は屈《かが》み、鬼怒川の腰元にぶら下がる键を夺う。\n  ついでに胸ポケットの煙草《たばこ》ももらっておいた。と、突然手首を掴まれる。\n\n  \u{3000}鋭い痛みに顔をしかめながらも、鬼怒川是眼光鋭く、七日を睨《にら》みつけていた。\n\n  「......古《ふる》川《かわ》。俺の名を覚えておけ。貴様、絶対に──」";
         let expected = "七日は屈み、鬼怒川の腰元にぶら下がる键を夺う。\n  ついでに胸ポケットの煙草ももらっておいた。と、突然手首を掴まれる。\n\n  \u{3000}鋭い痛みに顔をしかめながらも、鬼怒川是眼光鋭く、七日を睨みつけていた。\n\n  「......古川。俺の名を覚えておけ。貴様、絶対に──」";
         let pipeline = Pipeline::new(&dict_path).expect("初始化 NLP Pipeline 失败");
         let tokens = pipeline.process(text, &[]);
@@ -557,6 +557,10 @@ mod tests {
         };
         assert_eq!(head_reading("煙草"), Some("タバコ"));
         assert_eq!(head_reading("古川"), Some("フルカワ"));
+        assert!(tokens
+            .iter()
+            .filter(|token| token.bunsetsu.head_word.surface == "七日")
+            .all(|token| token.bunsetsu.head_word.reading == "ナノカ"));
 
         let annotated_morphemes: Vec<(&str, &str)> = tokens
             .iter()
