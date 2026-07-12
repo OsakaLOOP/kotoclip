@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { AnnotatedToken } from "../types";
+import { AnnotatedToken, ExpressionAnnotation } from "../types";
 
 const props = defineProps<{
   token: AnnotatedToken;
@@ -9,6 +9,14 @@ const props = defineProps<{
   isDragSelected: boolean;
   tokens?: AnnotatedToken[];
 }>();
+
+const emit = defineEmits<{
+  (event: "lookup-expression", expression: ExpressionAnnotation, target: HTMLElement): void;
+}>();
+
+function handleExpressionLookup(expression: ExpressionAnnotation, event: MouseEvent) {
+  emit("lookup-expression", expression, event.currentTarget as HTMLElement);
+}
 
 const hasSentencePause = computed(() => {
   if (!props.tokens || props.token.display_class !== "content") return false;
@@ -28,7 +36,12 @@ const hasSentencePause = computed(() => {
 const capsuleClasses = computed(() => {
   const t = props.token;
   const expressionClasses = t.expressions.length > 0
-    ? { "has-expression": true, [`expression-${t.expressions[0].position}`]: true }
+    ? {
+        "has-expression": true,
+        [`expression-${t.expressions[0].position}`]: true,
+        [`expression-type-${t.expressions[0].expression_type}`]: true,
+        [`expression-boundary-${t.expressions[0].boundary_effect}`]: true,
+      }
     : {};
   
   // 换行符特殊处理
@@ -141,6 +154,7 @@ function isExpressionMorpheme(index: number) {
       :key="expression.match_id"
       class="expression-badge"
       :title="expression.description || expression.surface"
+      @click.stop="handleExpressionLookup(expression, $event)"
     >
       {{ expression.label }}
     </span>

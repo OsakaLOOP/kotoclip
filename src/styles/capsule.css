@@ -124,6 +124,31 @@
   pointer-events: none;
 }
 
+/* 词汇单位在展示层收拢边界，同时保留内部语素供双击下钻。 */
+.bunsetsu-capsule.expression-boundary-merge_lexical_unit {
+  margin-left: 0;
+  margin-right: 0;
+  border-color: #5b3b88;
+}
+
+.bunsetsu-capsule.expression-boundary-merge_lexical_unit.expression-start {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 0;
+}
+
+.bunsetsu-capsule.expression-boundary-merge_lexical_unit.expression-middle {
+  border-radius: 0;
+  border-left-width: 0;
+  border-right-width: 0;
+}
+
+.bunsetsu-capsule.expression-boundary-merge_lexical_unit.expression-end {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-width: 0;
+}
+
 /* 选中状态：点击选中不显示文节胶囊，仅强化词头字形，对已知词同样生效；没有可识别词头时作用于全部文本 */
 .bunsetsu-capsule.is-selected {
   outline: none !important;
@@ -197,7 +222,8 @@
   color: #5b3b88;
   font-size: 0.58rem;
   line-height: 1.2;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .expression-anchor {

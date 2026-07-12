@@ -7,7 +7,7 @@ import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
 import { useScrollFocus } from "../composables/useScrollFocus";
-import { DictEntry, DictionaryLookup, ExpressionRule, SegmentationCandidate, AnnotatedToken } from "../types";
+import { DictEntry, DictionaryLookup, ExpressionAnnotation, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, SegmentationCandidate, AnnotatedToken } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import TooltipPanel from "./TooltipPanel.vue";
@@ -45,7 +45,6 @@ const {
   analyzeText,
   addExpressionRule,
   getExpressionRules,
-  refreshExpressionAnnotations,
   deleteExpressionRule,
   splitToken,
   getCandidates,
@@ -110,26 +109,11 @@ async function openExpressionRules() {
   showExpressionRules.value = true;
 }
 
-async function refreshCurrentExpressionAnnotations() {
-  const tokens = paragraphs.value.flatMap((paragraph) => paragraph.tokens);
-  if (tokens.length === 0) return;
-  const refreshed = await refreshExpressionAnnotations(tokens);
-  let offset = 0;
-  for (const paragraph of paragraphs.value) {
-    const length = paragraph.tokens.length;
-    paragraph.tokens = refreshed.slice(offset, offset + length);
-    offset += length;
-  }
-  await nextTick();
-  virtualizer.value.measure();
-  triggerUpdate();
-}
-
 async function removeExpressionRule(id: number) {
   await deleteExpressionRule(id);
   expressionRules.value = await getExpressionRules();
   if (!showInput.value && inputText.value.trim()) {
-    await refreshCurrentExpressionAnnotations();
+    await triggerAnalysis(false);
   }
 }
 
@@ -138,7 +122,10 @@ async function saveExpressionDraft(
   description: string,
   bunsetsuStates: ('fixed' | 'slot' | 'any')[],
   morphemeMasks: boolean[][],
-  gapAfter: number | null
+  gapAfter: number | null,
+  expressionType: ExpressionType,
+  priority: number,
+  boundaryEffect: ExpressionBoundaryEffect
 ) {
   try {
     await addExpressionRule(
@@ -147,12 +134,15 @@ async function saveExpressionDraft(
       description,
       bunsetsuStates,
       morphemeMasks,
-      gapAfter
+      gapAfter,
+      expressionType,
+      priority,
+      boundaryEffect
     );
     showExpressionEditor.value = false;
     expressionDraft.value = [];
     expressionDraftMorphemeRange.value = { startMorphemeIdx: 0, endMorphemeIdx: 0 };
-    await refreshCurrentExpressionAnnotations();
+    await triggerAnalysis(false);
   } catch (err) {
     alert(`保存跨文节表达失败：${String(err)}`);
   }
@@ -304,6 +294,36 @@ function handleTooltipEnter() {
 function handleTooltipLeave() {
   tooltipPanelHovered = false;
   scheduleTooltipClose(120);
+}
+
+async function lookupExpression(expression: ExpressionAnnotation, target: HTMLElement) {
+  cancelTooltipClose();
+  const rect = target.getBoundingClientRect();
+  const tooltipHalfWidth = Math.min(230, Math.max(0, window.innerWidth / 2 - 12));
+  tooltipX.value = Math.min(window.innerWidth - tooltipHalfWidth, Math.max(tooltipHalfWidth, rect.left + rect.width / 2));
+  tooltipPlacement.value = rect.top >= 340 ? "above" : "below";
+  tooltipY.value = tooltipPlacement.value === "above" ? rect.top : rect.bottom;
+  tooltipToken.value = {
+    bunsetsu: {
+      head_word: {
+        surface: expression.surface,
+        base_form: expression.label,
+        reading: "",
+        pos: { major: "表达", sub1: expression.expression_type, sub2: "", sub3: "" },
+      },
+      grammar_tags: [],
+    },
+  };
+  tooltipShow.value = true;
+  tooltipLoading.value = true;
+  tooltipHistory.value = [];
+  const requestId = ++tooltipRequestId;
+  const query = expression.origin === "dictionary" ? expression.label : expression.surface;
+  const lookup = await lookupWord(query);
+  if (requestId === tooltipRequestId) {
+    tooltipLookup.value = lookup;
+    tooltipLoading.value = false;
+  }
 }
 
 async function navigateTooltip(target: string) {
@@ -614,6 +634,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
                   :tokenIndex="tokenIndex"
                   :isDragSelected="isTokenDragSelected(paragraphs[virtualRow.index].id, tokenIndex)"
                   :tokens="paragraphs[virtualRow.index].tokens"
+                  @lookup-expression="lookupExpression"
                 />
               </template>
             </template>

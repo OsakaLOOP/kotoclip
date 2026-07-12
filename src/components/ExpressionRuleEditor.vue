@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import type { AnnotatedToken } from "../types";
+import type { AnnotatedToken, ExpressionBoundaryEffect, ExpressionType } from "../types";
 
 const props = defineProps<{
   show: boolean;
@@ -11,10 +11,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "cancel"): void;
-  (event: "save", label: string, description: string, bunsetsuStates: ('fixed' | 'slot' | 'any')[], morphemeMasks: boolean[][], gapAfter: number | null): void;
+  (event: "save", label: string, description: string, bunsetsuStates: ('fixed' | 'slot' | 'any')[], morphemeMasks: boolean[][], gapAfter: number | null, expressionType: ExpressionType, priority: number, boundaryEffect: ExpressionBoundaryEffect): void;
 }>();
 
 const description = ref("");
+const customLabel = ref("");
+const expressionType = ref<ExpressionType>("grammar_construction");
+const priority = ref(50);
 const bunsetsuStates = ref<('fixed' | 'slot' | 'any')[]>([]);
 const morphemeMasks = ref<boolean[][]>([]);
 const activeGapIndex = ref<number | null>(null); // 在第 i 个 token 后面插入了可变间隔 (0-based)
@@ -76,14 +79,29 @@ watch(
     });
 
     description.value = "";
+    customLabel.value = "";
+    expressionType.value = "grammar_construction";
+    priority.value = 50;
   },
   { deep: true, immediate: true }
 );
 
 // 校验约束
 const validationError = computed<string | null>(() => {
-  if (bunsetsuStates.value.length < 2) {
+  if (bunsetsuStates.value.length < 1) {
+    return "至少需要选择一个文节";
+  }
+  if (expressionType.value !== "lexical_unit" && bunsetsuStates.value.length < 2) {
     return "跨文节表达至少需要两个文节";
+  }
+  if (expressionType.value === "correlative" && activeGapIndex.value === null) {
+    return "非连续呼应需要插入前后锚点之间的可变间隔";
+  }
+  if (expressionType.value !== "correlative" && activeGapIndex.value !== null) {
+    return "只有非连续呼应类型可以配置可变间隔";
+  }
+  if (expressionType.value === "lexical_unit" && bunsetsuStates.value.some(state => state !== "fixed")) {
+    return "词汇单位必须使用固定词形，不能包含词性槽位或任意文节";
   }
 
   for (let i = 0; i < bunsetsuStates.value.length; i++) {
@@ -244,6 +262,27 @@ const ruleLabelName = computed(() => {
   return result.trim();
 });
 
+const effectiveLabel = computed(() => customLabel.value.trim() || ruleLabelName.value);
+const boundaryEffect = computed<ExpressionBoundaryEffect>(() =>
+  expressionType.value === "lexical_unit" ? "merge_lexical_unit" : "annotate_only"
+);
+
+const typeOptions: { value: ExpressionType; title: string; description: string; priority: number }[] = [
+  { value: "lexical_unit", title: "词汇单位", description: "原本应视为一个词，可影响词汇与文节边界。", priority: 90 },
+  { value: "idiom", title: "固定惯用语", description: "整体具有词典义，但保留内部助词和文节。", priority: 70 },
+  { value: "grammar_construction", title: "语法构式", description: "按词性、活用和组合结构匹配。", priority: 60 },
+  { value: "correlative", title: "非连续呼应", description: "配置前后锚点及有限间隔，不跨句匹配。", priority: 40 },
+];
+
+function selectExpressionType(type: (typeof typeOptions)[number]) {
+  expressionType.value = type.value;
+  priority.value = type.priority;
+  if (type.value !== "correlative") activeGapIndex.value = null;
+  if (type.value === "lexical_unit") {
+    bunsetsuStates.value = bunsetsuStates.value.map(() => "fixed");
+  }
+}
+
 // 匹配签名调试预览 (详细包含词性和 lemmas)
 const previewSignature = computed(() => {
   if (morphemeMasks.value.length === 0 || bunsetsuStates.value.length === 0) return "";
@@ -255,7 +294,6 @@ const previewSignature = computed(() => {
     
     const items: string[] = [];
     let firstSelected = -1;
-    let lastSelected = -1;
     let totalNonEmpty = 0;
 
     token.bunsetsu.morphemes.forEach((morpheme, mIdx) => {
@@ -266,8 +304,6 @@ const previewSignature = computed(() => {
         const lemma = structuralLemma(morpheme.surface, morpheme.base_form, morpheme.pos.major);
         if (lemma !== null) {
           if (firstSelected === -1) firstSelected = totalNonEmpty;
-          lastSelected = totalNonEmpty;
-          
           if (state === 'slot') {
             items.push(`{${morpheme.pos.major}}`);
           } else if (state === 'any') {
@@ -311,11 +347,14 @@ const previewSignature = computed(() => {
 function handleSave() {
   emit(
     'save', 
-    ruleLabelName.value, // 使用自动生成的格式化日文名称作为规则标签
+    effectiveLabel.value,
     description.value.trim(), 
     bunsetsuStates.value, 
     morphemeMasks.value, 
-    activeGapIndex.value
+    activeGapIndex.value,
+    expressionType.value,
+    priority.value,
+    boundaryEffect.value
   );
 }
 </script>
@@ -331,20 +370,35 @@ function handleSave() {
       <section class="expression-editor" role="dialog" aria-modal="true" aria-label="跨文节表达编辑" @mousedown.stop @mouseup.stop>
         <header>
           <div>
-            <h2>跨文节表达</h2>
-            <p>快速点选配置文节的词形和词性约束；点击文节间的空隙可插入可变间隔。</p>
+            <h2>配置表达规则</h2>
+            <p>基于当前文本实例选择类型，并配置词形、四级词性、活用与组合范围。</p>
           </div>
           <button aria-label="关闭" @click="emit('cancel')">×</button>
         </header>
 
         <div class="editor-body no-scrollbar">
+          <fieldset class="type-fieldset">
+            <legend>表达类型</legend>
+            <div class="type-options">
+              <button
+                v-for="option in typeOptions"
+                :key="option.value"
+                type="button"
+                class="type-option"
+                :class="{ active: expressionType === option.value }"
+                @click="selectExpressionType(option)"
+              >
+                <strong>{{ option.title }}</strong>
+                <span>{{ option.description }}</span>
+              </button>
+            </div>
+          </fieldset>
+
           <!-- 自动生成的签名与名称置顶显示 -->
           <div class="top-signature-area">
             <div class="signature-row">
-              <span class="preview-title">表达式名称 (自动规则标签)</span>
-              <div class="name-display-box">
-                <strong>{{ ruleLabelName || '（未匹配任何有效内容）' }}</strong>
-              </div>
+              <label class="preview-title" for="expression-label">规则标签</label>
+              <input id="expression-label" v-model="customLabel" class="rule-label-input" :placeholder="ruleLabelName || '输入简短标签'" />
             </div>
             <div class="signature-row">
               <span class="preview-title">表达式匹配规则 (签名)</span>
@@ -358,6 +412,17 @@ function handleSave() {
             <span>整体含义或使用条件</span>
             <textarea v-model="description" rows="2" placeholder="说明这个整体表达了什么。"></textarea>
           </label>
+
+          <div class="rule-meta-row">
+            <label>
+              <span>优先级</span>
+              <input v-model.number="priority" type="number" min="0" max="100" />
+            </label>
+            <div>
+              <span>边界行为</span>
+              <strong>{{ boundaryEffect === 'merge_lexical_unit' ? '合并为词汇单位' : '仅添加语义注解' }}</strong>
+            </div>
+          </div>
 
           <div class="part-list">
             <template v-for="(token, index) in tokens" :key="index">
@@ -438,7 +503,10 @@ function handleSave() {
                     />
                     <span class="m-surface">{{ morpheme.surface }}</span>
                     <span class="m-info">
-                      {{ normalizedLemma(morpheme.surface, morpheme.base_form) }}/{{ morpheme.pos.major }}
+                      {{ normalizedLemma(morpheme.surface, morpheme.base_form) }}/{{ [morpheme.pos.major, morpheme.pos.sub1, morpheme.pos.sub2, morpheme.pos.sub3].filter(value => value && value !== '*').join('-') }}
+                      <span v-if="morpheme.conjugation_type && morpheme.conjugation_type !== '*'">
+                        · {{ morpheme.conjugation_type }} / {{ morpheme.conjugation_form }}
+                      </span>
                       <span 
                         v-if="structuralLemma(morpheme.surface, morpheme.base_form, morpheme.pos.major) === null" 
                         class="out-badge"
@@ -460,7 +528,7 @@ function handleSave() {
                   <span class="gap-text">可变间隔 ( 0-10 个文节 )</span>
                   <button type="button" class="gap-delete-btn" @click="activeGapIndex = null">×</button>
                 </div>
-                <div v-else-if="activeGapIndex === null" class="gap-divider">
+                <div v-else-if="activeGapIndex === null && expressionType === 'correlative'" class="gap-divider">
                   <button type="button" class="gap-insert-btn" @click="activeGapIndex = index">
                     ＋ 插入可变间隔 (○)
                   </button>
@@ -478,7 +546,7 @@ function handleSave() {
             <button class="secondary" @click="emit('cancel')">取消</button>
             <button 
               class="primary" 
-              :disabled="!ruleLabelName || !!validationError" 
+              :disabled="!effectiveLabel || !!validationError"
               @click="handleSave"
             >
               保存并应用
@@ -498,6 +566,17 @@ function handleSave() {
 .expression-editor p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.8rem; }
 .expression-editor header button { align-self: flex-start; border: 0; background: transparent; font-size: 1.6rem; cursor: pointer; color: var(--text-muted); line-height: 1; }
 .editor-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 4px; }
+.type-fieldset { margin: 0; padding: 0; border: 0; }
+.type-fieldset legend { margin-bottom: 7px; color: var(--text-secondary); font-size: 0.82rem; font-weight: 700; }
+.type-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.type-option { display: grid; gap: 4px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); text-align: left; cursor: pointer; }
+.type-option span { color: var(--text-muted); font-size: 0.74rem; line-height: 1.45; }
+.type-option.active { border-color: var(--accent-color); box-shadow: inset 0 0 0 1px var(--accent-color); }
+.rule-label-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; }
+.rule-meta-row { display: grid; grid-template-columns: minmax(120px, 0.45fr) minmax(180px, 1fr); gap: 10px; }
+.rule-meta-row > label, .rule-meta-row > div { display: grid; gap: 5px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary); font-size: 0.78rem; }
+.rule-meta-row input { min-width: 0; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); }
+.rule-meta-row strong { color: var(--text-primary); }
 .label-field { display: grid; gap: 6px; font-size: 0.82rem; color: var(--text-secondary); }
 .label-field textarea { min-width: 0; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; outline: none; transition: border-color 0.2s; resize: none; }
 .label-field textarea:focus { border-color: var(--accent-color); }

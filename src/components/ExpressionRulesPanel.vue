@@ -35,6 +35,13 @@ function patternPreview(rule: ExpressionRule): string {
     return rule.parts.map((p, idx) => formatPart(p, idx, len)).join(" + ");
   }
 }
+
+const typeLabels: Record<ExpressionRule["expression_type"], string> = {
+  lexical_unit: "词汇单位",
+  idiom: "固定惯用语",
+  grammar_construction: "语法构式",
+  correlative: "非连续呼应",
+};
 </script>
 
 <template>
@@ -42,8 +49,8 @@ function patternPreview(rule: ExpressionRule): string {
     <aside v-if="show" class="expression-panel" aria-label="跨文节表达规则">
       <header class="expression-panel-header">
         <div>
-          <h2>跨文节表达</h2>
-          <p>在正文中横向拖过两个以上胶囊即可保存。</p>
+          <h2>表达规则</h2>
+          <p>在正文中拖选实例，配置类型、范围和结构约束。</p>
         </div>
         <button class="panel-close" aria-label="关闭" @click="emit('close')">×</button>
       </header>
@@ -55,6 +62,7 @@ function patternPreview(rule: ExpressionRule): string {
         <li v-for="rule in rules" :key="rule.id" class="expression-rule-item">
           <div class="expression-rule-copy">
             <strong>{{ rule.label }}</strong>
+            <small>{{ typeLabels[rule.expression_type] }} · 优先级 {{ rule.priority }} · {{ rule.boundary_effect === 'merge_lexical_unit' ? '合并边界' : '仅注解' }}</small>
             <span>{{ patternPreview(rule) }}</span>
             <small v-if="rule.description">{{ rule.description }}</small>
           </div>
