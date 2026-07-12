@@ -23,6 +23,124 @@ pub fn resolve_expression_conflicts(tokens: &mut [AnnotatedToken]) {
     }
 }
 
+/// 应用最高优先级的词汇单位边界，同时保留合并范围内的底层语素。
+pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<AnnotatedToken> {
+    let mut lexical_ranges: Vec<_> = tokens
+        .iter()
+        .flat_map(|token| &token.expressions)
+        .filter(|item| item.boundary_effect == "merge_lexical_unit")
+        .map(|item| (item.token_range, item.priority, item.confidence, item.match_id.clone()))
+        .collect();
+    lexical_ranges.sort_by(|left, right| {
+        right.1.cmp(&left.1)
+            .then_with(|| right.2.total_cmp(&left.2))
+            .then_with(|| right.0.1.saturating_sub(right.0.0).cmp(&left.0.1.saturating_sub(left.0.0)))
+    });
+    lexical_ranges.dedup_by(|left, right| left.3 == right.3);
+
+    let mut claimed = vec![false; tokens.len()];
+    let mut accepted = Vec::new();
+    for (range, _, _, _) in lexical_ranges {
+        if range.0 >= range.1
+            || range.1 > tokens.len()
+            || claimed[range.0..range.1].iter().any(|value| *value)
+            || tokens[range.0..range.1]
+                .iter()
+                .any(|token| token.display_class != "content")
+        {
+            continue;
+        }
+        claimed[range.0..range.1].fill(true);
+        accepted.push(range);
+    }
+    accepted.sort_by_key(|range| range.0);
+
+    let mut old_to_new = vec![0usize; tokens.len()];
+    let mut result = Vec::new();
+    let mut index = 0;
+    let mut range_index = 0;
+    while index < tokens.len() {
+        if accepted.get(range_index).is_some_and(|range| range.0 == index) {
+            let range = accepted[range_index];
+            let mut merged = tokens[index].clone();
+            merged.bunsetsu.morphemes = tokens[range.0..range.1]
+                .iter()
+                .flat_map(|token| token.bunsetsu.morphemes.clone())
+                .collect();
+            merged.bunsetsu.surface = tokens[range.0..range.1]
+                .iter()
+                .map(|token| token.bunsetsu.surface.as_str())
+                .collect();
+            merged.bunsetsu.char_range = (
+                tokens[range.0].bunsetsu.char_range.0,
+                tokens[range.1 - 1].bunsetsu.char_range.1,
+            );
+            merged.bunsetsu.grammar_tags = tokens[range.0..range.1]
+                .iter()
+                .flat_map(|token| token.bunsetsu.grammar_tags.clone())
+                .collect();
+            if let Some(expression) = tokens[range.0..range.1]
+                .iter()
+                .flat_map(|token| &token.expressions)
+                .find(|item| item.boundary_effect == "merge_lexical_unit" && item.token_range == range)
+            {
+                merged.bunsetsu.head_word.surface = expression.surface.clone();
+                merged.bunsetsu.head_word.base_form = expression.label.clone();
+                merged.bunsetsu.head_word.reading = merged
+                    .bunsetsu
+                    .morphemes
+                    .iter()
+                    .map(|morpheme| morpheme.reading.as_str())
+                    .collect();
+            }
+            merged.novelty_score = tokens[range.0..range.1]
+                .iter()
+                .map(|token| token.novelty_score)
+                .fold(0.0, f32::max);
+            merged.is_selected = tokens[range.0..range.1].iter().any(|token| token.is_selected);
+            merged.is_known = tokens[range.0..range.1].iter().all(|token| token.is_known);
+            merged.expressions = tokens[range.0..range.1]
+                .iter()
+                .flat_map(|token| token.expressions.clone())
+                .collect();
+            let new_index = result.len();
+            old_to_new[range.0..range.1].fill(new_index);
+            result.push(merged);
+            index = range.1;
+            range_index += 1;
+        } else {
+            old_to_new[index] = result.len();
+            result.push(tokens[index].clone());
+            index += 1;
+        }
+    }
+
+    for (new_index, token) in result.iter_mut().enumerate() {
+        let mut seen = HashSet::new();
+        token.expressions.retain_mut(|item| {
+            let old_range = item.token_range;
+            if old_range.0 >= old_range.1 || old_range.1 > old_to_new.len() {
+                return false;
+            }
+            let start = old_to_new[old_range.0];
+            let end = old_to_new[old_range.1 - 1] + 1;
+            item.token_range = (start, end);
+            item.position = if end - start == 1 {
+                "single"
+            } else if new_index == start {
+                "start"
+            } else if new_index + 1 == end {
+                "end"
+            } else {
+                "middle"
+            }
+            .to_string();
+            seen.insert(item.match_id.clone())
+        });
+    }
+    result
+}
+
 #[derive(Debug, Deserialize)]
 struct ExpressionCatalog {
     patterns: Vec<BuiltinExpressionPattern>,

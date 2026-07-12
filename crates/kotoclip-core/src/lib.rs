@@ -178,8 +178,9 @@ impl Engine {
                         "计算词汇熟悉度",
                     ));
                 })?;
-        // 跨文节表达是独立注解层：画像评分完成后应用，不重写 NLP 文节结构。
+        // 统一表达层先完成分类与优先级消解；仅词汇单位规则可以重组展示文节。
         self.apply_expression_analysis(&mut annotated)?;
+        annotated = pipeline::expressions::apply_expression_boundaries(annotated);
         if record_exposure {
             self.profile
                 .record_token_exposures_with_progress(&annotated, |completed, total| {
@@ -256,6 +257,11 @@ impl Engine {
         let started = Instant::now();
         pipeline::expressions::apply_correlative_expressions(&mut annotated);
         timings.add("呼应表达", started.elapsed());
+
+        let started = Instant::now();
+        pipeline::expressions::resolve_expression_conflicts(&mut annotated);
+        annotated = pipeline::expressions::apply_expression_boundaries(annotated);
+        timings.add("表达边界", started.elapsed());
 
         if record_exposure {
             self.profile
