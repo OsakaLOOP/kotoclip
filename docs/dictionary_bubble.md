@@ -211,6 +211,7 @@ python scripts/audit_dictionary_bubble.py `
 - 为汉字多读音增加 `document_only` 或上下文签名选择。
 - 区分作品专名、普通词义和临时查看，不把一次选择全局泛化。
 - 将作者 ruby、N-best 选择和用户词典选择作为独立证据显示。
+- 可选 LLM 消歧框架见 `docs/llm_dictionary_disambiguation.md`；当前只提供协议、传输抽象与 UI 授权端口，未接入气泡。
 
 ### 优先级 C：多媒体资源
 
