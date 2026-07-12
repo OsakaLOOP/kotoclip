@@ -9,6 +9,7 @@ pub enum AnalysisPhase {
     GrammarMatching,
     DictionaryMatching,
     ProfileScoring,
+    ExpressionMatching,
     RecordingExposure,
     Completed,
 }

@@ -14,6 +14,7 @@ const stages: Array<{ phase: AnalysisPhase; label: string }> = [
   { phase: "grammar_matching", label: "语法" },
   { phase: "dictionary_matching", label: "词典" },
   { phase: "profile_scoring", label: "评分" },
+  { phase: "expression_matching", label: "表达" },
   { phase: "recording_exposure", label: "记录" },
 ];
 

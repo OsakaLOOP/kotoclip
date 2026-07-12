@@ -9,6 +9,7 @@ pub mod ruby;
 use crate::analysis_progress::{AnalysisPhase, AnalysisProgress};
 use crate::models::AnnotatedToken;
 use crate::performance::TimingCollector;
+use std::collections::HashMap;
 use std::path::Path;
 use std::time::Instant;
 
@@ -165,14 +166,17 @@ impl Pipeline {
         tokens: &mut [AnnotatedToken],
         choices: &[crate::models::SegmentationChoice],
     ) {
+        // 页面 token 数远大于用户选择数。先按表层词建立索引，避免每个 token
+        // 都线性扫描全部持久化选择，同时保持同表层词的既有覆盖语义。
+        let choices_by_surface: HashMap<_, _> = choices
+            .iter()
+            .map(|choice| (choice.surface.as_str(), choice))
+            .collect();
         for token in tokens {
             if token.display_class != "content" {
                 continue;
             }
-            let Some(choice) = choices
-                .iter()
-                .find(|choice| choice.surface == token.bunsetsu.surface)
-            else {
+            let Some(choice) = choices_by_surface.get(token.bunsetsu.surface.as_str()) else {
                 continue;
             };
             let offset = token.bunsetsu.char_range.0;
@@ -253,6 +257,18 @@ impl Pipeline {
             let seg_len = seg.end_char_idx - seg.start_char_idx;
             match seg.seg_type {
                 SegmentType::Content => {
+                    // 标注范围按字符位置有序。原先每个分段都会把全文所有 ruby
+                    // 标注交给后续语素/文节处理，长章节会退化为 O(语素×标注数)。
+                    // 显式 ruby 不会跨越标点或换行，因此只保留当前分段相交的子切片
+                    // 可保持读音覆盖和相邻标注合并语义。
+                    let annotation_start = prepared.annotations.partition_point(|annotation| {
+                        annotation.char_range.1 <= seg.start_char_idx
+                    });
+                    let annotation_end = prepared
+                        .annotations
+                        .partition_point(|annotation| annotation.char_range.0 < seg.end_char_idx);
+                    let segment_annotations =
+                        &prepared.annotations[annotation_start..annotation_end];
                     let seg_text: String = prepared_chars[seg.start_char_idx..seg.end_char_idx]
                         .iter()
                         .collect();
@@ -276,7 +292,7 @@ impl Pipeline {
                     ruby::override_morpheme_readings_with_chars(
                         &prepared_chars,
                         &mut morphemes,
-                        &prepared.annotations,
+                        segment_annotations,
                     );
                     if let Some(timings) = timings.as_deref_mut() {
                         timings.add("形态素后处理", morpheme_postprocess_started.elapsed());
@@ -285,11 +301,11 @@ impl Pipeline {
                     let chunking_started = Instant::now();
                     let bunsetsus = bunsetsu::chunk(&morphemes, merge_rules);
                     let mut bunsetsus =
-                        ruby::merge_annotated_bunsetsus(bunsetsus, &prepared.annotations);
+                        ruby::merge_annotated_bunsetsus(bunsetsus, segment_annotations);
                     ruby::override_bunsetsu_readings_with_chars(
                         &prepared_chars,
                         &mut bunsetsus,
-                        &prepared.annotations,
+                        segment_annotations,
                     );
                     if let Some(timings) = timings.as_deref_mut() {
                         timings.add("文节与振假名", chunking_started.elapsed());
@@ -385,11 +401,13 @@ impl Pipeline {
 
             processed_chars += seg_len;
 
-            // 实时平滑上报进度，避免卡在 3%
-            let progress_percent = 3 + ((processed_chars * 51) / total_chars) as u8;
-            let (phase, msg) = if progress_percent < 25 {
+            // 按最新回测的阶段占比校准：形态素分析约占管线 79%，文节约 8%，
+            // 语法约 3%，其余为准备、组装和排序。这里仍按字符平滑推进，
+            // 但把整段 NLP 管线限制在总进度 3%~40%。
+            let progress_percent = 3 + ((processed_chars * 37) / total_chars) as u8;
+            let (phase, msg) = if progress_percent < 32 {
                 (AnalysisPhase::Tokenizing, "执行形态素分析与分词")
-            } else if progress_percent < 50 {
+            } else if progress_percent < 37 {
                 (AnalysisPhase::Chunking, "构建文节组块")
             } else {
                 (AnalysisPhase::GrammarMatching, "匹配语法模式")
@@ -399,7 +417,7 @@ impl Pipeline {
                 phase,
                 processed_chars,
                 total_chars,
-                progress_percent.min(54),
+                progress_percent.min(40),
                 msg,
             ));
         }

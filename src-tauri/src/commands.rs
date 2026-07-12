@@ -3,6 +3,7 @@ use kotoclip_core::analysis_progress::AnalysisProgress;
 use kotoclip_core::models::{
     AnnotatedToken, DictionaryLookup, ExportEntry, ExpressionRule, SegmentationCandidate,
 };
+use kotoclip_core::transport::CompactAnalysis;
 use serde::Serialize;
 use tauri::{Emitter, State, Window};
 
@@ -17,7 +18,7 @@ struct AnalysisProgressEvent {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisResponse {
-    pub tokens: Vec<AnnotatedToken>,
+    pub analysis: CompactAnalysis,
     pub backend_duration_ms: u64,
 }
 
@@ -46,7 +47,7 @@ pub async fn analyze_text(
         .map_err(|e| e.to_string())?;
     let backend_duration_ms = started.elapsed().as_millis() as u64;
     Ok(AnalysisResponse {
-        tokens,
+        analysis: CompactAnalysis::from(tokens.as_slice()),
         backend_duration_ms,
     })
 }

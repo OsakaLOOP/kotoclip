@@ -1,5 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
+fn is_none<T>(value: &Option<T>) -> bool {
+    value.is_none()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Morpheme {
     pub surface: String,
@@ -46,8 +54,10 @@ pub struct GrammarTag {
 pub struct AnnotatedToken {
     pub bunsetsu: Bunsetsu,
     pub novelty_score: f32,
+    #[serde(default, skip_serializing_if = "is_false")]
     pub is_selected: bool,
     pub is_known: bool,
+    #[serde(default, skip_serializing_if = "is_none")]
     pub inference_reason: Option<String>,
     #[serde(default)]
     pub expressions: Vec<ExpressionAnnotation>,

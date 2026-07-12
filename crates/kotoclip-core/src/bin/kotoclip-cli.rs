@@ -1,5 +1,6 @@
 use kotoclip_core::dictionary::lookup::DictionaryEngine;
 use kotoclip_core::pipeline::{bunsetsu, ruby, Pipeline};
+use kotoclip_core::transport::CompactAnalysis;
 use kotoclip_core::Engine;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -497,9 +498,10 @@ fn reader_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         engine.analyze_text_profiled(text, !args.flags.contains("no-record-exposure"))?;
     let analysis_total_ms = analysis_started.elapsed().as_millis();
 
-    // Tauri 也会通过 serde 构造同一结构的 IPC 返回负载。
+    // 桌面端热路径使用字符串表紧凑模型；这里保持与 Tauri 返回体一致，
+    // 以便同时测量实际序列化时间与传输字节数。
     let serialization_started = Instant::now();
-    let ipc_payload = serde_json::to_vec(&tokens)?;
+    let ipc_payload = serde_json::to_vec(&CompactAnalysis::from(tokens.as_slice()))?;
     let ipc_payload_serialize_ms = serialization_started.elapsed().as_millis();
 
     let report = ReaderLoadBenchmarkReport {
@@ -813,7 +815,8 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                     .iter()
                     .map(|t| t.bunsetsu.surface.as_str())
                     .collect();
-                let match_surface: String = tokens[expression.token_range.0..expression.token_range.1]
+                let match_surface: String = tokens
+                    [expression.token_range.0..expression.token_range.1]
                     .iter()
                     .map(|t| t.bunsetsu.surface.as_str())
                     .collect();
@@ -860,7 +863,11 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let total_pages = (items.len() + page_size - 1) / page_size;
     let mut current_page = 0;
 
-    println!("开始交互式跨文节聚合项目验证。总共 {} 个项目，共 {} 页。", items.len(), total_pages);
+    println!(
+        "开始交互式跨文节聚合项目验证。总共 {} 个项目，共 {} 页。",
+        items.len(),
+        total_pages
+    );
     println!("输入指令：");
     println!("  y / all y     一键确认当前页所有待验证项为 Verified");
     println!("  <id> y        确认指定序号的项目为 Verified");
@@ -944,8 +951,13 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                                 println!("底层分词与文节结构 (项目 [{}]):", item.id);
                                 for token_idx in item.token_range.0..item.token_range.1 {
                                     let token = &tokens[token_idx];
-                                    println!("  文节 [{}] (表层: {}):", token_idx, token.bunsetsu.surface);
-                                    for (m_idx, morpheme) in token.bunsetsu.morphemes.iter().enumerate() {
+                                    println!(
+                                        "  文节 [{}] (表层: {}):",
+                                        token_idx, token.bunsetsu.surface
+                                    );
+                                    for (m_idx, morpheme) in
+                                        token.bunsetsu.morphemes.iter().enumerate()
+                                    {
                                         println!(
                                             "    语素 [{}] '{}' (原形: '{}', 词性: {}-{}-{}-{})",
                                             m_idx,
@@ -977,9 +989,18 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     }
 
     let total = items.len();
-    let verified = items.iter().filter(|i| i.decision == VerifyDecision::Verified).count();
-    let incorrect = items.iter().filter(|i| i.decision == VerifyDecision::Incorrect).count();
-    let pending = items.iter().filter(|i| i.decision == VerifyDecision::Pending).count();
+    let verified = items
+        .iter()
+        .filter(|i| i.decision == VerifyDecision::Verified)
+        .count();
+    let incorrect = items
+        .iter()
+        .filter(|i| i.decision == VerifyDecision::Incorrect)
+        .count();
+    let pending = items
+        .iter()
+        .filter(|i| i.decision == VerifyDecision::Pending)
+        .count();
     let pass_rate = if total - pending > 0 {
         (verified as f64) / ((total - pending) as f64) * 100.0
     } else {
@@ -998,8 +1019,14 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 
     if incorrect > 0 {
         println!("\n有误项目详情 (Incorrect):");
-        for item in items.iter().filter(|i| i.decision == VerifyDecision::Incorrect) {
-            println!("  [{}] {} ({}) - {}", item.id, item.label, item.origin, item.surface);
+        for item in items
+            .iter()
+            .filter(|i| i.decision == VerifyDecision::Incorrect)
+        {
+            println!(
+                "  [{}] {} ({}) - {}",
+                item.id, item.label, item.origin, item.surface
+            );
             println!("    上下文: {}", item.context);
         }
     }

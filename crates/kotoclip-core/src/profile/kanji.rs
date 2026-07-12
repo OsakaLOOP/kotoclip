@@ -1,6 +1,7 @@
 use super::ProfileEngine;
 use rusqlite::Result;
 use serde_json;
+use std::collections::HashMap;
 
 /// 判断字符是否为汉字 (CJK 统一汉字区间)
 fn is_kanji(c: char) -> bool {
@@ -56,6 +57,46 @@ fn split_reading_to_morae(reading: &str) -> Vec<String> {
 }
 
 impl ProfileEngine {
+    /// 读取当前画像中的全部汉字读音置信度，供单次文章评分复用。
+    /// 画像规模通常远小于文本 token 数，避免为每个重复词汇执行多次 SQLite 查询。
+    pub(crate) fn get_all_kanji_confidences(&self) -> Result<HashMap<char, HashMap<String, f32>>> {
+        let mut statement = self
+            .conn
+            .prepare_cached("SELECT kanji, reading, confidence FROM kanji_knowledge")?;
+        let rows = statement.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, f32>(2)?,
+            ))
+        })?;
+        let mut confidences = HashMap::new();
+        for (kanji, reading, confidence) in rows.flatten() {
+            if let Some(character) = kanji.chars().next() {
+                confidences
+                    .entry(character)
+                    .or_insert_with(HashMap::new)
+                    .insert(reading, confidence);
+            }
+        }
+        Ok(confidences)
+    }
+
+    pub(crate) fn infer_novelty_confidence_from_cache(
+        &self,
+        word: &str,
+        reading: &str,
+        confidences: &HashMap<char, HashMap<String, f32>>,
+    ) -> Result<(f32, Option<String>)> {
+        infer_novelty_confidence_with(word, reading, |kanji, kana| {
+            Ok(confidences
+                .get(&kanji)
+                .and_then(|readings| readings.get(kana))
+                .copied()
+                .unwrap_or(0.0))
+        })
+    }
+
     /// 汉字读音学习度更新逻辑。当用户学过一个词后，将其中的汉字和对应假名对齐并存入数据库。
     pub fn update_kanji_knowledge_from_word(&self, word: &str, reading: &str) -> Result<()> {
         let kanjis = extract_kanji(word);
@@ -133,52 +174,9 @@ impl ProfileEngine {
         word: &str,
         reading: &str,
     ) -> Result<(f32, Option<String>)> {
-        let kanjis = extract_kanji(word);
-        if kanjis.is_empty() {
-            return Ok((0.0, None));
-        }
-
-        let morae = split_reading_to_morae(reading);
-
-        // 仅对全汉字且长度为 2、读音为 4 音拍的词做推断 (如用 剣(ケン)+術(ジュツ) 推理 剣術(4音拍))
-        if kanjis.len() == 2 && word.chars().all(is_kanji) && morae.len() == 4 {
-            let r0 = morae[0..2].join("");
-            let r1 = morae[2..4].join("");
-
-            let conf0 = self.get_kanji_confidence(kanjis[0], &r0)?;
-            let conf1 = self.get_kanji_confidence(kanjis[1], &r1)?;
-
-            if conf0 > 0.1 && conf1 > 0.1 {
-                let final_conf = conf0.min(conf1);
-                let reason = format!(
-                    "根据已掌握汉字及其音读推断：'{}'({}) 与 '{}'({}) 已知",
-                    kanjis[0], r0, kanjis[1], r1
-                );
-                return Ok((final_conf, Some(reason)));
-            }
-        }
-
-        // 对全汉字且长度为 3、读音为 6 音拍的词做推断
-        if kanjis.len() == 3 && word.chars().all(is_kanji) && morae.len() == 6 {
-            let r0 = morae[0..2].join("");
-            let r1 = morae[2..4].join("");
-            let r2 = morae[4..6].join("");
-
-            let conf0 = self.get_kanji_confidence(kanjis[0], &r0)?;
-            let conf1 = self.get_kanji_confidence(kanjis[1], &r1)?;
-            let conf2 = self.get_kanji_confidence(kanjis[2], &r2)?;
-
-            if conf0 > 0.1 && conf1 > 0.1 && conf2 > 0.1 {
-                let final_conf = conf0.min(conf1).min(conf2);
-                let reason = format!(
-                    "根据已掌握汉字及其音读推断：'{}'({}), '{}'({}) 与 '{}'({}) 已知",
-                    kanjis[0], r0, kanjis[1], r1, kanjis[2], r2
-                );
-                return Ok((final_conf, Some(reason)));
-            }
-        }
-
-        Ok((0.0, None))
+        infer_novelty_confidence_with(word, reading, |kanji, kana| {
+            self.get_kanji_confidence(kanji, kana)
+        })
     }
 
     // 内部函数：写入/更新单汉字的读音与掌握置信度
@@ -276,4 +274,52 @@ impl ProfileEngine {
             Ok(0.0)
         }
     }
+}
+
+fn infer_novelty_confidence_with<F>(
+    word: &str,
+    reading: &str,
+    mut confidence_for: F,
+) -> Result<(f32, Option<String>)>
+where
+    F: FnMut(char, &str) -> Result<f32>,
+{
+    let kanjis = extract_kanji(word);
+    if kanjis.is_empty() {
+        return Ok((0.0, None));
+    }
+    let morae = split_reading_to_morae(reading);
+    if kanjis.len() == 2 && word.chars().all(is_kanji) && morae.len() == 4 {
+        let r0 = morae[0..2].join("");
+        let r1 = morae[2..4].join("");
+        let conf0 = confidence_for(kanjis[0], &r0)?;
+        let conf1 = confidence_for(kanjis[1], &r1)?;
+        if conf0 > 0.1 && conf1 > 0.1 {
+            return Ok((
+                conf0.min(conf1),
+                Some(format!(
+                    "根据已掌握汉字及其音读推断：'{}'({}) 与 '{}'({}) 已知",
+                    kanjis[0], r0, kanjis[1], r1
+                )),
+            ));
+        }
+    }
+    if kanjis.len() == 3 && word.chars().all(is_kanji) && morae.len() == 6 {
+        let r0 = morae[0..2].join("");
+        let r1 = morae[2..4].join("");
+        let r2 = morae[4..6].join("");
+        let conf0 = confidence_for(kanjis[0], &r0)?;
+        let conf1 = confidence_for(kanjis[1], &r1)?;
+        let conf2 = confidence_for(kanjis[2], &r2)?;
+        if conf0 > 0.1 && conf1 > 0.1 && conf2 > 0.1 {
+            return Ok((
+                conf0.min(conf1).min(conf2),
+                Some(format!(
+                    "根据已掌握汉字及其音读推断：'{}'({}), '{}'({}) 与 '{}'({}) 已知",
+                    kanjis[0], r0, kanjis[1], r1, kanjis[2], r2
+                )),
+            ));
+        }
+    }
+    Ok((0.0, None))
 }

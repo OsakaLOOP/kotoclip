@@ -25,6 +25,7 @@ export type AnalysisPhase =
   | "grammar_matching"
   | "dictionary_matching"
   | "profile_scoring"
+  | "expression_matching"
   | "recording_exposure"
   | "completed";
 
@@ -35,6 +36,80 @@ export interface AnalysisProgress {
   total: number;
   percent: number;
   message: string;
+}
+
+interface CompactAnalysis {
+  s: string[];
+  t: CompactToken[];
+}
+
+interface CompactToken {
+  b: CompactBunsetsu;
+  n: number;
+  k: boolean;
+  r?: number;
+  x?: CompactExpression[];
+  d: number;
+}
+
+interface CompactBunsetsu {
+  m: CompactMorpheme[];
+  s: number;
+  h: CompactHeadWord;
+  g?: CompactGrammarTag[];
+  c: [number, number];
+}
+
+interface CompactMorpheme {
+  s: number;
+  p: [number, number, number, number];
+  b: number;
+  r: number;
+  t: number;
+  f: number;
+  c: [number, number];
+}
+
+interface CompactHeadWord { s: number; b: number; r: number; p: [number, number, number, number]; }
+interface CompactGrammarTag { i: number; j: number; e: number; l?: number; d: number; m: [number, number]; c: [number, number]; }
+interface CompactExpression { m: number; i: number; l: number; d: number; o: number; t: number; p: number; b: number; c: number; q: number; r: [number, number]; a: [number, number]; s: number; }
+
+/** 将热路径的字符串表 IPC 模型恢复为现有组件使用的 AnnotatedToken。 */
+function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
+  const stringAt = (index: number) => analysis.s[index] ?? "";
+  const position = (indices: [number, number, number, number]) => ({
+    major: stringAt(indices[0]), sub1: stringAt(indices[1]), sub2: stringAt(indices[2]), sub3: stringAt(indices[3]),
+  });
+  return analysis.t.map((token) => ({
+    bunsetsu: {
+      morphemes: token.b.m.map((morpheme) => ({
+        surface: stringAt(morpheme.s), pos: position(morpheme.p), base_form: stringAt(morpheme.b),
+        reading: stringAt(morpheme.r), conjugation_type: stringAt(morpheme.t), conjugation_form: stringAt(morpheme.f),
+        char_range: morpheme.c,
+      })),
+      surface: stringAt(token.b.s),
+      head_word: {
+        surface: stringAt(token.b.h.s), base_form: stringAt(token.b.h.b), reading: stringAt(token.b.h.r), pos: position(token.b.h.p),
+      },
+      grammar_tags: (token.b.g ?? []).map((tag) => ({
+        pattern_id: stringAt(tag.i), name_ja: stringAt(tag.j), name_en: stringAt(tag.e), jlpt_level: tag.l ?? null,
+        description: stringAt(tag.d), morpheme_range: tag.m, char_range: tag.c,
+      })),
+      char_range: token.b.c,
+    },
+    novelty_score: token.n,
+    is_selected: false,
+    is_known: token.k,
+    inference_reason: token.r === undefined ? null : stringAt(token.r),
+    expressions: (token.x ?? []).map((expression) => ({
+      match_id: stringAt(expression.m), rule_id: expression.i, label: stringAt(expression.l), description: stringAt(expression.d),
+      origin: stringAt(expression.o), expression_type: stringAt(expression.t) as ExpressionType,
+      priority: expression.p, boundary_effect: stringAt(expression.b) as ExpressionBoundaryEffect,
+      confidence: expression.c, position: stringAt(expression.q) as "start" | "middle" | "end" | "single",
+      token_range: expression.r, char_range: expression.a, surface: stringAt(expression.s),
+    })),
+    display_class: stringAt(token.d) as "content" | "punctuation" | "line_break",
+  }));
 }
 
 const initialProgress = (): AnalysisProgress => ({
@@ -91,12 +166,12 @@ export function useTokenization() {
       listenerSetupMs = performance.now() - listenerStartedAt;
       // 调用 Tauri 命令进行分词与用户画像评分标注
       const invokeStartedAt = performance.now();
-      const response = await invoke<{ tokens: AnnotatedToken[]; backendDurationMs: number }>("analyze_text", {
+      const response = await invoke<{ analysis: CompactAnalysis; backendDurationMs: number }>("analyze_text", {
         text,
         recordExposure,
         requestId,
       });
-      const allTokens = response.tokens;
+      const allTokens = decodeAnalysis(response.analysis);
       const backendDurationMs = response.backendDurationMs;
       invokeAndTransferMs = performance.now() - invokeStartedAt;
       if (activeRequestId.value !== requestId) return false;

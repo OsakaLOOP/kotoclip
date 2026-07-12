@@ -7,6 +7,7 @@ pub mod models;
 pub mod performance;
 pub mod pipeline;
 pub mod profile;
+pub mod transport;
 
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
@@ -27,18 +28,6 @@ pub struct Engine {
 }
 
 impl Engine {
-    /// 统一应用用户、内置、词典与非连续表达候选，并在单一出口消解优先级。
-    fn apply_expression_analysis(
-        &self,
-        tokens: &mut [AnnotatedToken],
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.profile.apply_expression_rules(tokens)?;
-        pipeline::expressions::apply_builtin_expressions(tokens);
-        pipeline::expressions::apply_dictionary_expressions(tokens, &self.dictionary);
-        pipeline::expressions::apply_correlative_expressions(tokens);
-        pipeline::expressions::resolve_expression_conflicts(tokens);
-        Ok(())
-    }
     /// 从对应路径初始化整个引擎 (包括形态素字典、SQLite 词典群目录以及用户数据 SQLite 文件)
     pub fn new<P1: AsRef<Path>, P2: AsRef<Path>, P3: AsRef<Path>>(
         dict_path: P1,
@@ -131,14 +120,14 @@ impl Engine {
             AnalysisPhase::DictionaryMatching,
             0,
             token_count,
-            55,
+            40,
             "按词典校正词汇边界",
         ));
         for (index, token) in tokens.iter_mut().enumerate() {
             if token.display_class != "content" {
                 let completed = index + 1;
                 if completed == token_count || completed % report_step == 0 {
-                    let percent = 55 + ((completed * 5 / token_count.max(1)) as u8);
+                    let percent = 40 + ((completed * 6 / token_count.max(1)) as u8);
                     report(AnalysisProgress::counted(
                         AnalysisPhase::DictionaryMatching,
                         completed,
@@ -155,7 +144,7 @@ impl Engine {
             );
             let completed = index + 1;
             if completed == token_count || completed % report_step == 0 {
-                let percent = 55 + ((completed * 5 / token_count.max(1)) as u8);
+                let percent = 40 + ((completed * 6 / token_count.max(1)) as u8);
                 report(AnalysisProgress::counted(
                     AnalysisPhase::DictionaryMatching,
                     completed,
@@ -169,7 +158,7 @@ impl Engine {
         let mut annotated =
             self.profile
                 .annotate_tokens_with_progress(tokens, |completed, total| {
-                    let percent = 61 + ((completed * 35 / total.max(1)) as u8);
+                    let percent = 46 + ((completed * 1 / total.max(1)) as u8);
                     report(AnalysisProgress::counted(
                         AnalysisPhase::ProfileScoring,
                         completed,
@@ -178,13 +167,43 @@ impl Engine {
                         "计算词汇熟悉度",
                     ));
                 })?;
-        // 统一表达层先完成分类与优先级消解；仅词汇单位规则可以重组展示文节。
-        self.apply_expression_analysis(&mut annotated)?;
+        // 表达层是当前回测的主要剩余耗时，按真实阶段拆分进度，避免画像评分
+        // 阶段长时间显示 61%~96% 而实际工作已经完成。
+        report(AnalysisProgress::stage(
+            AnalysisPhase::ExpressionMatching,
+            47,
+            "应用自定义表达规则",
+        ));
+        self.profile.apply_expression_rules(&mut annotated)?;
+        report(AnalysisProgress::stage(
+            AnalysisPhase::ExpressionMatching,
+            50,
+            "匹配内置表达",
+        ));
+        pipeline::expressions::apply_builtin_expressions(&mut annotated);
+        report(AnalysisProgress::stage(
+            AnalysisPhase::DictionaryMatching,
+            54,
+            "匹配词典固定表达",
+        ));
+        pipeline::expressions::apply_dictionary_expressions(&mut annotated, &self.dictionary);
+        report(AnalysisProgress::stage(
+            AnalysisPhase::ExpressionMatching,
+            92,
+            "匹配呼应表达",
+        ));
+        pipeline::expressions::apply_correlative_expressions(&mut annotated);
+        report(AnalysisProgress::stage(
+            AnalysisPhase::ExpressionMatching,
+            96,
+            "整理表达边界",
+        ));
+        pipeline::expressions::resolve_expression_conflicts(&mut annotated);
         annotated = pipeline::expressions::apply_expression_boundaries(annotated);
         if record_exposure {
             self.profile
                 .record_token_exposures_with_progress(&annotated, |completed, total| {
-                    let percent = 97 + ((completed * 2 / total.max(1)) as u8);
+                    let percent = 98 + ((completed * 2 / total.max(1)) as u8);
                     report(AnalysisProgress::counted(
                         AnalysisPhase::RecordingExposure,
                         completed,

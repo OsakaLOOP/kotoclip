@@ -23,6 +23,7 @@ impl ProfileEngine {
         let total = tokens.len();
         let report_step = (total / 100).max(1);
         let exposures = self.get_all_exposures()?;
+        let kanji_confidences = self.get_all_kanji_confidences()?;
         report(0, total);
         for (index, token) in tokens.iter_mut().enumerate() {
             if token.display_class != "content" {
@@ -44,7 +45,10 @@ impl ProfileEngine {
             }
 
             // 2. 查询该词的历史曝光和标记记录
-            if let Some(record) = exposures.get(base_form).and_then(|items| items.get(reading)) {
+            if let Some(record) = exposures
+                .get(base_form)
+                .and_then(|items| items.get(reading))
+            {
                 // 如果用户已经主动将其标记为已知，则直接赋予 0 生词权重
                 if record.is_known {
                     token.novelty_score = 0.0;
@@ -58,7 +62,11 @@ impl ProfileEngine {
                 let exposure_decay = (-count / 5.0).exp();
 
                 // 汉字掌握置信度
-                let (kanji_conf, reason) = self.infer_novelty_confidence(base_form, reading)?;
+                let (kanji_conf, reason) = self.infer_novelty_confidence_from_cache(
+                    base_form,
+                    reading,
+                    &kanji_confidences,
+                )?;
                 let kanji_novelty = 1.0 - kanji_conf;
 
                 // 权重融合：曝光权重 0.5 + 汉字新颖度 0.5
@@ -67,7 +75,11 @@ impl ProfileEngine {
                 token.inference_reason = reason;
             } else {
                 // 无曝光历史 (Cold Start)，纯依靠汉字掌握度推断
-                let (kanji_conf, reason) = self.infer_novelty_confidence(base_form, reading)?;
+                let (kanji_conf, reason) = self.infer_novelty_confidence_from_cache(
+                    base_form,
+                    reading,
+                    &kanji_confidences,
+                )?;
                 let kanji_novelty = 1.0 - kanji_conf;
 
                 // 曝光衰减为 1.0 (最大新颖度)
@@ -96,6 +108,9 @@ impl ProfileEngine {
         let exposure_started = Instant::now();
         let exposures = self.get_all_exposures()?;
         timings.add("画像曝光查询", exposure_started.elapsed());
+        let kanji_cache_started = Instant::now();
+        let kanji_confidences = self.get_all_kanji_confidences()?;
+        timings.add("汉字掌握度缓存读取", kanji_cache_started.elapsed());
         for token in &mut tokens {
             if token.display_class != "content" {
                 token.novelty_score = 0.0;
@@ -112,7 +127,9 @@ impl ProfileEngine {
                 continue;
             }
 
-            let exposure = exposures.get(base_form).and_then(|items| items.get(reading));
+            let exposure = exposures
+                .get(base_form)
+                .and_then(|items| items.get(reading));
 
             if let Some(record) = exposure {
                 if record.is_known {
@@ -122,14 +139,22 @@ impl ProfileEngine {
                 }
 
                 let inference_started = Instant::now();
-                let (kanji_conf, reason) = self.infer_novelty_confidence(base_form, reading)?;
+                let (kanji_conf, reason) = self.infer_novelty_confidence_from_cache(
+                    base_form,
+                    reading,
+                    &kanji_confidences,
+                )?;
                 timings.add("汉字熟悉度推断", inference_started.elapsed());
                 let exposure_decay = (-(record.exposure_count as f32) / 5.0).exp();
                 token.novelty_score = 0.5 * (1.0 - kanji_conf) + 0.5 * exposure_decay;
                 token.inference_reason = reason;
             } else {
                 let inference_started = Instant::now();
-                let (kanji_conf, reason) = self.infer_novelty_confidence(base_form, reading)?;
+                let (kanji_conf, reason) = self.infer_novelty_confidence_from_cache(
+                    base_form,
+                    reading,
+                    &kanji_confidences,
+                )?;
                 timings.add("汉字熟悉度推断", inference_started.elapsed());
                 token.novelty_score = 0.5 * (1.0 - kanji_conf) + 0.5;
                 token.inference_reason = reason;
