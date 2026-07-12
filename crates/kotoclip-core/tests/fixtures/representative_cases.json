@@ -11,6 +11,10 @@
     "expected_stage_b": {
       "word_formations": ["deity_by_godan_action"]
     },
+    "expected_stage_c": {
+      "bunsetsu": ["冷やし神が", "座っている", "。"],
+      "functions": ["case_phrase", "predicate"]
+    },
     "expected_target": {
       "bunsetsu": ["冷やし神が", "座って", "いる。"],
       "expressions": []
@@ -45,6 +49,10 @@
     "expected_stage_b": {
       "word_formations": ["renyou_houdai"]
     },
+    "expected_stage_c": {
+      "bunsetsu": ["食べ放題に", "行く", "。"],
+      "functions": ["case_phrase", "predicate"]
+    },
     "expected_target": {
       "bunsetsu": ["食べ放題に", "行く。"],
       "expressions": []
@@ -58,6 +66,10 @@
     "expected_observed": {
       "bunsetsu": ["本を", "立ち読み", "する", "。"],
       "expressions": []
+    },
+    "expected_stage_c": {
+      "bunsetsu": ["本を", "立ち読みする", "。"],
+      "functions": ["case_phrase", "predicate"]
     },
     "expected_target": {
       "bunsetsu": ["本を", "立ち読みする。"],
@@ -189,6 +201,11 @@
       "bunsetsu": ["やること", "ないから", "帰る", "。"],
       "expressions": ["〜ことなく"]
     },
+    "expected_stage_d": {
+      "accepted": [],
+      "pending": [],
+      "rejected": ["builtin_negative_koto_naku"]
+    },
     "expected_target": {
       "bunsetsu": ["やること", "ないから", "帰る。"],
       "expressions": []
@@ -202,6 +219,14 @@
     "expected_observed": {
       "bunsetsu": ["何一つ", "すること", "なく", "一日が", "終わった", "。"],
       "expressions": ["〜ことなく"]
+    },
+    "expected_stage_c": {
+      "bunsetsu": ["何一つ", "する", "ことなく", "一日が", "終わった", "。"]
+    },
+    "expected_stage_d": {
+      "accepted": ["〜ことなく"],
+      "pending": [],
+      "rejected": []
     },
     "expected_target": {
       "bunsetsu": ["何一つ", "する", "ことなく", "一日が", "終わった。"],
@@ -245,6 +270,11 @@
       "bunsetsu": ["男が", "立つ", "。"],
       "expressions": ["男が立つ"]
     },
+    "expected_stage_d": {
+      "accepted": [],
+      "pending": ["男が立つ"],
+      "rejected": []
+    },
     "expected_target": {
       "bunsetsu": ["男が", "立つ。"],
       "expressions": []
@@ -273,6 +303,11 @@
       "bunsetsu": ["鳥の", "声を", "聞く", "。"],
       "expressions": ["声を聞く"]
     },
+    "expected_stage_d": {
+      "accepted": [],
+      "pending": ["声を聞く"],
+      "rejected": []
+    },
     "expected_target": {
       "bunsetsu": ["鳥の", "声を", "聞く。"],
       "expressions": []
@@ -286,6 +321,11 @@
     "expected_observed": {
       "bunsetsu": ["彼の", "話に", "耳を", "傾ける", "。"],
       "expressions": ["耳を傾ける"]
+    },
+    "expected_stage_d": {
+      "accepted": ["耳を傾ける"],
+      "pending": [],
+      "rejected": []
     },
     "expected_target": {
       "bunsetsu": ["彼の", "話に", "耳を傾ける。"],
@@ -314,6 +354,10 @@
     "expected_observed": {
       "bunsetsu": ["彼は", "口を", "開くたびに", "嘘を", "つく", "。"],
       "expressions": ["口を開く"]
+    },
+    "expected_stage_d": {
+      "accepted": ["口を開く"],
+      "matched_surfaces": ["口を開く"]
     },
     "expected_target": {
       "bunsetsu": ["彼は", "口を", "開くたびに", "嘘を", "つく。"],
