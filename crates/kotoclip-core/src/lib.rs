@@ -3,6 +3,7 @@ pub mod dictionary;
 pub mod export;
 pub mod ffi;
 pub mod models;
+pub mod llm;
 pub mod performance;
 pub mod pipeline;
 pub mod profile;
