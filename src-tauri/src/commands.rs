@@ -106,16 +106,22 @@ pub async fn add_expression_rule(
     bunsetsu_states: Vec<String>,
     morpheme_masks: Vec<Vec<bool>>,
     gap_after: Option<usize>,
+    expression_type: String,
+    priority: i32,
+    boundary_effect: String,
 ) -> Result<ExpressionRule, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     engine
-        .add_expression_rule(
+        .add_configured_expression_rule(
             &tokens,
             label.as_deref(),
             description.as_deref(),
             &bunsetsu_states,
             &morpheme_masks,
             gap_after,
+            &expression_type,
+            priority,
+            &boundary_effect,
         )
         .map_err(|e| e.to_string())
 }

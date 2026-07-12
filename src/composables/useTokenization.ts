@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { AnnotatedToken, ExpressionRule, SegmentationCandidate } from "../types";
+import { AnnotatedToken, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, SegmentationCandidate } from "../types";
 
 export interface Paragraph {
   id: number;
@@ -286,7 +286,10 @@ export function useTokenization() {
     description?: string,
     bunsetsuStates: ('fixed' | 'slot' | 'any')[] = [],
     morphemeMasks: boolean[][] = [],
-    gapAfter: number | null = null
+    gapAfter: number | null = null,
+    expressionType: ExpressionType = "grammar_construction",
+    priority = 50,
+    boundaryEffect: ExpressionBoundaryEffect = "annotate_only"
   ) {
     return await invoke<ExpressionRule>("add_expression_rule", {
       tokens,
@@ -295,6 +298,9 @@ export function useTokenization() {
       bunsetsuStates,
       morphemeMasks,
       gapAfter,
+      expressionType,
+      priority,
+      boundaryEffect,
     });
   }
 
