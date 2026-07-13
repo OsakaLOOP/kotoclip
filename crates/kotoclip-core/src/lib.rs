@@ -95,14 +95,82 @@ impl Engine {
     /// 在稳定 NLP Token 上重放当前用户的 N-best、画像和表达层。
     pub fn hydrate_stable_tokens(
         &self,
+        tokens: Vec<AnnotatedToken>,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        let mut tokens = self.hydrate_stable_tokens_for_document_batch(tokens)?;
+        self.refresh_expression_annotations_in_place(&mut tokens)?;
+        Ok(tokens)
+    }
+
+    /// 为渐进文档批次重放会影响正文基本呈现的用户态阶段。
+    /// Expression 在首帧和范围补全后统一执行，避免阻断首屏或重复扫描各批次。
+    pub fn hydrate_stable_tokens_for_document_batch(
+        &self,
         mut tokens: Vec<AnnotatedToken>,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
         let choices = self.profile.get_segmentation_choices()?;
         self.pipeline
             .apply_segmentation_choices(&mut tokens, &choices);
-        let mut tokens = self.profile.annotate_tokens(tokens)?;
-        self.refresh_expression_annotations_in_place(&mut tokens)?;
-        Ok(tokens)
+        Ok(self.profile.annotate_tokens(tokens)?)
+    }
+
+    /// 渐进文档批次只阻断稳定 NLP、N-best 与基本画像，表达层由首帧后统一 Patch。
+    pub fn analyze_document_batch(
+        &self,
+        text: &str,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        let tokens = self.analyze_stable_text(text);
+        self.hydrate_stable_tokens_for_document_batch(tokens)
+    }
+
+    pub fn analyze_document_batch_with_progress<F>(
+        &self,
+        text: &str,
+        mut report: F,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>>
+    where
+        F: FnMut(AnalysisProgress),
+    {
+        report(AnalysisProgress::stage(
+            AnalysisPhase::Preparing,
+            1,
+            "准备首屏分析",
+        ));
+        let mut tokens = self.pipeline.process_with_dictionary_and_progress(
+            text,
+            &[],
+            &self.dictionary,
+            &mut report,
+        );
+        let choices = self.profile.get_segmentation_choices()?;
+        self.pipeline
+            .apply_segmentation_choices(&mut tokens, &choices);
+        let token_count = tokens.len();
+        report(AnalysisProgress::counted(
+            AnalysisPhase::DictionaryMatching,
+            token_count,
+            token_count,
+            80,
+            "正文结构分析完成",
+        ));
+        let annotated =
+            self.profile
+                .annotate_tokens_with_progress(tokens, |completed, total| {
+                    let percent = 80 + ((completed * 19 / total.max(1)) as u8);
+                    report(AnalysisProgress::counted(
+                        AnalysisPhase::ProfileScoring,
+                        completed,
+                        total,
+                        percent,
+                        "计算词汇熟悉度",
+                    ));
+                })?;
+        report(AnalysisProgress::stage(
+            AnalysisPhase::Completed,
+            100,
+            "首屏分析完成",
+        ));
+        Ok(annotated)
     }
 
     /// Analyze text and optionally record the rendered lexical tokens as exposures.
@@ -761,13 +829,18 @@ mod progress_tests {
             false,
         );
         while let Some(batch) = progressive.next_batch(1) {
-            let tokens = engine
-                .analyze_text_with_exposure(&batch.source, false)
-                .unwrap();
+            let tokens = engine.analyze_document_batch(&batch.source).unwrap();
+            assert!(
+                tokens.iter().all(|token| token.expressions.is_empty()),
+                "渐进正文批次不应阻断等待表达阶段"
+            );
             progressive
                 .append_analyzed_batch(progressive.revision, &batch, tokens)
                 .unwrap();
         }
+        engine
+            .refresh_expression_annotations_in_place(&mut progressive.tokens)
+            .unwrap();
         assert_eq!(
             serde_json::to_value(&progressive.tokens).unwrap(),
             serde_json::to_value(&full.tokens).unwrap()

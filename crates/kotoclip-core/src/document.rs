@@ -62,6 +62,67 @@ pub struct StageInvalidation {
     pub char_ranges: Vec<(usize, usize)>,
 }
 
+/// 从最早失效阶段生成规范下游链。画像变化不会反向触发表达匹配，
+/// 其余 NLP 结构阶段按正式执行顺序传播。
+pub fn propagate_stage_invalidation(
+    earliest: AnalysisStage,
+    char_ranges: Vec<(usize, usize)>,
+) -> Vec<StageInvalidation> {
+    let stages: &[AnalysisStage] = match earliest {
+        AnalysisStage::Morpheme => &[
+            AnalysisStage::Morpheme,
+            AnalysisStage::WordFormation,
+            AnalysisStage::DictionaryLexical,
+            AnalysisStage::Bunsetsu,
+            AnalysisStage::Grammar,
+            AnalysisStage::Profile,
+            AnalysisStage::Expression,
+            AnalysisStage::Presentation,
+        ],
+        AnalysisStage::WordFormation => &[
+            AnalysisStage::WordFormation,
+            AnalysisStage::DictionaryLexical,
+            AnalysisStage::Bunsetsu,
+            AnalysisStage::Grammar,
+            AnalysisStage::Profile,
+            AnalysisStage::Expression,
+            AnalysisStage::Presentation,
+        ],
+        AnalysisStage::DictionaryLexical => &[
+            AnalysisStage::DictionaryLexical,
+            AnalysisStage::Bunsetsu,
+            AnalysisStage::Grammar,
+            AnalysisStage::Profile,
+            AnalysisStage::Expression,
+            AnalysisStage::Presentation,
+        ],
+        AnalysisStage::Bunsetsu => &[
+            AnalysisStage::Bunsetsu,
+            AnalysisStage::Grammar,
+            AnalysisStage::Profile,
+            AnalysisStage::Expression,
+            AnalysisStage::Presentation,
+        ],
+        AnalysisStage::Grammar => &[
+            AnalysisStage::Grammar,
+            AnalysisStage::Profile,
+            AnalysisStage::Expression,
+            AnalysisStage::Presentation,
+        ],
+        AnalysisStage::Profile => &[AnalysisStage::Profile, AnalysisStage::Presentation],
+        AnalysisStage::Expression => &[AnalysisStage::Expression, AnalysisStage::Presentation],
+        AnalysisStage::Presentation => &[AnalysisStage::Presentation],
+    };
+    stages
+        .iter()
+        .copied()
+        .map(|stage| StageInvalidation {
+            stage,
+            char_ranges: char_ranges.clone(),
+        })
+        .collect()
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisPatch {
@@ -773,6 +834,28 @@ mod tests {
         );
         assert_eq!(invalidation.recomputed_characters, 2);
         assert_eq!(invalidation.total_characters, 3);
+    }
+
+    #[test]
+    fn stage_invalidation_uses_canonical_downstream_chain() {
+        let structural = propagate_stage_invalidation(AnalysisStage::WordFormation, vec![(2, 4)]);
+        assert_eq!(
+            structural.iter().map(|item| item.stage).collect::<Vec<_>>(),
+            vec![
+                AnalysisStage::WordFormation,
+                AnalysisStage::DictionaryLexical,
+                AnalysisStage::Bunsetsu,
+                AnalysisStage::Grammar,
+                AnalysisStage::Profile,
+                AnalysisStage::Expression,
+                AnalysisStage::Presentation,
+            ]
+        );
+        let profile = propagate_stage_invalidation(AnalysisStage::Profile, vec![(2, 4)]);
+        assert_eq!(
+            profile.iter().map(|item| item.stage).collect::<Vec<_>>(),
+            vec![AnalysisStage::Profile, AnalysisStage::Presentation]
+        );
     }
 
     #[test]

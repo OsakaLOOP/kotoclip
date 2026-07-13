@@ -80,6 +80,7 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- session-benchmark `
 
 首批默认分析约 2,000 字符，首帧后先补邻近约 4,000 字符，再处理剩余范围。
 稳定 NLP 结果可由版本化缓存恢复，画像、表达和用户 N-best 状态始终在打开时重放。
+首屏只等待正文结构与基本画像；表达在正文范围稳定后统一扫描并通过 Patch 后置合并。
 `TokenUpdate` 不改变 Token 顺序，因此不会重复传输全文稳定 ID。
 
 章节覆盖率审计支持 `--chapter`、`--page-lines`、`--page`、`--start-line`、`--line-count` 和 `--sample-every`。完整参数见：

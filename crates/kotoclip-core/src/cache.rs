@@ -222,4 +222,26 @@ mod tests {
         assert!(second.load("本文").is_none());
         std::fs::remove_dir_all(directory).unwrap();
     }
+
+    #[test]
+    fn cache_capacity_is_bounded() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-cache-capacity-{nonce}"));
+        let dictionaries = directory.join("dicts");
+        std::fs::create_dir_all(&dictionaries).unwrap();
+        let system_dictionary = directory.join("system.dic");
+        std::fs::write(&system_dictionary, b"system").unwrap();
+        let cache_directory = directory.join("cache");
+        let cache =
+            AnalysisCache::new(&cache_directory, &system_dictionary, &dictionaries).unwrap();
+        for index in 0..=MAX_CACHE_ENTRIES {
+            cache.store(&format!("本文{index}"), &[]).unwrap();
+        }
+        let entries = std::fs::read_dir(&cache_directory).unwrap().count();
+        assert_eq!(entries, MAX_CACHE_ENTRIES);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
 }

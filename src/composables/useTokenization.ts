@@ -468,6 +468,9 @@ export function useTokenization() {
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     }
     if (activeSessionId.value !== sessionId) return;
+    // Expression 不参与首屏阻断；全部正文范围稳定后统一扫描并以注解 Patch 合并。
+    await refreshDocumentExpressions();
+    if (activeSessionId.value !== sessionId) return;
     await enqueueDocumentOperation(() => invoke<boolean>("finalize_document", {
       sessionId,
       baseRevision: documentRevision.value,

@@ -49,6 +49,7 @@ const {
   frontendTiming,
   analyzeText,
   continueDocumentAnalysis,
+  requestDocumentRange,
   documentComplete,
   documentCharRange,
   availableRanges,
@@ -175,13 +176,12 @@ function measureVirtualRow(element: Element | ComponentPublicInstance | null) {
   }
 }
 
-// 结果视图由 v-if 延迟挂载。必须等滚动容器进入 DOM 后再测量，
-// 否则首次分析时 virtualizer 会保留空的可见区间。
+// 新文档进入阅读态时归零；后台 Patch 只重新测量，不能打断用户滚动位置。
 watch(
-  [paragraphs, showInput],
-  async () => {
+  showInput,
+  async (visible) => {
     explanation.closeAll();
-    if (showInput.value) return;
+    if (visible) return;
     await nextTick();
     virtualizer.value.measure();
     virtualizer.value.scrollToOffset(0);
@@ -190,8 +190,42 @@ watch(
   { flush: "post" }
 );
 
+watch(
+  paragraphs,
+  async () => {
+    if (showInput.value) return;
+    await nextTick();
+    virtualizer.value.measure();
+    triggerUpdate();
+  },
+  { flush: "post" }
+);
+
+let rangePrefetchPending = false;
+
+async function prefetchNextMissingRange() {
+  const container = scrollContainerRef.value;
+  if (!container || documentComplete.value || rangePrefetchPending) return;
+  const nearEnd = container.scrollTop + container.clientHeight >= container.scrollHeight - container.clientHeight * 2;
+  if (!nearEnd) return;
+  const loadedEnd = availableRanges.value.reduce(
+    (end, range) => range[0] <= end ? Math.max(end, range[1]) : end,
+    0
+  );
+  if (loadedEnd >= documentCharRange.value[1]) return;
+  rangePrefetchPending = true;
+  try {
+    await requestDocumentRange([loadedEnd, Math.min(documentCharRange.value[1], loadedEnd + 4_000)]);
+  } finally {
+    rangePrefetchPending = false;
+  }
+}
+
 async function handleReaderScroll() {
   explanation.refreshAnchor();
+  void prefetchNextMissingRange().catch((error) => {
+    console.error("Viewport range prefetch failed:", error);
+  });
   await nextTick();
   explanation.refreshAnchor();
 }

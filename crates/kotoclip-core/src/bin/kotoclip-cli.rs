@@ -132,6 +132,8 @@ struct SessionBenchmarkReport {
     first_patch_bytes: usize,
     progressive_complete_ms: u128,
     progressive_patch_bytes: usize,
+    deferred_expression_ms: u128,
+    deferred_expression_patch_bytes: usize,
     expression_mutation_ms: u128,
     expression_changed_tokens: usize,
     expression_patch_bytes: usize,
@@ -609,7 +611,7 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     } else {
         100_000
     }) {
-        let tokens = engine.analyze_text_with_exposure(&batch.source, false)?;
+        let tokens = engine.analyze_document_batch(&batch.source)?;
         let patch = session.append_analyzed_batch(session.revision, &batch, tokens)?;
         let payload = serde_json::to_vec(&patch)?;
         progressive_patch_bytes += payload.len();
@@ -629,10 +631,24 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         .collect();
     let expected = ruby::prepare_text(text).text;
 
+    let deferred_expression_started = Instant::now();
+    let changed = engine.refresh_expression_annotations_changed(&mut session.tokens)?;
+    let document_range = session.char_range();
+    let deferred_expression_patch = session.apply_token_mutation(
+        session.revision,
+        "deferred_expression_completion",
+        vec![StageInvalidation {
+            stage: AnalysisStage::Expression,
+            char_ranges: vec![document_range],
+        }],
+        |_| changed,
+    )?;
+    let deferred_expression_patch_bytes = serde_json::to_vec(&deferred_expression_patch)?.len();
+    let deferred_expression_ms = deferred_expression_started.elapsed().as_millis();
+
     let mutation_started = Instant::now();
     let changed = engine.refresh_expression_annotations_changed(&mut session.tokens)?;
     let expression_changed_tokens = changed.len();
-    let document_range = session.char_range();
     let expression_patch = session.apply_token_mutation(
         session.revision,
         "benchmark_expression_refresh",
@@ -681,7 +697,7 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         let stable = warm_session
             .take_cached_stable_tokens(&batch)
             .ok_or("缓存缺少对应批次 Token")?;
-        let hydrated = engine.hydrate_stable_tokens(stable)?;
+        let hydrated = engine.hydrate_stable_tokens_for_document_batch(stable)?;
         let patch = warm_session.append_analyzed_batch(warm_session.revision, &batch, hydrated)?;
         if warm_first {
             warm_patch_bytes = serde_json::to_vec(&patch)?.len();
@@ -691,6 +707,7 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
             warm_continuation += 1;
         }
     }
+    engine.refresh_expression_annotations_in_place(&mut warm_session.tokens)?;
     let warm_equals_progressive =
         serde_json::to_value(&warm_session.tokens)? == serde_json::to_value(&session.tokens)?;
     if temporary_cache {
@@ -706,6 +723,8 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         first_patch_bytes,
         progressive_complete_ms,
         progressive_patch_bytes,
+        deferred_expression_ms,
+        deferred_expression_patch_bytes,
         expression_mutation_ms,
         expression_changed_tokens,
         expression_patch_bytes,

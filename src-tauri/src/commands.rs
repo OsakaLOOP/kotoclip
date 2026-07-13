@@ -1,6 +1,8 @@
 use crate::state::AppState;
 use kotoclip_core::analysis_progress::AnalysisProgress;
-use kotoclip_core::document::{AnalysisPatch, AnalysisStage, DocumentSession, StageInvalidation};
+use kotoclip_core::document::{
+    propagate_stage_invalidation, AnalysisPatch, AnalysisStage, DocumentSession,
+};
 use kotoclip_core::models::{
     AnnotatedToken, DictionaryLookup, ExportEntry, ExpressionRule, SegmentationCandidate,
 };
@@ -66,7 +68,7 @@ pub async fn open_document(
             .take_cached_stable_tokens(&batch)
             .ok_or_else(|| "缓存缺少首批稳定 Token".to_string())?;
         let tokens = engine
-            .hydrate_stable_tokens(stable_batch)
+            .hydrate_stable_tokens_for_document_batch(stable_batch)
             .map_err(|error| error.to_string())?;
         let patch = session
             .append_analyzed_batch(0, &batch, tokens)
@@ -89,7 +91,7 @@ pub async fn open_document(
         .ok_or_else(|| "文档没有可分析内容".to_string())?;
     let engine = state.engine.lock().map_err(|error| error.to_string())?;
     let tokens = engine
-        .analyze_text_with_progress(&batch.source, false, |progress| {
+        .analyze_document_batch_with_progress(&batch.source, |progress| {
             let _ = window.emit(
                 "analysis-progress",
                 AnalysisProgressEvent {
@@ -141,11 +143,11 @@ pub async fn continue_document_analysis(
     };
     let tokens = if let Some(stable) = session.take_cached_stable_tokens(&batch) {
         engine
-            .hydrate_stable_tokens(stable)
+            .hydrate_stable_tokens_for_document_batch(stable)
             .map_err(|error| error.to_string())?
     } else {
         engine
-            .analyze_text_with_exposure(&batch.source, false)
+            .analyze_document_batch(&batch.source)
             .map_err(|error| error.to_string())?
     };
     let patch = session
@@ -175,11 +177,11 @@ pub async fn request_document_range(
     if let Some(batch) = session.batch_for_range(char_range, 4_000) {
         let tokens = if let Some(stable) = session.take_cached_stable_tokens(&batch) {
             engine
-                .hydrate_stable_tokens(stable)
+                .hydrate_stable_tokens_for_document_batch(stable)
                 .map_err(|error| error.to_string())?
         } else {
             engine
-                .analyze_text_with_exposure(&batch.source, false)
+                .analyze_document_batch(&batch.source)
                 .map_err(|error| error.to_string())?
         };
         let patch = session
@@ -340,16 +342,7 @@ pub async fn refresh_document_expressions(
         .apply_token_mutation(
             base_revision,
             "expression_rules_changed",
-            vec![
-                StageInvalidation {
-                    stage: AnalysisStage::Expression,
-                    char_ranges: vec![document_range],
-                },
-                StageInvalidation {
-                    stage: AnalysisStage::Presentation,
-                    char_ranges: vec![document_range],
-                },
-            ],
+            propagate_stage_invalidation(AnalysisStage::Expression, vec![document_range]),
             |_| changed_indices,
         )
         .map_err(|error| error.to_string())
@@ -398,16 +391,7 @@ pub async fn mark_document_known(
         .apply_token_mutation(
             base_revision,
             if known { "mark_known" } else { "mark_unknown" },
-            vec![
-                StageInvalidation {
-                    stage: AnalysisStage::Profile,
-                    char_ranges: ranges.clone(),
-                },
-                StageInvalidation {
-                    stage: AnalysisStage::Presentation,
-                    char_ranges: ranges,
-                },
-            ],
+            propagate_stage_invalidation(AnalysisStage::Profile, ranges),
             |_| changed_indices,
         )
         .map_err(|error| error.to_string())
@@ -437,38 +421,20 @@ pub async fn choose_document_segmentation(
     let changed_indices = engine
         .refresh_segmentation_for_range(&mut session.tokens, local_range)
         .map_err(|error| error.to_string())?;
+    let mut invalidation =
+        propagate_stage_invalidation(AnalysisStage::WordFormation, vec![local_range]);
+    for item in &mut invalidation {
+        if matches!(
+            item.stage,
+            AnalysisStage::Expression | AnalysisStage::Presentation
+        ) {
+            item.char_ranges = vec![document_range];
+        }
+    }
     session
-        .apply_token_mutation(
-            base_revision,
-            "segmentation_choice",
-            vec![
-                StageInvalidation {
-                    stage: AnalysisStage::WordFormation,
-                    char_ranges: vec![local_range],
-                },
-                StageInvalidation {
-                    stage: AnalysisStage::Bunsetsu,
-                    char_ranges: vec![local_range],
-                },
-                StageInvalidation {
-                    stage: AnalysisStage::Grammar,
-                    char_ranges: vec![local_range],
-                },
-                StageInvalidation {
-                    stage: AnalysisStage::Profile,
-                    char_ranges: vec![local_range],
-                },
-                StageInvalidation {
-                    stage: AnalysisStage::Expression,
-                    char_ranges: vec![document_range],
-                },
-                StageInvalidation {
-                    stage: AnalysisStage::Presentation,
-                    char_ranges: vec![document_range],
-                },
-            ],
-            |_| changed_indices,
-        )
+        .apply_token_mutation(base_revision, "segmentation_choice", invalidation, |_| {
+            changed_indices
+        })
         .map_err(|error| error.to_string())
 }
 
