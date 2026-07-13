@@ -1,6 +1,6 @@
 # 解释目标与词典界面重构
 
-状态：**第一版已完成（2026-07-13）**。
+状态：**查询协议与第二版交互重构已完成（2026-07-13）**。
 
 ## 1. 目标
 
@@ -275,3 +275,40 @@ resolve_token_explanations(token, focus_morpheme, subject_id?, priority_list)
 - 文节末尾蓝色语法 badge 仍使用原有 `GrammarTag` 说明，不转成整体词典面板。
 - 胶囊级完整释义和导出通过统一 `dictionaryTargetForToken` 选择目标：精确词典整体优先；生产型构词回退到规则词头语素。
 - `一羽` 没有精确整体注解，因此不会以 `イチワ` 查询并显示 `一和`；内部可分别查询 `一` 和 `羽`。
+
+## 12. 第二版交互实现
+
+第一版遗留的问题不在查询对象，而在前端把 DOM 事件、查询请求、双面板状态和布局集中到段落 `mouseover` 处理器。第二版按以下边界重构：
+
+```text
+DOM 语义命中
+→ ExplanationSession
+→ 整体／内部独立请求通道
+→ ExplanationPopover
+→ 实测尺寸布局
+```
+
+### 12.1 聚焦与切换
+
+- 形态素节点已有稳定的 `data-morpheme-index`，因此语素身份继续由 DOM 语义命中确定；不引入全局坐标扫描。
+- 段落使用委托的 `pointerover/pointerout`，同时解析 `target` 与 `relatedTarget`，只在语义 key 真正变化时转换状态。
+- 同文节跨语素立即更新内部目标；跨文节立即建立新会话；同一目标内部的子节点变化不重复查询。
+- 只有正文与浮层之间的物理缝隙使用 140ms 关闭宽限。定时器不参与打开、目标切换或查询提交。
+- 整体与内部各自持有请求代次、历史和加载状态；旧请求不能写入新目标，整体导航也不能覆盖内部状态。
+- 查询结果按 `word＋reading` 缓存；同一目标再次进入时同步恢复，不重复发起 IPC。
+
+### 12.2 组件边界
+
+- `useExplanationSession` 负责会话、请求竞争、缓存、关闭宽限和锚点刷新。
+- `ExplanationPopover` 只编排整体与内部面板，并监听面板真实尺寸变化。
+- `TooltipPanel` 降为单面板内容外壳，不再包含语法说明或决定相邻面板位置。
+- `GrammarPopover` 独立展示 `GrammarTag`；badge 恢复指针命中，已知词不再隐藏语法入口。
+- `hitTest` 将 DOM 节点归一化为 `morpheme/token/grammar/panel/outside`，阅读器不再直接比较任意 DOM 子节点。
+
+### 12.3 布局与回归
+
+- 定位使用文节／语素 `DOMRect` 与 `ResizeObserver` 实测面板尺寸。
+- 单面板比较上、下、左、右；双面板比较同侧横排和锚点上下分置，并按遮挡、重叠和距离评分。
+- 滚动和窗口缩放刷新锚点；虚拟列表已卸载锚点时关闭会话。
+- `npm run test:ui` 覆盖单面板视口边界、宽屏双面板、窄屏上下分置及跨语素／跨文节转换语义。
+- `npm run build` 同时执行 TypeScript 类型检查和生产构建。
