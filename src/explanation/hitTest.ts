@@ -5,6 +5,21 @@ export type ExplanationHit =
   | { kind: "panel"; panel: string; key: string }
   | { kind: "outside"; key: "outside" };
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface RectLike {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const SOURCE_EDGE_TOLERANCE = 4;
+const MAX_EXPLANATION_GAP = 16;
+
 /**
  * 将 DOM 节点归一化为阅读器交互区域。事件只负责通知节点变化，
  * 后续状态转换只比较这里生成的语义 key。
@@ -69,4 +84,19 @@ export function belongsToSameToken(left: ExplanationHit, right: ExplanationHit) 
 
 export function keepsExplanationOpen(hit: ExplanationHit) {
   return hit.kind !== "outside";
+}
+
+/**
+ * 关闭宽限只覆盖正文、面板和相邻面板之间的真实缝隙。
+ * 离开点必须仍贴近当前区域，同时已经接近另一个可交互区域。
+ */
+export function isExplanationBridgePoint(point: Point, source: RectLike, destinations: RectLike[]) {
+  if (distanceToRect(point, source) > SOURCE_EDGE_TOLERANCE) return false;
+  return destinations.some((destination) => distanceToRect(point, destination) <= MAX_EXPLANATION_GAP);
+}
+
+function distanceToRect(point: Point, rect: RectLike) {
+  const dx = Math.max(rect.left - point.x, 0, point.x - rect.right);
+  const dy = Math.max(rect.top - point.y, 0, point.y - rect.bottom);
+  return Math.hypot(dx, dy);
 }
