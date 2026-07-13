@@ -1339,15 +1339,7 @@ mod tests {
         let mut printed_placeholders = false;
 
         for case in &cases {
-            let mut tokens = pipeline.process(&case.text, &[]);
-            for token in &mut tokens {
-                if token.display_class == "content" {
-                    crate::pipeline::bunsetsu::resolve_lexical_boundaries(
-                        std::slice::from_mut(&mut token.bunsetsu),
-                        |word| dictionary.contains_exact(word),
-                    );
-                }
-            }
+            let mut tokens = pipeline.process_with_dictionary(&case.text, &[], &dictionary);
             apply_builtin_expressions(&mut tokens);
             let dictionary_candidates = dictionary_expression_candidates(&tokens, &dictionary);
             apply_correlative_expressions(&mut tokens);

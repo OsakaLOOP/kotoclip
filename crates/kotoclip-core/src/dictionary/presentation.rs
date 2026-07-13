@@ -38,9 +38,42 @@ fn present_generic(definition: &str) -> DictionaryPresentation {
 
 fn finish(profile: &str, source: String, links: Vec<DictionaryLink>) -> DictionaryPresentation {
     let allowed: HashSet<&str> = [
-        "p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul", "ol",
-        "li", "dl", "dt", "dd", "a", "hy", "table", "thead", "tbody", "tr", "th", "td",
-        "sup", "sub", "small", "blockquote", "code", "mark", "vert", "v", "nh", "kh", "ku",
+        "p",
+        "div",
+        "span",
+        "br",
+        "ruby",
+        "rt",
+        "rp",
+        "b",
+        "strong",
+        "i",
+        "em",
+        "ul",
+        "ol",
+        "li",
+        "dl",
+        "dt",
+        "dd",
+        "a",
+        "hy",
+        "table",
+        "thead",
+        "tbody",
+        "tr",
+        "th",
+        "td",
+        "sup",
+        "sub",
+        "small",
+        "blockquote",
+        "code",
+        "mark",
+        "vert",
+        "v",
+        "nh",
+        "kh",
+        "ku",
     ]
     .into_iter()
     .collect();
@@ -88,7 +121,8 @@ fn extract_daijirin_links(definition: &str) -> Vec<DictionaryLink> {
             relation: "redirect".to_string(),
         }];
     }
-    let link_re = Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
+    let link_re =
+        Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
     let tag_re = Regex::new(r"<[^>]+>").unwrap();
     let navigation = is_navigation_definition(definition);
     let mut seen = HashSet::new();
@@ -99,38 +133,63 @@ fn extract_daijirin_links(definition: &str) -> Vec<DictionaryLink> {
             if target.is_empty() || !seen.insert(target.clone()) {
                 return None;
             }
-            if navigation && !target.contains('【') && !target.contains('〖') && !target.contains('（') {
+            if navigation
+                && !target.contains('【')
+                && !target.contains('〖')
+                && !target.contains('（')
+            {
                 return None;
             }
             let label = if navigation {
                 target.clone()
             } else {
-                tag_re.replace_all(captures.get(2)?.as_str(), "").trim().to_string()
+                tag_re
+                    .replace_all(captures.get(2)?.as_str(), "")
+                    .trim()
+                    .to_string()
             };
             let before = &definition[..captures.get(0)?.start()];
             Some(DictionaryLink {
                 target,
                 label,
-                relation: if navigation { "candidate" } else { classify_relation(before) }.to_string(),
+                relation: if navigation {
+                    "candidate"
+                } else {
+                    classify_relation(before)
+                }
+                .to_string(),
             })
         })
         .collect()
 }
 
 fn classify_relation(before: &str) -> &'static str {
-    let boundary = [before.rfind("<br"), before.rfind("</div>"), before.rfind("</p>")]
-        .into_iter()
-        .flatten()
-        .max()
-        .unwrap_or(0);
+    let boundary = [
+        before.rfind("<br"),
+        before.rfind("</div>"),
+        before.rfind("</p>"),
+    ]
+    .into_iter()
+    .flatten()
+    .max()
+    .unwrap_or(0);
     let context = &before[boundary..];
-    if context.contains("親項目") { "parent" }
-    else if context.contains("子項目") { "child" }
-    else if context.contains("句項目") { "phrase" }
-    else if context.contains("対義") || context.contains("反義") || context.contains('⇔') { "antonym" }
-    else if context.contains("類語") || context.contains("同義") || context.contains("同意") { "synonym" }
-    else if context.contains('→') || context.contains('⇒') || context.contains("参照") { "reference" }
-    else { "related" }
+    if context.contains("親項目") {
+        "parent"
+    } else if context.contains("子項目") {
+        "child"
+    } else if context.contains("句項目") {
+        "phrase"
+    } else if context.contains("対義") || context.contains("反義") || context.contains('⇔') {
+        "antonym"
+    } else if context.contains("類語") || context.contains("同義") || context.contains("同意")
+    {
+        "synonym"
+    } else if context.contains('→') || context.contains('⇒') || context.contains("参照") {
+        "reference"
+    } else {
+        "related"
+    }
 }
 
 fn clean_daijirin_markup(definition: &str, headword: &str, link_count: usize) -> String {
@@ -139,12 +198,24 @@ fn clean_daijirin_markup(definition: &str, headword: &str, link_count: usize) ->
     }
     let structural = Regex::new(r"(?s)〈(?:親項目|子項目|句項目)〉.*?(</p>|$)").unwrap();
     let without_structural = structural.replace_all(definition, "$1");
-    let anchors = Regex::new(r#"(?s)(?:⇔|→|⇒|☞)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#).unwrap();
+    let anchors = Regex::new(
+        r#"(?s)(?:⇔|→|⇒|☞)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#,
+    )
+    .unwrap();
     let without_anchors = anchors.replace_all(&without_structural, "");
     let figures = Regex::new(r"(?s)<img\s+[^>]*/?>").unwrap();
     let with_figures = figures.replace_all(&without_anchors, |captures: &regex::Captures<'_>| {
-        let tag = captures.get(0).map(|value| value.as_str()).unwrap_or_default();
-        let label = if tag.contains("gaiji") { "外字" } else if tag.contains("glyph") { "图示" } else { "图版" };
+        let tag = captures
+            .get(0)
+            .map(|value| value.as_str())
+            .unwrap_or_default();
+        let label = if tag.contains("gaiji") {
+            "外字"
+        } else if tag.contains("glyph") {
+            "图示"
+        } else {
+            "图版"
+        };
         format!("<span class=\"media-omitted\">〔{label}〕</span>")
     });
     let separators = Regex::new(r"(?:\s|&nbsp;|；|;)+(</?(?:br|p)[^>]*>)").unwrap();
@@ -156,9 +227,14 @@ fn clean_daijirin_markup(definition: &str, headword: &str, link_count: usize) ->
 }
 
 fn is_navigation_definition(definition: &str) -> bool {
-    definition.contains('☞') && !definition.contains("class=\"bss\"") && !definition.contains("class='bss'")
+    definition.contains('☞')
+        && !definition.contains("class=\"bss\"")
+        && !definition.contains("class='bss'")
 }
 
 fn is_kana(value: &str) -> bool {
-    !value.is_empty() && value.chars().all(|character| ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー')
+    !value.is_empty()
+        && value
+            .chars()
+            .all(|character| ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー')
 }

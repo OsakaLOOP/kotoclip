@@ -2,6 +2,7 @@ pub mod bunsetsu;
 pub mod candidates;
 pub mod expressions;
 pub mod grammar;
+pub mod lexical;
 pub mod morpheme;
 pub mod restore;
 pub mod ruby;
@@ -27,6 +28,12 @@ pub struct WordFormationSegment {
     pub char_range: (usize, usize),
     pub morphemes: Vec<crate::models::Morpheme>,
     pub result: word_formation::WordFormationMatchResult,
+}
+
+pub struct DictionaryLexicalSegment {
+    pub char_range: (usize, usize),
+    pub morphemes: Vec<crate::models::Morpheme>,
+    pub result: lexical::DictionaryLexicalMatchResult,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,6 +153,7 @@ impl Pipeline {
         let morpheme_analyzer = morpheme::MorphemeAnalyzer::new(dict_path)?;
         let grammar_matcher = grammar::GrammarMatcher::new()?;
         let word_formation_matcher = word_formation::WordFormationMatcher::new()?;
+        lexical::validate_catalog()?;
         let bunsetsu_analyzer = bunsetsu::BunsetsuAnalyzer::new()?;
         Ok(Self {
             morpheme_analyzer,
@@ -158,6 +166,52 @@ impl Pipeline {
     /// 执行完整的 NLP 管线：形態素解析 -> 文節组块 -> 语法匹配 -> 辞書形还原 (应用自定义合并规则)
     pub fn process(&self, text: &str, merge_rules: &[Vec<String>]) -> Vec<AnnotatedToken> {
         self.process_with_progress(text, merge_rules, &mut |_| {})
+    }
+
+    pub fn process_with_dictionary(
+        &self,
+        text: &str,
+        merge_rules: &[Vec<String>],
+        dictionary: &crate::dictionary::lookup::DictionaryEngine,
+    ) -> Vec<AnnotatedToken> {
+        self.process_internal(text, merge_rules, &mut |_| {}, None, Some(dictionary))
+    }
+
+    pub fn inspect_dictionary_lexical_units(
+        &self,
+        text: &str,
+        dictionary: &crate::dictionary::lookup::DictionaryEngine,
+    ) -> Vec<DictionaryLexicalSegment> {
+        let prepared = ruby::prepare_text(text);
+        let prepared_chars: Vec<char> = prepared.text.chars().collect();
+        segment_text(&prepared_chars)
+            .into_iter()
+            .filter(|segment| segment.seg_type == SegmentType::Content)
+            .filter_map(|segment| {
+                let segment_text: String = prepared_chars
+                    [segment.start_char_idx..segment.end_char_idx]
+                    .iter()
+                    .collect();
+                if segment_text.is_empty() {
+                    return None;
+                }
+                let mut morphemes = self.morpheme_analyzer.analyze(&segment_text);
+                for morpheme in &mut morphemes {
+                    morpheme.char_range.0 += segment.start_char_idx;
+                    morpheme.char_range.1 += segment.start_char_idx;
+                }
+                let formations = self.word_formation_matcher.match_morphemes(&morphemes);
+                Some(DictionaryLexicalSegment {
+                    char_range: (segment.start_char_idx, segment.end_char_idx),
+                    result: lexical::match_dictionary_lexical_units(
+                        &morphemes,
+                        dictionary,
+                        &formations.accepted,
+                    ),
+                    morphemes,
+                })
+            })
+            .collect()
     }
 
     pub fn inspect_word_formations(&self, text: &str) -> Vec<WordFormationSegment> {
@@ -189,6 +243,22 @@ impl Pipeline {
     }
 
     pub fn inspect_bunsetsu(&self, text: &str) -> Vec<crate::models::BunsetsuAnalysisReport> {
+        self.inspect_bunsetsu_internal(text, None)
+    }
+
+    pub fn inspect_bunsetsu_with_dictionary(
+        &self,
+        text: &str,
+        dictionary: &crate::dictionary::lookup::DictionaryEngine,
+    ) -> Vec<crate::models::BunsetsuAnalysisReport> {
+        self.inspect_bunsetsu_internal(text, Some(dictionary))
+    }
+
+    fn inspect_bunsetsu_internal(
+        &self,
+        text: &str,
+        dictionary: Option<&crate::dictionary::lookup::DictionaryEngine>,
+    ) -> Vec<crate::models::BunsetsuAnalysisReport> {
         let prepared = ruby::prepare_text(text);
         let prepared_chars: Vec<char> = prepared.text.chars().collect();
         segment_text(&prepared_chars)
@@ -208,10 +278,21 @@ impl Pipeline {
                     morpheme.char_range.1 += segment.start_char_idx;
                 }
                 let formations = self.word_formation_matcher.match_morphemes(&morphemes);
-                Some(
-                    self.bunsetsu_analyzer
-                        .analyze(&morphemes, &[], &formations.accepted),
-                )
+                let lexical_units = dictionary
+                    .map(|dictionary| {
+                        lexical::match_dictionary_lexical_units(
+                            &morphemes,
+                            dictionary,
+                            &formations.accepted,
+                        )
+                    })
+                    .unwrap_or_default();
+                Some(self.bunsetsu_analyzer.analyze_with_lexical(
+                    &morphemes,
+                    &[],
+                    &formations.accepted,
+                    &lexical_units.accepted,
+                ))
             })
             .collect()
     }
@@ -276,7 +357,20 @@ impl Pipeline {
     where
         F: FnMut(AnalysisProgress),
     {
-        self.process_internal(text, merge_rules, report, None)
+        self.process_internal(text, merge_rules, report, None, None)
+    }
+
+    pub fn process_with_dictionary_and_progress<F>(
+        &self,
+        text: &str,
+        merge_rules: &[Vec<String>],
+        dictionary: &crate::dictionary::lookup::DictionaryEngine,
+        report: &mut F,
+    ) -> Vec<AnnotatedToken>
+    where
+        F: FnMut(AnalysisProgress),
+    {
+        self.process_internal(text, merge_rules, report, None, Some(dictionary))
     }
 
     /// 性能诊断入口：在各项实际工作完成时累计耗时。
@@ -286,7 +380,23 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         timings: &mut TimingCollector,
     ) -> Vec<AnnotatedToken> {
-        self.process_internal(text, merge_rules, &mut |_| {}, Some(timings))
+        self.process_internal(text, merge_rules, &mut |_| {}, Some(timings), None)
+    }
+
+    pub fn process_profiled_with_dictionary(
+        &self,
+        text: &str,
+        merge_rules: &[Vec<String>],
+        dictionary: &crate::dictionary::lookup::DictionaryEngine,
+        timings: &mut TimingCollector,
+    ) -> Vec<AnnotatedToken> {
+        self.process_internal(
+            text,
+            merge_rules,
+            &mut |_| {},
+            Some(timings),
+            Some(dictionary),
+        )
     }
 
     fn process_internal<F>(
@@ -295,6 +405,7 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         report: &mut F,
         mut timings: Option<&mut TimingCollector>,
+        dictionary: Option<&crate::dictionary::lookup::DictionaryEngine>,
     ) -> Vec<AnnotatedToken>
     where
         F: FnMut(AnalysisProgress),
@@ -376,9 +487,23 @@ impl Pipeline {
 
                     let chunking_started = Instant::now();
                     let formations = self.word_formation_matcher.match_morphemes(&morphemes);
+                    let lexical_units = dictionary
+                        .map(|dictionary| {
+                            lexical::match_dictionary_lexical_units(
+                                &morphemes,
+                                dictionary,
+                                &formations.accepted,
+                            )
+                        })
+                        .unwrap_or_default();
                     let bunsetsus = self
                         .bunsetsu_analyzer
-                        .analyze(&morphemes, merge_rules, &formations.accepted)
+                        .analyze_with_lexical(
+                            &morphemes,
+                            merge_rules,
+                            &formations.accepted,
+                            &lexical_units.accepted,
+                        )
                         .bunsetsus;
                     let mut bunsetsus =
                         ruby::merge_annotated_bunsetsus(bunsetsus, segment_annotations);
@@ -456,6 +581,7 @@ impl Pipeline {
                         },
                         grammar_tags: Vec::new(),
                         word_formations: Vec::new(),
+                        lexical_units: Vec::new(),
                         function: None,
                         char_range: (seg.start_char_idx, seg.end_char_idx),
                     };

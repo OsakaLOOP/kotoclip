@@ -196,7 +196,10 @@ impl ProfileEngine {
         })?;
         let mut exposures: HashMap<String, HashMap<String, ExposureRecord>> = HashMap::new();
         for ((base_form, reading), record) in rows.flatten() {
-            exposures.entry(base_form).or_default().insert(reading, record);
+            exposures
+                .entry(base_form)
+                .or_default()
+                .insert(reading, record);
         }
         Ok(exposures)
     }

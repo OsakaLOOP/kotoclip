@@ -5,8 +5,9 @@
 //! 前端可无损恢复原模型，也显著缩小 JSON 序列化与 WebView 解析负担。
 
 use crate::models::{
-    AnnotatedToken, Bunsetsu, ExpressionAnnotation, GrammarTag, HeadWord, Morpheme, PosTag,
-    BunsetsuFunctionAnnotation, WordFormationAnnotation, WordFormationCapture,
+    AnnotatedToken, Bunsetsu, BunsetsuFunctionAnnotation, DictionaryEntryRef,
+    DictionaryLexicalUnitAnnotation, ExpressionAnnotation, GrammarTag, HeadWord, Morpheme, PosTag,
+    WordFormationAnnotation, WordFormationCapture,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -38,6 +39,8 @@ pub struct CompactBunsetsu {
     pub g: Vec<CompactGrammarTag>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub w: Vec<CompactWordFormation>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub v: Vec<CompactLexicalUnit>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub u: Option<CompactBunsetsuFunction>,
     pub c: (usize, usize),
@@ -96,6 +99,32 @@ pub struct CompactWordFormationCapture {
     pub s: u32,
     pub m: (usize, usize),
     pub c: (usize, usize),
+}
+
+#[derive(Serialize)]
+pub struct CompactLexicalUnit {
+    pub s: u32,
+    pub b: u32,
+    pub r: u32,
+    pub o: [u32; 4],
+    pub m: (usize, usize),
+    pub c: (usize, usize),
+    pub h: usize,
+    pub k: u32,
+    pub d: Vec<CompactDictionaryEntryRef>,
+    pub a: Vec<u32>,
+    pub q: u8,
+    pub e: Vec<u32>,
+}
+
+#[derive(Serialize)]
+pub struct CompactDictionaryEntryRef {
+    pub k: u32,
+    pub d: u32,
+    pub h: u32,
+    pub f: u32,
+    pub m: u32,
+    pub r: Vec<u32>,
 }
 
 #[derive(Serialize)]
@@ -183,7 +212,10 @@ impl StringTable {
         }
     }
 
-    fn word_formation_capture(&mut self, value: &WordFormationCapture) -> CompactWordFormationCapture {
+    fn word_formation_capture(
+        &mut self,
+        value: &WordFormationCapture,
+    ) -> CompactWordFormationCapture {
         CompactWordFormationCapture {
             n: self.intern(&value.name),
             s: self.intern(&value.surface),
@@ -203,8 +235,56 @@ impl StringTable {
             m: value.morpheme_range,
             c: value.char_range,
             h: value.head_morpheme,
-            p: value.captures.iter().map(|item| self.word_formation_capture(item)).collect(),
+            p: value
+                .captures
+                .iter()
+                .map(|item| self.word_formation_capture(item))
+                .collect(),
             q: value.confidence,
+        }
+    }
+
+    fn dictionary_ref(&mut self, value: &DictionaryEntryRef) -> CompactDictionaryEntryRef {
+        CompactDictionaryEntryRef {
+            k: self.intern(&value.entry_key),
+            d: self.intern(&value.dict_name),
+            h: self.intern(&value.headword),
+            f: self.intern(&value.matched_form),
+            m: self.intern(&value.match_type),
+            r: value
+                .readings
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+        }
+    }
+
+    fn lexical_unit(&mut self, value: &DictionaryLexicalUnitAnnotation) -> CompactLexicalUnit {
+        CompactLexicalUnit {
+            s: self.intern(&value.surface),
+            b: self.intern(&value.base_form),
+            r: self.intern(&value.reading),
+            o: self.position(&value.output_pos),
+            m: value.morpheme_range,
+            c: value.char_range,
+            h: value.head_morpheme,
+            k: self.intern(&value.lexical_shape),
+            d: value
+                .dictionary_refs
+                .iter()
+                .map(|item| self.dictionary_ref(item))
+                .collect(),
+            a: value
+                .reading_candidates
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            q: value.confidence,
+            e: value
+                .evidence
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
         }
     }
 
@@ -221,7 +301,11 @@ impl StringTable {
                 crate::models::BunsetsuFunction::Unknown => "unknown",
             }),
             c: value.confidence,
-            e: value.evidence.iter().map(|item| self.intern(item)).collect(),
+            e: value
+                .evidence
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
         }
     }
 
@@ -239,8 +323,20 @@ impl StringTable {
                 .iter()
                 .map(|item| self.grammar_tag(item))
                 .collect(),
-            w: value.word_formations.iter().map(|item| self.word_formation(item)).collect(),
-            u: value.function.as_ref().map(|item| self.bunsetsu_function(item)),
+            w: value
+                .word_formations
+                .iter()
+                .map(|item| self.word_formation(item))
+                .collect(),
+            v: value
+                .lexical_units
+                .iter()
+                .map(|item| self.lexical_unit(item))
+                .collect(),
+            u: value
+                .function
+                .as_ref()
+                .map(|item| self.bunsetsu_function(item)),
             c: value.char_range,
         }
     }
@@ -321,6 +417,7 @@ mod tests {
                 },
                 grammar_tags: Vec::new(),
                 word_formations: Vec::new(),
+                lexical_units: Vec::new(),
                 function: None,
                 char_range: (0, 1),
             },

@@ -1,5 +1,5 @@
 use crate::dictionary::presentation;
-use crate::models::DictEntry;
+use crate::models::{DictEntry, DictionaryEntryRef};
 use rusqlite::{Connection, OpenFlags};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
@@ -199,6 +199,70 @@ impl DictionaryEngine {
         }
 
         matched
+    }
+
+    /// 批量解析精确表记并绑定稳定词条。该入口不使用读音或 FTS 回退，
+    /// 专供文节形成前的词汇整体候选使用。
+    pub fn resolve_exact_forms_batch(
+        &self,
+        words: &HashSet<String>,
+    ) -> HashMap<String, Vec<DictionaryEntryRef>> {
+        const BATCH_SIZE: usize = 2_000;
+        let mut result: HashMap<String, Vec<DictionaryEntryRef>> = HashMap::new();
+        let candidates: Vec<_> = words
+            .iter()
+            .map(|word| (word.as_str(), normalize_form(word)))
+            .collect();
+        for batch in candidates.chunks(BATCH_SIZE) {
+            let Ok(payload) = serde_json::to_string(batch) else {
+                continue;
+            };
+            for (fallback_name, connection) in &self.connections {
+                let sql = "WITH candidates(word, normalized) AS (\
+                           SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') FROM json_each(?1)\
+                           ) \
+                           SELECT candidates.word, e.id, e.dict_name, e.headword, f.form, e.reading, 'exact_form' \
+                           FROM candidates JOIN entry_forms f ON f.normalized_form = candidates.normalized \
+                           JOIN entries e ON e.id = f.entry_id \
+                           WHERE e.definition NOT LIKE '@@@LINK=%' \
+                           UNION ALL \
+                           SELECT candidates.word, e.id, e.dict_name, e.headword, e.headword, e.reading, 'headword' \
+                           FROM candidates JOIN entries e ON e.headword = candidates.word \
+                           WHERE e.definition NOT LIKE '@@@LINK=%'";
+                let Ok(mut statement) = connection.prepare(sql) else {
+                    continue;
+                };
+                let Ok(rows) = statement.query_map([&payload], |row| {
+                    let query: String = row.get(0)?;
+                    let entry_id: i64 = row.get(1)?;
+                    let dict_name: String = row.get(2).unwrap_or_else(|_| fallback_name.clone());
+                    let reading: Option<String> = row.get(5).ok();
+                    Ok((
+                        query,
+                        DictionaryEntryRef {
+                            entry_key: format!("{dict_name}\u{1f}{entry_id}"),
+                            dict_name,
+                            headword: row.get(3)?,
+                            matched_form: row.get(4)?,
+                            match_type: row.get(6)?,
+                            readings: reading.into_iter().collect(),
+                        },
+                    ))
+                }) else {
+                    continue;
+                };
+                for (query, reference) in rows.flatten() {
+                    let refs = result.entry(query).or_default();
+                    if !refs
+                        .iter()
+                        .any(|item| item.entry_key == reference.entry_key)
+                    {
+                        refs.push(reference);
+                    }
+                }
+            }
+        }
+        result
     }
 
     pub fn lookup(&self, headword: &str, reading: Option<&str>) -> Vec<DictEntry> {

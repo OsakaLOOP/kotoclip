@@ -33,9 +33,67 @@ pub struct Bunsetsu {
     pub grammar_tags: Vec<GrammarTag>,
     #[serde(default)]
     pub word_formations: Vec<WordFormationAnnotation>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub lexical_units: Vec<DictionaryLexicalUnitAnnotation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub function: Option<BunsetsuFunctionAnnotation>,
     pub char_range: (usize, usize),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryEntryRef {
+    pub entry_key: String,
+    pub dict_name: String,
+    pub headword: String,
+    pub matched_form: String,
+    pub match_type: String,
+    #[serde(default)]
+    pub readings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryLexicalUnitAnnotation {
+    pub surface: String,
+    pub base_form: String,
+    pub reading: String,
+    pub output_pos: PosTag,
+    pub morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+    pub head_morpheme: usize,
+    pub lexical_shape: String,
+    pub dictionary_refs: Vec<DictionaryEntryRef>,
+    #[serde(default)]
+    pub reading_candidates: Vec<String>,
+    pub confidence: u8,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum LexicalCandidateStatus {
+    Accepted,
+    Pending,
+    Rejected,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DictionaryLexicalCandidate {
+    pub candidate_id: String,
+    pub surface: String,
+    pub query: String,
+    pub morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+    pub lexical_shape: String,
+    pub status: LexicalCandidateStatus,
+    pub confidence: u8,
+    pub dictionary_refs: Vec<DictionaryEntryRef>,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub counter_evidence: Vec<String>,
+    #[serde(default)]
+    pub rejection_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

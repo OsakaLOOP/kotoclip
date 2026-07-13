@@ -1,5 +1,5 @@
 use kotoclip_core::dictionary::lookup::DictionaryEngine;
-use kotoclip_core::pipeline::{bunsetsu, ruby, Pipeline};
+use kotoclip_core::pipeline::{ruby, Pipeline};
 use kotoclip_core::transport::CompactAnalysis;
 use kotoclip_core::Engine;
 use serde::Serialize;
@@ -153,6 +153,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "expression-preview" => expression_preview(&args),
         "expression-scan" => expression_scan(&args),
         "word-formation-scan" => word_formation_scan(&args),
+        "lexical-unit-scan" => lexical_unit_scan(&args),
         "bunsetsu-scan" => bunsetsu_scan(&args),
         "expression-verify" => expression_verify(&args),
         "expression-add" => expression_add(&args),
@@ -170,6 +171,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 fn schema_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let audits = vec![
         kotoclip_core::pipeline::word_formation::catalog_audit()?,
+        kotoclip_core::pipeline::lexical::catalog_audit()?,
         kotoclip_core::pipeline::bunsetsu::catalog_audit()?,
         kotoclip_core::pipeline::expressions::catalog_audit(),
     ];
@@ -254,12 +256,7 @@ fn analyze(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let text = read_text_argument(args)?;
     let dictionary = dictionary(args)?;
     let pipeline = pipeline(args)?;
-    let mut tokens = pipeline.process(&text, &[]);
-    for token in &mut tokens {
-        bunsetsu::resolve_lexical_boundaries(std::slice::from_mut(&mut token.bunsetsu), |word| {
-            dictionary.contains_exact(word)
-        });
-    }
+    let tokens = pipeline.process_with_dictionary(&text, &[], &dictionary);
     println!("{}", serde_json::to_string_pretty(&tokens)?);
     Ok(())
 }
@@ -320,13 +317,7 @@ fn audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         analyzed_lines += 1;
         let prepared = ruby::prepare_text(line);
         analyzed_characters += prepared.text.chars().count();
-        let mut tokens = pipeline.process(line, &[]);
-        for token in &mut tokens {
-            bunsetsu::resolve_lexical_boundaries(
-                std::slice::from_mut(&mut token.bunsetsu),
-                |word| dictionary.contains_exact(word),
-            );
-        }
+        let tokens = pipeline.process_with_dictionary(line, &[], &dictionary);
         let reconstructed: String = tokens
             .iter()
             .map(|token| token.bunsetsu.surface.as_str())
@@ -1061,12 +1052,101 @@ fn word_formation_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[derive(Serialize)]
+struct LexicalScanItem {
+    candidate: kotoclip_core::models::DictionaryLexicalCandidate,
+    morpheme_signature: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct LexicalScanReport {
+    schema_version: u32,
+    accepted_count: usize,
+    pending_count: usize,
+    rejected_count: usize,
+    conflict_count: usize,
+    reconstruction_ok: bool,
+    range_integrity_ok: bool,
+    items: Vec<LexicalScanItem>,
+}
+
+fn lexical_unit_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    args.required("profile").map_err(io::Error::other)?;
+    let text = read_text_selection(args)?;
+    let pipeline = pipeline(args)?;
+    let dictionary = dictionary(args)?;
+    let include_pending = args.flags.contains("include-pending");
+    let include_rejected = args.flags.contains("include-rejected");
+    let mut accepted_count = 0;
+    let mut pending_count = 0;
+    let mut rejected_count = 0;
+    let mut conflict_count = 0;
+    let mut items = Vec::new();
+    for segment in pipeline.inspect_dictionary_lexical_units(&text, &dictionary) {
+        conflict_count += segment.result.conflicts;
+        for candidate in segment.result.candidates {
+            match candidate.status {
+                kotoclip_core::models::LexicalCandidateStatus::Accepted => accepted_count += 1,
+                kotoclip_core::models::LexicalCandidateStatus::Pending => pending_count += 1,
+                kotoclip_core::models::LexicalCandidateStatus::Rejected => rejected_count += 1,
+            }
+            let include = candidate.status
+                == kotoclip_core::models::LexicalCandidateStatus::Accepted
+                || (include_pending
+                    && candidate.status == kotoclip_core::models::LexicalCandidateStatus::Pending)
+                || (include_rejected
+                    && candidate.status == kotoclip_core::models::LexicalCandidateStatus::Rejected);
+            if !include {
+                continue;
+            }
+            let (start, end) = candidate.morpheme_range;
+            let morpheme_signature = segment.morphemes[start..end]
+                .iter()
+                .map(|item| {
+                    format!(
+                        "{}/{}/{}/{}",
+                        item.surface, item.base_form, item.pos.major, item.pos.sub1
+                    )
+                })
+                .collect();
+            items.push(LexicalScanItem {
+                candidate,
+                morpheme_signature,
+            });
+        }
+    }
+    let tokens = pipeline.process_with_dictionary(&text, &[], &dictionary);
+    let reconstructed: String = tokens
+        .iter()
+        .map(|token| token.bunsetsu.surface.as_str())
+        .collect();
+    let canonical = ruby::prepare_text(&text).text;
+    let reconstruction_ok = reconstructed == canonical;
+    let range_integrity_ok = ranges_are_valid(&tokens, canonical.chars().count());
+    if let Some(path) = args.options.get("json") {
+        let report = LexicalScanReport {
+            schema_version: 1,
+            accepted_count,
+            pending_count,
+            rejected_count,
+            conflict_count,
+            reconstruction_ok,
+            range_integrity_ok,
+            items,
+        };
+        std::fs::write(path, serde_json::to_string_pretty(&report)?)?;
+    }
+    println!("词汇整体审计：接受 {accepted_count}，待定 {pending_count}，拒绝 {rejected_count}，冲突 {conflict_count}。");
+    Ok(())
+}
+
 fn bunsetsu_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     args.required("profile").map_err(io::Error::other)?;
     let text = read_text_selection(args)?;
     let pipeline = pipeline(args)?;
+    let dictionary = dictionary(args)?;
     let include_alternatives = args.flags.contains("include-alternatives");
-    let mut reports = pipeline.inspect_bunsetsu(&text);
+    let mut reports = pipeline.inspect_bunsetsu_with_dictionary(&text, &dictionary);
     if !include_alternatives {
         for report in &mut reports {
             for boundary in &mut report.boundaries {
@@ -1474,13 +1554,7 @@ fn repl(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                 serde_json::to_string_pretty(&dictionary.lookup(word, reading))?
             );
         } else if let Some(text) = line.strip_prefix("analyze ") {
-            let mut tokens = pipeline.process(text, &[]);
-            for token in &mut tokens {
-                bunsetsu::resolve_lexical_boundaries(
-                    std::slice::from_mut(&mut token.bunsetsu),
-                    |word| dictionary.contains_exact(word),
-                );
-            }
+            let tokens = pipeline.process_with_dictionary(text, &[], &dictionary);
             println!("{}", serde_json::to_string_pretty(&tokens)?);
         } else if !line.is_empty() {
             println!("无法识别命令。请输入 lookup、analyze、stats 或 quit。");
@@ -1615,6 +1689,9 @@ fn print_help() {
         [--include-pending --include-rejected]
   word-formation-scan --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N] [--json PATH --include-rejected]
+  lexical-unit-scan --profile PATH (--text TEXT | --source PATH)
+        [--chapter TITLE --page-lines N --page N] [--json PATH]
+        [--include-pending --include-rejected]
   bunsetsu-scan --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N] [--json PATH --include-alternatives]
   expression-verify --profile PATH (--text TEXT | --source PATH)
@@ -1636,10 +1713,7 @@ mod tests {
     #[test]
     fn extracts_requested_markdown_chapter() {
         let source = "# 书\n第一話\n第二話\n## 第一話\n甲\n乙\n## 第二話\n丙";
-        assert_eq!(
-            extract_chapter(source, Some("第一話")).unwrap(),
-            "甲\n乙"
-        );
+        assert_eq!(extract_chapter(source, Some("第一話")).unwrap(), "甲\n乙");
         assert_eq!(extract_chapter(source, Some("## 第二話")).unwrap(), "丙");
     }
 }

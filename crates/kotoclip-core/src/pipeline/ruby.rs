@@ -341,6 +341,7 @@ pub fn merge_annotated_bunsetsus(
             .flat_map(|bunsetsu| bunsetsu.morphemes.iter().cloned())
             .collect();
         let mut word_formations = Vec::new();
+        let mut lexical_units = Vec::new();
         let mut morpheme_offset = 0;
         for bunsetsu in &bunsetsus[start..=end] {
             for formation in &bunsetsu.word_formations {
@@ -353,6 +354,13 @@ pub fn merge_annotated_bunsetsus(
                     capture.morpheme_range.1 += morpheme_offset;
                 }
                 word_formations.push(formation);
+            }
+            for lexical_unit in &bunsetsu.lexical_units {
+                let mut lexical_unit = lexical_unit.clone();
+                lexical_unit.morpheme_range.0 += morpheme_offset;
+                lexical_unit.morpheme_range.1 += morpheme_offset;
+                lexical_unit.head_morpheme += morpheme_offset;
+                lexical_units.push(lexical_unit);
             }
             morpheme_offset += bunsetsu.morphemes.len();
         }
@@ -367,6 +375,7 @@ pub fn merge_annotated_bunsetsus(
             },
             grammar_tags: Vec::new(),
             word_formations,
+            lexical_units,
             function: None,
             char_range: annotation.char_range,
         };

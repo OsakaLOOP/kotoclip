@@ -1,13 +1,13 @@
+pub mod dictionary;
 pub mod exposure;
 pub mod expressions;
-pub mod dictionary;
 pub mod kanji;
 pub mod scoring;
 pub mod segmentation;
 
 use rusqlite::Connection;
-use std::path::Path;
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Mutex;
 
 /// 用户画像引擎，掌管词汇曝光、已知/未知状态以及汉字音训掌握度推导
@@ -101,7 +101,10 @@ impl ProfileEngine {
             choices
         };
 
-        Ok(Self { conn, dictionary_choice_cache: Mutex::new(dictionary_choice_cache) })
+        Ok(Self {
+            conn,
+            dictionary_choice_cache: Mutex::new(dictionary_choice_cache),
+        })
     }
 }
 
@@ -147,6 +150,7 @@ mod tests {
                 },
                 grammar_tags: Vec::new(),
                 word_formations: Vec::new(),
+                lexical_units: Vec::new(),
                 function: None,
                 char_range: (0, 2),
             },
@@ -199,6 +203,7 @@ mod tests {
                 },
                 grammar_tags: Vec::new(),
                 word_formations: Vec::new(),
+                lexical_units: Vec::new(),
                 function: None,
                 char_range: (0, 2),
             },

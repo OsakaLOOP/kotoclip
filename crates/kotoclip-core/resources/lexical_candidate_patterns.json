@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "catalog_version": 1,
+  "patterns": [
+    { "id": "nominal_compound", "confidence": 94, "auto_accept": true },
+    { "id": "compound_predicate", "confidence": 92, "auto_accept": true },
+    { "id": "derived_adjective", "confidence": 90, "auto_accept": true },
+    { "id": "ambiguous_lexical_sequence", "confidence": 60, "auto_accept": false }
+  ]
+}

@@ -2,7 +2,11 @@ use super::ProfileEngine;
 
 impl ProfileEngine {
     pub fn dictionary_choice(&self, query_key: &str) -> Option<String> {
-        self.dictionary_choice_cache.lock().ok()?.get(query_key).cloned()
+        self.dictionary_choice_cache
+            .lock()
+            .ok()?
+            .get(query_key)
+            .cloned()
     }
 
     pub fn set_dictionary_choice(
@@ -35,11 +39,19 @@ mod tests {
         let path = std::env::temp_dir().join(format!("kotoclip-profile-choice-{nonce}.sqlite"));
         {
             let profile = ProfileEngine::new(&path).unwrap();
-            profile.set_dictionary_choice("いる\u{1f}イル", "いる【居る】").unwrap();
-            assert_eq!(profile.dictionary_choice("いる\u{1f}イル").as_deref(), Some("いる【居る】"));
+            profile
+                .set_dictionary_choice("いる\u{1f}イル", "いる【居る】")
+                .unwrap();
+            assert_eq!(
+                profile.dictionary_choice("いる\u{1f}イル").as_deref(),
+                Some("いる【居る】")
+            );
         }
         let reopened = ProfileEngine::new(&path).unwrap();
-        assert_eq!(reopened.dictionary_choice("いる\u{1f}イル").as_deref(), Some("いる【居る】"));
+        assert_eq!(
+            reopened.dictionary_choice("いる\u{1f}イル").as_deref(),
+            Some("いる【居る】")
+        );
         drop(reopened);
         std::fs::remove_file(path).unwrap();
     }

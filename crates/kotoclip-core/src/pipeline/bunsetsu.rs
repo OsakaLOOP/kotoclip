@@ -1,8 +1,9 @@
+use super::lexical::AcceptedDictionaryLexicalUnit;
 use super::word_formation::AcceptedWordFormation;
 use crate::models::{
     Bunsetsu, BunsetsuAnalysisReport, BunsetsuBoundaryDecision, BunsetsuFunction,
-    BunsetsuFunctionAnnotation, GrammarTag, HeadWord, Morpheme, RuleCatalogAudit,
-    WordFormationAnnotation,
+    BunsetsuFunctionAnnotation, DictionaryLexicalUnitAnnotation, HeadWord, Morpheme,
+    RuleCatalogAudit, WordFormationAnnotation,
 };
 use serde::Deserialize;
 use std::collections::HashSet;
@@ -160,7 +161,23 @@ impl BunsetsuAnalyzer {
         merge_rules: &[Vec<String>],
         formations: &[AcceptedWordFormation],
     ) -> BunsetsuAnalysisReport {
-        analyze_with_catalog(morphemes, merge_rules, formations, &self.catalog)
+        self.analyze_with_lexical(morphemes, merge_rules, formations, &[])
+    }
+
+    pub fn analyze_with_lexical(
+        &self,
+        morphemes: &[Morpheme],
+        merge_rules: &[Vec<String>],
+        formations: &[AcceptedWordFormation],
+        lexical_units: &[AcceptedDictionaryLexicalUnit],
+    ) -> BunsetsuAnalysisReport {
+        analyze_with_catalog(
+            morphemes,
+            merge_rules,
+            formations,
+            lexical_units,
+            &self.catalog,
+        )
     }
 }
 
@@ -215,6 +232,7 @@ fn analyze_with_catalog(
     morphemes: &[Morpheme],
     merge_rules: &[Vec<String>],
     formations: &[AcceptedWordFormation],
+    lexical_units: &[AcceptedDictionaryLexicalUnit],
     catalog: &BunsetsuCatalog,
 ) -> BunsetsuAnalysisReport {
     if morphemes.is_empty() {
@@ -228,7 +246,7 @@ fn analyze_with_catalog(
     }
 
     let n = morphemes.len();
-    let atomic_joins = collect_atomic_joins(morphemes, merge_rules, formations);
+    let atomic_joins = collect_atomic_joins(morphemes, merge_rules, formations, lexical_units);
     let features = BoundaryFeatures::new(morphemes, formations, catalog);
     let selected_path = choose_bunsetsu_path(morphemes, &atomic_joins, &features, catalog);
     let unresolved_boundaries = selected_path.unresolved;
@@ -299,9 +317,20 @@ fn analyze_with_catalog(
             }
             local_formations.push(annotation);
         }
-        bunsetsus.push(build_bunsetsu_with_formations(
+        let mut local_lexical_units = Vec::new();
+        for lexical_unit in lexical_units.iter().filter(|lexical_unit| {
+            start <= lexical_unit.morpheme_range.0 && lexical_unit.morpheme_range.1 <= end
+        }) {
+            let mut annotation = lexical_unit.annotation.clone();
+            annotation.morpheme_range.0 -= start;
+            annotation.morpheme_range.1 -= start;
+            annotation.head_morpheme -= start;
+            local_lexical_units.push(annotation);
+        }
+        bunsetsus.push(build_bunsetsu_with_annotations(
             morphemes[start..end].to_vec(),
             local_formations,
+            local_lexical_units,
         ));
     }
 
@@ -384,10 +413,14 @@ fn collect_atomic_joins(
     morphemes: &[Morpheme],
     merge_rules: &[Vec<String>],
     formations: &[AcceptedWordFormation],
+    lexical_units: &[AcceptedDictionaryLexicalUnit],
 ) -> HashSet<usize> {
     let mut joins = HashSet::new();
     for formation in formations {
         joins.extend(formation.morpheme_range.0 + 1..formation.morpheme_range.1);
+    }
+    for lexical_unit in lexical_units {
+        joins.extend(lexical_unit.morpheme_range.0 + 1..lexical_unit.morpheme_range.1);
     }
     for start in 0..morphemes.len() {
         if let Some(length) = merge_rules
@@ -741,12 +774,20 @@ fn infer_function(bunsetsu: &Bunsetsu) -> BunsetsuFunctionAnnotation {
 
 /// 构造单个文节，并提取其核心自立语 (HeadWord) 与属性
 pub(crate) fn build_bunsetsu(morphemes: Vec<Morpheme>) -> Bunsetsu {
-    build_bunsetsu_with_formations(morphemes, Vec::new())
+    build_bunsetsu_with_annotations(morphemes, Vec::new(), Vec::new())
 }
 
 pub(crate) fn build_bunsetsu_with_formations(
     morphemes: Vec<Morpheme>,
     word_formations: Vec<WordFormationAnnotation>,
+) -> Bunsetsu {
+    build_bunsetsu_with_annotations(morphemes, word_formations, Vec::new())
+}
+
+pub(crate) fn build_bunsetsu_with_annotations(
+    morphemes: Vec<Morpheme>,
+    word_formations: Vec<WordFormationAnnotation>,
+    lexical_units: Vec<DictionaryLexicalUnitAnnotation>,
 ) -> Bunsetsu {
     // 拼接表层形
     let surface: String = morphemes.iter().map(|m| m.surface.as_str()).collect();
@@ -799,6 +840,7 @@ pub(crate) fn build_bunsetsu_with_formations(
         head_word,
         grammar_tags: Vec::new(), // 在后续的语法匹配阶段填充
         word_formations,
+        lexical_units,
         function: None,
         char_range: (start, end),
     };
@@ -812,133 +854,25 @@ pub(crate) fn build_bunsetsu_with_formations(
         bunsetsu.head_word.reading = formation.reading.clone();
         bunsetsu.head_word.pos = formation.output_pos.clone();
     }
-    bunsetsu
-}
-
-pub fn resolve_lexical_boundaries<F: Fn(&str) -> bool>(
-    bunsetsus: &mut [Bunsetsu],
-    contains_exact: F,
-) {
-    for bunsetsu in bunsetsus {
-        if !bunsetsu.word_formations.is_empty() {
-            continue;
-        }
-        let Some(head_index) = bunsetsu
-            .morphemes
-            .iter()
-            .position(|m| is_jiritsugo(m) && m.pos.major != "接頭詞")
-        else {
-            continue;
-        };
-        let suffix_start = head_index + 1;
-
-        let mut suffix_indices = Vec::new();
-        for idx in suffix_start..bunsetsu.morphemes.len() {
-            let m = &bunsetsu.morphemes[idx];
-            if m.pos.major == "名詞" && m.pos.sub1 == "接尾" {
-                suffix_indices.push(idx);
-            } else {
-                break;
-            }
-        }
-        if suffix_indices.is_empty() {
-            continue;
-        }
-
-        let candidate = bunsetsu.head_word.base_form.clone();
-        if contains_exact(&candidate) {
-            continue;
-        }
-
-        let root = &bunsetsu.morphemes[head_index];
-        bunsetsu.head_word.surface = root.surface.clone();
-        bunsetsu.head_word.base_form = root.base_form.clone();
-        bunsetsu.head_word.reading = root.reading.clone();
-
-        for idx in suffix_indices {
-            let suffix = &bunsetsu.morphemes[idx];
-            bunsetsu.grammar_tags.push(GrammarTag {
-                pattern_id: format!("nominal_suffix:{}", suffix.surface),
-                name_ja: format!("接尾辞「{}」", suffix.surface),
-                name_en: "Nominal suffix".to_string(),
-                jlpt_level: None,
-                description: "词典未收录的名词接尾辞".to_string(),
-                morpheme_range: (idx, idx + 1),
-                char_range: suffix.char_range,
-            });
-        }
+    if let Some(lexical_unit) = bunsetsu
+        .lexical_units
+        .iter()
+        .find(|lexical_unit| {
+            lexical_unit.morpheme_range.0 <= head_index
+                && head_index < lexical_unit.morpheme_range.1
+        })
+        .or_else(|| bunsetsu.lexical_units.first())
+    {
+        bunsetsu.head_word.surface = lexical_unit.surface.clone();
+        bunsetsu.head_word.base_form = lexical_unit.base_form.clone();
+        bunsetsu.head_word.reading = lexical_unit.reading.clone();
+        bunsetsu.head_word.pos = lexical_unit.output_pos.clone();
     }
+    bunsetsu
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::models::PosTag;
-
-    #[test]
-    fn test_resolve_lexical_boundaries_splits_on_missing_dict() {
-        let m1 = Morpheme {
-            surface: "警察".to_string(),
-            pos: PosTag {
-                major: "名詞".to_string(),
-                sub1: "一般".to_string(),
-                sub2: "*".to_string(),
-                sub3: "*".to_string(),
-            },
-            base_form: "警察".to_string(),
-            reading: "ケイサツ".to_string(),
-            conjugation_type: "*".to_string(),
-            conjugation_form: "*".to_string(),
-            char_range: (0, 2),
-        };
-        let m2 = Morpheme {
-            surface: "署".to_string(),
-            pos: PosTag {
-                major: "名詞".to_string(),
-                sub1: "接尾".to_string(),
-                sub2: "*".to_string(),
-                sub3: "*".to_string(),
-            },
-            base_form: "署".to_string(),
-            reading: "ショ".to_string(),
-            conjugation_type: "*".to_string(),
-            conjugation_form: "*".to_string(),
-            char_range: (2, 3),
-        };
-        let m3 = Morpheme {
-            surface: "に".to_string(),
-            pos: PosTag {
-                major: "助詞".to_string(),
-                sub1: "格助詞".to_string(),
-                sub2: "*".to_string(),
-                sub3: "*".to_string(),
-            },
-            base_form: "に".to_string(),
-            reading: "ニ".to_string(),
-            conjugation_type: "*".to_string(),
-            conjugation_form: "*".to_string(),
-            char_range: (3, 4),
-        };
-
-        // 场景 1：如果字典中没有“警察署”，应剥离并产生接尾辞的 grammar tag
-        let bunsetsu = build_bunsetsu(vec![m1.clone(), m2.clone(), m3.clone()]);
-        let mut list = vec![bunsetsu];
-        resolve_lexical_boundaries(&mut list, |word| word == "警察");
-
-        assert_eq!(list[0].head_word.base_form, "警察");
-        assert_eq!(list[0].grammar_tags.len(), 1);
-        assert_eq!(list[0].grammar_tags[0].pattern_id, "nominal_suffix:署");
-        assert_eq!(list[0].grammar_tags[0].char_range, (2, 3));
-
-        // 场景 2：如果字典中有“警察署”，保留合并的长词
-        let bunsetsu = build_bunsetsu(vec![m1.clone(), m2.clone(), m3.clone()]);
-        let mut list = vec![bunsetsu];
-        resolve_lexical_boundaries(&mut list, |word| word == "警察署");
-
-        assert_eq!(list[0].head_word.base_form, "警察署");
-        assert!(list[0].grammar_tags.is_empty());
-    }
-
     #[test]
     fn candidate_path_combines_prefix_with_atomic_formation() {
         let Some(path) = [

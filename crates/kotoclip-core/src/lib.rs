@@ -111,50 +111,23 @@ impl Engine {
         ));
         // 历史 user_merge_rules 不再进入正式 Pipeline。文节边界保持由 NLP 与
         // 词典边界解析器决定；用户拖拽仅创建独立的跨文节表达注解。
-        let mut tokens = self.pipeline.process_with_progress(text, &[], &mut report);
+        let mut tokens = self.pipeline.process_with_dictionary_and_progress(
+            text,
+            &[],
+            &self.dictionary,
+            &mut report,
+        );
         let segmentation_choices = self.profile.get_segmentation_choices()?;
         self.pipeline
             .apply_segmentation_choices(&mut tokens, &segmentation_choices);
         let token_count = tokens.len();
-        let report_step = (token_count / 100).max(1);
         report(AnalysisProgress::counted(
             AnalysisPhase::DictionaryMatching,
-            0,
             token_count,
-            40,
-            "按词典校正词汇边界",
+            token_count,
+            46,
+            "词典词汇整体已在文节前解析",
         ));
-        for (index, token) in tokens.iter_mut().enumerate() {
-            if token.display_class != "content" {
-                let completed = index + 1;
-                if completed == token_count || completed % report_step == 0 {
-                    let percent = 40 + ((completed * 6 / token_count.max(1)) as u8);
-                    report(AnalysisProgress::counted(
-                        AnalysisPhase::DictionaryMatching,
-                        completed,
-                        token_count,
-                        percent,
-                        "按词典校正词汇边界",
-                    ));
-                }
-                continue;
-            }
-            pipeline::bunsetsu::resolve_lexical_boundaries(
-                std::slice::from_mut(&mut token.bunsetsu),
-                |word| self.dictionary.contains_exact(word),
-            );
-            let completed = index + 1;
-            if completed == token_count || completed % report_step == 0 {
-                let percent = 40 + ((completed * 6 / token_count.max(1)) as u8);
-                report(AnalysisProgress::counted(
-                    AnalysisPhase::DictionaryMatching,
-                    completed,
-                    token_count,
-                    percent,
-                    "按词典校正词汇边界",
-                ));
-            }
-        }
         // 调用画像引擎打分标注
         let mut annotated =
             self.profile
@@ -225,7 +198,12 @@ impl Engine {
         let mut timings = TimingCollector::default();
 
         let started = Instant::now();
-        let mut tokens = self.pipeline.process_profiled(text, &[], &mut timings);
+        let mut tokens = self.pipeline.process_profiled_with_dictionary(
+            text,
+            &[],
+            &self.dictionary,
+            &mut timings,
+        );
         timings.add("分析管线总计", started.elapsed());
 
         let started = Instant::now();
@@ -236,18 +214,6 @@ impl Engine {
         self.pipeline
             .apply_segmentation_choices(&mut tokens, &segmentation_choices);
         timings.add("分词选择应用", started.elapsed());
-
-        let started = Instant::now();
-        for token in &mut tokens {
-            if token.display_class != "content" {
-                continue;
-            }
-            pipeline::bunsetsu::resolve_lexical_boundaries(
-                std::slice::from_mut(&mut token.bunsetsu),
-                |word| self.dictionary.contains_exact(word),
-            );
-        }
-        timings.add("词典边界", started.elapsed());
 
         let started = Instant::now();
         let mut annotated = self
