@@ -109,6 +109,7 @@ pub struct DocumentSession {
     document_char_range: (usize, usize),
     record_exposure_on_complete: bool,
     exposure_recorded: bool,
+    cached_stable_tokens: Vec<AnnotatedToken>,
 }
 
 impl DocumentSession {
@@ -129,18 +130,8 @@ impl DocumentSession {
             document_char_range,
             record_exposure_on_complete: false,
             exposure_recorded: false,
+            cached_stable_tokens: Vec::new(),
         }
-    }
-
-    pub fn new_cached(
-        session_id: String,
-        source: String,
-        tokens: Vec<AnnotatedToken>,
-        record_exposure_on_complete: bool,
-    ) -> Self {
-        let mut session = Self::new(session_id, source, tokens);
-        session.record_exposure_on_complete = record_exposure_on_complete;
-        session
     }
 
     pub fn new_progressive(
@@ -164,12 +155,40 @@ impl DocumentSession {
             document_char_range: (0, document_end),
             record_exposure_on_complete,
             exposure_recorded: false,
+            cached_stable_tokens: Vec::new(),
         }
     }
 
     pub fn next_batch(&self, target_characters: usize) -> Option<DocumentBatch> {
         let chunk_start = self.analyzed_chunks.iter().position(|analyzed| !analyzed)?;
         self.batch_from_chunk(chunk_start, target_characters)
+    }
+
+    pub fn set_cached_stable_tokens(&mut self, tokens: Vec<AnnotatedToken>) {
+        self.cached_stable_tokens = tokens;
+    }
+
+    pub fn take_cached_stable_tokens(
+        &mut self,
+        batch: &DocumentBatch,
+    ) -> Option<Vec<AnnotatedToken>> {
+        if self.cached_stable_tokens.is_empty() {
+            return None;
+        }
+        let mut selected = Vec::new();
+        self.cached_stable_tokens.retain(|token| {
+            if ranges_intersect(token.bunsetsu.char_range, batch.char_range) {
+                selected.push(token.clone());
+                false
+            } else {
+                true
+            }
+        });
+        if selected.is_empty() {
+            return None;
+        }
+        localize_tokens(&mut selected, batch.char_range.0);
+        Some(selected)
     }
 
     pub fn batch_for_range(
@@ -395,7 +414,8 @@ impl DocumentSession {
             char_range: enclosing_range(&char_ranges),
             removed_token_ids: Vec::new(),
             token_ids: changed_ids,
-            ordered_token_ids: self.token_ids.clone(),
+            // TokenUpdate 不改变结构和稳定 ID 顺序，避免每次领域 mutation 重发全文 ID。
+            ordered_token_ids: Vec::new(),
             analysis: self.encoder.encode_patch(&changed_tokens),
             fingerprint: self.fingerprint.clone(),
             invalidation: Some(InvalidationReport {
@@ -552,25 +572,33 @@ fn offset_tokens(tokens: &mut [AnnotatedToken], char_offset: usize, token_offset
     }
 }
 
-fn stabilize_expression_ids(tokens: &mut [AnnotatedToken]) {
+fn localize_tokens(tokens: &mut [AnnotatedToken], char_offset: usize) {
+    let localize_range = |range: &mut (usize, usize)| {
+        range.0 -= char_offset;
+        range.1 -= char_offset;
+    };
     for token in tokens {
-        for expression in &mut token.expressions {
-            let ranges = expression
-                .matched_ranges
-                .iter()
-                .map(|range| format!("{}-{}", range.0, range.1))
-                .collect::<Vec<_>>()
-                .join("_");
-            expression.match_id = format!(
-                "e:{}:{}:{}-{}:{}",
-                expression.origin,
-                expression.rule_id,
-                expression.char_range.0,
-                expression.char_range.1,
-                ranges
-            );
+        localize_range(&mut token.bunsetsu.char_range);
+        for morpheme in &mut token.bunsetsu.morphemes {
+            localize_range(&mut morpheme.char_range);
+        }
+        for tag in &mut token.bunsetsu.grammar_tags {
+            localize_range(&mut tag.char_range);
+        }
+        for formation in &mut token.bunsetsu.word_formations {
+            localize_range(&mut formation.char_range);
+            for capture in &mut formation.captures {
+                localize_range(&mut capture.char_range);
+            }
+        }
+        for lexical in &mut token.bunsetsu.lexical_units {
+            localize_range(&mut lexical.char_range);
         }
     }
+}
+
+fn stabilize_expression_ids(tokens: &mut [AnnotatedToken]) {
+    crate::pipeline::expressions::stabilize_expression_ids(tokens);
 }
 
 fn reindex_expression_token_ranges(tokens: &mut [AnnotatedToken]) {
@@ -734,6 +762,10 @@ mod tests {
             .expect("画像 mutation 应成功");
         assert_eq!(patch.kind, PatchKind::TokenUpdate);
         assert_eq!(patch.token_ids.len(), 1);
+        assert!(
+            patch.ordered_token_ids.is_empty(),
+            "非结构 mutation 不应重发全文 Token 顺序"
+        );
         let invalidation = patch.invalidation.expect("必须返回失效报告");
         assert_eq!(
             invalidation.stages,

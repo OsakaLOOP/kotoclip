@@ -45,7 +45,6 @@ pub fn run() {
         })
         // 注册所有和前端 IPC 交互的 Command 处理器
         .invoke_handler(tauri::generate_handler![
-            commands::analyze_text,
             commands::open_document,
             commands::continue_document_analysis,
             commands::finalize_document,
@@ -64,7 +63,6 @@ pub fn run() {
             commands::add_expression_rule,
             commands::preview_expression_rule,
             commands::get_expression_rules,
-            commands::refresh_expression_annotations,
             commands::delete_expression_rule,
             commands::get_candidates,
             commands::choose_segmentation,

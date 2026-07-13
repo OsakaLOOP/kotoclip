@@ -49,6 +49,12 @@ const {
   frontendTiming,
   analyzeText,
   continueDocumentAnalysis,
+  documentComplete,
+  documentCharRange,
+  availableRanges,
+  lastOpenCacheHit,
+  lastPatchBytes,
+  lastInvalidation,
   addExpressionRule,
   previewExpressionRule,
   getExpressionRules,
@@ -440,6 +446,12 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           aria-label="开发者分析指标"
         >
           <span>{{ analysisMetrics.characterCount }} 字</span>
+          <span>{{ lastOpenCacheHit ? '暖缓存' : (documentComplete ? '已补全' : '渐进') }}</span>
+          <span>{{ availableRanges[availableRanges.length - 1]?.[1] ?? 0 }}/{{ documentCharRange[1] }} 字</span>
+          <span>{{ Math.round(lastPatchBytes / 1024) }} KB</span>
+          <span v-if="lastInvalidation">
+            {{ lastInvalidation.reason }} {{ lastInvalidation.recomputedCharacters }}/{{ lastInvalidation.totalCharacters }}
+          </span>
           <span :title="`监听 ${analysisMetrics.listenerSetupMs} ms；后端 ${analysisMetrics.backendDurationMs} ms；IPC/解析 ${analysisMetrics.ipcAndParseMs} ms；IPC传输+后端 ${analysisMetrics.invokeAndTransferMs} ms；组段 ${analysisMetrics.paragraphBuildMs} ms；首帧布局/绘制 ${analysisMetrics.renderSetupMs} ms`">
             {{ analysisMetrics.durationMs }} ms
           </span>

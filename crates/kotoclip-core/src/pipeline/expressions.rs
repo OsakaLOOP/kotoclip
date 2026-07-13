@@ -27,6 +27,28 @@ pub fn resolve_expression_conflicts(tokens: &mut [AnnotatedToken]) {
     }
 }
 
+/// 将实现内部可能依赖 Token 下标的 match_id 规范化为字符范围稳定 ID。
+pub fn stabilize_expression_ids(tokens: &mut [AnnotatedToken]) {
+    for token in tokens {
+        for expression in &mut token.expressions {
+            let ranges = expression
+                .matched_ranges
+                .iter()
+                .map(|range| format!("{}-{}", range.0, range.1))
+                .collect::<Vec<_>>()
+                .join("_");
+            expression.match_id = format!(
+                "e:{}:{}:{}-{}:{}",
+                expression.origin,
+                expression.rule_id,
+                expression.char_range.0,
+                expression.char_range.1,
+                ranges
+            );
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ExpressionCatalog {

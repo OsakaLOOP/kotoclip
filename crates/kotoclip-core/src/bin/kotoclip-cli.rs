@@ -1,4 +1,6 @@
+use kotoclip_core::cache::AnalysisCache;
 use kotoclip_core::dictionary::lookup::DictionaryEngine;
+use kotoclip_core::document::{AnalysisStage, DocumentSession, StageInvalidation};
 use kotoclip_core::pipeline::{ruby, Pipeline};
 use kotoclip_core::transport::CompactAnalysis;
 use kotoclip_core::Engine;
@@ -120,6 +122,27 @@ struct ReaderLoadBenchmarkReport {
     analysis_details: Vec<kotoclip_core::performance::TimingEntry>,
 }
 
+#[derive(Debug, Serialize)]
+struct SessionBenchmarkReport {
+    source: String,
+    chapter: Option<String>,
+    analyzed_characters: usize,
+    engine_initialization_ms: u128,
+    first_batch_ms: u128,
+    first_patch_bytes: usize,
+    progressive_complete_ms: u128,
+    progressive_patch_bytes: usize,
+    expression_mutation_ms: u128,
+    expression_changed_tokens: usize,
+    expression_patch_bytes: usize,
+    cache_store_ms: u128,
+    warm_open_ms: u128,
+    warm_patch_bytes: usize,
+    tokens: usize,
+    progressive_reconstruction_ok: bool,
+    warm_equals_progressive: bool,
+}
+
 #[derive(Default)]
 struct MissAggregate {
     surfaces: HashSet<String>,
@@ -144,6 +167,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "audit" => audit(&args),
         "benchmark" => benchmark(&args),
         "reader-benchmark" => reader_benchmark(&args),
+        "session-benchmark" => session_benchmark(&args),
         "nbest" => nbest(&args),
         "nbest-rank" => nbest_rank(&args),
         "nbest-choose" => nbest_choose(&args),
@@ -541,6 +565,160 @@ fn reader_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     if let Some(output) = args.options.get("json") {
         std::fs::write(output, &json)?;
         println!("报告已写入：{output}");
+    }
+    println!("{json}");
+    Ok(())
+}
+
+/// 文档会话冷首批、渐进补全、局部 mutation 与暖启动的统一基准。
+fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let source_path = PathBuf::from(args.required("source").map_err(io::Error::other)?);
+    let source = std::fs::read_to_string(&source_path)?;
+    let chapter = args.options.get("chapter").cloned();
+    let text = extract_chapter(&source, chapter.as_deref())?;
+    let system_dictionary = PathBuf::from(
+        args.options
+            .get("system-dict")
+            .map_or("ipadic/system.dic", String::as_str),
+    );
+    let dictionary_directory = PathBuf::from(
+        args.options
+            .get("dict-dir")
+            .map_or("data/dicts", String::as_str),
+    );
+    let engine_started = Instant::now();
+    let engine = Engine::new(
+        &system_dictionary,
+        &dictionary_directory,
+        args.required("profile").map_err(io::Error::other)?,
+    )?;
+    let engine_initialization_ms = engine_started.elapsed().as_millis();
+
+    let progressive_started = Instant::now();
+    let mut session =
+        DocumentSession::new_progressive("benchmark".to_string(), text.to_string(), false);
+    let mut first_batch_ms = 0;
+    let mut first_patch_bytes = 0;
+    let mut progressive_patch_bytes = 0;
+    let mut first = true;
+    let mut continuation = 0;
+    while let Some(batch) = session.next_batch(if first {
+        2_000
+    } else if continuation == 0 {
+        4_000
+    } else {
+        100_000
+    }) {
+        let tokens = engine.analyze_text_with_exposure(&batch.source, false)?;
+        let patch = session.append_analyzed_batch(session.revision, &batch, tokens)?;
+        let payload = serde_json::to_vec(&patch)?;
+        progressive_patch_bytes += payload.len();
+        if first {
+            first_batch_ms = progressive_started.elapsed().as_millis();
+            first_patch_bytes = payload.len();
+            first = false;
+        } else {
+            continuation += 1;
+        }
+    }
+    let progressive_complete_ms = progressive_started.elapsed().as_millis();
+    let reconstructed: String = session
+        .tokens
+        .iter()
+        .map(|token| token.bunsetsu.surface.as_str())
+        .collect();
+    let expected = ruby::prepare_text(text).text;
+
+    let mutation_started = Instant::now();
+    let changed = engine.refresh_expression_annotations_changed(&mut session.tokens)?;
+    let expression_changed_tokens = changed.len();
+    let document_range = session.char_range();
+    let expression_patch = session.apply_token_mutation(
+        session.revision,
+        "benchmark_expression_refresh",
+        vec![StageInvalidation {
+            stage: AnalysisStage::Expression,
+            char_ranges: vec![document_range],
+        }],
+        |_| changed,
+    )?;
+    let expression_patch_bytes = serde_json::to_vec(&expression_patch)?.len();
+    let expression_mutation_ms = mutation_started.elapsed().as_millis();
+
+    let cache_directory = args
+        .options
+        .get("cache-dir")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            std::env::temp_dir().join(format!(
+                "kotoclip-session-benchmark-cache-{}",
+                std::process::id()
+            ))
+        });
+    let temporary_cache = !args.options.contains_key("cache-dir");
+    let cache = AnalysisCache::new(&cache_directory, &system_dictionary, &dictionary_directory)?;
+    let cache_started = Instant::now();
+    let stable = engine.analyze_stable_text(text);
+    cache.store(text, &stable)?;
+    let cache_store_ms = cache_started.elapsed().as_millis();
+
+    let warm_started = Instant::now();
+    let cached = cache.load(text).ok_or("刚写入的缓存无法读取")?;
+    let mut warm_session =
+        DocumentSession::new_progressive("warm".to_string(), text.to_string(), false);
+    warm_session.set_cached_stable_tokens(cached);
+    let mut warm_open_ms = 0;
+    let mut warm_patch_bytes = 0;
+    let mut warm_first = true;
+    let mut warm_continuation = 0;
+    while let Some(batch) = warm_session.next_batch(if warm_first {
+        2_000
+    } else if warm_continuation == 0 {
+        4_000
+    } else {
+        100_000
+    }) {
+        let stable = warm_session
+            .take_cached_stable_tokens(&batch)
+            .ok_or("缓存缺少对应批次 Token")?;
+        let hydrated = engine.hydrate_stable_tokens(stable)?;
+        let patch = warm_session.append_analyzed_batch(warm_session.revision, &batch, hydrated)?;
+        if warm_first {
+            warm_patch_bytes = serde_json::to_vec(&patch)?.len();
+            warm_open_ms = warm_started.elapsed().as_millis();
+            warm_first = false;
+        } else {
+            warm_continuation += 1;
+        }
+    }
+    let warm_equals_progressive =
+        serde_json::to_value(&warm_session.tokens)? == serde_json::to_value(&session.tokens)?;
+    if temporary_cache {
+        let _ = std::fs::remove_dir_all(cache_directory);
+    }
+
+    let report = SessionBenchmarkReport {
+        source: source_path.display().to_string(),
+        chapter,
+        analyzed_characters: expected.chars().count(),
+        engine_initialization_ms,
+        first_batch_ms,
+        first_patch_bytes,
+        progressive_complete_ms,
+        progressive_patch_bytes,
+        expression_mutation_ms,
+        expression_changed_tokens,
+        expression_patch_bytes,
+        cache_store_ms,
+        warm_open_ms,
+        warm_patch_bytes,
+        tokens: session.tokens.len(),
+        progressive_reconstruction_ok: reconstructed == expected,
+        warm_equals_progressive,
+    };
+    let json = serde_json::to_string_pretty(&report)?;
+    if let Some(output) = args.options.get("json") {
+        std::fs::write(output, &json)?;
     }
     println!("{json}");
     Ok(())
@@ -1674,6 +1852,8 @@ fn print_help() {
         [--no-record-exposure] [--json PATH]
   reader-benchmark --source PATH --profile PATH [--chapter TITLE]
         [--no-record-exposure] [--json PATH]
+  session-benchmark --source PATH --profile PATH [--chapter TITLE]
+        [--cache-dir PATH] [--json PATH]
   nbest (--text TEXT | --source PATH) [--top-n N]
   nbest-rank --profile PATH (--text TEXT | --source PATH)
         [--token N --top-n N]

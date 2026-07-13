@@ -291,8 +291,11 @@ export function useTokenization() {
   const documentCharRange = ref<[number, number]>([0, 0]);
   const availableRanges = ref<[number, number][]>([]);
   const lastOpenCacheHit = ref(false);
+  const lastPatchBytes = ref(0);
+  const lastInvalidation = ref<AnalysisPatch["invalidation"] | null>(null);
   const tokenCache = new Map<string, AnnotatedToken>();
   const sessionStrings: string[] = [];
+  let orderedTokenIds: string[] = [];
   let documentOperation = Promise.resolve();
 
   function enqueueDocumentOperation<T>(operation: () => Promise<T>): Promise<T> {
@@ -302,6 +305,8 @@ export function useTokenization() {
   }
 
   function mergePatch(patch: AnalysisPatch) {
+    if (import.meta.env.DEV) lastPatchBytes.value = new Blob([JSON.stringify(patch)]).size;
+    lastInvalidation.value = patch.invalidation ?? null;
     const openingNewSession = activeSessionId.value !== patch.sessionId;
     if (!openingNewSession && patch.baseRevision !== documentRevision.value) {
       throw new Error(`忽略过期文档 Patch：当前 ${documentRevision.value}，收到 ${patch.baseRevision}`);
@@ -309,6 +314,7 @@ export function useTokenization() {
     if (openingNewSession) {
       tokenCache.clear();
       sessionStrings.length = 0;
+      orderedTokenIds = [];
     }
     if (patch.analysis.b !== sessionStrings.length) {
       throw new Error(`文档字符串表基址不匹配：当前 ${sessionStrings.length}，收到 ${patch.analysis.b}`);
@@ -325,7 +331,8 @@ export function useTokenization() {
       if (existing) Object.assign(existing, token);
       else tokenCache.set(tokenId, token);
     });
-    const ordered = patch.orderedTokenIds.map((tokenId) => tokenCache.get(tokenId));
+    if (patch.orderedTokenIds.length > 0) orderedTokenIds = patch.orderedTokenIds;
+    const ordered = orderedTokenIds.map((tokenId) => tokenCache.get(tokenId));
     if (ordered.some((token) => token === undefined)) {
       throw new Error("文档 Patch 缺少有序 Token 所需的数据");
     }
@@ -453,7 +460,7 @@ export function useTokenization() {
       const patch = await enqueueDocumentOperation(() => invoke<AnalysisPatch | null>("continue_document_analysis", {
           sessionId,
           baseRevision: documentRevision.value,
-          targetCharacters: firstContinuation ? 4_000 : 8_000,
+          targetCharacters: firstContinuation ? 4_000 : 100_000,
         }));
       if (!patch || activeSessionId.value !== sessionId) return;
       paragraphs.value = buildParagraphs(mergePatch(patch));
@@ -563,10 +570,6 @@ export function useTokenization() {
     });
   }
 
-  async function refreshExpressionAnnotations(tokens: AnnotatedToken[]) {
-    return await invoke<AnnotatedToken[]>("refresh_expression_annotations", { tokens });
-  }
-
   async function deleteExpressionRule(id: number) {
     return await invoke<boolean>("delete_expression_rule", { id });
   }
@@ -603,6 +606,8 @@ export function useTokenization() {
     documentCharRange,
     availableRanges,
     lastOpenCacheHit,
+    lastPatchBytes,
+    lastInvalidation,
     analyzeText,
     requestDocumentRange,
     replaceDocumentText,
@@ -613,7 +618,6 @@ export function useTokenization() {
     addExpressionRule,
     getExpressionRules,
     previewExpressionRule,
-    refreshExpressionAnnotations,
     deleteExpressionRule,
     getCandidates,
     chooseSegmentation,

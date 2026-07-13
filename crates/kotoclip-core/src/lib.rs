@@ -14,8 +14,8 @@ pub mod transport;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryLookup, ExpressionRule, ExpressionRulePreview, SegmentationCandidate,
-    SegmentationChoice,
+    AnnotatedToken, DictionaryLookup, ExpressionAnnotation, ExpressionRule, ExpressionRulePreview,
+    SegmentationCandidate, SegmentationChoice,
 };
 use performance::TimingCollector;
 use pipeline::Pipeline;
@@ -188,6 +188,7 @@ impl Engine {
             "整理表达边界",
         ));
         pipeline::expressions::resolve_expression_conflicts(&mut annotated);
+        pipeline::expressions::stabilize_expression_ids(&mut annotated);
         if record_exposure {
             self.profile
                 .record_token_exposures_with_progress(&annotated, |completed, total| {
@@ -256,6 +257,7 @@ impl Engine {
 
         let started = Instant::now();
         pipeline::expressions::resolve_expression_conflicts(&mut annotated);
+        pipeline::expressions::stabilize_expression_ids(&mut annotated);
         timings.add("表达边界", started.elapsed());
 
         if record_exposure {
@@ -446,15 +448,6 @@ impl Engine {
         self.profile.get_expression_rules()
     }
 
-    /// 仅刷新自定义表达注解，复用已有分词、语法、画像及词典分析结果。
-    pub fn refresh_expression_annotations(
-        &self,
-        mut tokens: Vec<AnnotatedToken>,
-    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
-        self.refresh_expression_annotations_in_place(&mut tokens)?;
-        Ok(tokens)
-    }
-
     /// 只重建表达层。清空全部表达后按正式顺序重新应用，确保删除自定义规则时
     /// 此前因冲突被压制的内置或呼应表达能够恢复。
     pub fn refresh_expression_annotations_in_place(
@@ -468,7 +461,27 @@ impl Engine {
         pipeline::expressions::apply_builtin_expressions(tokens);
         pipeline::expressions::apply_correlative_expressions(tokens);
         pipeline::expressions::resolve_expression_conflicts(tokens);
+        pipeline::expressions::stabilize_expression_ids(tokens);
         Ok(())
+    }
+
+    pub fn refresh_expression_annotations_changed(
+        &self,
+        tokens: &mut [AnnotatedToken],
+    ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+        let before: Vec<_> = tokens
+            .iter()
+            .map(|token| expression_semantic_keys(&token.expressions))
+            .collect();
+        self.refresh_expression_annotations_in_place(tokens)?;
+        Ok(tokens
+            .iter()
+            .zip(before)
+            .enumerate()
+            .filter_map(|(index, (token, before))| {
+                (expression_semantic_keys(&token.expressions) != before).then_some(index)
+            })
+            .collect())
     }
 
     /// 只刷新与指定词条键相同的画像注解，不执行 NLP、表达或曝光记录。
@@ -510,6 +523,10 @@ impl Engine {
         }) else {
             return Ok(Vec::new());
         };
+        let expression_before: Vec<_> = tokens
+            .iter()
+            .map(|token| expression_semantic_keys(&token.expressions))
+            .collect();
         let choices = self.profile.get_segmentation_choices()?;
         self.pipeline
             .apply_segmentation_choices(std::slice::from_mut(&mut tokens[index]), &choices);
@@ -518,7 +535,15 @@ impl Engine {
             tokens[index] = token;
         }
         self.refresh_expression_annotations_in_place(tokens)?;
-        Ok((0..tokens.len()).collect())
+        let mut changed = vec![index];
+        changed.extend(tokens.iter().zip(expression_before).enumerate().filter_map(
+            |(index, (token, before))| {
+                (expression_semantic_keys(&token.expressions) != before).then_some(index)
+            },
+        ));
+        changed.sort_unstable();
+        changed.dedup();
+        Ok(changed)
     }
 
     pub fn delete_expression_rule(&self, id: i64) -> Result<bool, Box<dyn std::error::Error>> {
@@ -592,6 +617,44 @@ fn is_kana(value: &str) -> bool {
         && value
             .chars()
             .all(|character| ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー')
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct ExpressionSemanticKey {
+    match_id: String,
+    rule_id: i64,
+    label: String,
+    description: String,
+    expression_type: String,
+    position: String,
+    matched_ranges: Vec<(usize, usize)>,
+    priority: i32,
+    boundary_effect: String,
+    confidence_bits: u32,
+    surface: String,
+}
+
+/// 表达刷新忽略可由字符范围重新推导的 token_range 和 Vec 顺序，
+/// 其余匹配、覆盖及展示语义变化仍需生成 Patch。
+fn expression_semantic_keys(expressions: &[ExpressionAnnotation]) -> Vec<ExpressionSemanticKey> {
+    let mut keys = expressions
+        .iter()
+        .map(|expression| ExpressionSemanticKey {
+            match_id: expression.match_id.clone(),
+            rule_id: expression.rule_id,
+            label: expression.label.clone(),
+            description: expression.description.clone(),
+            expression_type: expression.expression_type.clone(),
+            position: expression.position.clone(),
+            matched_ranges: expression.matched_ranges.clone(),
+            priority: expression.priority,
+            boundary_effect: expression.boundary_effect.clone(),
+            confidence_bits: expression.confidence.to_bits(),
+            surface: expression.surface.clone(),
+        })
+        .collect::<Vec<_>>();
+    keys.sort_unstable();
+    keys
 }
 
 #[cfg(test)]

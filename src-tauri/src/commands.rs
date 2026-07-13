@@ -4,7 +4,6 @@ use kotoclip_core::document::{AnalysisPatch, AnalysisStage, DocumentSession, Sta
 use kotoclip_core::models::{
     AnnotatedToken, DictionaryLookup, ExportEntry, ExpressionRule, SegmentationCandidate,
 };
-use kotoclip_core::transport::CompactAnalysis;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
 use tauri::{Emitter, State, Window};
@@ -15,13 +14,6 @@ struct AnalysisProgressEvent {
     request_id: String,
     #[serde(flatten)]
     progress: AnalysisProgress,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnalysisResponse {
-    pub analysis: CompactAnalysis,
-    pub backend_duration_ms: u64,
 }
 
 #[derive(Serialize)]
@@ -40,36 +32,6 @@ pub enum DocumentMutation {
         #[serde(default)]
         record_exposure: bool,
     },
-}
-
-/// IPC 命令：分析日语文本并进行生词等级判定
-#[tauri::command]
-pub async fn analyze_text(
-    window: Window,
-    state: State<'_, AppState>,
-    text: String,
-    record_exposure: Option<bool>,
-    request_id: Option<String>,
-) -> Result<AnalysisResponse, String> {
-    let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    let request_id = request_id.unwrap_or_else(|| "legacy".to_string());
-    let started = std::time::Instant::now();
-    let tokens = engine
-        .analyze_text_with_progress(&text, record_exposure.unwrap_or(true), |progress| {
-            let _ = window.emit(
-                "analysis-progress",
-                AnalysisProgressEvent {
-                    request_id: request_id.clone(),
-                    progress,
-                },
-            );
-        })
-        .map_err(|e| e.to_string())?;
-    let backend_duration_ms = started.elapsed().as_millis() as u64;
-    Ok(AnalysisResponse {
-        analysis: CompactAnalysis::from(tokens.as_slice()),
-        backend_duration_ms,
-    })
 }
 
 #[tauri::command]
@@ -91,16 +53,24 @@ pub async fn open_document(
         .load(&text);
     if let Some(stable_tokens) = cached {
         let engine = state.engine.lock().map_err(|error| error.to_string())?;
-        let tokens = engine
-            .hydrate_stable_tokens(stable_tokens)
-            .map_err(|error| error.to_string())?;
-        let mut session = DocumentSession::new_cached(
+        let mut session = DocumentSession::new_progressive(
             session_id.clone(),
             text,
-            tokens,
             record_exposure.unwrap_or(true),
         );
-        let patch = session.full_patch(0);
+        session.set_cached_stable_tokens(stable_tokens);
+        let batch = session
+            .next_batch(2_000)
+            .ok_or_else(|| "缓存文档没有可恢复内容".to_string())?;
+        let stable_batch = session
+            .take_cached_stable_tokens(&batch)
+            .ok_or_else(|| "缓存缺少首批稳定 Token".to_string())?;
+        let tokens = engine
+            .hydrate_stable_tokens(stable_batch)
+            .map_err(|error| error.to_string())?;
+        let patch = session
+            .append_analyzed_batch(0, &batch, tokens)
+            .map_err(|error| error.to_string())?;
         state
             .sessions
             .lock()
@@ -169,9 +139,15 @@ pub async fn continue_document_analysis(
     let Some(batch) = session.next_batch(target_characters.unwrap_or(8_000)) else {
         return Ok(None);
     };
-    let tokens = engine
-        .analyze_text_with_exposure(&batch.source, false)
-        .map_err(|error| error.to_string())?;
+    let tokens = if let Some(stable) = session.take_cached_stable_tokens(&batch) {
+        engine
+            .hydrate_stable_tokens(stable)
+            .map_err(|error| error.to_string())?
+    } else {
+        engine
+            .analyze_text_with_exposure(&batch.source, false)
+            .map_err(|error| error.to_string())?
+    };
     let patch = session
         .append_analyzed_batch(base_revision, &batch, tokens)
         .map_err(|error| error.to_string())?;
@@ -197,9 +173,15 @@ pub async fn request_document_range(
         .get_mut(&session_id)
         .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
     if let Some(batch) = session.batch_for_range(char_range, 4_000) {
-        let tokens = engine
-            .analyze_text_with_exposure(&batch.source, false)
-            .map_err(|error| error.to_string())?;
+        let tokens = if let Some(stable) = session.take_cached_stable_tokens(&batch) {
+            engine
+                .hydrate_stable_tokens(stable)
+                .map_err(|error| error.to_string())?
+        } else {
+            engine
+                .analyze_text_with_exposure(&batch.source, false)
+                .map_err(|error| error.to_string())?
+        };
         let patch = session
             .append_analyzed_batch(base_revision, &batch, tokens)
             .map_err(|error| error.to_string())?;
@@ -351,10 +333,9 @@ pub async fn refresh_document_expressions(
         .require_revision(base_revision)
         .map_err(|error| error.to_string())?;
     let document_range = session.char_range();
-    engine
-        .refresh_expression_annotations_in_place(&mut session.tokens)
+    let changed_indices = engine
+        .refresh_expression_annotations_changed(&mut session.tokens)
         .map_err(|error| error.to_string())?;
-    let changed_indices: Vec<_> = (0..session.tokens.len()).collect();
     session
         .apply_token_mutation(
             base_revision,
@@ -606,17 +587,6 @@ pub async fn get_expression_rules(
 ) -> Result<Vec<ExpressionRule>, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     engine.get_expression_rules().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn refresh_expression_annotations(
-    state: State<'_, AppState>,
-    tokens: Vec<AnnotatedToken>,
-) -> Result<Vec<AnnotatedToken>, String> {
-    let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    engine
-        .refresh_expression_annotations(tokens)
-        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
