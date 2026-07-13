@@ -69,6 +69,15 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- expression-scan --profile data/
 cargo run -p kotoclip-core --bin kotoclip-cli -- session-benchmark `
   --source output.md --chapter "## 第一話　冷やし神" `
   --profile data/research-profile.sqlite
+
+# 以当前完整管线为动态基准，随机验证范围加载与规则增删的增量一致性
+cargo run -p kotoclip-core --bin kotoclip-cli -- incremental-consistency `
+  --source output.md --chapter "## 第一話　冷やし神" `
+  --profile data/research-profile.sqlite --seed 2026071301 `
+  --load-cases 5 --rule-cases 5
+
+# 默认用三个可复现种子运行完整差分套件
+.\scripts\incremental_consistency.ps1 -SourcePath output.md
 ```
 
 ## 文档分析生命周期

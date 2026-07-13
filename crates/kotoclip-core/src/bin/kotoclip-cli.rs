@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
 use std::io::{self, Write};
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Default)]
 struct CliArgs {
@@ -55,6 +55,12 @@ impl CliArgs {
     fn f64(&self, key: &str, default: f64) -> Result<f64, String> {
         self.options.get(key).map_or(Ok(default), |value| {
             value.parse().map_err(|_| format!("--{key} 必须是数字"))
+        })
+    }
+
+    fn u64(&self, key: &str, default: u64) -> Result<u64, String> {
+        self.options.get(key).map_or(Ok(default), |value| {
+            value.parse().map_err(|_| format!("--{key} 必须是非负整数"))
         })
     }
 }
@@ -145,6 +151,45 @@ struct SessionBenchmarkReport {
     warm_equals_progressive: bool,
 }
 
+#[derive(Debug, Serialize)]
+struct IncrementalConsistencyReport {
+    source: String,
+    chapter: Option<String>,
+    seed: u64,
+    load_cases: usize,
+    rule_cases: usize,
+    analyzed_characters: usize,
+    baseline_tokens: usize,
+    randomized_loads_passed: usize,
+    rule_additions_passed: usize,
+    rule_deletions_passed: usize,
+}
+
+struct DeterministicRng(u64);
+
+impl DeterministicRng {
+    fn new(seed: u64) -> Self {
+        Self(seed.max(1))
+    }
+
+    fn next_u64(&mut self) -> u64 {
+        let mut value = self.0;
+        value ^= value << 13;
+        value ^= value >> 7;
+        value ^= value << 17;
+        self.0 = value;
+        value
+    }
+
+    fn usize(&mut self, upper: usize) -> usize {
+        if upper == 0 {
+            0
+        } else {
+            (self.next_u64() as usize) % upper
+        }
+    }
+}
+
 #[derive(Default)]
 struct MissAggregate {
     surfaces: HashSet<String>,
@@ -170,6 +215,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "benchmark" => benchmark(&args),
         "reader-benchmark" => reader_benchmark(&args),
         "session-benchmark" => session_benchmark(&args),
+        "incremental-consistency" => incremental_consistency(&args),
         "nbest" => nbest(&args),
         "nbest-rank" => nbest_rank(&args),
         "nbest-choose" => nbest_choose(&args),
@@ -611,7 +657,7 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     } else {
         100_000
     }) {
-        let tokens = engine.analyze_document_batch(&batch.source)?;
+        let tokens = engine.analyze_document_batch(&batch.source, session.document_readings())?;
         let patch = session.append_analyzed_batch(session.revision, &batch, tokens)?;
         let payload = serde_json::to_vec(&patch)?;
         progressive_patch_bytes += payload.len();
@@ -740,6 +786,233 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         std::fs::write(output, &json)?;
     }
     println!("{json}");
+    Ok(())
+}
+
+/// 使用当前管线动态生成全量基准，并以可复现随机顺序验证加载与规则增量结果。
+fn incremental_consistency(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let source_path = PathBuf::from(args.required("source").map_err(io::Error::other)?);
+    let source = std::fs::read_to_string(&source_path)?;
+    let chapter = args.options.get("chapter").cloned();
+    let text = extract_chapter(&source, chapter.as_deref())?;
+    let seed = args.u64(
+        "seed",
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
+    )?;
+    let load_cases = args.usize("load-cases", 5)?;
+    let rule_cases = args.usize("rule-cases", 5)?;
+    let system_dictionary = PathBuf::from(
+        args.options
+            .get("system-dict")
+            .map_or("ipadic/system.dic", String::as_str),
+    );
+    let dictionary_directory = PathBuf::from(
+        args.options
+            .get("dict-dir")
+            .map_or("data/dicts", String::as_str),
+    );
+    let seed_profile = PathBuf::from(args.required("profile").map_err(io::Error::other)?);
+    let temporary_directory = std::env::temp_dir().join(format!(
+        "kotoclip-incremental-consistency-{}-{seed}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&temporary_directory);
+    std::fs::create_dir_all(&temporary_directory)?;
+    let temporary_profile = temporary_directory.join("profile.sqlite");
+    if seed_profile.is_file() {
+        std::fs::copy(&seed_profile, &temporary_profile)?;
+    }
+
+    let result = (|| -> Result<IncrementalConsistencyReport, Box<dyn Error>> {
+        let engine = Engine::new(
+            &system_dictionary,
+            &dictionary_directory,
+            &temporary_profile,
+        )?;
+        let baseline = engine.analyze_text_with_exposure(text, false)?;
+        let character_count = ruby::prepare_text(text).text.chars().count();
+        let mut rng = DeterministicRng::new(seed);
+        let targets = [512, 1_024, 2_000, 4_000, 8_000, 16_000, 100_000];
+
+        for case_index in 0..load_cases {
+            let mut session = DocumentSession::new_progressive(
+                format!("random-load-{case_index}"),
+                text.to_string(),
+                false,
+            );
+            while !session.is_complete() {
+                let position = rng.usize(character_count.max(1));
+                let target = targets[rng.usize(targets.len())];
+                let batch = session
+                    .batch_for_range((position, (position + 1).min(character_count)), target)
+                    .or_else(|| session.next_batch(target))
+                    .ok_or("随机加载仍未完成但无法生成批次")?;
+                let tokens =
+                    engine.analyze_document_batch(&batch.source, session.document_readings())?;
+                session.append_analyzed_batch(session.revision, &batch, tokens)?;
+            }
+            engine.refresh_expression_annotations_in_place(&mut session.tokens)?;
+            require_token_equality(
+                &baseline,
+                &session.tokens,
+                &format!("随机加载 case={case_index} seed={seed}"),
+            )?;
+        }
+
+        let selectable_starts = baseline
+            .windows(3)
+            .enumerate()
+            .filter(|(_, window)| {
+                window.iter().all(|token| {
+                    token.display_class == "content" && !token.bunsetsu.morphemes.is_empty()
+                })
+            })
+            .map(|(index, _)| index)
+            .collect::<Vec<_>>();
+        if rule_cases > 0 && selectable_starts.is_empty() {
+            return Err("完整文本中没有可用于随机规则的连续内容 Token".into());
+        }
+
+        let mut incremental = baseline.clone();
+        for case_index in 0..rule_cases {
+            let start = selectable_starts[rng.usize(selectable_starts.len())];
+            let width = 2 + rng.usize(2);
+            let selected = &incremental[start..start + width];
+            let states = vec!["fixed".to_string(); width];
+            let masks = selected
+                .iter()
+                .map(|token| vec![true; token.bunsetsu.morphemes.len()])
+                .collect::<Vec<_>>();
+            let rule = engine.add_configured_expression_rule(
+                selected,
+                Some(&format!("一致性探针-{seed}-{case_index}")),
+                Some("随机增量差分验证临时规则"),
+                &states,
+                &masks,
+                None,
+                "grammar_construction",
+                10_000 + case_index as i32,
+                "annotate_only",
+            )?;
+            let before_add = incremental.clone();
+            let changed_after_add =
+                engine.refresh_expression_annotations_changed(&mut incremental)?;
+            let full_after_add = engine.analyze_text_with_exposure(text, false)?;
+            require_changed_indices(
+                &before_add,
+                &full_after_add,
+                &changed_after_add,
+                &format!(
+                    "规则新增 Patch case={case_index} seed={seed} rule={}",
+                    rule.id
+                ),
+            )?;
+            require_token_equality(
+                &full_after_add,
+                &incremental,
+                &format!("规则新增 case={case_index} seed={seed} rule={}", rule.id),
+            )?;
+
+            if !engine.delete_expression_rule(rule.id)? {
+                return Err(format!("临时规则删除失败：{}", rule.id).into());
+            }
+            let before_delete = incremental.clone();
+            let changed_after_delete =
+                engine.refresh_expression_annotations_changed(&mut incremental)?;
+            let full_after_delete = engine.analyze_text_with_exposure(text, false)?;
+            require_changed_indices(
+                &before_delete,
+                &full_after_delete,
+                &changed_after_delete,
+                &format!(
+                    "规则删除 Patch case={case_index} seed={seed} rule={}",
+                    rule.id
+                ),
+            )?;
+            require_token_equality(
+                &full_after_delete,
+                &incremental,
+                &format!("规则删除 case={case_index} seed={seed} rule={}", rule.id),
+            )?;
+        }
+
+        Ok(IncrementalConsistencyReport {
+            source: source_path.display().to_string(),
+            chapter,
+            seed,
+            load_cases,
+            rule_cases,
+            analyzed_characters: character_count,
+            baseline_tokens: baseline.len(),
+            randomized_loads_passed: load_cases,
+            rule_additions_passed: rule_cases,
+            rule_deletions_passed: rule_cases,
+        })
+    })();
+    let _ = std::fs::remove_dir_all(&temporary_directory);
+    let report = result?;
+    let json = serde_json::to_string_pretty(&report)?;
+    if let Some(output) = args.options.get("json") {
+        std::fs::write(output, &json)?;
+    }
+    println!("{json}");
+    Ok(())
+}
+
+fn require_token_equality(
+    expected: &[kotoclip_core::models::AnnotatedToken],
+    actual: &[kotoclip_core::models::AnnotatedToken],
+    context: &str,
+) -> Result<(), Box<dyn Error>> {
+    if expected.len() != actual.len() {
+        return Err(format!(
+            "{context} Token 数不一致：全量 {}，增量 {}",
+            expected.len(),
+            actual.len()
+        )
+        .into());
+    }
+    if let Some((index, (expected, actual))) =
+        expected
+            .iter()
+            .zip(actual)
+            .enumerate()
+            .find(|(_, (expected, actual))| {
+                serde_json::to_value(expected).ok() != serde_json::to_value(actual).ok()
+            })
+    {
+        return Err(format!(
+            "{context} 首个差异 Token={index} char_range={:?}\n全量={}\n增量={}",
+            expected.bunsetsu.char_range,
+            serde_json::to_string(expected)?,
+            serde_json::to_string(actual)?
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn require_changed_indices(
+    before: &[kotoclip_core::models::AnnotatedToken],
+    expected_after: &[kotoclip_core::models::AnnotatedToken],
+    actual_changed: &[usize],
+    context: &str,
+) -> Result<(), Box<dyn Error>> {
+    let expected_changed = before
+        .iter()
+        .zip(expected_after)
+        .enumerate()
+        .filter_map(|(index, (before, after))| {
+            (serde_json::to_value(before).ok() != serde_json::to_value(after).ok()).then_some(index)
+        })
+        .collect::<Vec<_>>();
+    if expected_changed != actual_changed {
+        return Err(format!(
+            "{context} Patch Token 集不一致：全量差分 {:?}，增量报告 {:?}",
+            expected_changed, actual_changed
+        )
+        .into());
+    }
     Ok(())
 }
 
@@ -1873,6 +2146,8 @@ fn print_help() {
         [--no-record-exposure] [--json PATH]
   session-benchmark --source PATH --profile PATH [--chapter TITLE]
         [--cache-dir PATH] [--json PATH]
+  incremental-consistency --source PATH --profile PATH [--chapter TITLE]
+        [--seed N --load-cases N --rule-cases N --json PATH]
   nbest (--text TEXT | --source PATH) [--top-n N]
   nbest-rank --profile PATH (--text TEXT | --source PATH)
         [--token N --top-n N]
