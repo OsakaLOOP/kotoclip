@@ -14,8 +14,7 @@ import TooltipPanel from "./TooltipPanel.vue";
 import ContextMenu from "./ContextMenu.vue";
 import ExportPanel from "./ExportPanel.vue";
 import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
-import ExpressionRulesPanel from "./ExpressionRulesPanel.vue";
-import ExpressionRuleEditor from "./ExpressionRuleEditor.vue";
+import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 
 // 状态定义
@@ -46,6 +45,7 @@ const {
   frontendTiming,
   analyzeText,
   addExpressionRule,
+  previewExpressionRule,
   getExpressionRules,
   deleteExpressionRule,
   getCandidates,
@@ -99,15 +99,20 @@ const candidatesLoading = ref(false);
 
 // 侧边栏导出面板显示状态
 const showExportPanel = ref(false);
-const showExpressionRules = ref(false);
 const expressionRules = ref<ExpressionRule[]>([]);
 const expressionDraft = ref<AnnotatedToken[]>([]);
 const expressionDraftMorphemeRange = ref({ startMorphemeIdx: 0, endMorphemeIdx: 0 });
-const showExpressionEditor = ref(false);
+const showRuleWorkbench = ref(false);
+const ruleWorkbenchView = ref<"library" | "editor">("library");
 
 async function openExpressionRules() {
-  expressionRules.value = await getExpressionRules();
-  showExpressionRules.value = true;
+  ruleWorkbenchView.value = "library";
+  showRuleWorkbench.value = true;
+  try {
+    expressionRules.value = await getExpressionRules();
+  } catch (error) {
+    console.error("Rule catalog load error:", error);
+  }
 }
 
 async function removeExpressionRule(id: number) {
@@ -140,7 +145,7 @@ async function saveExpressionDraft(
       priority,
       boundaryEffect
     );
-    showExpressionEditor.value = false;
+    showRuleWorkbench.value = false;
     expressionDraft.value = [];
     expressionDraftMorphemeRange.value = { startMorphemeIdx: 0, endMorphemeIdx: 0 };
     await triggerAnalysis(false);
@@ -159,7 +164,13 @@ const {
 } = useDragMerge(paragraphs, async (tokens, _paragraphId, startMorphemeIdx, endMorphemeIdx) => {
   expressionDraft.value = tokens.filter(t => t.display_class === "content");
   expressionDraftMorphemeRange.value = { startMorphemeIdx, endMorphemeIdx };
-  showExpressionEditor.value = true;
+  ruleWorkbenchView.value = "editor";
+  showRuleWorkbench.value = true;
+  try {
+    expressionRules.value = await getExpressionRules();
+  } catch (error) {
+    console.error("Rule catalog load error:", error);
+  }
 });
 
 // 使用 @tanstack/vue-virtual 虚拟滚动
@@ -560,8 +571,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <button class="icon-btn" :class="{ active: showExportPanel }" @click="showExportPanel = !showExportPanel">
           💼 导出本 ({{ selectedKeys.length }})
         </button>
-        <button class="icon-btn" :class="{ active: showExpressionRules }" @click="openExpressionRules">
-          ⛓ 表达式
+        <button class="icon-btn" :class="{ active: showRuleWorkbench }" @click="openExpressionRules">
+          ⛓ 规则
         </button>
         <button class="icon-btn" :class="{ active: einkMode }" @click="toggleEinkMode">
           🕶 墨水屏
@@ -709,19 +720,16 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       @export="executeExport"
     />
 
-    <ExpressionRulesPanel
-      :show="showExpressionRules"
+    <RuleWorkbench
+      :show="showRuleWorkbench"
+      :initialView="ruleWorkbenchView"
       :rules="expressionRules"
-      @close="showExpressionRules = false"
-      @delete="removeExpressionRule"
-    />
-
-    <ExpressionRuleEditor
-      :show="showExpressionEditor"
       :tokens="expressionDraft"
       :startMorphemeIdx="expressionDraftMorphemeRange.startMorphemeIdx"
       :endMorphemeIdx="expressionDraftMorphemeRange.endMorphemeIdx"
-      @cancel="showExpressionEditor = false"
+      :previewRule="previewExpressionRule"
+      @close="showRuleWorkbench = false"
+      @delete="removeExpressionRule"
       @save="saveExpressionDraft"
     />
 
