@@ -4,7 +4,10 @@ import { Paragraph } from "./useTokenization";
 import { ExportEntry, DictEntry } from "../types";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 
-export function useSelection(paragraphs: Ref<Paragraph[]>) {
+export function useSelection(
+  paragraphs: Ref<Paragraph[]>,
+  updateKnownState?: (baseForm: string, reading: string, known: boolean) => Promise<unknown>,
+) {
   // 当前被用户标记选中的 tokens (用于导出)
   // 结构: Array of { paragraphId, tokenIndex }
   const selectedKeys = ref<{ paragraphId: number; tokenIndex: number }[]>([]);
@@ -44,11 +47,12 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
     const reading = token.bunsetsu.head_word.reading;
 
     try {
-      // 调用 IPC 命令
-      await invoke("mark_known", { baseForm, reading });
-      
-      // 更新前端对应的所有相同 base_form 的词，全部变为已知状态以获得顺畅的阅读体验
-      updateLocalTokensKnownStatus(baseForm, true);
+      if (updateKnownState) await updateKnownState(baseForm, reading, true);
+      else {
+        await invoke("mark_known", { baseForm, reading });
+        updateLocalTokensKnownStatus(baseForm, true);
+      }
+      cleanupKnownSelections();
     } catch (err) {
       console.error("Mark Known Error:", err);
     }
@@ -68,10 +72,11 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
     const reading = token.bunsetsu.head_word.reading;
 
     try {
-      await invoke("mark_unknown", { baseForm, reading });
-      
-      // 重新让这些词显现为生词胶囊
-      updateLocalTokensKnownStatus(baseForm, false);
+      if (updateKnownState) await updateKnownState(baseForm, reading, false);
+      else {
+        await invoke("mark_unknown", { baseForm, reading });
+        updateLocalTokensKnownStatus(baseForm, false);
+      }
     } catch (err) {
       console.error("Mark Unknown Error:", err);
     }
@@ -94,13 +99,14 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
         }
       }
     }
-    // 清理已被设为已知的已选 Keys
-    if (isKnown) {
-      selectedKeys.value = selectedKeys.value.filter(({ paragraphId, tokenIndex }) => {
-        const p = paragraphs.value.find((para) => para.id === paragraphId);
-        return p?.tokens[tokenIndex] ? !p.tokens[tokenIndex].is_known : true;
-      });
-    }
+    if (isKnown) cleanupKnownSelections();
+  }
+
+  function cleanupKnownSelections() {
+    selectedKeys.value = selectedKeys.value.filter(({ paragraphId, tokenIndex }) => {
+      const paragraph = paragraphs.value.find((item) => item.id === paragraphId);
+      return paragraph?.tokens[tokenIndex] ? !paragraph.tokens[tokenIndex].is_known : true;
+    });
   }
 
   /**

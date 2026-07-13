@@ -152,7 +152,7 @@ DocumentSession
 
 ## P3：领域 mutation 与正式失效引擎
 
-状态：待开始，依赖 P2。
+状态：已完成（2026-07-13）。
 
 ### 范围
 
@@ -278,4 +278,14 @@ DocumentSession
 性能结果：P2 首次打开仍复用 P1 完整分析；范围 Patch 不重发已存在的字符串
 内存结果：会话显式持有规范 Token 和字符串表；容量治理与持久化归入 P5
 遗留项：P3 至 P6 未开始；P4 前首次打开仍返回全文 Patch
+```
+
+```text
+日期：2026-07-13
+提交：本次 P3 提交
+范围：阶段失效报告、Token 子集 Patch、表达层刷新、词条画像刷新和局部 N-best 选择
+正确性结果：mutation 精确阶段与范围测试通过；Tauri core 检查和前端生产构建通过
+性能结果：表达规则更新不进入 NLP/画像，已知状态只刷新相同词条键，N-best 只重建目标 Token 的结构阶段
+内存结果：mutation 复用 DocumentSession，不创建第二份整篇分析结果
+遗留项：P4 至 P6 未开始；N-best 后跨 Token 表达仍需全篇表达扫描，但不重跑无关 NLP segment
 ```

@@ -422,13 +422,74 @@ impl Engine {
         &self,
         mut tokens: Vec<AnnotatedToken>,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
-        for token in &mut tokens {
-            token
-                .expressions
-                .retain(|expression| expression.origin != "custom");
-        }
-        self.profile.apply_expression_rules(&mut tokens)?;
+        self.refresh_expression_annotations_in_place(&mut tokens)?;
         Ok(tokens)
+    }
+
+    /// 只重建表达层。清空全部表达后按正式顺序重新应用，确保删除自定义规则时
+    /// 此前因冲突被压制的内置或呼应表达能够恢复。
+    pub fn refresh_expression_annotations_in_place(
+        &self,
+        tokens: &mut [AnnotatedToken],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for token in tokens.iter_mut() {
+            token.expressions.clear();
+        }
+        self.profile.apply_expression_rules(tokens)?;
+        pipeline::expressions::apply_builtin_expressions(tokens);
+        pipeline::expressions::apply_correlative_expressions(tokens);
+        pipeline::expressions::resolve_expression_conflicts(tokens);
+        Ok(())
+    }
+
+    /// 只刷新与指定词条键相同的画像注解，不执行 NLP、表达或曝光记录。
+    pub fn refresh_profile_annotations_for_key(
+        &self,
+        tokens: &mut [AnnotatedToken],
+        base_form: &str,
+        reading: &str,
+    ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+        let indices: Vec<_> = tokens
+            .iter()
+            .enumerate()
+            .filter(|(_, token)| {
+                token.display_class == "content"
+                    && token.bunsetsu.head_word.base_form == base_form
+                    && token.bunsetsu.head_word.reading == reading
+            })
+            .map(|(index, _)| index)
+            .collect();
+        let selected: Vec<_> = indices.iter().map(|index| tokens[*index].clone()).collect();
+        let refreshed = self.profile.annotate_tokens(selected)?;
+        for (index, refreshed) in indices.iter().copied().zip(refreshed) {
+            tokens[index].novelty_score = refreshed.novelty_score;
+            tokens[index].is_known = refreshed.is_known;
+            tokens[index].inference_reason = refreshed.inference_reason;
+        }
+        Ok(indices)
+    }
+
+    /// 应用已持久化的 N-best 选择，仅重建目标 Token 的构词、文节、语法和画像，
+    /// 随后刷新全篇表达层以覆盖可能跨 Token 的表达关系。
+    pub fn refresh_segmentation_for_range(
+        &self,
+        tokens: &mut [AnnotatedToken],
+        char_range: (usize, usize),
+    ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+        let Some(index) = tokens.iter().position(|token| {
+            token.display_class == "content" && token.bunsetsu.char_range == char_range
+        }) else {
+            return Ok(Vec::new());
+        };
+        let choices = self.profile.get_segmentation_choices()?;
+        self.pipeline
+            .apply_segmentation_choices(std::slice::from_mut(&mut tokens[index]), &choices);
+        let refreshed = self.profile.annotate_tokens(vec![tokens[index].clone()])?;
+        if let Some(token) = refreshed.into_iter().next() {
+            tokens[index] = token;
+        }
+        self.refresh_expression_annotations_in_place(tokens)?;
+        Ok((0..tokens.len()).collect())
     }
 
     pub fn delete_expression_rule(&self, id: i64) -> Result<bool, Box<dyn std::error::Error>> {

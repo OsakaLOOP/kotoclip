@@ -52,10 +52,12 @@ const {
   previewExpressionRule,
   getExpressionRules,
   deleteExpressionRule,
+  refreshDocumentExpressions,
+  markDocumentKnown,
   getCandidates,
   chooseSegmentation,
 } = useTokenization();
-const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs);
+const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs, markDocumentKnown);
 const { lookupWord, chooseDictionaryTarget } = useDictionary();
 const explanation = useExplanationSession(lookupWord, chooseDictionaryTarget);
 
@@ -96,7 +98,7 @@ async function removeExpressionRule(id: number) {
   await deleteExpressionRule(id);
   expressionRules.value = await getExpressionRules();
   if (!showInput.value && inputText.value.trim()) {
-    await triggerAnalysis(false);
+    await refreshDocumentExpressions();
   }
 }
 
@@ -125,7 +127,7 @@ async function saveExpressionDraft(
     showRuleWorkbench.value = false;
     expressionDraft.value = [];
     expressionDraftMorphemeRange.value = { startMorphemeIdx: 0, endMorphemeIdx: 0 };
-    await triggerAnalysis(false);
+    await refreshDocumentExpressions();
   } catch (err) {
     alert(`保存跨文节表达失败：${String(err)}`);
   }
@@ -333,7 +335,6 @@ async function applyContextCandidate(candidate: SegmentationCandidate) {
   try {
     await chooseSegmentation(contextMenuToken.value, candidate);
     contextMenuShow.value = false;
-    await triggerAnalysis(false);
   } catch (err) {
     console.error("Candidate Apply Error:", err);
     alert(`应用 N-best 候选失败：${String(err)}`);

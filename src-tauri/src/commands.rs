@@ -1,6 +1,6 @@
 use crate::state::AppState;
 use kotoclip_core::analysis_progress::AnalysisProgress;
-use kotoclip_core::document::{AnalysisPatch, DocumentSession};
+use kotoclip_core::document::{AnalysisPatch, AnalysisStage, DocumentSession, StageInvalidation};
 use kotoclip_core::models::{
     AnnotatedToken, DictionaryLookup, ExportEntry, ExpressionRule, SegmentationCandidate,
 };
@@ -191,6 +191,161 @@ pub async fn close_document(
         .map_err(|error| error.to_string())?
         .remove(&session_id)
         .is_some())
+}
+
+#[tauri::command]
+pub async fn refresh_document_expressions(
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+) -> Result<AnalysisPatch, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+    let session = sessions
+        .get_mut(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+    session
+        .require_revision(base_revision)
+        .map_err(|error| error.to_string())?;
+    let document_range = session.char_range();
+    engine
+        .refresh_expression_annotations_in_place(&mut session.tokens)
+        .map_err(|error| error.to_string())?;
+    let changed_indices: Vec<_> = (0..session.tokens.len()).collect();
+    session
+        .apply_token_mutation(
+            base_revision,
+            "expression_rules_changed",
+            vec![
+                StageInvalidation {
+                    stage: AnalysisStage::Expression,
+                    char_ranges: vec![document_range],
+                },
+                StageInvalidation {
+                    stage: AnalysisStage::Presentation,
+                    char_ranges: vec![document_range],
+                },
+            ],
+            |_| changed_indices,
+        )
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn mark_document_known(
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+    base_form: String,
+    reading: String,
+    known: bool,
+) -> Result<AnalysisPatch, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+    let session = sessions
+        .get_mut(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+    session
+        .require_revision(base_revision)
+        .map_err(|error| error.to_string())?;
+    if known {
+        engine
+            .mark_known(&base_form, &reading)
+            .map_err(|error| error.to_string())?;
+    } else {
+        engine
+            .mark_unknown(&base_form, &reading)
+            .map_err(|error| error.to_string())?;
+    }
+    let ranges: Vec<_> = session
+        .tokens
+        .iter()
+        .filter(|token| {
+            token.display_class == "content"
+                && token.bunsetsu.head_word.base_form == base_form
+                && token.bunsetsu.head_word.reading == reading
+        })
+        .map(|token| token.bunsetsu.char_range)
+        .collect();
+    let changed_indices = engine
+        .refresh_profile_annotations_for_key(&mut session.tokens, &base_form, &reading)
+        .map_err(|error| error.to_string())?;
+    session
+        .apply_token_mutation(
+            base_revision,
+            if known { "mark_known" } else { "mark_unknown" },
+            vec![
+                StageInvalidation {
+                    stage: AnalysisStage::Profile,
+                    char_ranges: ranges.clone(),
+                },
+                StageInvalidation {
+                    stage: AnalysisStage::Presentation,
+                    char_ranges: ranges,
+                },
+            ],
+            |_| changed_indices,
+        )
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn choose_document_segmentation(
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+    source: AnnotatedToken,
+    candidate: SegmentationCandidate,
+) -> Result<AnalysisPatch, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+    let session = sessions
+        .get_mut(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+    session
+        .require_revision(base_revision)
+        .map_err(|error| error.to_string())?;
+    engine
+        .choose_segmentation(&source, &candidate)
+        .map_err(|error| error.to_string())?;
+    let local_range = source.bunsetsu.char_range;
+    let document_range = session.char_range();
+    let changed_indices = engine
+        .refresh_segmentation_for_range(&mut session.tokens, local_range)
+        .map_err(|error| error.to_string())?;
+    session
+        .apply_token_mutation(
+            base_revision,
+            "segmentation_choice",
+            vec![
+                StageInvalidation {
+                    stage: AnalysisStage::WordFormation,
+                    char_ranges: vec![local_range],
+                },
+                StageInvalidation {
+                    stage: AnalysisStage::Bunsetsu,
+                    char_ranges: vec![local_range],
+                },
+                StageInvalidation {
+                    stage: AnalysisStage::Grammar,
+                    char_ranges: vec![local_range],
+                },
+                StageInvalidation {
+                    stage: AnalysisStage::Profile,
+                    char_ranges: vec![local_range],
+                },
+                StageInvalidation {
+                    stage: AnalysisStage::Expression,
+                    char_ranges: vec![document_range],
+                },
+                StageInvalidation {
+                    stage: AnalysisStage::Presentation,
+                    char_ranges: vec![document_range],
+                },
+            ],
+            |_| changed_indices,
+        )
+        .map_err(|error| error.to_string())
 }
 
 /// IPC 命令：查词，并按照多词词典优先级重排序

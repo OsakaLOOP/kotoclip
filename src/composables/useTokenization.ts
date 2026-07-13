@@ -51,7 +51,7 @@ interface AnalysisPatch {
   sessionId: string;
   baseRevision: number;
   revision: number;
-  kind: "full_replace" | "range_replace";
+  kind: "full_replace" | "range_replace" | "token_update";
   charRange: [number, number];
   removedTokenIds: string[];
   tokenIds: string[];
@@ -60,6 +60,14 @@ interface AnalysisPatch {
   fingerprint: {
     sessionSchemaVersion: number;
     pipelineArtifactVersion: number;
+  };
+  invalidation?: {
+    reason: string;
+    stages: string[];
+    stageRanges: { stage: string; charRanges: [number, number][] }[];
+    charRanges: [number, number][];
+    recomputedCharacters: number;
+    totalCharacters: number;
   };
 }
 
@@ -414,6 +422,32 @@ export function useTokenization() {
     return true;
   }
 
+  async function refreshDocumentExpressions() {
+    if (!activeSessionId.value) throw new Error("尚未打开文档会话");
+    const patch = await invoke<AnalysisPatch>("refresh_document_expressions", {
+      sessionId: activeSessionId.value,
+      baseRevision: documentRevision.value,
+    });
+    paragraphs.value = buildParagraphs(mergePatch(patch));
+    return patch;
+  }
+
+  async function markDocumentKnown(baseForm: string, reading: string, known: boolean) {
+    if (!activeSessionId.value) {
+      await invoke(known ? "mark_known" : "mark_unknown", { baseForm, reading });
+      return null;
+    }
+    const patch = await invoke<AnalysisPatch>("mark_document_known", {
+      sessionId: activeSessionId.value,
+      baseRevision: documentRevision.value,
+      baseForm,
+      reading,
+      known,
+    });
+    paragraphs.value = buildParagraphs(mergePatch(patch));
+    return patch;
+  }
+
   /**
    * 合并两个或多个文节 (添加自定义合并规则)
    */
@@ -484,7 +518,17 @@ export function useTokenization() {
   }
 
   async function chooseSegmentation(source: AnnotatedToken, candidate: SegmentationCandidate) {
-    await invoke("choose_segmentation", { source, candidate });
+    if (!activeSessionId.value) {
+      await invoke("choose_segmentation", { source, candidate });
+      return;
+    }
+    const patch = await invoke<AnalysisPatch>("choose_document_segmentation", {
+      sessionId: activeSessionId.value,
+      baseRevision: documentRevision.value,
+      source,
+      candidate,
+    });
+    paragraphs.value = buildParagraphs(mergePatch(patch));
   }
 
   return {
@@ -498,6 +542,8 @@ export function useTokenization() {
     analyzeText,
     requestDocumentRange,
     replaceDocumentText,
+    refreshDocumentExpressions,
+    markDocumentKnown,
     mergeTokens,
     addExpressionRule,
     getExpressionRules,

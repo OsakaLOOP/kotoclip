@@ -27,6 +27,38 @@ impl Default for PipelineFingerprint {
 pub enum PatchKind {
     FullReplace,
     RangeReplace,
+    TokenUpdate,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AnalysisStage {
+    Morpheme,
+    WordFormation,
+    DictionaryLexical,
+    Bunsetsu,
+    Grammar,
+    Profile,
+    Expression,
+    Presentation,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InvalidationReport {
+    pub reason: String,
+    pub stages: Vec<AnalysisStage>,
+    pub stage_ranges: Vec<StageInvalidation>,
+    pub char_ranges: Vec<(usize, usize)>,
+    pub recomputed_characters: usize,
+    pub total_characters: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StageInvalidation {
+    pub stage: AnalysisStage,
+    pub char_ranges: Vec<(usize, usize)>,
 }
 
 #[derive(Serialize)]
@@ -42,6 +74,8 @@ pub struct AnalysisPatch {
     pub ordered_token_ids: Vec<String>,
     pub analysis: CompactAnalysisPatch,
     pub fingerprint: PipelineFingerprint,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalidation: Option<InvalidationReport>,
 }
 
 pub struct DocumentSession {
@@ -80,6 +114,7 @@ impl DocumentSession {
             ordered_token_ids: self.token_ids.clone(),
             analysis: self.encoder.encode_patch(&self.tokens),
             fingerprint: self.fingerprint.clone(),
+            invalidation: None,
         }
     }
 
@@ -108,6 +143,7 @@ impl DocumentSession {
             ordered_token_ids: self.token_ids.clone(),
             analysis: self.encoder.encode_patch(&tokens),
             fingerprint: self.fingerprint.clone(),
+            invalidation: None,
         })
     }
 
@@ -137,6 +173,60 @@ impl DocumentSession {
             ordered_token_ids: self.token_ids.clone(),
             analysis: self.encoder.encode_patch(&self.tokens),
             fingerprint: self.fingerprint.clone(),
+            invalidation: None,
+        })
+    }
+
+    pub fn apply_token_mutation<F>(
+        &mut self,
+        base_revision: u64,
+        reason: impl Into<String>,
+        stage_ranges: Vec<StageInvalidation>,
+        mutate: F,
+    ) -> Result<AnalysisPatch, SessionRevisionError>
+    where
+        F: FnOnce(&mut [AnnotatedToken]) -> Vec<usize>,
+    {
+        self.require_revision(base_revision)?;
+        let mut changed_indices = mutate(&mut self.tokens);
+        changed_indices.sort_unstable();
+        changed_indices.dedup();
+        changed_indices.retain(|index| *index < self.tokens.len());
+        let changed_tokens: Vec<_> = changed_indices
+            .iter()
+            .map(|index| self.tokens[*index].clone())
+            .collect();
+        let changed_ids: Vec<_> = changed_indices
+            .iter()
+            .map(|index| self.token_ids[*index].clone())
+            .collect();
+        let char_ranges = merge_char_ranges(
+            stage_ranges
+                .iter()
+                .flat_map(|item| item.char_ranges.iter().copied()),
+        );
+        let recomputed_characters = char_ranges.iter().map(|range| range.1 - range.0).sum();
+        self.revision += 1;
+        Ok(AnalysisPatch {
+            session_id: self.session_id.clone(),
+            base_revision,
+            revision: self.revision,
+            kind: PatchKind::TokenUpdate,
+            char_range: enclosing_range(&char_ranges),
+            removed_token_ids: Vec::new(),
+            token_ids: changed_ids,
+            ordered_token_ids: self.token_ids.clone(),
+            analysis: self.encoder.encode_patch(&changed_tokens),
+            fingerprint: self.fingerprint.clone(),
+            invalidation: Some(InvalidationReport {
+                reason: reason.into(),
+                stages: stage_ranges.iter().map(|item| item.stage).collect(),
+                stage_ranges,
+                char_ranges,
+                recomputed_characters,
+                total_characters: document_char_range(&self.tokens).1
+                    - document_char_range(&self.tokens).0,
+            }),
         })
     }
 
@@ -149,6 +239,10 @@ impl DocumentSession {
                 received: base_revision,
             })
         }
+    }
+
+    pub fn char_range(&self) -> (usize, usize) {
+        document_char_range(&self.tokens)
     }
 }
 
@@ -194,6 +288,27 @@ fn document_char_range(tokens: &[AnnotatedToken]) -> (usize, usize) {
 
 fn ranges_intersect(left: (usize, usize), right: (usize, usize)) -> bool {
     left.0 < right.1 && right.0 < left.1
+}
+
+fn merge_char_ranges(ranges: impl IntoIterator<Item = (usize, usize)>) -> Vec<(usize, usize)> {
+    let mut ranges: Vec<_> = ranges.into_iter().collect();
+    ranges.sort_unstable();
+    let mut merged: Vec<(usize, usize)> = Vec::new();
+    for range in ranges {
+        if let Some(previous) = merged.last_mut().filter(|previous| range.0 <= previous.1) {
+            previous.1 = previous.1.max(range.1);
+        } else {
+            merged.push(range);
+        }
+    }
+    merged
+}
+
+fn enclosing_range(ranges: &[(usize, usize)]) -> (usize, usize) {
+    (
+        ranges.first().map_or(0, |range| range.0),
+        ranges.last().map_or(0, |range| range.1),
+    )
 }
 
 #[cfg(test)]
@@ -284,5 +399,44 @@ mod tests {
         assert_eq!(patch.ordered_token_ids.len(), 2);
         assert_eq!(patch.analysis.b as usize, string_count);
         assert!(patch.analysis.s.is_empty(), "重复范围不应重发已有字符串");
+    }
+
+    #[test]
+    fn token_mutation_reports_exact_invalidated_stages() {
+        let mut session = DocumentSession::new(
+            "session-1".to_string(),
+            "日本語".to_string(),
+            vec![token("日本", (0, 2)), token("語", (2, 3))],
+        );
+        session.full_patch(0);
+        let patch = session
+            .apply_token_mutation(
+                1,
+                "mark_known",
+                vec![
+                    StageInvalidation {
+                        stage: AnalysisStage::Profile,
+                        char_ranges: vec![(0, 2)],
+                    },
+                    StageInvalidation {
+                        stage: AnalysisStage::Presentation,
+                        char_ranges: vec![(0, 2)],
+                    },
+                ],
+                |tokens| {
+                    tokens[0].is_known = true;
+                    vec![0]
+                },
+            )
+            .expect("画像 mutation 应成功");
+        assert_eq!(patch.kind, PatchKind::TokenUpdate);
+        assert_eq!(patch.token_ids.len(), 1);
+        let invalidation = patch.invalidation.expect("必须返回失效报告");
+        assert_eq!(
+            invalidation.stages,
+            vec![AnalysisStage::Profile, AnalysisStage::Presentation]
+        );
+        assert_eq!(invalidation.recomputed_characters, 2);
+        assert_eq!(invalidation.total_characters, 3);
     }
 }
