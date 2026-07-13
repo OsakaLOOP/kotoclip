@@ -69,6 +69,9 @@ interface AnalysisPatch {
     recomputedCharacters: number;
     totalCharacters: number;
   };
+  documentCharRange: [number, number];
+  availableRanges: [number, number][];
+  complete: boolean;
 }
 
 interface DocumentResponse {
@@ -283,8 +286,18 @@ export function useTokenization() {
   const frontendTiming = ref<FrontendAnalysisTiming | null>(null);
   const activeSessionId = ref<string | null>(null);
   const documentRevision = ref(0);
+  const documentComplete = ref(false);
+  const documentCharRange = ref<[number, number]>([0, 0]);
+  const availableRanges = ref<[number, number][]>([]);
   const tokenCache = new Map<string, AnnotatedToken>();
   const sessionStrings: string[] = [];
+  let documentOperation = Promise.resolve();
+
+  function enqueueDocumentOperation<T>(operation: () => Promise<T>): Promise<T> {
+    const result = documentOperation.then(operation, operation);
+    documentOperation = result.then(() => undefined, () => undefined);
+    return result;
+  }
 
   function mergePatch(patch: AnalysisPatch) {
     const openingNewSession = activeSessionId.value !== patch.sessionId;
@@ -316,6 +329,9 @@ export function useTokenization() {
     }
     activeSessionId.value = patch.sessionId;
     documentRevision.value = patch.revision;
+    documentComplete.value = patch.complete;
+    documentCharRange.value = patch.documentCharRange;
+    availableRanges.value = patch.availableRanges;
     return ordered as AnnotatedToken[];
   }
 
@@ -402,34 +418,57 @@ export function useTokenization() {
 
   async function requestDocumentRange(charRange: [number, number]) {
     if (!activeSessionId.value) throw new Error("尚未打开文档会话");
-    const patch = await invoke<AnalysisPatch>("request_document_range", {
-      sessionId: activeSessionId.value,
-      baseRevision: documentRevision.value,
-      charRange,
+    return enqueueDocumentOperation(async () => {
+      const patch = await invoke<AnalysisPatch>("request_document_range", {
+        sessionId: activeSessionId.value,
+        baseRevision: documentRevision.value,
+        charRange,
+      });
+      paragraphs.value = buildParagraphs(mergePatch(patch));
+      return patch;
     });
-    paragraphs.value = buildParagraphs(mergePatch(patch));
-    return patch;
   }
 
   async function replaceDocumentText(text: string, recordExposure = false) {
     if (!activeSessionId.value) return analyzeText(text, recordExposure);
-    const response = await invoke<DocumentResponse>("apply_document_mutation", {
-      sessionId: activeSessionId.value,
-      baseRevision: documentRevision.value,
-      mutation: { type: "replace_text", text, recordExposure },
+    return enqueueDocumentOperation(async () => {
+      const response = await invoke<DocumentResponse>("apply_document_mutation", {
+        sessionId: activeSessionId.value,
+        baseRevision: documentRevision.value,
+        mutation: { type: "replace_text", text, recordExposure },
+      });
+      paragraphs.value = buildParagraphs(mergePatch(response.patch));
+      return true;
     });
-    paragraphs.value = buildParagraphs(mergePatch(response.patch));
-    return true;
+  }
+
+  async function continueDocumentAnalysis() {
+    const sessionId = activeSessionId.value;
+    if (!sessionId) return;
+    let firstContinuation = true;
+    while (activeSessionId.value === sessionId && !documentComplete.value) {
+      const patch = await enqueueDocumentOperation(() => invoke<AnalysisPatch | null>("continue_document_analysis", {
+          sessionId,
+          baseRevision: documentRevision.value,
+          targetCharacters: firstContinuation ? 4_000 : 8_000,
+        }));
+      if (!patch || activeSessionId.value !== sessionId) return;
+      paragraphs.value = buildParagraphs(mergePatch(patch));
+      firstContinuation = false;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
   }
 
   async function refreshDocumentExpressions() {
     if (!activeSessionId.value) throw new Error("尚未打开文档会话");
-    const patch = await invoke<AnalysisPatch>("refresh_document_expressions", {
-      sessionId: activeSessionId.value,
-      baseRevision: documentRevision.value,
+    return enqueueDocumentOperation(async () => {
+      const patch = await invoke<AnalysisPatch>("refresh_document_expressions", {
+        sessionId: activeSessionId.value,
+        baseRevision: documentRevision.value,
+      });
+      paragraphs.value = buildParagraphs(mergePatch(patch));
+      return patch;
     });
-    paragraphs.value = buildParagraphs(mergePatch(patch));
-    return patch;
   }
 
   async function markDocumentKnown(baseForm: string, reading: string, known: boolean) {
@@ -437,15 +476,17 @@ export function useTokenization() {
       await invoke(known ? "mark_known" : "mark_unknown", { baseForm, reading });
       return null;
     }
-    const patch = await invoke<AnalysisPatch>("mark_document_known", {
-      sessionId: activeSessionId.value,
-      baseRevision: documentRevision.value,
-      baseForm,
-      reading,
-      known,
+    return enqueueDocumentOperation(async () => {
+      const patch = await invoke<AnalysisPatch>("mark_document_known", {
+        sessionId: activeSessionId.value,
+        baseRevision: documentRevision.value,
+        baseForm,
+        reading,
+        known,
+      });
+      paragraphs.value = buildParagraphs(mergePatch(patch));
+      return patch;
     });
-    paragraphs.value = buildParagraphs(mergePatch(patch));
-    return patch;
   }
 
   /**
@@ -522,13 +563,15 @@ export function useTokenization() {
       await invoke("choose_segmentation", { source, candidate });
       return;
     }
-    const patch = await invoke<AnalysisPatch>("choose_document_segmentation", {
-      sessionId: activeSessionId.value,
-      baseRevision: documentRevision.value,
-      source,
-      candidate,
+    await enqueueDocumentOperation(async () => {
+      const patch = await invoke<AnalysisPatch>("choose_document_segmentation", {
+        sessionId: activeSessionId.value,
+        baseRevision: documentRevision.value,
+        source,
+        candidate,
+      });
+      paragraphs.value = buildParagraphs(mergePatch(patch));
     });
-    paragraphs.value = buildParagraphs(mergePatch(patch));
   }
 
   return {
@@ -539,9 +582,13 @@ export function useTokenization() {
     frontendTiming,
     activeSessionId,
     documentRevision,
+    documentComplete,
+    documentCharRange,
+    availableRanges,
     analyzeText,
     requestDocumentRange,
     replaceDocumentText,
+    continueDocumentAnalysis,
     refreshDocumentExpressions,
     markDocumentKnown,
     mergeTokens,

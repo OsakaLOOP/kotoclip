@@ -81,24 +81,35 @@ pub async fn open_document(
 ) -> Result<DocumentResponse, String> {
     let request_id = request_id.unwrap_or_else(|| "open-document".to_string());
     let started = std::time::Instant::now();
-    let tokens = {
-        let engine = state.engine.lock().map_err(|error| error.to_string())?;
-        engine
-            .analyze_text_with_progress(&text, record_exposure.unwrap_or(true), |progress| {
-                let _ = window.emit(
-                    "analysis-progress",
-                    AnalysisProgressEvent {
-                        request_id: request_id.clone(),
-                        progress,
-                    },
-                );
-            })
-            .map_err(|error| error.to_string())?
-    };
     let sequence = state.next_session_id.fetch_add(1, Ordering::Relaxed);
     let session_id = format!("document-{sequence}");
-    let mut session = DocumentSession::new(session_id.clone(), text, tokens);
-    let patch = session.full_patch(0);
+    let mut session =
+        DocumentSession::new_progressive(session_id.clone(), text, record_exposure.unwrap_or(true));
+    let batch = session
+        .next_batch(2_000)
+        .ok_or_else(|| "文档没有可分析内容".to_string())?;
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    let tokens = engine
+        .analyze_text_with_progress(&batch.source, false, |progress| {
+            let _ = window.emit(
+                "analysis-progress",
+                AnalysisProgressEvent {
+                    request_id: request_id.clone(),
+                    progress,
+                },
+            );
+        })
+        .map_err(|error| error.to_string())?;
+    let patch = session
+        .append_analyzed_batch(0, &batch, tokens)
+        .map_err(|error| error.to_string())?;
+    if session.should_record_exposure() {
+        engine
+            .record_document_exposures(&session.tokens)
+            .map_err(|error| error.to_string())?;
+        session.mark_exposure_recorded();
+    }
+    drop(engine);
     state
         .sessions
         .lock()
@@ -111,19 +122,69 @@ pub async fn open_document(
 }
 
 #[tauri::command]
+pub async fn continue_document_analysis(
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+    target_characters: Option<usize>,
+) -> Result<Option<AnalysisPatch>, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+    let session = sessions
+        .get_mut(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+    session
+        .require_revision(base_revision)
+        .map_err(|error| error.to_string())?;
+    let Some(batch) = session.next_batch(target_characters.unwrap_or(8_000)) else {
+        return Ok(None);
+    };
+    let tokens = engine
+        .analyze_text_with_exposure(&batch.source, false)
+        .map_err(|error| error.to_string())?;
+    let patch = session
+        .append_analyzed_batch(base_revision, &batch, tokens)
+        .map_err(|error| error.to_string())?;
+    if session.should_record_exposure() {
+        engine
+            .record_document_exposures(&session.tokens)
+            .map_err(|error| error.to_string())?;
+        session.mark_exposure_recorded();
+    }
+    Ok(Some(patch))
+}
+
+#[tauri::command]
 pub async fn request_document_range(
     state: State<'_, AppState>,
     session_id: String,
     base_revision: u64,
     char_range: (usize, usize),
 ) -> Result<AnalysisPatch, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
     let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
     let session = sessions
         .get_mut(&session_id)
         .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
-    session
-        .range_patch(base_revision, char_range)
-        .map_err(|error| error.to_string())
+    if let Some(batch) = session.batch_for_range(char_range, 4_000) {
+        let tokens = engine
+            .analyze_text_with_exposure(&batch.source, false)
+            .map_err(|error| error.to_string())?;
+        let patch = session
+            .append_analyzed_batch(base_revision, &batch, tokens)
+            .map_err(|error| error.to_string())?;
+        if session.should_record_exposure() {
+            engine
+                .record_document_exposures(&session.tokens)
+                .map_err(|error| error.to_string())?;
+            session.mark_exposure_recorded();
+        }
+        Ok(patch)
+    } else {
+        session
+            .range_patch(base_revision, char_range)
+            .map_err(|error| error.to_string())
+    }
 }
 
 #[tauri::command]

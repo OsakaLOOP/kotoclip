@@ -257,6 +257,15 @@ impl Engine {
         Ok(())
     }
 
+    /// 渐进文档在全部范围可用后一次性记录曝光，避免首屏批次和后续批次重复写入。
+    pub fn record_document_exposures(
+        &self,
+        tokens: &[AnnotatedToken],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.profile.record_token_exposures(tokens)?;
+        Ok(())
+    }
+
     /// 主动标记单词为“已知” (脱下胶囊)
     pub fn mark_known(
         &self,
@@ -625,6 +634,62 @@ mod progress_tests {
         }
         assert_eq!(events.last().unwrap().percent, 100);
 
+        drop(engine);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn progressive_line_batches_equal_full_analysis() {
+        let dict_path = [
+            "../../ipadic/system.dic",
+            "../ipadic/system.dic",
+            "ipadic/system.dic",
+        ]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file());
+        let Some(dict_path) = dict_path else {
+            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+            return;
+        };
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-progressive-{nonce}"));
+        let dictionary_directory = directory.join("dicts");
+        std::fs::create_dir_all(&dictionary_directory).unwrap();
+        let engine = Engine::new(
+            dict_path,
+            &dictionary_directory,
+            directory.join("profile.sqlite"),
+        )
+        .unwrap();
+        let text =
+            "七日は警察署へ向かった。\n口を開くたびに、皆が振り返った。\n何があっても諦めない。";
+        let full_tokens = engine.analyze_text_with_exposure(text, false).unwrap();
+        let full = crate::document::DocumentSession::new(
+            "full".to_string(),
+            text.to_string(),
+            full_tokens,
+        );
+        let mut progressive = crate::document::DocumentSession::new_progressive(
+            "progressive".to_string(),
+            text.to_string(),
+            false,
+        );
+        while let Some(batch) = progressive.next_batch(1) {
+            let tokens = engine
+                .analyze_text_with_exposure(&batch.source, false)
+                .unwrap();
+            progressive
+                .append_analyzed_batch(progressive.revision, &batch, tokens)
+                .unwrap();
+        }
+        assert_eq!(
+            serde_json::to_value(&progressive.tokens).unwrap(),
+            serde_json::to_value(&full.tokens).unwrap()
+        );
+        assert!(progressive.is_complete());
         drop(engine);
         std::fs::remove_dir_all(directory).unwrap();
     }

@@ -48,6 +48,7 @@ const {
   analysisProgress,
   frontendTiming,
   analyzeText,
+  continueDocumentAnalysis,
   addExpressionRule,
   previewExpressionRule,
   getExpressionRules,
@@ -232,6 +233,9 @@ async function triggerAnalysis(recordExposure = true) {
       backendDurationMs: frontendTiming.value?.backendDurationMs ?? 0,
       ipcAndParseMs: frontendTiming.value?.ipcAndParseMs ?? 0,
     };
+    void continueDocumentAnalysis().catch((error) => {
+      console.error("Background document analysis failed:", error);
+    });
   }
 }
 

@@ -41,6 +41,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::analyze_text,
             commands::open_document,
+            commands::continue_document_analysis,
             commands::request_document_range,
             commands::apply_document_mutation,
             commands::close_document,
