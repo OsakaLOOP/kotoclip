@@ -77,6 +77,7 @@ interface AnalysisPatch {
 interface DocumentResponse {
   patch: AnalysisPatch;
   backendDurationMs: number;
+  cacheHit: boolean;
 }
 
 interface CompactToken {
@@ -289,6 +290,7 @@ export function useTokenization() {
   const documentComplete = ref(false);
   const documentCharRange = ref<[number, number]>([0, 0]);
   const availableRanges = ref<[number, number][]>([]);
+  const lastOpenCacheHit = ref(false);
   const tokenCache = new Map<string, AnnotatedToken>();
   const sessionStrings: string[] = [];
   let documentOperation = Promise.resolve();
@@ -379,6 +381,7 @@ export function useTokenization() {
         requestId,
       });
       const allTokens = mergePatch(response.patch);
+      lastOpenCacheHit.value = response.cacheHit;
       const backendDurationMs = response.backendDurationMs;
       invokeAndTransferMs = performance.now() - invokeStartedAt;
       if (activeRequestId.value !== requestId) return false;
@@ -456,6 +459,20 @@ export function useTokenization() {
       paragraphs.value = buildParagraphs(mergePatch(patch));
       firstContinuation = false;
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
+    if (activeSessionId.value !== sessionId) return;
+    await enqueueDocumentOperation(() => invoke<boolean>("finalize_document", {
+      sessionId,
+      baseRevision: documentRevision.value,
+    }));
+    if (!lastOpenCacheHit.value) {
+      window.setTimeout(() => {
+        if (activeSessionId.value !== sessionId) return;
+        void enqueueDocumentOperation(() => invoke<boolean>("persist_document_cache", {
+          sessionId,
+          baseRevision: documentRevision.value,
+        })).catch((error) => console.error("Document cache persist failed:", error));
+      }, 1_000);
     }
   }
 
@@ -585,6 +602,7 @@ export function useTokenization() {
     documentComplete,
     documentCharRange,
     availableRanges,
+    lastOpenCacheHit,
     analyzeText,
     requestDocumentRange,
     replaceDocumentText,

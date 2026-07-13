@@ -29,6 +29,7 @@ pub struct AnalysisResponse {
 pub struct DocumentResponse {
     pub patch: AnalysisPatch,
     pub backend_duration_ms: u64,
+    pub cache_hit: bool,
 }
 
 #[derive(Deserialize)]
@@ -83,6 +84,34 @@ pub async fn open_document(
     let started = std::time::Instant::now();
     let sequence = state.next_session_id.fetch_add(1, Ordering::Relaxed);
     let session_id = format!("document-{sequence}");
+    let cached = state
+        .analysis_cache
+        .lock()
+        .map_err(|error| error.to_string())?
+        .load(&text);
+    if let Some(stable_tokens) = cached {
+        let engine = state.engine.lock().map_err(|error| error.to_string())?;
+        let tokens = engine
+            .hydrate_stable_tokens(stable_tokens)
+            .map_err(|error| error.to_string())?;
+        let mut session = DocumentSession::new_cached(
+            session_id.clone(),
+            text,
+            tokens,
+            record_exposure.unwrap_or(true),
+        );
+        let patch = session.full_patch(0);
+        state
+            .sessions
+            .lock()
+            .map_err(|error| error.to_string())?
+            .insert(session_id, session);
+        return Ok(DocumentResponse {
+            patch,
+            backend_duration_ms: started.elapsed().as_millis() as u64,
+            cache_hit: true,
+        });
+    }
     let mut session =
         DocumentSession::new_progressive(session_id.clone(), text, record_exposure.unwrap_or(true));
     let batch = session
@@ -118,6 +147,7 @@ pub async fn open_document(
     Ok(DocumentResponse {
         patch,
         backend_duration_ms: started.elapsed().as_millis() as u64,
+        cache_hit: false,
     })
 }
 
@@ -238,7 +268,59 @@ pub async fn apply_document_mutation(
     Ok(DocumentResponse {
         patch,
         backend_duration_ms: started.elapsed().as_millis() as u64,
+        cache_hit: false,
     })
+}
+
+#[tauri::command]
+pub async fn finalize_document(
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+) -> Result<bool, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+    let session = sessions
+        .get_mut(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+    session
+        .require_revision(base_revision)
+        .map_err(|error| error.to_string())?;
+    if session.should_record_exposure() {
+        engine
+            .record_document_exposures(&session.tokens)
+            .map_err(|error| error.to_string())?;
+        session.mark_exposure_recorded();
+        return Ok(true);
+    }
+    Ok(false)
+}
+
+#[tauri::command]
+pub async fn persist_document_cache(
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+) -> Result<bool, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    let sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+    let session = sessions
+        .get(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+    session
+        .require_revision(base_revision)
+        .map_err(|error| error.to_string())?;
+    if !session.is_complete() {
+        return Ok(false);
+    }
+    let stable_tokens = engine.analyze_stable_text(&session.source);
+    state
+        .analysis_cache
+        .lock()
+        .map_err(|error| error.to_string())?
+        .store(&session.source, &stable_tokens)
+        .map_err(|error| error.to_string())?;
+    Ok(true)
 }
 
 #[tauri::command]

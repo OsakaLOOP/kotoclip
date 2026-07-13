@@ -2,7 +2,7 @@ pub mod commands;
 pub mod paths;
 pub mod state;
 
-use kotoclip_core::Engine;
+use kotoclip_core::{cache::AnalysisCache, Engine};
 use state::AppState;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicU64, Mutex};
@@ -27,12 +27,18 @@ pub fn run() {
                 &paths.dictionary_dir,
                 &paths.profile_db,
             )?;
+            let analysis_cache = AnalysisCache::new(
+                paths.data_dir.join("cache").join("analysis"),
+                &paths.system_dictionary,
+                &paths.dictionary_dir,
+            )?;
 
             // 注册全局并发安全状态供 Command 使用
             app.manage(AppState {
                 engine: Mutex::new(engine),
                 sessions: Mutex::new(HashMap::new()),
                 next_session_id: AtomicU64::new(1),
+                analysis_cache: Mutex::new(analysis_cache),
             });
 
             Ok(())
@@ -42,6 +48,8 @@ pub fn run() {
             commands::analyze_text,
             commands::open_document,
             commands::continue_document_analysis,
+            commands::finalize_document,
+            commands::persist_document_cache,
             commands::request_document_range,
             commands::apply_document_mutation,
             commands::close_document,

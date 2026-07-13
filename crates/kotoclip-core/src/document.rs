@@ -132,6 +132,17 @@ impl DocumentSession {
         }
     }
 
+    pub fn new_cached(
+        session_id: String,
+        source: String,
+        tokens: Vec<AnnotatedToken>,
+        record_exposure_on_complete: bool,
+    ) -> Self {
+        let mut session = Self::new(session_id, source, tokens);
+        session.record_exposure_on_complete = record_exposure_on_complete;
+        session
+    }
+
     pub fn new_progressive(
         session_id: String,
         source: String,

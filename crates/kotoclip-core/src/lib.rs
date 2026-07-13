@@ -1,4 +1,5 @@
 pub mod analysis_progress;
+pub mod cache;
 pub mod dictionary;
 pub mod document;
 pub mod export;
@@ -83,6 +84,25 @@ impl Engine {
         text: &str,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
         self.analyze_text_with_exposure(text, true)
+    }
+
+    /// 只执行与用户画像无关的稳定 NLP 阶段，供版本化持久缓存使用。
+    pub fn analyze_stable_text(&self, text: &str) -> Vec<AnnotatedToken> {
+        self.pipeline
+            .process_with_dictionary(text, &[], &self.dictionary)
+    }
+
+    /// 在稳定 NLP Token 上重放当前用户的 N-best、画像和表达层。
+    pub fn hydrate_stable_tokens(
+        &self,
+        mut tokens: Vec<AnnotatedToken>,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        let choices = self.profile.get_segmentation_choices()?;
+        self.pipeline
+            .apply_segmentation_choices(&mut tokens, &choices);
+        let mut tokens = self.profile.annotate_tokens(tokens)?;
+        self.refresh_expression_annotations_in_place(&mut tokens)?;
+        Ok(tokens)
     }
 
     /// Analyze text and optionally record the rendered lexical tokens as exposures.
@@ -690,6 +710,45 @@ mod progress_tests {
             serde_json::to_value(&full.tokens).unwrap()
         );
         assert!(progressive.is_complete());
+        drop(engine);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn cached_stable_tokens_hydrate_to_full_analysis() {
+        let dict_path = [
+            "../../ipadic/system.dic",
+            "../ipadic/system.dic",
+            "ipadic/system.dic",
+        ]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file());
+        let Some(dict_path) = dict_path else {
+            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+            return;
+        };
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-hydrate-{nonce}"));
+        let dictionary_directory = directory.join("dicts");
+        std::fs::create_dir_all(&dictionary_directory).unwrap();
+        let engine = Engine::new(
+            dict_path,
+            &dictionary_directory,
+            directory.join("profile.sqlite"),
+        )
+        .unwrap();
+        let text = "七日は警察署へ向かった。口を開くたびに皆が振り返った。";
+        let full = engine.analyze_text_with_exposure(text, false).unwrap();
+        let stable = engine.analyze_stable_text(text);
+        assert!(stable.iter().all(|token| token.expressions.is_empty()));
+        let hydrated = engine.hydrate_stable_tokens(stable).unwrap();
+        assert_eq!(
+            serde_json::to_value(hydrated).unwrap(),
+            serde_json::to_value(full).unwrap()
+        );
         drop(engine);
         std::fs::remove_dir_all(directory).unwrap();
     }

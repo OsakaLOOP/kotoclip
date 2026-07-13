@@ -8,4 +8,6 @@ pub struct AppState {
     pub engine: Mutex<Engine>,
     pub sessions: Mutex<HashMap<String, DocumentSession>>,
     pub next_session_id: AtomicU64,
+    pub analysis_cache: Mutex<AnalysisCache>,
 }
+use kotoclip_core::cache::AnalysisCache;

@@ -1,0 +1,225 @@
+use crate::document::PIPELINE_ARTIFACT_VERSION;
+use crate::models::AnnotatedToken;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
+
+const CACHE_SCHEMA_VERSION: u32 = 1;
+const MAX_CACHE_ENTRIES: usize = 16;
+
+#[derive(Debug)]
+pub struct AnalysisCache {
+    directory: PathBuf,
+    pipeline_fingerprint: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CacheEnvelope {
+    schema_version: u32,
+    pipeline_artifact_version: u32,
+    pipeline_fingerprint: String,
+    source_hash: String,
+    tokens: Vec<AnnotatedToken>,
+}
+
+impl AnalysisCache {
+    pub fn new(
+        directory: impl Into<PathBuf>,
+        system_dictionary: &Path,
+        dictionary_directory: &Path,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let directory = directory.into();
+        std::fs::create_dir_all(&directory)?;
+        Ok(Self {
+            directory,
+            pipeline_fingerprint: pipeline_fingerprint(system_dictionary, dictionary_directory),
+        })
+    }
+
+    pub fn load(&self, source: &str) -> Option<Vec<AnnotatedToken>> {
+        let source_hash = source_hash(source);
+        let path = self.path_for_hash(&source_hash);
+        let payload = std::fs::read(&path).ok()?;
+        let envelope: CacheEnvelope = match serde_json::from_slice(&payload) {
+            Ok(value) => value,
+            Err(_) => {
+                let _ = std::fs::remove_file(path);
+                return None;
+            }
+        };
+        if envelope.schema_version != CACHE_SCHEMA_VERSION
+            || envelope.pipeline_artifact_version != PIPELINE_ARTIFACT_VERSION
+            || envelope.pipeline_fingerprint != self.pipeline_fingerprint
+            || envelope.source_hash != source_hash
+        {
+            let _ = std::fs::remove_file(path);
+            return None;
+        }
+        Some(envelope.tokens)
+    }
+
+    pub fn store(
+        &self,
+        source: &str,
+        tokens: &[AnnotatedToken],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let source_hash = source_hash(source);
+        let path = self.path_for_hash(&source_hash);
+        let temporary = path.with_extension("json.tmp");
+        let envelope = CacheEnvelope {
+            schema_version: CACHE_SCHEMA_VERSION,
+            pipeline_artifact_version: PIPELINE_ARTIFACT_VERSION,
+            pipeline_fingerprint: self.pipeline_fingerprint.clone(),
+            source_hash,
+            tokens: tokens.to_vec(),
+        };
+        std::fs::write(&temporary, serde_json::to_vec(&envelope)?)?;
+        if path.exists() {
+            std::fs::remove_file(&path)?;
+        }
+        std::fs::rename(temporary, path)?;
+        self.prune()?;
+        Ok(())
+    }
+
+    pub fn clear(&self) -> Result<(), Box<dyn std::error::Error>> {
+        for entry in std::fs::read_dir(&self.directory)?.flatten() {
+            if entry.path().extension().and_then(|value| value.to_str()) == Some("json") {
+                std::fs::remove_file(entry.path())?;
+            }
+        }
+        Ok(())
+    }
+
+    fn path_for_hash(&self, source_hash: &str) -> PathBuf {
+        self.directory.join(format!("{source_hash}.json"))
+    }
+
+    fn prune(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut entries: Vec<_> = std::fs::read_dir(&self.directory)?
+            .flatten()
+            .filter(|entry| {
+                entry.path().extension().and_then(|value| value.to_str()) == Some("json")
+            })
+            .map(|entry| {
+                let modified = entry
+                    .metadata()
+                    .and_then(|metadata| metadata.modified())
+                    .unwrap_or(UNIX_EPOCH);
+                (modified, entry.path())
+            })
+            .collect();
+        entries.sort_by_key(|(modified, _)| *modified);
+        let remove_count = entries.len().saturating_sub(MAX_CACHE_ENTRIES);
+        for (_, path) in entries.into_iter().take(remove_count) {
+            let _ = std::fs::remove_file(path);
+        }
+        Ok(())
+    }
+}
+
+fn source_hash(source: &str) -> String {
+    format!("{:x}", Sha256::digest(source.as_bytes()))
+}
+
+fn pipeline_fingerprint(system_dictionary: &Path, dictionary_directory: &Path) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(CACHE_SCHEMA_VERSION.to_le_bytes());
+    hasher.update(PIPELINE_ARTIFACT_VERSION.to_le_bytes());
+    for resource in [
+        include_bytes!("../resources/word_formation_patterns.json").as_slice(),
+        include_bytes!("../resources/lexical_candidate_patterns.json").as_slice(),
+        include_bytes!("../resources/bunsetsu_patterns.json").as_slice(),
+        include_bytes!("../resources/expression_patterns.json").as_slice(),
+    ] {
+        hasher.update(resource);
+    }
+    if let Ok(path) = std::env::var("KOTOCLIP_GRAMMAR_PATTERNS") {
+        update_file_signature(&mut hasher, Path::new(&path));
+    }
+    update_file_signature(&mut hasher, system_dictionary);
+    let mut dictionaries: Vec<_> = std::fs::read_dir(dictionary_directory)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            matches!(
+                path.extension().and_then(|value| value.to_str()),
+                Some("db" | "sqlite")
+            )
+        })
+        .collect();
+    dictionaries.sort();
+    for dictionary in dictionaries {
+        update_file_signature(&mut hasher, &dictionary);
+    }
+    format!("{:x}", hasher.finalize())
+}
+
+fn update_file_signature(hasher: &mut Sha256, path: &Path) {
+    hasher.update(path.to_string_lossy().as_bytes());
+    if let Ok(metadata) = path.metadata() {
+        hasher.update(metadata.len().to_le_bytes());
+        if let Ok(modified) = metadata.modified().and_then(|value| {
+            value
+                .duration_since(UNIX_EPOCH)
+                .map_err(std::io::Error::other)
+        }) {
+            hasher.update(modified.as_nanos().to_le_bytes());
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn corrupted_cache_falls_back_and_is_removed() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-cache-{nonce}"));
+        let dictionaries = directory.join("dicts");
+        std::fs::create_dir_all(&dictionaries).unwrap();
+        let system_dictionary = directory.join("system.dic");
+        std::fs::write(&system_dictionary, b"test").unwrap();
+        let cache =
+            AnalysisCache::new(directory.join("cache"), &system_dictionary, &dictionaries).unwrap();
+        let hash = source_hash("本文");
+        let path = cache.path_for_hash(&hash);
+        std::fs::write(&path, b"broken").unwrap();
+        assert!(cache.load("本文").is_none());
+        assert!(!path.exists());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn dictionary_signature_change_invalidates_cached_tokens() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-cache-version-{nonce}"));
+        let dictionaries = directory.join("dicts");
+        std::fs::create_dir_all(&dictionaries).unwrap();
+        let system_dictionary = directory.join("system.dic");
+        let dictionary = dictionaries.join("test.sqlite");
+        std::fs::write(&system_dictionary, b"system").unwrap();
+        std::fs::write(&dictionary, b"v1").unwrap();
+        let cache_directory = directory.join("cache");
+        let first =
+            AnalysisCache::new(&cache_directory, &system_dictionary, &dictionaries).unwrap();
+        first.store("本文", &[]).unwrap();
+        assert!(first.load("本文").is_some());
+        std::fs::write(&dictionary, b"version-two").unwrap();
+        let second =
+            AnalysisCache::new(&cache_directory, &system_dictionary, &dictionaries).unwrap();
+        assert!(second.load("本文").is_none());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+}
