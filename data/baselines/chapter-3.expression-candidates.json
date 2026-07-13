@@ -1,0 +1,3584 @@
+[
+  {
+    "match_id": "correlative:negative_totemo:435:438",
+    "status": "accepted",
+    "rule_id": "-10009",
+    "label": "とても〜ない",
+    "origin": "correlative",
+    "description": "否定呼应｜表示能力或状况上怎么也无法做到：怎么也（无法）……。",
+    "surface": "とても……ない",
+    "token_range": [
+      435,
+      438
+    ],
+    "char_range": [
+      1019,
+      1029
+    ],
+    "matched_ranges": [
+      [
+        1019,
+        1022
+      ],
+      [
+        1027,
+        1029
+      ]
+    ],
+    "evidence": [
+      "correlative_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "露わになった男の顔を見上げ、女は青ざめた。  　【とても】人とは思え【ない】その素顔に、絶叫する。   『ＮＯＯＯＯＯ！』 "
+  },
+  {
+    "match_id": "builtin:evaluation_ni_shitewa:v1:714:716",
+    "status": "accepted",
+    "rule_id": "-12",
+    "label": "〜にしては",
+    "origin": "builtin",
+    "description": "评价让步｜以前接条件或身份作为评价基准，后项结果与通常预期不符。",
+    "surface": "にしては",
+    "token_range": [
+      714,
+      716
+    ],
+    "char_range": [
+      1716,
+      1720
+    ],
+    "matched_ranges": [
+      [
+        1716,
+        1720
+      ]
+    ],
+    "evidence": [
+      "builtin_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "だいたい何なの？　エッグマンとか。うける。殺人鬼【にしては】名前可愛くない？」  　下着を下ろし、便座に腰か"
+  },
+  {
+    "match_id": "builtin:idiom_kuchi_wo_hiraku:v1:1579:1581",
+    "status": "accepted",
+    "rule_id": "-3",
+    "label": "口を開く",
+    "origin": "builtin",
+    "description": "固定表达｜話し始める。",
+    "surface": "口を開い",
+    "token_range": [
+      1579,
+      1581
+    ],
+    "char_range": [
+      3862,
+      3866
+    ],
+    "matched_ranges": [
+      [
+        3862,
+        3866
+      ]
+    ],
+    "evidence": [
+      "builtin_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "首を横に振った。  「現場を荒らすんじゃ──」と【口を開い】たその時、すねをテーブルにぶつける。テーブルの上"
+  },
+  {
+    "match_id": "correlative:rhetorical_ittai:3219:3222",
+    "status": "accepted",
+    "rule_id": "-10002",
+    "label": "一体〜か",
+    "origin": "correlative",
+    "description": "究竟呼应｜强调疑问或反问语气；到底、究竟如何。",
+    "surface": "一体……か",
+    "token_range": [
+      3219,
+      3222
+    ],
+    "char_range": [
+      8102,
+      8113
+    ],
+    "matched_ranges": [
+      [
+        8102,
+        8104
+      ],
+      [
+        8112,
+        8113
+      ]
+    ],
+    "evidence": [
+      "correlative_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "」  「ただこの洋画、もうやってないですからね。【一体】どこで上映中なの【か】......」  　鰯水のつぶやく側で、鬼怒川の"
+  },
+  {
+    "match_id": "correlative:negative_totemo:4666:4669",
+    "status": "accepted",
+    "rule_id": "-10009",
+    "label": "とても〜ない",
+    "origin": "correlative",
+    "description": "否定呼应｜表示能力或状况上怎么也无法做到：怎么也（无法）……。",
+    "surface": "とても……ない",
+    "token_range": [
+      4666,
+      4669
+    ],
+    "char_range": [
+      11556,
+      11568
+    ],
+    "matched_ranges": [
+      [
+        11556,
+        11559
+      ],
+      [
+        11566,
+        11568
+      ]
+    ],
+    "evidence": [
+      "correlative_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "噛んでいるみたいだよ。砂糖とミルクを混ぜなきゃ、【とても】喰えたものじゃ【ない】な」  　それは独り言のようだったが、ハイドラン"
+  },
+  {
+    "match_id": "correlative:rhetorical_ittai:5030:5032",
+    "status": "accepted",
+    "rule_id": "-10002",
+    "label": "一体〜か",
+    "origin": "correlative",
+    "description": "究竟呼应｜强调疑问或反问语气；到底、究竟如何。",
+    "surface": "一体……か",
+    "token_range": [
+      5030,
+      5032
+    ],
+    "char_range": [
+      12515,
+      12520
+    ],
+    "matched_ranges": [
+      [
+        12515,
+        12517
+      ],
+      [
+        12519,
+        12520
+      ]
+    ],
+    "evidence": [
+      "correlative_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "を上げ倒れた警察官と、その後から登場した若い女。【一体】何事【か】と人々はざわめき、ハイドランジアを指さす。  　"
+  },
+  {
+    "match_id": "correlative:simile_marude:5252:5254",
+    "status": "accepted",
+    "rule_id": "-10000",
+    "label": "まるで〜ようだ",
+    "origin": "correlative",
+    "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
+    "surface": "まるで……よう",
+    "token_range": [
+      5252,
+      5254
+    ],
+    "char_range": [
+      13113,
+      13122
+    ],
+    "matched_ranges": [
+      [
+        13113,
+        13116
+      ],
+      [
+        13120,
+        13122
+      ]
+    ],
+    "evidence": [
+      "correlative_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "、現れたのは例の大きな口。  　ハイドランジアは【まるで】指揮者の【よう】に、しなやかに。両手を頭上にかざした。  「さあ"
+  },
+  {
+    "match_id": "builtin:sequence_ru_ma_mo_naku:v1:5540:5542",
+    "status": "accepted",
+    "rule_id": "-9",
+    "label": "〜間もなく",
+    "origin": "builtin",
+    "description": "时间关系｜前项刚发生或尚未来得及充分完成，后项便紧接着发生。",
+    "surface": "つく間もなく",
+    "token_range": [
+      5540,
+      5542
+    ],
+    "char_range": [
+      13832,
+      13838
+    ],
+    "matched_ranges": [
+      [
+        13832,
+        13838
+      ]
+    ],
+    "evidence": [
+      "builtin_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "をかすめて、触手が車の窓ガラスを貫いた。  　息【つく間もなく】飛んできた触手を、片手側転でかわした。腕にはしっ"
+  },
+  {
+    "match_id": "builtin:evaluation_ni_shitewa:v1:5685:5687",
+    "status": "accepted",
+    "rule_id": "-12",
+    "label": "〜にしては",
+    "origin": "builtin",
+    "description": "评价让步｜以前接条件或身份作为评价基准，后项结果与通常预期不符。",
+    "surface": "にしては",
+    "token_range": [
+      5685,
+      5687
+    ],
+    "char_range": [
+      14183,
+      14187
+    ],
+    "matched_ranges": [
+      [
+        14183,
+        14187
+      ]
+    ],
+    "evidence": [
+      "builtin_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "ンジアが、ゆっくりと近づいてゆく。  「君、人間【にしては】なかなか──」  　しかし途中で言葉を切り、足を"
+  },
+  {
+    "match_id": "builtin:concessive_nimo_kakawarazu:v1:7858:7860",
+    "status": "accepted",
+    "rule_id": "-6",
+    "label": "にもかかわらず",
+    "origin": "builtin",
+    "description": "让步｜前项事实成立，却出现与通常预期相反或不受其影响的后项。",
+    "surface": "にもかかわらず",
+    "token_range": [
+      7858,
+      7860
+    ],
+    "char_range": [
+      19770,
+      19777
+    ],
+    "matched_ranges": [
+      [
+        19770,
+        19777
+      ]
+    ],
+    "evidence": [
+      "builtin_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "手に貫かれ、七日にサーベルで腹部を突き刺されたの【にもかかわらず】、その傷はほとんど治っていた。何も食べていないの"
+  },
+  {
+    "match_id": "correlative:simile_marude:8197:8200",
+    "status": "accepted",
+    "rule_id": "-10000",
+    "label": "まるで〜ようだ",
+    "origin": "correlative",
+    "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
+    "surface": "まるで……よう",
+    "token_range": [
+      8197,
+      8200
+    ],
+    "char_range": [
+      20631,
+      20639
+    ],
+    "matched_ranges": [
+      [
+        20631,
+        20634
+      ],
+      [
+        20637,
+        20639
+      ]
+    ],
+    "evidence": [
+      "correlative_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "召喚です」  　握った巾着袋を口元に寄せ、七日は【まるで】、祈る【よう】に目を閉じた。  　しばし黙って。集中し終えてか"
+  },
+  {
+    "match_id": "builtin:idiom_kuchi_wo_hiraku:v1:10487:10489",
+    "status": "accepted",
+    "rule_id": "-3",
+    "label": "口を開く",
+    "origin": "builtin",
+    "description": "固定表达｜話し始める。",
+    "surface": "口を開い",
+    "token_range": [
+      10487,
+      10489
+    ],
+    "char_range": [
+      26417,
+      26421
+    ],
+    "matched_ranges": [
+      [
+        26417,
+        26421
+      ]
+    ],
+    "evidence": [
+      "builtin_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "て落ちた。  　化け神たちが七日に群がり、大きな【口を開い】て四肢を噛む。  「があっ......」  　化"
+  },
+  {
+    "match_id": "correlative:concessive_ikura:11624:11627",
+    "status": "accepted",
+    "rule_id": "-10004",
+    "label": "いくら〜ても",
+    "origin": "correlative",
+    "description": "让步呼应｜表示无论多么频繁或程度多么深，也无济于事。",
+    "surface": "いくら……でも",
+    "token_range": [
+      11624,
+      11627
+    ],
+    "char_range": [
+      29259,
+      29267
+    ],
+    "matched_ranges": [
+      [
+        29259,
+        29262
+      ],
+      [
+        29265,
+        29267
+      ]
+    ],
+    "evidence": [
+      "correlative_rule_match"
+    ],
+    "rejection_reason": null,
+    "context": "「こいつらの依り代は、この映画館の〝暗がり〟だ。【いくら】この剣【でも】、暗がりは斬れない」  「斬れないんなら、喰っち"
+  },
+  {
+    "match_id": "dict:首を横に振る:1567:1570",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "首を横に振る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "首を横に振っ",
+    "token_range": [
+      1567,
+      1570
+    ],
+    "char_range": [
+      3838,
+      3844
+    ],
+    "matched_ranges": [
+      [
+        3838,
+        3844
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "礼する。  　鬼怒川は「女ってのはこれだから」と【首を横に振っ】た。  「現場を荒らすんじゃ──」と口を開いたそ"
+  },
+  {
+    "match_id": "dict:蜘蛛の子を散らす:5345:5348",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "蜘蛛の子を散らす",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "蜘蛛の子を散らす",
+    "token_range": [
+      5345,
+      5348
+    ],
+    "char_range": [
+      13341,
+      13349
+    ],
+    "matched_ranges": [
+      [
+        13341,
+        13349
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "しすぐに、おや、と一人の少女に目がいった。  　【蜘蛛の子を散らす】人々の中で、唯一、触手を避け続けている者がいる。"
+  },
+  {
+    "match_id": "dict:肩で息をする:6409:6412",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "肩で息をする",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "肩で息をし",
+    "token_range": [
+      6409,
+      6412
+    ],
+    "char_range": [
+      16063,
+      16068
+    ],
+    "matched_ranges": [
+      [
+        16063,
+        16068
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "、改めてサーベルを構える。  　ハイドランジアは【肩で息をし】ながら、青紫の瞳で七日を見上げた。  「...."
+  },
+  {
+    "match_id": "dict:目の色を変える:10122:10125",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "目の色を変える",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "目の色を変える",
+    "token_range": [
+      10122,
+      10125
+    ],
+    "char_range": [
+      25465,
+      25472
+    ],
+    "matched_ranges": [
+      [
+        25465,
+        25472
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "さることながら、七日でさえも、彼女のこととなると【目の色を変える】。  「みんなあいつが好きなのね」  　ハイドラ"
+  },
+  {
+    "match_id": "dict:頭に血が上る:12814:12817",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "頭に血が上る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "頭に血が上っ",
+    "token_range": [
+      12814,
+      12817
+    ],
+    "char_range": [
+      32235,
+      32241
+    ],
+    "matched_ranges": [
+      [
+        32235,
+        32241
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "せを通して答える。  「〝おまえだって見てたろ。【頭に血が上っ】て、目にも入ってなかったのか？〟」  「あーっと"
+  },
+  {
+    "match_id": "dict:頭に血が上る:12847:12850",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "頭に血が上る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "頭に血が上っ",
+    "token_range": [
+      12847,
+      12850
+    ],
+    "char_range": [
+      32311,
+      32317
+    ],
+    "matched_ranges": [
+      [
+        32311,
+        32317
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ィメリアに向けて微笑みを投げかけた。  「は？　【頭に血が上っ】てたのはどっち？　自分から巣に突っ込んでって死に"
+  },
+  {
+    "match_id": "dict:エントランス:219:221",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "エントランス",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "エントランス",
+    "token_range": [
+      219,
+      221
+    ],
+    "char_range": [
+      507,
+      513
+    ],
+    "matched_ranges": [
+      [
+        507,
+        513
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "い車道沿いをひたすら走る。  　自宅マンションの【エントランス】を抜け、飛び乗ったエレベーターが動きだしてから、"
+  },
+  {
+    "match_id": "dict:中に入る:295:297",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "中に入る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "中に入り",
+    "token_range": [
+      295,
+      297
+    ],
+    "char_range": [
+      710,
+      714
+    ],
+    "matched_ranges": [
+      [
+        710,
+        714
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "レベーターを降り、自室の部屋の鍵を開ける。  　【中に入り】鍵を閉めて、電気のスイッチを押した。  　明かり"
+  },
+  {
+    "match_id": "dict:男が立つ:318:320",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "男が立つ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "男が立っ",
+    "token_range": [
+      318,
+      320
+    ],
+    "char_range": [
+      766,
+      770
+    ],
+    "matched_ranges": [
+      [
+        766,
+        770
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "初めて気づく。女の目の前に、トレンチコートを着た【男が立っ】ていた。  「いやあっ！」  　いつの間に部屋へ"
+  },
+  {
+    "match_id": "dict:覗き込む:343:345",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "覗き込む",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "覗き込む",
+    "token_range": [
+      343,
+      345
+    ],
+    "char_range": [
+      820,
+      824
+    ],
+    "matched_ranges": [
+      [
+        820,
+        824
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "てきたのか、尻餅をついた女の顔を、男は腰を曲げて【覗き込む】。その顔は、白い仮面で覆われていた。  　うっす"
+  },
+  {
+    "match_id": "dict:血飛沫:472:474",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "血飛沫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "血飛沫",
+    "token_range": [
+      472,
+      474
+    ],
+    "char_range": [
+      1097,
+      1100
+    ],
+    "matched_ranges": [
+      [
+        1097,
+        1100
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "った。  　何度もナタを振り下ろされ、噴き上がる【血飛沫】がスクリーンに映る。  　ラティメリアは劇場のち"
+  },
+  {
+    "match_id": "dict:気がする:670:672",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "気がする",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "気がし",
+    "token_range": [
+      670,
+      672
+    ],
+    "char_range": [
+      1602,
+      1605
+    ],
+    "matched_ranges": [
+      [
+        1602,
+        1605
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "個室のドアを開けた時、背後にコツ、と足音を聞いた【気がし】た。ハッとして振り返るラティメリア。しかし誰もい"
+  },
+  {
+    "match_id": "dict:殺人鬼:713:715",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "殺人鬼",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "殺人鬼",
+    "token_range": [
+      713,
+      715
+    ],
+    "char_range": [
+      1713,
+      1716
+    ],
+    "matched_ranges": [
+      [
+        1713,
+        1716
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "...だいたい何なの？　エッグマンとか。うける。【殺人鬼】にしては名前可愛くない？」  　下着を下ろし、便"
+  },
+  {
+    "match_id": "dict:殺人鬼:828:830",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "殺人鬼",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "殺人鬼",
+    "token_range": [
+      828,
+      830
+    ],
+    "char_range": [
+      1977,
+      1980
+    ],
+    "matched_ranges": [
+      [
+        1977,
+        1980
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ていた。  　若者をつけ回し、次々と惨殺してゆく【殺人鬼】のものと。  　──うそ、もしかして、エッグマン"
+  },
+  {
+    "match_id": "dict:口を塞ぐ:851:853",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "口を塞ぐ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "口を塞ぐ",
+    "token_range": [
+      851,
+      853
+    ],
+    "char_range": [
+      2033,
+      2037
+    ],
+    "matched_ranges": [
+      [
+        2033,
+        2037
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": ".？  　ラティメリアは声が漏れないよう、両手で【口を塞ぐ】。その殺人鬼が、どうしてこんなところにいるのだ。"
+  },
+  {
+    "match_id": "dict:殺人鬼:855:857",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "殺人鬼",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "殺人鬼",
+    "token_range": [
+      855,
+      857
+    ],
+    "char_range": [
+      2040,
+      2043
+    ],
+    "matched_ranges": [
+      [
+        2040,
+        2043
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ィメリアは声が漏れないよう、両手で口を塞ぐ。その【殺人鬼】が、どうしてこんなところにいるのだ。だらだらと冷"
+  },
+  {
+    "match_id": "dict:目をつぶる:867:869",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "目をつぶる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "目をつぶる",
+    "token_range": [
+      867,
+      869
+    ],
+    "char_range": [
+      2078,
+      2083
+    ],
+    "matched_ranges": [
+      [
+        2078,
+        2083
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ろにいるのだ。だらだらと冷や汗を流しながら、強く【目をつぶる】。  　──私は今いません。私は空気です...."
+  },
+  {
+    "match_id": "dict:息を殺す:900:902",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "息を殺す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "息を殺し",
+    "token_range": [
+      900,
+      902
+    ],
+    "char_range": [
+      2155,
+      2159
+    ],
+    "matched_ranges": [
+      [
+        2155,
+        2159
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "アのいる個室の前で止まった。  　ラティメリアは【息を殺し】て、うずくまった。  　五秒、一〇秒とじっと待つ"
+  },
+  {
+    "match_id": "dict:目を開く:941:943",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "目を開く",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "目を開く",
+    "token_range": [
+      941,
+      943
+    ],
+    "char_range": [
+      2260,
+      2264
+    ],
+    "matched_ranges": [
+      [
+        2260,
+        2264
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "いる。  「......？」  　ラティメリアは【目を開く】。視界がやけに暗いことに気づいた。頭上に影がかか"
+  },
+  {
+    "match_id": "dict:現場検証:1041:1043",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "現場検証",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "現場検証",
+    "token_range": [
+      1041,
+      1043
+    ],
+    "char_range": [
+      2503,
+      2507
+    ],
+    "matched_ranges": [
+      [
+        2503,
+        2507
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "マンションの一室では、警察による凄惨な殺人事件の【現場検証】が行われていた。   　その死体は、二つに分けら"
+  },
+  {
+    "match_id": "dict:足を踏み入れる:1243:1245",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "足を踏み入れる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "足を踏み入れ",
+    "token_range": [
+      1243,
+      1245
+    ],
+    "char_range": [
+      3050,
+      3056
+    ],
+    "matched_ranges": [
+      [
+        3050,
+        3056
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "　鰯水は顔をしかめる。生活臭に血の臭いが混ざり、【足を踏み入れ】たくなかった。  　動こうとしない鰯水に、鬼怒川"
+  },
+  {
+    "match_id": "dict:顔を出す:1290:1292",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "顔を出す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "顔を出し",
+    "token_range": [
+      1290,
+      1292
+    ],
+    "char_range": [
+      3171,
+      3175
+    ],
+    "matched_ranges": [
+      [
+        3171,
+        3175
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "...」  　すると鰯水の背後から、若い女刑事が【顔を出し】た。亥鼻ちとせである。  「呼ばないんですか？　"
+  },
+  {
+    "match_id": "dict:同一:1447:1449",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "同一",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "同一",
+    "token_range": [
+      1447,
+      1449
+    ],
+    "char_range": [
+      3545,
+      3547
+    ],
+    "matched_ranges": [
+      [
+        3545,
+        3547
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "件現場に残されてたのと、同じ文言ですね。やっぱり【同一】犯の仕業でしょうか......」  「さあ。それ"
+  },
+  {
+    "match_id": "dict:声を潜める:1789:1791",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "声を潜める",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "声を潜める",
+    "token_range": [
+      1789,
+      1791
+    ],
+    "char_range": [
+      4376,
+      4381
+    ],
+    "matched_ranges": [
+      [
+        4376,
+        4381
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "すから」  　むすっとそうつぶやいたあと、さらに【声を潜める】。  「......何か知りたかったら、後で私が"
+  },
+  {
+    "match_id": "dict:腰を屈める:1930:1932",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "腰を屈める",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "腰を屈め",
+    "token_range": [
+      1930,
+      1932
+    ],
+    "char_range": [
+      4726,
+      4730
+    ],
+    "matched_ranges": [
+      [
+        4726,
+        4730
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "と鬼怒川が話しているのを見て、チャンスとばかりに【腰を屈め】た。  　こそこそとベッドに近寄り、死体を覆うシ"
+  },
+  {
+    "match_id": "dict:路地裏:2048:2050",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "路地裏",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "路地裏",
+    "token_range": [
+      2048,
+      2050
+    ],
+    "char_range": [
+      4995,
+      4998
+    ],
+    "matched_ranges": [
+      [
+        4995,
+        4998
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "せは猫ではなかった。事件の起きたマンション近くの【路地裏】で、隠れて会う相手は懇意の客だ。情報屋でもあるち"
+  },
+  {
+    "match_id": "dict:口にする:2343:2345",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "口にする",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "口にする",
+    "token_range": [
+      2343,
+      2345
+    ],
+    "char_range": [
+      5775,
+      5779
+    ],
+    "matched_ranges": [
+      [
+        5775,
+        5779
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "〟。  　宣伝文句のようなメッセージを、ちとせは【口にする】。  「警官の間でも、オカルトじみた噂が立ってま"
+  },
+  {
+    "match_id": "dict:殺人鬼:2485:2487",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "殺人鬼",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "殺人鬼",
+    "token_range": [
+      2485,
+      2487
+    ],
+    "char_range": [
+      6123,
+      6126
+    ],
+    "matched_ranges": [
+      [
+        6123,
+        6126
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "昔前に流行った洋画です。ハットにトレンチコートの【殺人鬼】が、次々と若者たちを殺していくってだけのホラー映"
+  },
+  {
+    "match_id": "dict:ホラー映画:2491:2493",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "ホラー映画",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "ホラー映画",
+    "token_range": [
+      2491,
+      2493
+    ],
+    "char_range": [
+      6146,
+      6151
+    ],
+    "matched_ranges": [
+      [
+        6146,
+        6151
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "の殺人鬼が、次々と若者たちを殺していくってだけの【ホラー映画】。その仮面を被った殺人鬼こそ、エッグマンなんです"
+  },
+  {
+    "match_id": "dict:仮面を被る:2495:2497",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "仮面を被る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "仮面を被っ",
+    "token_range": [
+      2495,
+      2497
+    ],
+    "char_range": [
+      6154,
+      6159
+    ],
+    "matched_ranges": [
+      [
+        6154,
+        6159
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "と若者たちを殺していくってだけのホラー映画。その【仮面を被っ】た殺人鬼こそ、エッグマンなんです」  「映画を模"
+  },
+  {
+    "match_id": "dict:殺人鬼:2497:2499",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "殺人鬼",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "殺人鬼",
+    "token_range": [
+      2497,
+      2499
+    ],
+    "char_range": [
+      6160,
+      6163
+    ],
+    "matched_ranges": [
+      [
+        6160,
+        6163
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "殺していくってだけのホラー映画。その仮面を被った【殺人鬼】こそ、エッグマンなんです」  「映画を模倣した殺"
+  },
+  {
+    "match_id": "dict:ネタバレ:2721:2723",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "ネタバレ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "ネタバレ",
+    "token_range": [
+      2721,
+      2723
+    ],
+    "char_range": [
+      6796,
+      6800
+    ],
+    "matched_ranges": [
+      [
+        6796,
+        6800
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "望のボーイフレンドだったんです！　すみません！　【ネタバレ】！」  「いやいいよ、買った情報だし。観ないし」"
+  },
+  {
+    "match_id": "dict:頭を下げる:2984:2986",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "頭を下げる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "頭を下げ",
+    "token_range": [
+      2984,
+      2986
+    ],
+    "char_range": [
+      7499,
+      7503
+    ],
+    "matched_ranges": [
+      [
+        7499,
+        7503
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "言いよどむ。  　空気を読んだちとせが、大袈裟に【頭を下げ】た。  「わ、すみませんっ。一介の情報屋ふぜいが"
+  },
+  {
+    "match_id": "dict:現場検証:3175:3177",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "現場検証",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "現場検証",
+    "token_range": [
+      3175,
+      3177
+    ],
+    "char_range": [
+      8001,
+      8005
+    ],
+    "matched_ranges": [
+      [
+        8001,
+        8005
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "いった。   　　　×　　　×   　警察による【現場検証】は、なおも続いていた。  　天井にまで達する血文"
+  },
+  {
+    "match_id": "dict:一つ一つ:3278:3280",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "一つ一つ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "一つ一つ",
+    "token_range": [
+      3278,
+      3280
+    ],
+    "char_range": [
+      8258,
+      8262
+    ],
+    "matched_ranges": [
+      [
+        8258,
+        8262
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "テーブルの側にしゃがみ込み、無造作に並ぶ化粧品を【一つ一つ】確認する。  　触れたコップの中に沈むものを発見"
+  },
+  {
+    "match_id": "dict:悲鳴を上げる:3292:3294",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "悲鳴を上げる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "悲鳴を上げ",
+    "token_range": [
+      3292,
+      3294
+    ],
+    "char_range": [
+      8288,
+      8293
+    ],
+    "matched_ranges": [
+      [
+        8288,
+        8293
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "する。  　触れたコップの中に沈むものを発見し、【悲鳴を上げ】た。  「ああん？　どうした」  　鬼怒川が、尻"
+  },
+  {
+    "match_id": "dict:覗き込む:3348:3350",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "覗き込む",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "覗き込ん",
+    "token_range": [
+      3348,
+      3350
+    ],
+    "char_range": [
+      8414,
+      8418
+    ],
+    "matched_ranges": [
+      [
+        8414,
+        8418
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": " 　鬼怒川はコップのフチを持って、側面から目玉を【覗き込ん】だ。  　黒目に鮮やかな青紫の虹彩が、蛍光灯の光"
+  },
+  {
+    "match_id": "dict:馬鹿野郎:3462:3464",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "馬鹿野郎",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "馬鹿野郎",
+    "token_range": [
+      3462,
+      3464
+    ],
+    "char_range": [
+      8711,
+      8715
+    ],
+    "matched_ranges": [
+      [
+        8711,
+        8715
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "、しぶしぶコップを受け取った。  「......【馬鹿野郎】が」  　鬼怒川は乱暴につぶやき、部屋を出ていく"
+  },
+  {
+    "match_id": "dict:背を向ける:3617:3619",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "背を向ける",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "背を向ける",
+    "token_range": [
+      3617,
+      3619
+    ],
+    "char_range": [
+      9075,
+      9080
+    ],
+    "matched_ranges": [
+      [
+        9075,
+        9080
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ツー。再びトランシーバーが鳴って、ちとせは七日に【背を向ける】。  「もしもし？　情報って、どんな？」  『あ"
+  },
+  {
+    "match_id": "dict:非常階段:3688:3690",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "非常階段",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "非常階段",
+    "token_range": [
+      3688,
+      3690
+    ],
+    "char_range": [
+      9229,
+      9233
+    ],
+    "matched_ranges": [
+      [
+        9229,
+        9233
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "....？」  「......情報提供者が現場の【非常階段】にいました。ちょっと隠してください」  　七日は"
+  },
+  {
+    "match_id": "dict:非常階段:3708:3710",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "非常階段",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "非常階段",
+    "token_range": [
+      3708,
+      3710
+    ],
+    "char_range": [
+      9287,
+      9291
+    ],
+    "matched_ranges": [
+      [
+        9287,
+        9291
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "越しにマンションを見上げる。事件現場である八階の【非常階段】、その欄干付近で、鰯水が電波の届く場所を捜すよう"
+  },
+  {
+    "match_id": "dict:わらわら:3844:3846",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "わらわら",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "わらわら",
+    "token_range": [
+      3844,
+      3846
+    ],
+    "char_range": [
+      9614,
+      9618
+    ],
+    "matched_ranges": [
+      [
+        9614,
+        9618
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "来てます？』  「ええ。なんか、関係ない人とか、【わらわら】集まっちゃってて......」  『あー、クソで"
+  },
+  {
+    "match_id": "dict:青紫:3959:3961",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      3959,
+      3961
+    ],
+    "char_range": [
+      9901,
+      9903
+    ],
+    "matched_ranges": [
+      [
+        9901,
+        9903
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "て耳をそばだてていた七日の表情が強張った。  「【青紫】だと......？」  　七日のつぶやきに、ちと"
+  },
+  {
+    "match_id": "dict:気にする:3980:3982",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "気にする",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "気にする",
+    "token_range": [
+      3980,
+      3982
+    ],
+    "char_range": [
+      9950,
+      9954
+    ],
+    "matched_ranges": [
+      [
+        9950,
+        9954
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "とせが慌てて人差し指を立てる。  　七日はさして【気にする】様子もなく、ちとせの耳にささやいた。  「..."
+  },
+  {
+    "match_id": "dict:目を逸らす:4122:4124",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "目を逸らす",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "目を逸らす",
+    "token_range": [
+      4122,
+      4124
+    ],
+    "char_range": [
+      10293,
+      10298
+    ],
+    "matched_ranges": [
+      [
+        10293,
+        10298
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "  　思わずその胸元へ視線が泳いで、鰯水は慌てて【目を逸らす】。  　エレベーターが動きだしてから、婦人はおず"
+  },
+  {
+    "match_id": "dict:青紫:4197:4199",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      4197,
+      4199
+    ],
+    "char_range": [
+      10470,
+      10472
+    ],
+    "matched_ranges": [
+      [
+        10470,
+        10472
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "は、ハンカチで覆っただけのコップが掴まれている。【青紫】の目玉もそのまま、浸された状態にあった。  「い"
+  },
+  {
+    "match_id": "dict:息が詰まる:4333:4335",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "息が詰まる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "息が詰まる",
+    "token_range": [
+      4333,
+      4335
+    ],
+    "char_range": [
+      10781,
+      10786
+    ],
+    "matched_ranges": [
+      [
+        10781,
+        10786
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "  「いや、ホントにこれは──」  　甘い香りに【息が詰まる】。耳まで赤くした鰯水は、婦人の顔を見下ろした。 "
+  },
+  {
+    "match_id": "dict:肉塊:4768:4770",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "肉塊",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "肉塊",
+    "token_range": [
+      4768,
+      4770
+    ],
+    "char_range": [
+      11815,
+      11817
+    ],
+    "matched_ranges": [
+      [
+        11815,
+        11817
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "  　壁に飛び散った血の跡や、床に転がるちぎれた【肉塊】。真っ赤に染まったエレベーターの中から、ハイドラ"
+  },
+  {
+    "match_id": "dict:化学調味料:4884:4886",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "化学調味料",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "化学調味料",
+    "token_range": [
+      4884,
+      4886
+    ],
+    "char_range": [
+      12108,
+      12113
+    ],
+    "matched_ranges": [
+      [
+        12108,
+        12113
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ーの端へ放った。  「ああいう女も不味い。体中に【化学調味料】を塗りたくった肉は胸焼けがするよ。腐らないように"
+  },
+  {
+    "match_id": "dict:踵を返す:4943:4945",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "踵を返す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "踵を返し",
+    "token_range": [
+      4943,
+      4945
+    ],
+    "char_range": [
+      12267,
+      12271
+    ],
+    "matched_ranges": [
+      [
+        12267,
+        12271
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "入って来た警察官が女の死体を見つけ、声を上げた。【踵を返し】て正面玄関へ駆けだすその背中へ、ハイドランジアが"
+  },
+  {
+    "match_id": "dict:エントランス:4975:4977",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "エントランス",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "エントランス",
+    "token_range": [
+      4975,
+      4977
+    ],
+    "char_range": [
+      12356,
+      12362
+    ],
+    "matched_ranges": [
+      [
+        12356,
+        12362
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "はかん高い絶叫を上げて倒れた。ロビーを抜けた先の【エントランス】──メディアや野次馬たちの集まるマンションの前で"
+  },
+  {
+    "match_id": "dict:エントランス:4991:4993",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "エントランス",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "エントランス",
+    "token_range": [
+      4991,
+      4993
+    ],
+    "char_range": [
+      12404,
+      12410
+    ],
+    "matched_ranges": [
+      [
+        12404,
+        12410
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ションの前で。  　マンション入り口を抜けた先の【エントランス】には、幅の広い階段が設置されており、人々のいるア"
+  },
+  {
+    "match_id": "dict:気になる:5106:5108",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "気になる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "気になる",
+    "token_range": [
+      5106,
+      5108
+    ],
+    "char_range": [
+      12704,
+      12708
+    ],
+    "matched_ranges": [
+      [
+        12704,
+        12708
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "の部屋に残しておくなど......」  「だって【気になる】じゃないか。せっかく〝宣伝〟したんだ。成功したか"
+  },
+  {
+    "match_id": "dict:揚げパン:5375:5377",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "揚げパン",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "揚げパン",
+    "token_range": [
+      5375,
+      5377
+    ],
+    "char_range": [
+      13422,
+      13426
+    ],
+    "matched_ranges": [
+      [
+        13422,
+        13426
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ていた。避けながら紙袋に手を突っ込み、取り出した【揚げパン】を食べている。  「......翁。面白い子がい"
+  },
+  {
+    "match_id": "dict:一歩踏み出す:5443:5445",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "一歩踏み出す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "一歩踏み出し",
+    "token_range": [
+      5443,
+      5445
+    ],
+    "char_range": [
+      13573,
+      13579
+    ],
+    "matched_ranges": [
+      [
+        13573,
+        13579
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ンジアは二、三度、鎌を振って感じを確かめ、階段を【一歩踏み出し】た。   「おっ、おおっ!?　何、これ」  　揚"
+  },
+  {
+    "match_id": "dict:窓ガラス:5532:5534",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "窓ガラス",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "窓ガラス",
+    "token_range": [
+      5532,
+      5534
+    ],
+    "char_range": [
+      13819,
+      13823
+    ],
+    "matched_ranges": [
+      [
+        13819,
+        13823
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ゃがんだラティメリアの頭上をかすめて、触手が車の【窓ガラス】を貫いた。  　息つく間もなく飛んできた触手を、"
+  },
+  {
+    "match_id": "dict:息つく:5539:5541",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "息つく",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "息つく",
+    "token_range": [
+      5539,
+      5541
+    ],
+    "char_range": [
+      13831,
+      13834
+    ],
+    "matched_ranges": [
+      [
+        13831,
+        13834
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "上をかすめて、触手が車の窓ガラスを貫いた。  　【息つく】間もなく飛んできた触手を、片手側転でかわした。腕"
+  },
+  {
+    "match_id": "dict:側転:5545:5547",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "側転",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "側転",
+    "token_range": [
+      5545,
+      5547
+    ],
+    "char_range": [
+      13849,
+      13851
+    ],
+    "matched_ranges": [
+      [
+        13849,
+        13851
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "いた。  　息つく間もなく飛んできた触手を、片手【側転】でかわした。腕にはしっかりと、パンの紙袋を抱いて"
+  },
+  {
+    "match_id": "dict:身の毛がよだつ:5570:5572",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "身の毛がよだつ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "身の毛がよだっ",
+    "token_range": [
+      5570,
+      5572
+    ],
+    "char_range": [
+      13900,
+      13907
+    ],
+    "matched_ranges": [
+      [
+        13900,
+        13907
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "る。着地した、その瞬間。禍々《まが》しい殺気に、【身の毛がよだっ】た。  「......え」  　すぐ後ろに、大鎌"
+  },
+  {
+    "match_id": "dict:宙に浮く:5665:5667",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "宙に浮く",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "宙に浮い",
+    "token_range": [
+      5665,
+      5667
+    ],
+    "char_range": [
+      14132,
+      14136
+    ],
+    "matched_ranges": [
+      [
+        14132,
+        14136
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "！」  　仰向けに眠るような形で、ラティメリアは【宙に浮い】たまま固定された。  　鎌を肩に担いだハイドラン"
+  },
+  {
+    "match_id": "dict:身を引く:5940:5942",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "身を引く",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "身を引い",
+    "token_range": [
+      5940,
+      5942
+    ],
+    "char_range": [
+      14860,
+      14864
+    ],
+    "matched_ranges": [
+      [
+        14860,
+        14864
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "たと思われるのは心外だな」  　ハイドランジアは【身を引い】てその剣筋をかわしながら、構わず話し続けた。  "
+  },
+  {
+    "match_id": "dict:生活環境:5986:5988",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "生活環境",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "生活環境",
+    "token_range": [
+      5986,
+      5988
+    ],
+    "char_range": [
+      14969,
+      14973
+    ],
+    "matched_ranges": [
+      [
+        14969,
+        14973
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "」  「たくさんあるさ。年齢別の味の違い、とか。【生活環境】による味の変化、だとか──」  　にんまりと、ハ"
+  },
+  {
+    "match_id": "dict:腕を引く:6288:6290",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "腕を引く",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "腕を引い",
+    "token_range": [
+      6288,
+      6290
+    ],
+    "char_range": [
+      15748,
+      15752
+    ],
+    "matched_ranges": [
+      [
+        15748,
+        15752
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "込む。  　ハイドランジアは七日の接近に気づき、【腕を引い】た。触手の先に括られたラティメリアの首に手を回し"
+  },
+  {
+    "match_id": "dict:手を回す:6296:6298",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "手を回す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "手を回し",
+    "token_range": [
+      6296,
+      6298
+    ],
+    "char_range": [
+      15772,
+      15776
+    ],
+    "matched_ranges": [
+      [
+        15772,
+        15776
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "腕を引いた。触手の先に括られたラティメリアの首に【手を回し】、盾にする。  　七日は袈裟斬りに振りかぶってい"
+  },
+  {
+    "match_id": "dict:腹を抱える:6389:6391",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "腹を抱える",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "腹を抱え",
+    "token_range": [
+      6389,
+      6391
+    ],
+    "char_range": [
+      16007,
+      16011
+    ],
+    "matched_ranges": [
+      [
+        16007,
+        16011
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "りに、血が滲んでいる。  　ラティメリアもまた、【腹を抱え】てうずくまっていた。  　七日はハイドランジアの"
+  },
+  {
+    "match_id": "dict:青紫:6413:6415",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      6413,
+      6415
+    ],
+    "char_range": [
+      16072,
+      16074
+    ],
+    "matched_ranges": [
+      [
+        16072,
+        16074
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "構える。  　ハイドランジアは肩で息をしながら、【青紫】の瞳で七日を見上げた。  「......はは。仲"
+  },
+  {
+    "match_id": "dict:工業地帯:6671:6673",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "工業地帯",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "工業地帯",
+    "token_range": [
+      6671,
+      6673
+    ],
+    "char_range": [
+      16670,
+      16674
+    ],
+    "matched_ranges": [
+      [
+        16670,
+        16674
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "と重たい。  　戦前、この町は製鉄工場の立ち並ぶ【工業地帯】だった。住み込みで働く労働者が集い、彼らを対象と"
+  },
+  {
+    "match_id": "dict:一つ一つ:6736:6738",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "一つ一つ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "一つ一つ",
+    "token_range": [
+      6736,
+      6738
+    ],
+    "char_range": [
+      16831,
+      16835
+    ],
+    "matched_ranges": [
+      [
+        16831,
+        16835
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "車や戦闘機に使われる部品を作るようになった。工場【一つ一つ】がこなさなければならないノルマは格段に増えた。な"
+  },
+  {
+    "match_id": "dict:女子供:6769:6771",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "女子供",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "女子供",
+    "token_range": [
+      6769,
+      6771
+    ],
+    "char_range": [
+      16927,
+      16930
+    ],
+    "matched_ranges": [
+      [
+        16927,
+        16930
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "に向かない老人や体を動かすのも困難な病人。力なき【女子供】だけ。工場はそれでも稼働し続けたが、客のいない風"
+  },
+  {
+    "match_id": "dict:縁取る:6876:6878",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "縁取る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "縁取る",
+    "token_range": [
+      6876,
+      6878
+    ],
+    "char_range": [
+      17207,
+      17210
+    ],
+    "matched_ranges": [
+      [
+        17207,
+        17210
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "を労うように、アーチにはそう書かれている。看板を【縁取る】豆電球はところどころ割れていて、かける相手のいな"
+  },
+  {
+    "match_id": "dict:豆電球:6878:6880",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "豆電球",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "豆電球",
+    "token_range": [
+      6878,
+      6880
+    ],
+    "char_range": [
+      17210,
+      17213
+    ],
+    "matched_ranges": [
+      [
+        17210,
+        17213
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ように、アーチにはそう書かれている。看板を縁取る【豆電球】はところどころ割れていて、かける相手のいない言葉"
+  },
+  {
+    "match_id": "dict:立て看板:6959:6961",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "立て看板",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "立て看板",
+    "token_range": [
+      6959,
+      6961
+    ],
+    "char_range": [
+      17433,
+      17437
+    ],
+    "matched_ranges": [
+      [
+        17433,
+        17437
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "かわしい、古ぼけた映画館である。  　入り口側の【立て看板】に、映画のポスターが並んでいた。  　決め顔の役"
+  },
+  {
+    "match_id": "dict:目を覚ます:7664:7666",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "目を覚ます",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "目を覚まし",
+    "token_range": [
+      7664,
+      7666
+    ],
+    "char_range": [
+      19300,
+      19305
+    ],
+    "matched_ranges": [
+      [
+        19300,
+        19305
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "　×　　　×   　ラティメリアは、救急車の中で【目を覚まし】た。  「んぅ......」  　寝ぼけ眼で体を"
+  },
+  {
+    "match_id": "dict:力を得る:7870:7872",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "力を得る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "力を得",
+    "token_range": [
+      7870,
+      7872
+    ],
+    "char_range": [
+      19810,
+      19813
+    ],
+    "matched_ranges": [
+      [
+        19810,
+        19813
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "治っていた。何も食べていないのに、ここまでの回復【力を得】られるとは驚きだ。  　点滴の袋にかじりついてい"
+  },
+  {
+    "match_id": "dict:泣き喚く:8036:8038",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "泣き喚く",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "泣き喚く",
+    "token_range": [
+      8036,
+      8038
+    ],
+    "char_range": [
+      20235,
+      20239
+    ],
+    "matched_ranges": [
+      [
+        20235,
+        20239
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "  　マガツカミへの怨嗟を叫ぶ男性。母親を捜し、【泣き喚く】子ども。搬送を待つ怪我人たちの呻き声が雨音に混じ"
+  },
+  {
+    "match_id": "dict:振り下ろす:8249:8251",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "振り下ろす",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "振り下ろし",
+    "token_range": [
+      8249,
+      8251
+    ],
+    "char_range": [
+      20755,
+      20760
+    ],
+    "matched_ranges": [
+      [
+        20755,
+        20760
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "七日はそれを頭上に掲げ、光を床に叩きつけるように【振り下ろし】た。  　放たれた光は床で弾け、より一層眩しく輝"
+  },
+  {
+    "match_id": "dict:緊急事態:8328:8330",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "緊急事態",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "緊急事態",
+    "token_range": [
+      8328,
+      8330
+    ],
+    "char_range": [
+      20928,
+      20932
+    ],
+    "matched_ranges": [
+      [
+        20928,
+        20932
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "召喚できたわね。私にあんなことしといてさ」  「【緊急事態】だった。悪く思うな」  　七日は紙袋を差し出した"
+  },
+  {
+    "match_id": "dict:満身創痍:8407:8409",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "満身創痍",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "満身創痍",
+    "token_range": [
+      8407,
+      8409
+    ],
+    "char_range": [
+      21113,
+      21117
+    ],
+    "matched_ranges": [
+      [
+        21113,
+        21117
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ラティメリア。  　その全身を見て、七日は訝る。【満身創痍】だったはずのラティメリアの傷が、治っている。  "
+  },
+  {
+    "match_id": "dict:手を入れる:8443:8445",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "手を入れる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "手を入れ",
+    "token_range": [
+      8443,
+      8445
+    ],
+    "char_range": [
+      21204,
+      21208
+    ],
+    "matched_ranges": [
+      [
+        21204,
+        21208
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "わけ？」  　ラティメリアはパーカーのポケットに【手を入れ】たまま、七日の前に立つ。  　七日もまた、ラティ"
+  },
+  {
+    "match_id": "dict:踵を返す:8722:8724",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "踵を返す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "踵を返す",
+    "token_range": [
+      8722,
+      8724
+    ],
+    "char_range": [
+      21901,
+      21905
+    ],
+    "matched_ranges": [
+      [
+        21901,
+        21905
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "を感じる。捜せば？」  　ラティメリアは答えて、【踵を返す】。再びドアへと歩き出した。  「私はどっかで時間"
+  },
+  {
+    "match_id": "dict:ことにする:8782:8784",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "ことにする",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "ことにし",
+    "token_range": [
+      8782,
+      8784
+    ],
+    "char_range": [
+      22042,
+      22046
+    ],
+    "matched_ranges": [
+      [
+        22042,
+        22046
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "　暇を持て余したラティメリアは、一人で映画を観る【ことにし】た。  　売店でポップコーンとコーラを買い、ホラ"
+  },
+  {
+    "match_id": "dict:ホラー映画:8793:8795",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "ホラー映画",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "ホラー映画",
+    "token_range": [
+      8793,
+      8795
+    ],
+    "char_range": [
+      22068,
+      22073
+    ],
+    "matched_ranges": [
+      [
+        22068,
+        22073
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "にした。  　売店でポップコーンとコーラを買い、【ホラー映画】『エッグマン・ブギ』を鑑賞する。  　途中トイレ"
+  },
+  {
+    "match_id": "dict:息を殺す:8815:8817",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "息を殺す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "息を殺し",
+    "token_range": [
+      8815,
+      8817
+    ],
+    "char_range": [
+      22113,
+      22117
+    ],
+    "matched_ranges": [
+      [
+        22113,
+        22117
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "  　途中トイレへと席を立ち、個室で聞いた足音に【息を殺し】た。  　天井と壁の隙間からラティメリアを見下ろ"
+  },
+  {
+    "match_id": "dict:殺人鬼:8829:8831",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "殺人鬼",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "殺人鬼",
+    "token_range": [
+      8829,
+      8831
+    ],
+    "char_range": [
+      22160,
+      22163
+    ],
+    "matched_ranges": [
+      [
+        22160,
+        22163
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "アを見下ろしていたのは、スクリーンから抜け出した【殺人鬼】、エッグマンだった──。   「ぴぎゃあああああ"
+  },
+  {
+    "match_id": "dict:後退る:8970:8972",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "後退る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "後退る",
+    "token_range": [
+      8970,
+      8972
+    ],
+    "char_range": [
+      22527,
+      22530
+    ],
+    "matched_ranges": [
+      [
+        22527,
+        22530
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "  　映画のワンシーンを思いだし、ラティメリアは【後退る】。  　亀裂は顔全体に広がり、いよいよ仮面が崩れ"
+  },
+  {
+    "match_id": "dict:足を運ぶ:9194:9196",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "足を運ぶ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "足を運ん",
+    "token_range": [
+      9194,
+      9196
+    ],
+    "char_range": [
+      23075,
+      23079
+    ],
+    "matched_ranges": [
+      [
+        23075,
+        23079
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "て館内の探索を続けていた七日は、上映中の劇場まで【足を運ん】でいた。  　暗がりの中、正面の巨大スクリーンが"
+  },
+  {
+    "match_id": "dict:気にする:9281:9283",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "気にする",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "気にする",
+    "token_range": [
+      9281,
+      9283
+    ],
+    "char_range": [
+      23295,
+      23299
+    ],
+    "matched_ranges": [
+      [
+        23295,
+        23299
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "い雑木林を走っていた。館内に満ちる息切れ。背後を【気にする】怯えた表情が、スクリーン一杯に映る。  「..."
+  },
+  {
+    "match_id": "dict:声を聞く:9304:9306",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "声を聞く",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "声を聞い",
+    "token_range": [
+      9304,
+      9306
+    ],
+    "char_range": [
+      23353,
+      23357
+    ],
+    "matched_ranges": [
+      [
+        23353,
+        23357
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ば、初めから観てほしいものだがな」  　すぐ側で【声を聞い】た。七日は瞬時にサーベルを抜刀し、声のしたほうへ"
+  },
+  {
+    "match_id": "dict:青紫:9332:9334",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      9332,
+      9334
+    ],
+    "char_range": [
+      23431,
+      23433
+    ],
+    "matched_ranges": [
+      [
+        23431,
+        23433
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "の中へ飛び跳ねる。スクリーンの光を半身に浴びて、【青紫】の瞳が煌めいていた。  「......乱暴者だな"
+  },
+  {
+    "match_id": "dict:反吐が出る:9376:9378",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "反吐が出る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "反吐が出る",
+    "token_range": [
+      9376,
+      9378
+    ],
+    "char_range": [
+      23542,
+      23547
+    ],
+    "matched_ranges": [
+      [
+        23542,
+        23547
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "に、映画の話とか」  「マガツカミと映画の話か。【反吐が出る】ね」  「いいじゃないか。映画が好きなんだ」  "
+  },
+  {
+    "match_id": "dict:腰を上げる:9644:9646",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "腰を上げる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "腰を上げ",
+    "token_range": [
+      9644,
+      9646
+    ],
+    "char_range": [
+      24278,
+      24282
+    ],
+    "matched_ranges": [
+      [
+        24278,
+        24282
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "アは両腕を広げた。すると座席の観客たちが、一斉に【腰を上げ】、振り返る。  　中年の男性。若い男女。老婆に少"
+  },
+  {
+    "match_id": "dict:青紫:9741:9743",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      9741,
+      9743
+    ],
+    "char_range": [
+      24521,
+      24523
+    ],
+    "matched_ranges": [
+      [
+        24521,
+        24523
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "たちは、映画が好きなんだ」  　ハイドランジアは【青紫】の瞳を細め、艶やかに微笑んだ。   　　　×　　"
+  },
+  {
+    "match_id": "dict:敵わない:9860:9862",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "敵わない",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "敵わない",
+    "token_range": [
+      9860,
+      9862
+    ],
+    "char_range": [
+      24808,
+      24812
+    ],
+    "matched_ranges": [
+      [
+        24808,
+        24812
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "。しかし狭い廊下で、大量の触手を避け続けることは【敵わない】。  「うあっ......！」  　ふくらはぎを"
+  },
+  {
+    "match_id": "dict:質に取る:10015:10017",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "質に取る",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "質に取ら",
+    "token_range": [
+      10015,
+      10017
+    ],
+    "char_range": [
+      25179,
+      25183
+    ],
+    "matched_ranges": [
+      [
+        25179,
+        25183
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "よかろう」  「......難しいのよ。依り代を【質に取ら】れてるから」  「ほ。ならばそれを、取り返せばい"
+  },
+  {
+    "match_id": "dict:先に立つ:10346:10348",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "先に立つ",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "先に立つ",
+    "token_range": [
+      10346,
+      10348
+    ],
+    "char_range": [
+      26055,
+      26059
+    ],
+    "matched_ranges": [
+      [
+        26055,
+        26059
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "の間から、ハイドランジアを見上げる。  　階段の【先に立つ】ハイドランジアは、じっと七日を見下ろしていた。 "
+  },
+  {
+    "match_id": "dict:青紫:10409:10411",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      10409,
+      10411
+    ],
+    "char_range": [
+      26217,
+      26219
+    ],
+    "matched_ranges": [
+      [
+        26217,
+        26219
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "大切なお姉ちゃんが。だが今はもう独り──」  　【青紫】の瞳を細めて、ハイドランジアは笑った。  「六花"
+  },
+  {
+    "match_id": "dict:身を挺する:10472:10474",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "身を挺する",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "身を挺し",
+    "token_range": [
+      10472,
+      10474
+    ],
+    "char_range": [
+      26376,
+      26380
+    ],
+    "matched_ranges": [
+      [
+        26376,
+        26380
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "っ」  　放ったナイフはハイドランジアの手前で、【身を挺し】て庇った別の化け神に当たって落ちた。  　化け神"
+  },
+  {
+    "match_id": "dict:覗き込む:10572:10574",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "覗き込む",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "覗き込ん",
+    "token_range": [
+      10572,
+      10574
+    ],
+    "char_range": [
+      26619,
+      26623
+    ],
+    "matched_ranges": [
+      [
+        26619,
+        26623
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "える。  　それから七日の前に膝を曲げ、その顔を【覗き込ん】だ。  「姉弟だな......。君の血も、いい匂"
+  },
+  {
+    "match_id": "dict:姉弟:10578:10580",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "姉弟",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "姉弟",
+    "token_range": [
+      10578,
+      10580
+    ],
+    "char_range": [
+      26628,
+      26630
+    ],
+    "matched_ranges": [
+      [
+        26628,
+        26630
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ら七日の前に膝を曲げ、その顔を覗き込んだ。  「【姉弟】だな......。君の血も、いい匂いがする..."
+  },
+  {
+    "match_id": "dict:声を聞く:11156:11158",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "声を聞く",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "声を聞い",
+    "token_range": [
+      11156,
+      11158
+    ],
+    "char_range": [
+      28088,
+      28092
+    ],
+    "matched_ranges": [
+      [
+        28088,
+        28092
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "」  　欄干の陰から、ラティメリアは七日のか細い【声を聞い】た。  「何言ってんのよ......あいつ」  "
+  },
+  {
+    "match_id": "dict:背を向ける:11216:11218",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "背を向ける",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "背を向け",
+    "token_range": [
+      11216,
+      11218
+    ],
+    "char_range": [
+      28229,
+      28233
+    ],
+    "matched_ranges": [
+      [
+        28229,
+        28233
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "──」  　ラティメリアはその姿を見ていられず、【背を向け】た。   　ハイドランジアは、化け神に〝影繰り〟"
+  },
+  {
+    "match_id": "dict:身を投げる:11301:11303",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "身を投げる",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "身を投げ",
+    "token_range": [
+      11301,
+      11303
+    ],
+    "char_range": [
+      28432,
+      28436
+    ],
+    "matched_ranges": [
+      [
+        28432,
+        28436
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "間、ハイドランジアは頭上より降る殺気に気づいて、【身を投げ】た。降ってきたのはトレンチコートにハット、白い仮"
+  },
+  {
+    "match_id": "dict:姿を現す:11470:11472",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "姿を現す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "姿を現し",
+    "token_range": [
+      11470,
+      11472
+    ],
+    "char_range": [
+      28873,
+      28877
+    ],
+    "matched_ranges": [
+      [
+        28873,
+        28877
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "影塗り〟による変身が解かれた後に、ラティメリアが【姿を現し】た。  　襟首にファーのついたロングコートは黒く"
+  },
+  {
+    "match_id": "dict:踵を返す:11754:11756",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "踵を返す",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "踵を返し",
+    "token_range": [
+      11754,
+      11756
+    ],
+    "char_range": [
+      29595,
+      29599
+    ],
+    "matched_ranges": [
+      [
+        29595,
+        29599
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ハイドランジアへと迫った。  　ハイドランジアは【踵を返し】、正面のスクリーンへ駆けていく。  　七日を追っ"
+  },
+  {
+    "match_id": "dict:青紫:11923:11925",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      11923,
+      11925
+    ],
+    "char_range": [
+      30027,
+      30029
+    ],
+    "matched_ranges": [
+      [
+        30027,
+        30029
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ベルの切っ先を突きつける。  　ハイドランジアは【青紫】に灯る瞳で、七日を見上げた。  「......や"
+  },
+  {
+    "match_id": "dict:青紫:12067:12069",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      12067,
+      12069
+    ],
+    "char_range": [
+      30388,
+      30390
+    ],
+    "matched_ranges": [
+      [
+        30388,
+        30390
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "には、剥き出した歯。そしてちょうど左目の部分に、【青紫】に灯る目玉が浮かんでいる。左の目玉だけはハイドラ"
+  },
+  {
+    "match_id": "dict:青紫:12121:12123",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "青紫",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "青紫",
+    "token_range": [
+      12121,
+      12123
+    ],
+    "char_range": [
+      30530,
+      30532
+    ],
+    "matched_ranges": [
+      [
+        30530,
+        30532
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "はないと思え。必ず捜し出して、殺してやる」  　【青紫】の瞳に、七日の顔が映る。目玉はじっと、七日を見つ"
+  },
+  {
+    "match_id": "dict:行方不明:12604:12606",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "行方不明",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "行方不明",
+    "token_range": [
+      12604,
+      12606
+    ],
+    "char_range": [
+      31689,
+      31693
+    ],
+    "matched_ranges": [
+      [
+        31689,
+        31693
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "ん。スタッフの方々に話を聞こうにも、彼らもまた、【行方不明】なんです。この映画館、変ですよ。経営中であった形"
+  },
+  {
+    "match_id": "dict:行方不明:12647:12649",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "行方不明",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "行方不明",
+    "token_range": [
+      12647,
+      12649
+    ],
+    "char_range": [
+      31811,
+      31815
+    ],
+    "matched_ranges": [
+      [
+        31811,
+        31815
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "に帰ってないようです。スタッフに至っては、すでに【行方不明】届が出されている人もいて......」  「やっ"
+  },
+  {
+    "match_id": "dict:フロントガラス:12975:12977",
+    "status": "pending",
+    "rule_id": "dictionary_exact_window",
+    "label": "フロントガラス",
+    "origin": "dictionary",
+    "description": "词典存在性候选；尚无结构化惯用语证据。",
+    "surface": "フロントガラス",
+    "token_range": [
+      12975,
+      12977
+    ],
+    "char_range": [
+      32648,
+      32655
+    ],
+    "matched_ranges": [
+      [
+        32648,
+        32655
+      ]
+    ],
+    "evidence": [
+      "dictionary_exact_headword",
+      "composition_shape_compatible"
+    ],
+    "rejection_reason": null,
+    "context": "」  　七日は失笑した。  　その側で、ちとせは【フロントガラス】越しに、パトカーへ向かってくる警官隊を見つける。"
+  }
+]
