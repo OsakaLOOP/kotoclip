@@ -141,6 +141,27 @@ pub async fn add_expression_rule(
 }
 
 #[tauri::command]
+pub async fn preview_expression_rule(
+    state: State<'_, AppState>,
+    tokens: Vec<AnnotatedToken>,
+    bunsetsu_states: Vec<String>,
+    morpheme_masks: Vec<Vec<bool>>,
+    gap_after: Option<usize>,
+    expression_type: String,
+    boundary_effect: String,
+) -> Result<kotoclip_core::models::ExpressionRulePreview, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    Ok(engine.preview_configured_expression_rule(
+        &tokens,
+        &bunsetsu_states,
+        &morpheme_masks,
+        gap_after,
+        &expression_type,
+        &boundary_effect,
+    ))
+}
+
+#[tauri::command]
 pub async fn get_expression_rules(
     state: State<'_, AppState>,
 ) -> Result<Vec<ExpressionRule>, String> {

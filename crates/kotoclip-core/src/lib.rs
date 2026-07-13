@@ -12,7 +12,8 @@ pub mod transport;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryLookup, ExpressionRule, SegmentationCandidate, SegmentationChoice,
+    AnnotatedToken, DictionaryLookup, ExpressionRule, ExpressionRulePreview, SegmentationCandidate,
+    SegmentationChoice,
 };
 use performance::TimingCollector;
 use pipeline::Pipeline;
@@ -422,6 +423,25 @@ impl Engine {
             gap_after,
             expression_type,
             priority,
+            boundary_effect,
+        )
+    }
+
+    pub fn preview_configured_expression_rule(
+        &self,
+        tokens: &[AnnotatedToken],
+        bunsetsu_states: &[String],
+        morpheme_masks: &[Vec<bool>],
+        gap_after: Option<usize>,
+        expression_type: &str,
+        boundary_effect: &str,
+    ) -> ExpressionRulePreview {
+        self.profile.preview_expression_rule(
+            tokens,
+            bunsetsu_states,
+            morpheme_masks,
+            gap_after,
+            expression_type,
             boundary_effect,
         )
     }

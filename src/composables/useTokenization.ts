@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { AnnotatedToken, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, SegmentationCandidate } from "../types";
+import { AnnotatedToken, ExpressionBoundaryEffect, ExpressionRule, ExpressionRulePreview, ExpressionType, SegmentationCandidate } from "../types";
 
 export interface Paragraph {
   id: number;
@@ -409,6 +409,23 @@ export function useTokenization() {
     return await invoke<ExpressionRule[]>("get_expression_rules");
   }
 
+  async function previewExpressionRule(
+    tokens: AnnotatedToken[],
+    bunsetsuStates: ('fixed' | 'slot' | 'any')[],
+    morphemeMasks: boolean[][],
+    gapAfter: number | null,
+    expressionType: ExpressionType,
+  ) {
+    return await invoke<ExpressionRulePreview>("preview_expression_rule", {
+      tokens,
+      bunsetsuStates,
+      morphemeMasks,
+      gapAfter,
+      expressionType,
+      boundaryEffect: "annotate_only",
+    });
+  }
+
   async function refreshExpressionAnnotations(tokens: AnnotatedToken[]) {
     return await invoke<AnnotatedToken[]>("refresh_expression_annotations", { tokens });
   }
@@ -435,6 +452,7 @@ export function useTokenization() {
     mergeTokens,
     addExpressionRule,
     getExpressionRules,
+    previewExpressionRule,
     refreshExpressionAnnotations,
     deleteExpressionRule,
     getCandidates,

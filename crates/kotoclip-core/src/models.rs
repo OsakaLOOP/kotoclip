@@ -286,6 +286,19 @@ pub struct ExpressionCandidate {
     pub entry_key: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpressionRulePreview {
+    pub status: ExpressionCandidateStatus,
+    pub expression_type: String,
+    pub surface: String,
+    pub matched_ranges: Vec<(usize, usize)>,
+    pub covered_token_range: (usize, usize),
+    pub evidence: Vec<String>,
+    pub counter_evidence: Vec<String>,
+    #[serde(default)]
+    pub rejection_reason: Option<String>,
+}
+
 fn default_expression_origin() -> String {
     "custom".to_string()
 }

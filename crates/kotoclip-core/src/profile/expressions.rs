@@ -1,5 +1,8 @@
 use super::ProfileEngine;
-use crate::models::{AnnotatedToken, ExpressionAnnotation, ExpressionPatternPart, ExpressionRule};
+use crate::models::{
+    AnnotatedToken, ExpressionAnnotation, ExpressionCandidateStatus, ExpressionPatternPart,
+    ExpressionRule, ExpressionRulePreview,
+};
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +17,60 @@ fn normalized_lemma(surface: &str, base_form: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::{Bunsetsu, HeadWord, Morpheme, PosTag};
+
+    fn token_with_surfaces(surfaces: &[&str]) -> AnnotatedToken {
+        let mut offset = 0;
+        let morphemes = surfaces
+            .iter()
+            .map(|surface| {
+                let start = offset;
+                offset += surface.chars().count();
+                Morpheme {
+                    surface: (*surface).to_string(),
+                    pos: PosTag {
+                        major: "名詞".to_string(),
+                        sub1: "一般".to_string(),
+                        sub2: "*".to_string(),
+                        sub3: "*".to_string(),
+                    },
+                    base_form: (*surface).to_string(),
+                    reading: "*".to_string(),
+                    conjugation_type: "*".to_string(),
+                    conjugation_form: "*".to_string(),
+                    char_range: (start, offset),
+                }
+            })
+            .collect::<Vec<_>>();
+        let surface = surfaces.concat();
+        AnnotatedToken {
+            bunsetsu: Bunsetsu {
+                morphemes,
+                surface: surface.clone(),
+                head_word: HeadWord {
+                    surface: surface.clone(),
+                    base_form: surface,
+                    reading: "*".to_string(),
+                    pos: PosTag {
+                        major: "名詞".to_string(),
+                        sub1: "一般".to_string(),
+                        sub2: "*".to_string(),
+                        sub3: "*".to_string(),
+                    },
+                },
+                grammar_tags: Vec::new(),
+                word_formations: Vec::new(),
+                function: None,
+                char_range: (0, offset),
+            },
+            novelty_score: 0.0,
+            is_selected: false,
+            is_known: false,
+            inference_reason: None,
+            expressions: Vec::new(),
+            display_class: "content".to_string(),
+        }
+    }
 
     #[test]
     fn legacy_lexical_rules_are_disabled_for_review() {
@@ -42,6 +99,31 @@ mod tests {
             "unknown": true
         }"#;
         assert!(parse_pattern_json(json).is_err());
+    }
+
+    #[test]
+    fn preview_and_save_share_contiguous_selection_validation() {
+        let token = token_with_surfaces(&["目", "を", "離す"]);
+        let valid = compile_user_expression(
+            std::slice::from_ref(&token),
+            &["fixed".to_string()],
+            &[vec![true, true, false]],
+            None,
+            "idiom",
+            "annotate_only",
+        )
+        .unwrap();
+        assert_eq!(valid.parts[0].alignment, "prefix");
+
+        let invalid = compile_user_expression(
+            &[token],
+            &["fixed".to_string()],
+            &[vec![true, false, true]],
+            None,
+            "idiom",
+            "annotate_only",
+        );
+        assert!(invalid.is_err());
     }
 }
 
@@ -374,7 +456,201 @@ fn parse_pattern_json(json: &str) -> Result<ParsedExpressionPattern, Box<dyn std
     })
 }
 
+struct CompiledUserExpression {
+    parts: Vec<ExpressionPatternPart>,
+    gap_after: Option<usize>,
+    masks: Vec<Vec<bool>>,
+}
+
+fn compile_user_expression(
+    tokens: &[AnnotatedToken],
+    bunsetsu_states: &[String],
+    morpheme_masks: &[Vec<bool>],
+    requested_gap_after: Option<usize>,
+    expression_type: &str,
+    boundary_effect: &str,
+) -> Result<CompiledUserExpression, Box<dyn std::error::Error>> {
+    if tokens.is_empty() {
+        return Err("表达规则至少需要一个文节".into());
+    }
+    if !matches!(
+        expression_type,
+        "idiom" | "grammar_construction" | "correlative"
+    ) {
+        return Err("未知或已迁移的表达类型；词汇单位必须进入构词层".into());
+    }
+    if expression_type == "correlative" && requested_gap_after.is_none() {
+        return Err("非连续呼应必须配置前后锚点之间的间隔".into());
+    }
+    if boundary_effect != "annotate_only" {
+        return Err("表达规则只能添加语义注解，不能修改构词或文节边界".into());
+    }
+    if tokens.iter().any(|token| {
+        token.bunsetsu.surface.contains(['\n', '\r']) || token.bunsetsu.morphemes.is_empty()
+    }) {
+        return Err("跨文节表达不能跨越段落边界或空文节".into());
+    }
+
+    let states = if bunsetsu_states.is_empty() {
+        vec!["fixed".to_string(); tokens.len()]
+    } else {
+        if bunsetsu_states.len() != tokens.len() {
+            return Err("文节匹配状态数量与所选文节不一致".into());
+        }
+        bunsetsu_states.to_vec()
+    };
+    let masks = if morpheme_masks.is_empty() {
+        tokens
+            .iter()
+            .map(|token| vec![true; token.bunsetsu.morphemes.len()])
+            .collect::<Vec<_>>()
+    } else {
+        if morpheme_masks.len() != tokens.len()
+            || morpheme_masks
+                .iter()
+                .zip(tokens)
+                .any(|(mask, token)| mask.len() != token.bunsetsu.morphemes.len())
+        {
+            return Err("语素选择范围与所选文节不一致".into());
+        }
+        morpheme_masks.to_vec()
+    };
+
+    let mut parts = Vec::new();
+    let mut first_gap_idx = None;
+    let mut gap_count = 0;
+    let mut parts_before_gap = 0;
+    for (index, state) in states.iter().enumerate() {
+        if !matches!(state.as_str(), "fixed" | "slot" | "any" | "gap") {
+            return Err(format!("未知的文节匹配状态：{state}").into());
+        }
+        if state == "gap" {
+            if first_gap_idx.is_none() {
+                first_gap_idx = Some(index);
+                parts_before_gap = parts.len();
+            }
+            gap_count += 1;
+            continue;
+        }
+        if state != "any" {
+            let selected: Vec<_> = masks[index]
+                .iter()
+                .enumerate()
+                .filter_map(|(morpheme_index, selected)| selected.then_some(morpheme_index))
+                .collect();
+            if selected.is_empty() || selected.windows(2).any(|window| window[1] != window[0] + 1) {
+                return Err(format!("文节 {} 的规则语素必须连续且非空", index + 1).into());
+            }
+        }
+        let mut part = token_part_masked(&tokens[index], &masks[index]);
+        if state == "slot" {
+            part.is_slot = true;
+        } else if state == "any" {
+            part.is_any = true;
+        }
+        parts.push(part);
+    }
+    let gap_after = if requested_gap_after.is_some() {
+        requested_gap_after
+    } else if gap_count > 0 {
+        if parts_before_gap == 0 || parts_before_gap == parts.len() {
+            return Err("间隔文节不能位于首尾".into());
+        }
+        Some(parts_before_gap - 1)
+    } else {
+        None
+    };
+    if gap_after.is_some_and(|index| index + 1 >= parts.len()) {
+        return Err("可变间隔必须位于两个有效锚点之间".into());
+    }
+    Ok(CompiledUserExpression {
+        parts,
+        gap_after,
+        masks,
+    })
+}
+
 impl ProfileEngine {
+    pub fn preview_expression_rule(
+        &self,
+        tokens: &[AnnotatedToken],
+        bunsetsu_states: &[String],
+        morpheme_masks: &[Vec<bool>],
+        gap_after: Option<usize>,
+        expression_type: &str,
+        boundary_effect: &str,
+    ) -> ExpressionRulePreview {
+        let compiled = match compile_user_expression(
+            tokens,
+            bunsetsu_states,
+            morpheme_masks,
+            gap_after,
+            expression_type,
+            boundary_effect,
+        ) {
+            Ok(compiled) => compiled,
+            Err(error) => {
+                return ExpressionRulePreview {
+                    status: ExpressionCandidateStatus::Rejected,
+                    expression_type: expression_type.to_string(),
+                    surface: String::new(),
+                    matched_ranges: Vec::new(),
+                    covered_token_range: (0, tokens.len()),
+                    evidence: Vec::new(),
+                    counter_evidence: vec!["draft_validation_failed".to_string()],
+                    rejection_reason: Some(error.to_string()),
+                }
+            }
+        };
+        let mut matched_ranges = Vec::new();
+        let mut surface_parts = Vec::new();
+        for (token_index, token) in tokens.iter().enumerate() {
+            if bunsetsu_states
+                .get(token_index)
+                .is_some_and(|state| matches!(state.as_str(), "any" | "gap"))
+            {
+                continue;
+            }
+            let selected: Vec<_> = token
+                .bunsetsu
+                .morphemes
+                .iter()
+                .enumerate()
+                .filter(|(index, morpheme)| {
+                    !morpheme.surface.trim().is_empty()
+                        && compiled.masks[token_index]
+                            .get(*index)
+                            .copied()
+                            .unwrap_or(false)
+                })
+                .map(|(_, morpheme)| morpheme)
+                .collect();
+            if let (Some(first), Some(last)) = (selected.first(), selected.last()) {
+                matched_ranges.push((first.char_range.0, last.char_range.1));
+                surface_parts.push(
+                    selected
+                        .iter()
+                        .map(|morpheme| morpheme.surface.as_str())
+                        .collect::<String>(),
+                );
+            }
+        }
+        ExpressionRulePreview {
+            status: ExpressionCandidateStatus::Accepted,
+            expression_type: expression_type.to_string(),
+            surface: surface_parts.join(if gap_after.is_some() { "……" } else { "" }),
+            matched_ranges,
+            covered_token_range: (0, tokens.len()),
+            evidence: vec![
+                "backend_schema_v2_validation".to_string(),
+                "contiguous_morpheme_selection".to_string(),
+                "annotate_only_boundary".to_string(),
+            ],
+            counter_evidence: Vec::new(),
+            rejection_reason: None,
+        }
+    }
+
     /// 将一段跨文节选择保存为可复用表达规则。规则以辞书形和词性签名匹配，
     /// 不改变原文节边界，也不依赖一次性的活用表层形。
     pub fn add_expression_rule(
@@ -389,104 +665,16 @@ impl ProfileEngine {
         priority: i32,
         boundary_effect: &str,
     ) -> Result<ExpressionRule, Box<dyn std::error::Error>> {
-        if tokens.is_empty() {
-            return Err("表达规则至少需要一个文节".into());
-        }
-        if !matches!(
+        let compiled = compile_user_expression(
+            tokens,
+            bunsetsu_states,
+            morpheme_masks,
+            gap_after,
             expression_type,
-            "idiom" | "grammar_construction" | "correlative"
-        ) {
-            return Err("未知或已迁移的表达类型；词汇单位必须进入构词层".into());
-        }
-        if expression_type == "correlative" && gap_after.is_none() {
-            return Err("非连续呼应必须配置前后锚点之间的间隔".into());
-        }
-        if boundary_effect != "annotate_only" {
-            return Err("表达规则只能添加语义注解，不能修改构词或文节边界".into());
-        }
-        if tokens.iter().any(|token| {
-            token.bunsetsu.surface.contains(['\n', '\r']) || token.bunsetsu.morphemes.is_empty()
-        }) {
-            return Err("跨文节表达不能跨越段落边界或空文节".into());
-        }
-
-        let states = if bunsetsu_states.is_empty() {
-            vec!["fixed".to_string(); tokens.len()]
-        } else {
-            if bunsetsu_states.len() != tokens.len() {
-                return Err("文节匹配状态数量与所选文节不一致".into());
-            }
-            bunsetsu_states.to_vec()
-        };
-
-        let masks = if morpheme_masks.is_empty() {
-            tokens
-                .iter()
-                .map(|t| vec![true; t.bunsetsu.morphemes.len()])
-                .collect::<Vec<_>>()
-        } else {
-            if morpheme_masks.len() != tokens.len()
-                || morpheme_masks
-                    .iter()
-                    .zip(tokens)
-                    .any(|(mask, token)| mask.len() != token.bunsetsu.morphemes.len())
-            {
-                return Err("语素选择范围与所选文节不一致".into());
-            }
-            morpheme_masks.to_vec()
-        };
-
-        let mut parts = Vec::new();
-        let mut first_gap_idx = None;
-        let mut gap_count = 0;
-        let mut parts_before_gap = 0;
-
-        for (i, state) in states.iter().enumerate() {
-            if !matches!(state.as_str(), "fixed" | "slot" | "any" | "gap") {
-                return Err(format!("未知的文节匹配状态：{state}").into());
-            }
-            if state == "gap" {
-                if first_gap_idx.is_none() {
-                    first_gap_idx = Some(i);
-                    parts_before_gap = parts.len();
-                }
-                gap_count += 1;
-            } else {
-                if state != "any" {
-                    let selected: Vec<_> = masks[i]
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(index, selected)| selected.then_some(index))
-                        .collect();
-                    if selected.is_empty()
-                        || selected.windows(2).any(|window| window[1] != window[0] + 1)
-                    {
-                        return Err(format!("文节 {} 的规则语素必须连续且非空", i + 1).into());
-                    }
-                }
-                let mut part = token_part_masked(&tokens[i], &masks[i]);
-                if state == "slot" {
-                    part.is_slot = true;
-                } else if state == "any" {
-                    part.is_any = true;
-                }
-                parts.push(part);
-            }
-        }
-
-        let gap_after = if gap_after.is_some() {
-            gap_after
-        } else if gap_count > 0 {
-            if parts_before_gap == 0 || parts_before_gap == parts.len() {
-                return Err("间隔文节不能位于首尾".into());
-            }
-            Some(parts_before_gap - 1)
-        } else {
-            None
-        };
-        if gap_after.is_some_and(|index| index + 1 >= parts.len()) {
-            return Err("可变间隔必须位于两个有效锚点之间".into());
-        }
+            boundary_effect,
+        )?;
+        let parts = compiled.parts;
+        let gap_after = compiled.gap_after;
 
         #[derive(Serialize)]
         struct ExpressionPatternEnvelope<'a> {

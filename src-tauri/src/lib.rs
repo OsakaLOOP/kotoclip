@@ -43,6 +43,7 @@ pub fn run() {
             commands::mark_unknown,
             commands::add_merge_rule,
             commands::add_expression_rule,
+            commands::preview_expression_rule,
             commands::get_expression_rules,
             commands::refresh_expression_annotations,
             commands::delete_expression_rule,
