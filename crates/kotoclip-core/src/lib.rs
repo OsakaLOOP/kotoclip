@@ -1,5 +1,6 @@
 pub mod analysis_progress;
 pub mod dictionary;
+pub mod document;
 pub mod export;
 pub mod ffi;
 pub mod llm;

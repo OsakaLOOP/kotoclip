@@ -4,7 +4,8 @@ pub mod state;
 
 use kotoclip_core::Engine;
 use state::AppState;
-use std::sync::Mutex;
+use std::collections::HashMap;
+use std::sync::{atomic::AtomicU64, Mutex};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -30,6 +31,8 @@ pub fn run() {
             // 注册全局并发安全状态供 Command 使用
             app.manage(AppState {
                 engine: Mutex::new(engine),
+                sessions: Mutex::new(HashMap::new()),
+                next_session_id: AtomicU64::new(1),
             });
 
             Ok(())
@@ -37,6 +40,10 @@ pub fn run() {
         // 注册所有和前端 IPC 交互的 Command 处理器
         .invoke_handler(tauri::generate_handler![
             commands::analyze_text,
+            commands::open_document,
+            commands::request_document_range,
+            commands::apply_document_mutation,
+            commands::close_document,
             commands::lookup_word,
             commands::choose_dictionary_target,
             commands::mark_known,

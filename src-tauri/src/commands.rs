@@ -1,10 +1,12 @@
 use crate::state::AppState;
 use kotoclip_core::analysis_progress::AnalysisProgress;
+use kotoclip_core::document::{AnalysisPatch, DocumentSession};
 use kotoclip_core::models::{
     AnnotatedToken, DictionaryLookup, ExportEntry, ExpressionRule, SegmentationCandidate,
 };
 use kotoclip_core::transport::CompactAnalysis;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use tauri::{Emitter, State, Window};
 
 #[derive(Clone, Serialize)]
@@ -20,6 +22,23 @@ struct AnalysisProgressEvent {
 pub struct AnalysisResponse {
     pub analysis: CompactAnalysis,
     pub backend_duration_ms: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentResponse {
+    pub patch: AnalysisPatch,
+    pub backend_duration_ms: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum DocumentMutation {
+    ReplaceText {
+        text: String,
+        #[serde(default)]
+        record_exposure: bool,
+    },
 }
 
 /// IPC 命令：分析日语文本并进行生词等级判定
@@ -50,6 +69,128 @@ pub async fn analyze_text(
         analysis: CompactAnalysis::from(tokens.as_slice()),
         backend_duration_ms,
     })
+}
+
+#[tauri::command]
+pub async fn open_document(
+    window: Window,
+    state: State<'_, AppState>,
+    text: String,
+    record_exposure: Option<bool>,
+    request_id: Option<String>,
+) -> Result<DocumentResponse, String> {
+    let request_id = request_id.unwrap_or_else(|| "open-document".to_string());
+    let started = std::time::Instant::now();
+    let tokens = {
+        let engine = state.engine.lock().map_err(|error| error.to_string())?;
+        engine
+            .analyze_text_with_progress(&text, record_exposure.unwrap_or(true), |progress| {
+                let _ = window.emit(
+                    "analysis-progress",
+                    AnalysisProgressEvent {
+                        request_id: request_id.clone(),
+                        progress,
+                    },
+                );
+            })
+            .map_err(|error| error.to_string())?
+    };
+    let sequence = state.next_session_id.fetch_add(1, Ordering::Relaxed);
+    let session_id = format!("document-{sequence}");
+    let mut session = DocumentSession::new(session_id.clone(), text, tokens);
+    let patch = session.full_patch(0);
+    state
+        .sessions
+        .lock()
+        .map_err(|error| error.to_string())?
+        .insert(session_id, session);
+    Ok(DocumentResponse {
+        patch,
+        backend_duration_ms: started.elapsed().as_millis() as u64,
+    })
+}
+
+#[tauri::command]
+pub async fn request_document_range(
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+    char_range: (usize, usize),
+) -> Result<AnalysisPatch, String> {
+    let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+    let session = sessions
+        .get_mut(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+    session
+        .range_patch(base_revision, char_range)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn apply_document_mutation(
+    window: Window,
+    state: State<'_, AppState>,
+    session_id: String,
+    base_revision: u64,
+    mutation: DocumentMutation,
+    request_id: Option<String>,
+) -> Result<DocumentResponse, String> {
+    {
+        let sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+        let session = sessions
+            .get(&session_id)
+            .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+        session
+            .require_revision(base_revision)
+            .map_err(|error| error.to_string())?;
+    }
+    let request_id = request_id.unwrap_or_else(|| "document-mutation".to_string());
+    let started = std::time::Instant::now();
+    let (text, record_exposure) = match mutation {
+        DocumentMutation::ReplaceText {
+            text,
+            record_exposure,
+        } => (text, record_exposure),
+    };
+    let tokens = {
+        let engine = state.engine.lock().map_err(|error| error.to_string())?;
+        engine
+            .analyze_text_with_progress(&text, record_exposure, |progress| {
+                let _ = window.emit(
+                    "analysis-progress",
+                    AnalysisProgressEvent {
+                        request_id: request_id.clone(),
+                        progress,
+                    },
+                );
+            })
+            .map_err(|error| error.to_string())?
+    };
+    let patch = state
+        .sessions
+        .lock()
+        .map_err(|error| error.to_string())?
+        .get_mut(&session_id)
+        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?
+        .replace_all(base_revision, text, tokens)
+        .map_err(|error| error.to_string())?;
+    Ok(DocumentResponse {
+        patch,
+        backend_duration_ms: started.elapsed().as_millis() as u64,
+    })
+}
+
+#[tauri::command]
+pub async fn close_document(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<bool, String> {
+    Ok(state
+        .sessions
+        .lock()
+        .map_err(|error| error.to_string())?
+        .remove(&session_id)
+        .is_some())
 }
 
 /// IPC 命令：查词，并按照多词词典优先级重排序

@@ -19,6 +19,15 @@ pub struct CompactAnalysis {
 }
 
 #[derive(Serialize)]
+pub struct CompactAnalysisPatch {
+    /// 本次新增字符串在会话字符串表中的起始下标。
+    pub b: u32,
+    /// 仅包含本次编码新增的字符串；Token 内索引始终指向会话完整字符串表。
+    pub s: Vec<String>,
+    pub t: Vec<CompactToken>,
+}
+
+#[derive(Serialize)]
 pub struct CompactToken {
     pub b: CompactBunsetsu,
     pub n: f32,
@@ -153,9 +162,27 @@ pub struct CompactExpression {
     pub s: u32,
 }
 
+#[derive(Default)]
 struct StringTable {
     values: Vec<String>,
     indices: HashMap<String, u32>,
+}
+
+#[derive(Default)]
+pub struct CompactEncoder {
+    strings: StringTable,
+}
+
+impl CompactEncoder {
+    pub fn encode_patch(&mut self, tokens: &[AnnotatedToken]) -> CompactAnalysisPatch {
+        let base = self.strings.values.len();
+        let t = encode_tokens(&mut self.strings, tokens);
+        CompactAnalysisPatch {
+            b: base as u32,
+            s: self.strings.values[base..].to_vec(),
+            t,
+        }
+    }
 }
 
 impl StringTable {
@@ -367,29 +394,33 @@ impl From<&[AnnotatedToken]> for CompactAnalysis {
             values: Vec::new(),
             indices: HashMap::new(),
         };
-        let t = tokens
-            .iter()
-            .map(|token| CompactToken {
-                b: strings.bunsetsu(&token.bunsetsu),
-                n: token.novelty_score,
-                k: token.is_known,
-                r: token
-                    .inference_reason
-                    .as_deref()
-                    .map(|value| strings.intern(value)),
-                x: token
-                    .expressions
-                    .iter()
-                    .map(|item| strings.expression(item))
-                    .collect(),
-                d: strings.intern(&token.display_class),
-            })
-            .collect();
+        let t = encode_tokens(&mut strings, tokens);
         Self {
             s: strings.values,
             t,
         }
     }
+}
+
+fn encode_tokens(strings: &mut StringTable, tokens: &[AnnotatedToken]) -> Vec<CompactToken> {
+    tokens
+        .iter()
+        .map(|token| CompactToken {
+            b: strings.bunsetsu(&token.bunsetsu),
+            n: token.novelty_score,
+            k: token.is_known,
+            r: token
+                .inference_reason
+                .as_deref()
+                .map(|value| strings.intern(value)),
+            x: token
+                .expressions
+                .iter()
+                .map(|item| strings.expression(item))
+                .collect(),
+            d: strings.intern(&token.display_class),
+        })
+        .collect()
 }
 
 #[cfg(test)]

@@ -43,6 +43,31 @@ interface CompactAnalysis {
   t: CompactToken[];
 }
 
+interface CompactAnalysisPatch extends CompactAnalysis {
+  b: number;
+}
+
+interface AnalysisPatch {
+  sessionId: string;
+  baseRevision: number;
+  revision: number;
+  kind: "full_replace" | "range_replace";
+  charRange: [number, number];
+  removedTokenIds: string[];
+  tokenIds: string[];
+  orderedTokenIds: string[];
+  analysis: CompactAnalysisPatch;
+  fingerprint: {
+    sessionSchemaVersion: number;
+    pipelineArtifactVersion: number;
+  };
+}
+
+interface DocumentResponse {
+  patch: AnalysisPatch;
+  backendDurationMs: number;
+}
+
 interface CompactToken {
   b: CompactBunsetsu;
   n: number;
@@ -155,6 +180,92 @@ const initialProgress = (): AnalysisProgress => ({
   message: "等待分析",
 });
 
+function buildParagraphs(allTokens: AnnotatedToken[]): Paragraph[] {
+  const lines: AnnotatedToken[][] = [];
+  let currentLine: AnnotatedToken[] = [];
+  for (const token of allTokens) {
+    if (token.display_class === "line_break") {
+      lines.push(currentLine);
+      currentLine = [];
+    } else {
+      currentLine.push(token);
+    }
+  }
+
+  lines.push(currentLine);
+
+  for (let index = 1; index < lines.length; index++) {
+    const line = lines[index];
+    let punctuationCount = 0;
+    for (const token of line) {
+      if (token.display_class !== "punctuation") break;
+      const surface = token.bunsetsu.surface.trim();
+      if (surface.startsWith("「") || surface.startsWith("『")) break;
+      punctuationCount++;
+    }
+    if (punctuationCount > 0) {
+      lines[index - 1].push(...line.splice(0, punctuationCount));
+    }
+  }
+
+  const result: Paragraph[] = [];
+  let blockTokens: AnnotatedToken[] = [];
+  let blockIsDialogue = false;
+  let paragraphId = 0;
+  const isBlankToken = (token: AnnotatedToken) => /^\s+$/.test(token.bunsetsu.surface);
+  const trimTokens = (tokens: AnnotatedToken[]) => {
+    let start = 0;
+    let end = tokens.length;
+    while (start < end && isBlankToken(tokens[start])) start++;
+    while (end > start && isBlankToken(tokens[end - 1])) end--;
+    return tokens.slice(start, end);
+  };
+  const flush = () => {
+    const tokens = trimTokens(blockTokens);
+    if (tokens.length > 0) {
+      result.push({ id: paragraphId++, tokens, isDialogue: blockIsDialogue });
+      blockTokens = [];
+    }
+  };
+  let emptyLines = 0;
+  for (const line of lines) {
+    const isEmpty = line.every((token) => /^\s*$/.test(token.bunsetsu.surface));
+    if (isEmpty) {
+      emptyLines++;
+      flush();
+      continue;
+    }
+    const first = line.find((token) => token.bunsetsu.surface.trim().length > 0);
+    const text = first?.bunsetsu.surface.trim() ?? "";
+    const isDialogue = text.startsWith("「") || text.startsWith("『");
+    if (isDialogue) {
+      flush();
+      const tokens = trimTokens(line);
+      if (tokens.length > 0) result.push({ id: paragraphId++, tokens, isDialogue: true });
+      emptyLines = 0;
+      continue;
+    }
+    if (blockIsDialogue || emptyLines > 0) flush();
+    if (blockTokens.length > 0) {
+      blockTokens.push({
+        bunsetsu: {
+          morphemes: [], surface: "\n",
+          head_word: { surface: "\n", base_form: "\n", reading: "", pos: { major: "改行", sub1: "*", sub2: "*", sub3: "*" } },
+          grammar_tags: [], word_formations: [], lexical_units: [], char_range: [0, 0],
+        },
+        novelty_score: 0, is_selected: false, is_known: true, inference_reason: null,
+        expressions: [], display_class: "line_break",
+      });
+    }
+    blockTokens.push(...line);
+    blockIsDialogue = false;
+    emptyLines = 0;
+  }
+  flush();
+  if (result.length === 0) result.push({ id: 0, tokens: [], isDialogue: false });
+  return result;
+}
+
 export function useTokenization() {
   const paragraphs = ref<Paragraph[]>([]);
   const isAnalyzing = ref(false);
@@ -162,6 +273,43 @@ export function useTokenization() {
   const analysisProgress = ref<AnalysisProgress>(initialProgress());
   const activeRequestId = ref<string | null>(null);
   const frontendTiming = ref<FrontendAnalysisTiming | null>(null);
+  const activeSessionId = ref<string | null>(null);
+  const documentRevision = ref(0);
+  const tokenCache = new Map<string, AnnotatedToken>();
+  const sessionStrings: string[] = [];
+
+  function mergePatch(patch: AnalysisPatch) {
+    const openingNewSession = activeSessionId.value !== patch.sessionId;
+    if (!openingNewSession && patch.baseRevision !== documentRevision.value) {
+      throw new Error(`忽略过期文档 Patch：当前 ${documentRevision.value}，收到 ${patch.baseRevision}`);
+    }
+    if (openingNewSession) {
+      tokenCache.clear();
+      sessionStrings.length = 0;
+    }
+    if (patch.analysis.b !== sessionStrings.length) {
+      throw new Error(`文档字符串表基址不匹配：当前 ${sessionStrings.length}，收到 ${patch.analysis.b}`);
+    }
+    sessionStrings.push(...patch.analysis.s);
+    for (const tokenId of patch.removedTokenIds) tokenCache.delete(tokenId);
+    const decoded = decodeAnalysis({ s: sessionStrings, t: patch.analysis.t });
+    if (decoded.length !== patch.tokenIds.length) {
+      throw new Error("文档 Patch 的 Token ID 与负载数量不一致");
+    }
+    decoded.forEach((token, index) => {
+      const tokenId = patch.tokenIds[index];
+      const existing = tokenCache.get(tokenId);
+      if (existing) Object.assign(existing, token);
+      else tokenCache.set(tokenId, token);
+    });
+    const ordered = patch.orderedTokenIds.map((tokenId) => tokenCache.get(tokenId));
+    if (ordered.some((token) => token === undefined)) {
+      throw new Error("文档 Patch 缺少有序 Token 所需的数据");
+    }
+    activeSessionId.value = patch.sessionId;
+    documentRevision.value = patch.revision;
+    return ordered as AnnotatedToken[];
+  }
 
   /**
    * 分析整页文本
@@ -198,165 +346,24 @@ export function useTokenization() {
         }
       });
       listenerSetupMs = performance.now() - listenerStartedAt;
-      // 调用 Tauri 命令进行分词与用户画像评分标注
+      // 创建后端规范文档会话；前端只应用带 revision 的 Patch。
       const invokeStartedAt = performance.now();
-      const response = await invoke<{ analysis: CompactAnalysis; backendDurationMs: number }>("analyze_text", {
+      const previousSessionId = activeSessionId.value;
+      const response = await invoke<DocumentResponse>("open_document", {
         text,
         recordExposure,
         requestId,
       });
-      const allTokens = decodeAnalysis(response.analysis);
+      const allTokens = mergePatch(response.patch);
       const backendDurationMs = response.backendDurationMs;
       invokeAndTransferMs = performance.now() - invokeStartedAt;
       if (activeRequestId.value !== requestId) return false;
-      
+      if (previousSessionId && previousSessionId !== activeSessionId.value) {
+        void invoke("close_document", { sessionId: previousSessionId });
+      }
+
       const paragraphBuildStartedAt = performance.now();
-      // 1. 根据 line_break 将 tokens 划分为源行
-      const lines: AnnotatedToken[][] = [];
-      let currentLine: AnnotatedToken[] = [];
-      for (const token of allTokens) {
-        if (token.display_class === "line_break") {
-          lines.push(currentLine);
-          currentLine = [];
-        } else {
-          currentLine.push(token);
-        }
-      }
-      lines.push(currentLine);
-
-      // 2. 标点跟随上一行调整逻辑 (避头尾合并)
-      for (let idx = 1; idx < lines.length; idx++) {
-        const line = lines[idx];
-        let puncCount = 0;
-        for (const token of line) {
-          if (token.display_class === "punctuation") {
-            const isOpener = token.bunsetsu.surface.trim().startsWith("「") || token.bunsetsu.surface.trim().startsWith("『");
-            if (isOpener) {
-              break;
-            }
-            puncCount++;
-          } else {
-            break;
-          }
-        }
-        if (puncCount > 0) {
-          const puncs = line.splice(0, puncCount);
-          lines[idx - 1].push(...puncs);
-        }
-      }
-
-      // 3. 构建阅读块 Paragraph 数组
-      const tempParagraphs: Paragraph[] = [];
-      let currentBlockTokens: AnnotatedToken[] = [];
-      let currentBlockIsDialogue = false;
-      let paragraphId = 0;
-
-      const isLineEmpty = (l: AnnotatedToken[]) => {
-        return l.every(t => /^\s*$/.test(t.bunsetsu.surface));
-      };
-
-      const isLineDialogue = (l: AnnotatedToken[]) => {
-        const firstNonEmpty = l.find(t => t.bunsetsu.surface.trim().length > 0);
-        if (!firstNonEmpty) return false;
-        const text = firstNonEmpty.bunsetsu.surface.trim();
-        return text.startsWith("「") || text.startsWith("『");
-      };
-
-      const trimWhitespaceTokens = (toks: AnnotatedToken[]): AnnotatedToken[] => {
-        const isBlank = (t: AnnotatedToken) => /^\s+$/.test(t.bunsetsu.surface);
-        let start = 0;
-        while (start < toks.length && isBlank(toks[start])) {
-          start++;
-        }
-        let end = toks.length;
-        while (end > start && isBlank(toks[end - 1])) {
-          end--;
-        }
-        return toks.slice(start, end);
-      };
-
-      const flushBlock = () => {
-        const trimmed = trimWhitespaceTokens(currentBlockTokens);
-        if (trimmed.length > 0) {
-          tempParagraphs.push({
-            id: paragraphId++,
-            tokens: trimmed,
-            isDialogue: currentBlockIsDialogue,
-          });
-          currentBlockTokens = [];
-        }
-      };
-
-      let consecutiveEmptyLinesBefore = 0;
-
-      for (let idx = 0; idx < lines.length; idx++) {
-        const line = lines[idx];
-        const isEmpty = isLineEmpty(line);
-
-        if (isEmpty) {
-          consecutiveEmptyLinesBefore++;
-          flushBlock();
-        } else {
-          const isDialogue = isLineDialogue(line);
-
-          if (isDialogue) {
-            flushBlock();
-            const trimmedDial = trimWhitespaceTokens(line);
-            if (trimmedDial.length > 0) {
-              tempParagraphs.push({
-                id: paragraphId++,
-                tokens: trimmedDial,
-                isDialogue: true,
-              });
-            }
-            consecutiveEmptyLinesBefore = 0;
-          } else {
-            if (currentBlockIsDialogue || consecutiveEmptyLinesBefore > 0) {
-              flushBlock();
-            }
-
-            if (currentBlockTokens.length > 0) {
-              currentBlockTokens.push({
-                bunsetsu: {
-                  morphemes: [],
-                  surface: "\n",
-                  head_word: {
-                    surface: "\n",
-                    base_form: "\n",
-                    reading: "",
-                    pos: { major: "改行", sub1: "*", sub2: "*", sub3: "*" }
-                  },
-                  grammar_tags: [],
-                  word_formations: [],
-                  lexical_units: [],
-                  char_range: [0, 0]
-                },
-                novelty_score: 0,
-                is_selected: false,
-                is_known: true,
-                inference_reason: null,
-                expressions: [],
-                display_class: "line_break"
-              });
-            }
-
-            currentBlockTokens.push(...line);
-            currentBlockIsDialogue = false;
-            consecutiveEmptyLinesBefore = 0;
-          }
-        }
-      }
-      flushBlock();
-
-      if (tempParagraphs.length === 0) {
-        tempParagraphs.push({
-          id: paragraphId++,
-          tokens: [],
-          isDialogue: false,
-        });
-      }
-
-      paragraphs.value = tempParagraphs;
+      paragraphs.value = buildParagraphs(allTokens);
       frontendTiming.value = {
         listenerSetupMs: Math.round(listenerSetupMs),
         invokeAndTransferMs: Math.round(invokeAndTransferMs),
@@ -383,6 +390,28 @@ export function useTokenization() {
         activeRequestId.value = null;
       }
     }
+  }
+
+  async function requestDocumentRange(charRange: [number, number]) {
+    if (!activeSessionId.value) throw new Error("尚未打开文档会话");
+    const patch = await invoke<AnalysisPatch>("request_document_range", {
+      sessionId: activeSessionId.value,
+      baseRevision: documentRevision.value,
+      charRange,
+    });
+    paragraphs.value = buildParagraphs(mergePatch(patch));
+    return patch;
+  }
+
+  async function replaceDocumentText(text: string, recordExposure = false) {
+    if (!activeSessionId.value) return analyzeText(text, recordExposure);
+    const response = await invoke<DocumentResponse>("apply_document_mutation", {
+      sessionId: activeSessionId.value,
+      baseRevision: documentRevision.value,
+      mutation: { type: "replace_text", text, recordExposure },
+    });
+    paragraphs.value = buildParagraphs(mergePatch(response.patch));
+    return true;
   }
 
   /**
@@ -464,7 +493,11 @@ export function useTokenization() {
     errorMsg,
     analysisProgress,
     frontendTiming,
+    activeSessionId,
+    documentRevision,
     analyzeText,
+    requestDocumentRange,
+    replaceDocumentText,
     mergeTokens,
     addExpressionRule,
     getExpressionRules,
