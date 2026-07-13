@@ -286,17 +286,63 @@ output:
 
 ### 阶段 C：文节重建
 
-- 使用候选图和确定性评分选择文节边界，构词跨度为不可拆原子。
-- 补助用言和助动词保留在述语文节；标点、换行继续作为独立边界 token。
-- 输出述语、格成分、连体、连用、接续等局部功能及置信度，不推断主语或依存对象。
-- 预留独立 `syntax_evidence` 接口，未来依存分析只能追加证据，不能替换字符坐标和既有跨度。
+**已完成（2026-07-13）**：
+
+- `pipeline/bunsetsu.rs` 的 `BunsetsuAnalyzer` 在构词层之后运行，以不可拆构词原子和版本化 `bunsetsu_patterns.json` 生成确定性边界决定。
+- `BunsetsuFunctionAnnotation` 输出 `predicate/case_phrase/adnominal/adverbial/conjunctive/nominal/standalone/unknown`、置信度和证据；不推断主语或依存对象。
+- `BunsetsuAnalysisReport` 保存最终文节、全部边界决定、未决边界和字符可逆性；报告仅由审计接口使用，不进入紧凑 IPC 热路径。
+- 标点和换行仍是独立边界 token；补助用言、助动词、サ变述语链保持在当前述语文节；形式名词和关系名词按局部结构开启新文节。
+- `bunsetsu-scan` 已用于真实源文本前三话，基线位于 `data/baselines/chapter-*.bunsetsu.json`。第一至三话分别为 10422/9069/7821 个文节、16978/14870/12751 个确定边界，未决边界均为 0。
 
 ### 阶段 D：表达规则迁移
 
-- 表达层只增加语义跨度，不再通过 `lexical_unit` 回并 token 或文节。
-- 内置、用户、呼应和词典来源统一为 `accepted/pending/rejected` 候选。
-- 无结构化惯用语证据的词典滑窗命中降级为 `pending`，不进入正式 UI。
-- `matched_ranges` 表示精确表达语素；`token_range` 只表示涉及的文节覆盖范围。
+**已完成（2026-07-13）**：
+
+- `models.rs` 新增 `ExpressionCandidate` 和 `ExpressionCandidateStatus`；正式 UI 仍只消费 accepted 的 `ExpressionAnnotation`。
+- `ExpressionAnnotation.matched_ranges` 是表达本体的一个或多个字符范围；兼容字段 `char_range` 只是包围范围。紧凑 IPC 字段为 `z`，前端缺失时回退到 `char_range`。
+- `expression_patterns.json` 已升级为 schema v2。`〜ことなく` 只接受连接形 `なく`；新增 `耳を傾ける／手を引く／口を開く／気を遣う／目を離す` 五条显式惯用语规则。
+- 呼应规则选择同域最近尾项；句末、换行和引用助词终止匹配，普通逗号不终止。非连续表达的 `matched_ranges` 仅包含首尾锚点。
+- 词典精确滑窗只生成 `pending` 候选，不再写入正式注解。历史 `lexical_unit` 用户规则保留只读并禁用；Pipeline 已移除表达层回并文节。
+- `expression-scan --include-pending --include-rejected` 输出完整候选审计；`expression-verify` 和阅读器高亮均使用精确范围。
+- 真实源文本前三话候选基线位于 `data/baselines/chapter-*.expression-candidates.json`：accepted 为 39/11/13，pending 为 118/102/110，rejected 为 0/2/0。第二话两项拒绝均为非连接形 `ことない`。
+
+#### C/D 交接索引
+
+正式执行顺序固定为：
+
+```text
+Morpheme → WordFormation → BunsetsuAnalysis → ExpressionCandidate → ExpressionAnnotation
+```
+
+关键入口如下：
+
+| 对象 | 入口 |
+| --- | --- |
+| 构词规则与匹配 | `crates/kotoclip-core/resources/word_formation_patterns.json`、`crates/kotoclip-core/src/pipeline/word_formation.rs` |
+| 文节规则、分析器与报告 | `crates/kotoclip-core/resources/bunsetsu_patterns.json`、`crates/kotoclip-core/src/pipeline/bunsetsu.rs` |
+| 表达 schema v2 与匹配器 | `crates/kotoclip-core/resources/expression_patterns.json`、`crates/kotoclip-core/src/pipeline/expressions.rs` |
+| 公共模型 | `crates/kotoclip-core/src/models.rs` |
+| Pipeline 顺序 | `crates/kotoclip-core/src/pipeline/mod.rs`、`crates/kotoclip-core/src/lib.rs` |
+| 用户规则兼容入口 | `crates/kotoclip-core/src/profile/expressions.rs` |
+| CLI 审计 | `crates/kotoclip-core/src/bin/kotoclip-cli.rs` |
+| 紧凑 IPC 与前端解码 | `crates/kotoclip-core/src/transport.rs`、`src/composables/useTokenization.ts`、`src/types/index.ts` |
+| 代表性分层契约 | `crates/kotoclip-core/tests/fixtures/representative_cases.json`、`crates/kotoclip-core/src/pipeline/expressions.rs` 的 `test_representative_cases` |
+
+真实研究文本入口由 README 固定为：
+
+```text
+D:\Downloads\epub-exp\source\七日の喰い神 (ガガガ文庫) (カミツキレイニー)\output.md
+```
+
+重新审计时使用 `data/research-profile.sqlite`，章节标题依次为 `## 第一話　冷やし神`、`## 第二話　歌い神`、`## 第三話　化け神`。CLI 的 `--json` 模式只在终端输出最终计数行。
+
+当前有意保留的限制：
+
+- accepted 内置、呼应和用户规则仍以兼容 `ExpressionAnnotation` 进入 Pipeline；完整 `ExpressionCandidate` 证据主要由 CLI 暴露。后续若需要统一编辑器，应先统一候选生成接口，不得重新引入边界修改。
+- 词典尚无可用的结构化惯用语标记和稳定 `entry_key`，因此全部词典滑窗保持 pending。
+- 旧 `lexical_unit` 规则目前只禁用，没有自动转换为用户构词 DSL；迁移工具属于后续独立任务。
+- 依存分析证据入口仍为空；不得据此扩展为主语、修饰对象或语义角色判断。
+- rejected 诊断当前首先覆盖 `〜ことなく` 的活用反例；通用逐原子失败追踪仍可继续扩展。
 
 ### 阶段 E：编辑器
 
@@ -319,5 +365,7 @@ output:
 
 - “动词连用形＋神”是否默认只允许五段，还是允许按规则配置活用族；需要从全书同类命名和反例确认。
 - `話` 在通用助数词规则中是槽，在章节标题规则中是固定项；两条规则的领域优先关系需要显式建模。
-- 文节候选在无依存分析时应使用确定性规则还是带分数的最短路径，需要以回归准确率和性能共同决定。
+- 文节候选已采用确定性评分路径；后续只校准证据权重和补充未决边界，不改变字符坐标与稳定同分规则。
 - 词典中哪些结构标记足以把候选提升为正式惯用语，需要完成词条正文结构化审计后确定。
+
+下次工作应从阶段 E 的选择状态模型开始，优先定义“语素选择、上下文许可、输出范围”三个互不强制的状态；不需要重新审计阶段 B/C/D 的 Pipeline 接口或前三话基线。
