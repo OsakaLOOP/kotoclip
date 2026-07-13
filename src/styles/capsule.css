@@ -121,7 +121,7 @@
   border: 1px solid rgba(43, 76, 126, 0.2);
   vertical-align: middle;
   font-weight: normal;
-  pointer-events: none;
+  cursor: help;
 }
 
 /* 词汇单位在展示层收拢边界，同时保留内部语素供双击下钻。 */
@@ -206,9 +206,6 @@
 .bunsetsu-capsule.is-known:not(.is-selected) .helper-word {
   color: var(--text-primary) !important;
   opacity: 1 !important;
-}
-.bunsetsu-capsule.is-known .grammar-badge {
-  display: none !important; /* 已知词的语法后缀不再单独高亮显示 */
 }
 
 /* 标点符号/符号胶囊 (标点两侧不额外插入间隙，永远不可选、不可拖拽) */

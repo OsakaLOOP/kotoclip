@@ -9,18 +9,19 @@ const props = defineProps<{
   show: boolean;
   x: number;
   y: number;
-  placement: "above" | "below";
   token: AnnotatedToken | null;
   lookup: DictionaryLookup | null;
   loading: boolean;
   canGoBack: boolean;
   width?: number;
+  maxHeight?: number;
   kindLabel?: string;
+  panelId: string;
 }>();
 
 const emit = defineEmits<{
-  enter: [];
-  leave: [];
+  enter: [event: PointerEvent];
+  leave: [event: PointerEvent];
   navigate: [target: string];
   select: [target: string];
   back: [];
@@ -127,12 +128,6 @@ const activeReading = computed(() => {
   return isSourceQuery.value ? props.token?.bunsetsu.head_word.reading : null;
 });
 
-const panelMaxHeight = computed(() => {
-  const viewportHeight = typeof window === "undefined" ? 800 : window.innerHeight;
-  const available = props.placement === "above" ? props.y - 20 : viewportHeight - props.y - 20;
-  return `${Math.max(160, Math.min(Math.round(viewportHeight * 0.7), 620, available))}px`;
-});
-
 function relationLabel(relation: string) {
   return ({ candidate: "表记", antonym: "反义", synonym: "近义", parent: "亲项目", child: "子项目", phrase: "惯用句", reference: "参照", related: "关联", redirect: "转至" } as Record<string, string>)[relation] ?? "关联";
 }
@@ -188,12 +183,13 @@ function handleDefinitionClick(event: MouseEvent) {
     <section
       v-if="show && token"
       class="tooltip-panel"
-      :class="`tooltip-${placement}`"
-      :style="{ left: x + 'px', top: y + 'px', width: width ? width + 'px' : undefined, maxHeight: panelMaxHeight }"
+      :id="panelId"
+      :data-explanation-panel="panelId"
+      :style="{ left: x + 'px', top: y + 'px', width: width ? width + 'px' : undefined, maxHeight: maxHeight ? maxHeight + 'px' : undefined }"
       role="dialog"
       aria-label="词典释义"
-      @mouseenter="emit('enter')"
-      @mouseleave="emit('leave')"
+      @pointerenter="emit('enter', $event)"
+      @pointerleave="emit('leave', $event)"
       @wheel.stop
     >
       <header class="tooltip-header">
@@ -205,12 +201,6 @@ function handleDefinitionClick(event: MouseEvent) {
         <span v-if="isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
         <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
       </header>
-
-      <div v-if="isSourceQuery && token.bunsetsu.grammar_tags.length" class="tooltip-section grammar-list">
-        <div v-for="tag in token.bunsetsu.grammar_tags" :key="tag.pattern_id" class="grammar-desc">
-          <strong>「{{ tag.name_ja }}」</strong><span>{{ tag.description }}</span>
-        </div>
-      </div>
 
       <DictionaryChoiceBar
         v-if="candidateOptions.length"
@@ -266,9 +256,7 @@ function handleDefinitionClick(event: MouseEvent) {
 </template>
 
 <style scoped>
-.tooltip-panel { position: fixed; z-index: 1000; width: min(460px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
-.tooltip-above { transform: translate(-50%, -100%) translateY(-8px); }
-.tooltip-below { transform: translate(-50%, 8px); }
+.tooltip-panel { position: fixed; z-index: 1000; box-sizing: border-box; width: min(460px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
 .tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: baseline; margin: -14px -14px 6px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 76%, transparent 100%); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent); backdrop-filter: blur(18px); }
 .headword-block { flex: 1; min-width: 0; }
 .back-button { flex: 0 0 28px; padding: 0; font-size: 1.35rem; line-height: 26px; }
@@ -282,9 +270,6 @@ function handleDefinitionClick(event: MouseEvent) {
 .dictionary-sources { overflow: hidden; color: var(--text-muted); font: 700 .72rem var(--font-ja); text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .definition-viewport.is-loading { overflow: hidden; }
 .definition-skeleton { height: 100%; }
-.grammar-desc { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
-.grammar-desc strong { color: var(--novelty-high-text); }
-.grammar-desc span { color: var(--text-secondary); }
 .relation-list { display: flex; flex-wrap: wrap; gap: 6px; }
 button { border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 9px; background: var(--bg-card); color: var(--accent-color); cursor: pointer; }
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }

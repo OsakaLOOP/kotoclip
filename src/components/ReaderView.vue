@@ -7,16 +7,19 @@ import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
 import { useScrollFocus } from "../composables/useScrollFocus";
-import { DictEntry, DictionaryLookup, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, Morpheme, SegmentationCandidate, AnnotatedToken } from "../types";
+import { DictEntry, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, SegmentationCandidate, AnnotatedToken } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
-import TooltipPanel from "./TooltipPanel.vue";
+import ExplanationPopover from "./explanation/ExplanationPopover.vue";
+import GrammarPopover from "./explanation/GrammarPopover.vue";
 import ContextMenu from "./ContextMenu.vue";
 import ExportPanel from "./ExportPanel.vue";
 import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
 import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
+import { useExplanationSession } from "../composables/useExplanationSession";
+import { belongsToSameToken, explanationHitFromTarget, keepsExplanationOpen } from "../explanation/hitTest";
 
 // 状态定义
 const inputText = ref("");
@@ -54,50 +57,12 @@ const {
 } = useTokenization();
 const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs);
 const { lookupWord, chooseDictionaryTarget } = useDictionary();
+const explanation = useExplanationSession(lookupWord, chooseDictionaryTarget);
 
 // 详细释义弹窗状态
 const showDefinitionModal = ref(false);
 const activeWordForModal = ref("");
 const modalDefinitions = ref<DictEntry[]>([]);
-
-// 语法释义 Tooltip 状态
-const tooltipShow = ref(false);
-const tooltipX = ref(0);
-const tooltipY = ref(0);
-const tooltipPlacement = ref<"above" | "below">("above");
-const tooltipToken = ref<any | null>(null);
-const tooltipLookup = ref<DictionaryLookup | null>(null);
-const tooltipLoading = ref(false);
-let tooltipTimeout: number | null = null;
-let tooltipRequestId = 0;
-let tooltipPanelHovered = false;
-const tooltipHistory = ref<DictionaryLookup[]>([]);
-const tooltipWidth = ref(460);
-const tooltipWholeX = ref(0);
-const tooltipWholeY = ref(0);
-const tooltipWholePlacement = ref<"above" | "below">("above");
-const tooltipWholeToken = ref<AnnotatedToken | null>(null);
-const tooltipWholeLookup = ref<DictionaryLookup | null>(null);
-const tooltipWholeLoading = ref(false);
-const tooltipWholeHistory = ref<DictionaryLookup[]>([]);
-let focusedMorphemeKey = "";
-const tooltipKindLabel = ref("内部");
-
-function cancelTooltipClose() {
-  if (tooltipTimeout) window.clearTimeout(tooltipTimeout);
-  tooltipTimeout = null;
-}
-
-function scheduleTooltipClose(delay = 180) {
-  cancelTooltipClose();
-  tooltipTimeout = window.setTimeout(() => {
-    if (!tooltipPanelHovered) {
-      tooltipShow.value = false;
-      tooltipLookup.value = null;
-      tooltipWholeLookup.value = null;
-    }
-  }, delay);
-}
 
 // 上下文右键菜单状态
 const contextMenuShow = ref(false);
@@ -206,6 +171,7 @@ function measureVirtualRow(element: Element | ComponentPublicInstance | null) {
 watch(
   [paragraphs, showInput],
   async () => {
+    explanation.closeAll();
     if (showInput.value) return;
     await nextTick();
     virtualizer.value.measure();
@@ -215,13 +181,22 @@ watch(
   { flush: "post" }
 );
 
+async function handleReaderScroll() {
+  explanation.refreshAnchor();
+  await nextTick();
+  explanation.refreshAnchor();
+}
+
 // 监听拖拽的鼠标松开事件 (挂载在 window 以防在胶囊外松开失效)
 onMounted(() => {
   window.addEventListener("mouseup", handleMouseUp);
+  window.addEventListener("resize", explanation.refreshAnchor);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("mouseup", handleMouseUp);
+  window.removeEventListener("resize", explanation.refreshAnchor);
+  explanation.closeAll();
 });
 
 // 执行文本分析
@@ -258,214 +233,58 @@ async function triggerAnalysis(recordExposure = true) {
   }
 }
 
-// 事件委托：段落级别的 mouseover 悬浮处理 (200ms 延迟 Tooltip 显示)
-async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
-  const target = e.target as HTMLElement;
-  const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
-  cancelTooltipClose();
+function handleParagraphPointerOver(event: PointerEvent) {
+  const hit = explanationHitFromTarget(event.target);
+  const previous = explanationHitFromTarget(event.relatedTarget);
+  if (hit.key === previous.key) return;
+  explanation.cancelClose();
+  if (hit.kind === "outside" || hit.kind === "panel") return;
+  const paragraph = paragraphs.value.find((item) => item.id === hit.paragraphId);
+  const token = paragraph?.tokens[hit.tokenIndex];
+  if (!token || token.display_class !== "content") {
+    explanation.closeAll();
+    return;
+  }
+  const capsule = (event.target as Element).closest<HTMLElement>("[data-token-index]");
+  if (!capsule) return;
 
-  if (!capsuleEl) {
-    // 鼠标离开了胶囊，100ms 后关闭
-    scheduleTooltipClose();
+  if (hit.kind === "grammar") {
+    const tag = token.bunsetsu.grammar_tags[hit.grammarIndex];
+    const badge = (event.target as Element).closest<HTMLElement>("[data-grammar-index]");
+    if (tag && badge) explanation.focusGrammar(tag, badge);
     return;
   }
 
-  const tokenIndex = parseInt(capsuleEl.getAttribute("data-token-index") || "", 10);
-  if (isNaN(tokenIndex)) return;
-
-  const p = paragraphs.value.find((para) => para.id === paragraphId);
-  const token = p?.tokens[tokenIndex];
-
-  const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
-  if (!token || isPunc) {
-    ++tooltipRequestId;
-    tooltipShow.value = false;
-    return;
-  }
-
-  const grammarBadgeEl = target.closest(".grammar-badge") as HTMLElement | null;
-  const morphemeEl = target.closest("[data-morpheme-index]") as HTMLElement | null;
-  const parsedMorphemeIndex = Number.parseInt(morphemeEl?.dataset.morphemeIndex ?? "", 10);
-  const morphemeIndex = Number.isNaN(parsedMorphemeIndex)
-    ? Math.min(token.bunsetsu.lexical_units[0]?.head_morpheme ?? 0, token.bunsetsu.morphemes.length - 1)
-    : parsedMorphemeIndex;
-  const focusKey = `${paragraphId}:${tokenIndex}:${grammarBadgeEl ? "grammar" : morphemeIndex}`;
-  if (tooltipShow.value && tooltipWholeToken.value === token && focusedMorphemeKey !== focusKey) {
-    focusedMorphemeKey = focusKey;
-    tooltipKindLabel.value = grammarBadgeEl ? "语法" : "内部";
-    const morpheme = token.bunsetsu.morphemes[morphemeIndex];
-    if (!morpheme) return;
-    tooltipToken.value = grammarBadgeEl ? token : tokenForMorphemeLookup(token, morpheme);
-    if (grammarBadgeEl) {
-      tooltipWholeLookup.value = null;
-      tooltipWholeLoading.value = false;
-      positionDictionaryPopover(capsuleEl, grammarBadgeEl, false);
-    } else if (!tooltipWholeLookup.value && morphemeEl) {
-      positionDictionaryPopover(capsuleEl, morphemeEl, false);
-    }
-    tooltipLookup.value = null;
-    tooltipLoading.value = true;
-    const requestId = ++tooltipRequestId;
-    const baseForm = grammarBadgeEl
-      ? token.bunsetsu.head_word.base_form
-      : morpheme.base_form && morpheme.base_form !== "*" ? morpheme.base_form : morpheme.surface;
-    const reading = grammarBadgeEl ? token.bunsetsu.head_word.reading : morpheme.reading;
-    void lookupWord(baseForm, reading).then((lookup) => {
-      if (requestId === tooltipRequestId) {
-        tooltipLookup.value = lookup;
-        tooltipLoading.value = false;
-      }
-    });
-    return;
-  }
-  const relatedCapsule = (e.relatedTarget as HTMLElement | null)?.closest?.("[data-token-index]");
-  if (capsuleEl && relatedCapsule === capsuleEl) return;
-
-  // 延时 200ms 显示 Tooltip
-  tooltipTimeout = window.setTimeout(async () => {
-    const morpheme = token.bunsetsu.morphemes[morphemeIndex];
-    if (!morpheme) return;
-    const lexicalUnit = grammarBadgeEl ? undefined : token.bunsetsu.lexical_units[0];
-    positionDictionaryPopover(capsuleEl, grammarBadgeEl ?? morphemeEl ?? capsuleEl, Boolean(lexicalUnit));
-    tooltipToken.value = grammarBadgeEl ? token : tokenForMorphemeLookup(token, morpheme);
-    tooltipWholeToken.value = token;
-    focusedMorphemeKey = focusKey;
-    tooltipKindLabel.value = grammarBadgeEl ? "语法" : "内部";
-    tooltipPanelHovered = false;
-    tooltipShow.value = true;
-    tooltipLookup.value = null;
-    tooltipHistory.value = [];
-    tooltipWholeHistory.value = [];
-    tooltipLoading.value = true;
-    tooltipWholeLoading.value = Boolean(lexicalUnit);
-    tooltipWholeLookup.value = null;
-    const requestId = ++tooltipRequestId;
-
-    const baseForm = grammarBadgeEl
-      ? token.bunsetsu.head_word.base_form
-      : morpheme.base_form && morpheme.base_form !== "*" ? morpheme.base_form : morpheme.surface;
-    const reading = grammarBadgeEl ? token.bunsetsu.head_word.reading : morpheme.reading;
-    const [lookup, wholeLookup] = await Promise.all([
-      lookupWord(baseForm, reading),
-      lexicalUnit ? lookupWord(lexicalUnit.base_form, lexicalUnit.reading) : Promise.resolve(null),
-    ]);
-    if (requestId === tooltipRequestId && tooltipWholeToken.value === token) {
-      tooltipLookup.value = lookup;
-      tooltipWholeLookup.value = wholeLookup;
-      tooltipLoading.value = false;
-      tooltipWholeLoading.value = false;
-    }
-  }, 200);
-}
-
-function positionDictionaryPopover(capsuleEl: HTMLElement, morphemeEl: HTMLElement, dual: boolean) {
-  const anchor = (dual ? capsuleEl : morphemeEl).getBoundingClientRect();
-  const margin = 12;
-  const gap = 10;
-  if (dual) {
-    if (window.innerWidth >= 620) {
-      const width = Math.min(420, (window.innerWidth - margin * 2 - gap) / 2);
-      const groupWidth = width * 2 + gap;
-      const center = Math.min(window.innerWidth - margin - groupWidth / 2, Math.max(margin + groupWidth / 2, anchor.left + anchor.width / 2));
-      tooltipWidth.value = width;
-      tooltipWholeX.value = center - (width + gap) / 2;
-      tooltipX.value = center + (width + gap) / 2;
-      tooltipPlacement.value = anchor.top >= Math.min(340, window.innerHeight / 2) ? "above" : "below";
-      tooltipWholePlacement.value = tooltipPlacement.value;
-      tooltipY.value = tooltipPlacement.value === "above" ? anchor.top : anchor.bottom;
-      tooltipWholeY.value = tooltipY.value;
-      return;
-    }
-    const width = Math.min(460, window.innerWidth - margin * 2);
-    tooltipWidth.value = width;
-    tooltipWholeX.value = tooltipX.value = window.innerWidth / 2;
-    tooltipWholePlacement.value = "above";
-    tooltipPlacement.value = "below";
-    tooltipWholeY.value = anchor.top;
-    tooltipY.value = anchor.bottom;
-    return;
-  } else {
-    const width = Math.min(460, window.innerWidth - margin * 2);
-    tooltipWidth.value = width;
-    tooltipX.value = Math.min(window.innerWidth - margin - width / 2, Math.max(margin + width / 2, anchor.left + anchor.width / 2));
-  }
-  tooltipPlacement.value = anchor.top >= Math.min(340, window.innerHeight / 2) ? "above" : "below";
-  tooltipY.value = tooltipPlacement.value === "above" ? anchor.top : anchor.bottom;
-  tooltipWholePlacement.value = tooltipPlacement.value;
-  tooltipWholeY.value = tooltipY.value;
-}
-
-// 离开段落清除 hover 状态
-function handleParagraphMouseLeave() {
-  scheduleTooltipClose();
-}
-
-function handleTooltipEnter() {
-  tooltipPanelHovered = true;
-  cancelTooltipClose();
-}
-
-function handleTooltipLeave() {
-  tooltipPanelHovered = false;
-  scheduleTooltipClose(120);
-}
-
-async function navigateTooltip(target: string) {
-  if (tooltipLookup.value) tooltipHistory.value.push(tooltipLookup.value);
-  const requestId = ++tooltipRequestId;
-  tooltipLoading.value = true;
-  const lookup = await lookupWord(target);
-  if (requestId === tooltipRequestId) {
-    tooltipLookup.value = lookup;
-    tooltipLoading.value = false;
-  }
-}
-
-async function navigateWholeTooltip(target: string) {
-  if (tooltipWholeLookup.value) tooltipWholeHistory.value.push(tooltipWholeLookup.value);
-  tooltipWholeLoading.value = true;
-  tooltipWholeLookup.value = await lookupWord(target);
-  tooltipWholeLoading.value = false;
-}
-
-function backWholeTooltip() {
-  const previous = tooltipWholeHistory.value.pop();
-  if (previous) tooltipWholeLookup.value = previous;
-}
-
-async function selectWholeTooltipTarget(target: string) {
-  if (!tooltipWholeLookup.value) return;
-  tooltipWholeLoading.value = true;
-  tooltipWholeLookup.value = await chooseDictionaryTarget(
-    tooltipWholeLookup.value.query,
-    tooltipWholeLookup.value.reading,
-    target,
+  if (hit.kind === "token" && belongsToSameToken(hit, previous)) return;
+  const morphemeIndex = hit.kind === "morpheme"
+    ? hit.morphemeIndex
+    : Math.min(token.bunsetsu.lexical_units[0]?.head_morpheme ?? 0, token.bunsetsu.morphemes.length - 1);
+  const morpheme = capsule.querySelector<HTMLElement>(`[data-morpheme-index="${morphemeIndex}"]`);
+  if (!morpheme) return;
+  explanation.focusMorpheme(
+    { paragraphId: hit.paragraphId, tokenIndex: hit.tokenIndex, morphemeIndex },
+    token,
+    capsule,
+    morpheme,
   );
-  tooltipWholeLoading.value = false;
 }
 
-function backTooltip() {
-  const previous = tooltipHistory.value.pop();
-  if (previous) {
-    ++tooltipRequestId;
-    tooltipLookup.value = previous;
-    tooltipLoading.value = false;
+function handleParagraphPointerOut(event: PointerEvent) {
+  const next = explanationHitFromTarget(event.relatedTarget);
+  if (keepsExplanationOpen(next)) {
+    explanation.cancelClose();
+    return;
   }
+  explanation.scheduleClose();
 }
 
-async function selectTooltipTarget(target: string) {
-  if (!tooltipLookup.value) return;
-  const requestId = ++tooltipRequestId;
-  tooltipLoading.value = true;
-  const lookup = await chooseDictionaryTarget(
-    tooltipLookup.value.query,
-    tooltipLookup.value.reading,
-    target,
-  );
-  if (requestId === tooltipRequestId) {
-    tooltipLookup.value = lookup;
-    tooltipLoading.value = false;
+function handlePopoverLeave(event: PointerEvent) {
+  const next = explanationHitFromTarget(event.relatedTarget);
+  if (keepsExplanationOpen(next)) {
+    explanation.cancelClose();
+    return;
   }
+  explanation.scheduleClose();
 }
 
 // 事件委托：段落内的点击 (切换选中/已知)
@@ -487,26 +306,6 @@ function handleParagraphClick(e: MouseEvent, paragraphId: number) {
 
   // 切换该 token 选中状态 (用于 Anki 导出)
   toggleSelect(paragraphId, tokenIndex);
-}
-
-function tokenForMorphemeLookup(token: AnnotatedToken, morpheme: Morpheme): AnnotatedToken {
-  return {
-    ...token,
-    bunsetsu: {
-      ...token.bunsetsu,
-      head_word: {
-        surface: morpheme.surface,
-        base_form: morpheme.base_form && morpheme.base_form !== "*"
-          ? morpheme.base_form
-          : morpheme.surface,
-        reading: morpheme.reading,
-        pos: morpheme.pos,
-      },
-      grammar_tags: [],
-      word_formations: [],
-      lexical_units: [],
-    },
-  };
 }
 
 // 右键保留词条操作和 N-best 分词候选；双击不再承担拆分入口。
@@ -696,6 +495,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         v-if="!showInput"
         ref="scrollContainerRef"
         class="reader-viewport no-scrollbar"
+        @scroll="handleReaderScroll"
       >
         <div
           :style="{
@@ -718,8 +518,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             :data-index="virtualRow.index"
             :ref="measureVirtualRow"
             :class="['paragraph-block', { 'dialogue-block': paragraphs[virtualRow.index].isDialogue }]"
-            @mouseover="handleParagraphMouseOver($event, paragraphs[virtualRow.index].id)"
-            @mouseleave="handleParagraphMouseLeave"
+            @pointerover="handleParagraphPointerOver"
+            @pointerout="handleParagraphPointerOut"
             @mousedown="handleMouseDown($event, paragraphs[virtualRow.index].id)"
             @mousemove="handleMouseMove($event, paragraphs[virtualRow.index].id)"
             @click="handleParagraphClick($event, paragraphs[virtualRow.index].id)"
@@ -744,41 +544,35 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       </div>
     </div>
 
-    <!-- 3. 全局 Tooltip 悬浮框 -->
-    <TooltipPanel
-      v-if="tooltipWholeLookup || tooltipWholeLoading"
-      :show="tooltipShow"
-      :x="tooltipWholeX"
-      :y="tooltipWholeY"
-      :width="tooltipWidth"
-      :placement="tooltipWholePlacement"
-      :token="tooltipWholeToken"
-      :lookup="tooltipWholeLookup"
-      :loading="tooltipWholeLoading"
-      kind-label="整体"
-      @enter="handleTooltipEnter"
-      @leave="handleTooltipLeave"
-      @navigate="navigateWholeTooltip"
-      @select="selectWholeTooltipTarget"
-      @back="backWholeTooltip"
-      :can-go-back="tooltipWholeHistory.length > 0"
+    <!-- 3. 词典浮层组与独立语法说明 -->
+    <ExplanationPopover
+      :show="explanation.visible.value"
+      :anchor="explanation.anchorRect.value"
+      :component-anchor="explanation.hasWholePanel.value ? explanation.anchorRect.value : explanation.componentAnchorRect.value"
+      :whole-token="explanation.wholeToken.value"
+      :whole-lookup="explanation.wholeLookup.value"
+      :whole-loading="explanation.wholeLoading.value"
+      :whole-can-go-back="explanation.wholeHistory.value.length > 0"
+      :component-token="explanation.componentToken.value"
+      :component-lookup="explanation.componentLookup.value"
+      :component-loading="explanation.componentLoading.value"
+      :component-can-go-back="explanation.componentHistory.value.length > 0"
+      :component-label="explanation.componentLabel.value"
+      @enter="explanation.cancelClose"
+      @leave="handlePopoverLeave"
+      @navigate-whole="explanation.navigateWhole"
+      @navigate-component="explanation.navigateComponent"
+      @select-whole="explanation.selectWhole"
+      @select-component="explanation.selectComponent"
+      @back-whole="explanation.backWhole"
+      @back-component="explanation.backComponent"
     />
-    <TooltipPanel
-      :show="tooltipShow"
-      :x="tooltipX"
-      :y="tooltipY"
-      :width="tooltipWidth"
-      :placement="tooltipPlacement"
-      :token="tooltipToken"
-      :lookup="tooltipLookup"
-      :loading="tooltipLoading"
-      :kind-label="tooltipKindLabel"
-      @enter="handleTooltipEnter"
-      @leave="handleTooltipLeave"
-      @navigate="navigateTooltip"
-      @select="selectTooltipTarget"
-      @back="backTooltip"
-      :can-go-back="tooltipHistory.length > 0"
+    <GrammarPopover
+      :show="explanation.grammarVisible.value"
+      :tag="explanation.grammarTag.value"
+      :anchor="explanation.grammarAnchorRect.value"
+      @enter="explanation.cancelClose"
+      @leave="handlePopoverLeave"
     />
 
     <!-- 4. 双击上下文操作菜单 -->

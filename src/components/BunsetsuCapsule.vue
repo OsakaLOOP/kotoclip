@@ -141,9 +141,10 @@ function isExpressionMorpheme(index: number) {
 
     <!-- 渲染语法 Badge 徽章 -->
     <span
-      v-for="tag in token.bunsetsu.grammar_tags"
+      v-for="(tag, grammarIndex) in token.bunsetsu.grammar_tags"
       :key="tag.pattern_id"
       class="grammar-badge"
+      :data-grammar-index="grammarIndex"
       :title="tag.description"
     >
       {{ tag.name_ja }}
