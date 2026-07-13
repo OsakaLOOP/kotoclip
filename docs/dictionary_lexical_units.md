@@ -1,5 +1,7 @@
 # 词典词汇整体层重构
 
+状态：**已完成（2026-07-13）**。
+
 ## 1. 问题与结论
 
 系统当前只在文节完成后调用 `resolve_lexical_boundaries`，而且逐个既有 Bunsetsu 处理。它可以把同一文节中的 `警察＋署` 设为整体词头，却无法恢复已经被阶段 C 切成不同文节的整体词。
@@ -304,3 +306,30 @@ JSON 保存：
 9. 以后独立增加词典词性／词条类型抽取和数量读法提供方。
 
 每一步都先保留候选和审计证据，再允许其改变 Bunsetsu。不能以人工列举词表替代结构化词典覆盖。
+
+## 13. 实现结果
+
+- `pipeline/lexical.rs` 在原始 morpheme 上生成词典候选，以版本化 `lexical_candidate_patterns.json` 分类，并使用区间动态规划稳定选择。
+- `DictionaryEngine::resolve_exact_forms_batch` 只联查结构化表记和词头，返回稳定 `DictionaryEntryRef`；读音和 FTS 不参与整体边界。
+- `DictionaryLexicalUnitAnnotation` 与 `WordFormationAnnotation` 分开保存；同范围可共存，部分交叉记录拒绝。
+- accepted 词典跨度在 `BunsetsuAnalyzer` 前成为不可拆原子，旧后置 `resolve_lexical_boundaries` 已删除。
+- 紧凑 IPC、TypeScript 类型、ruby 合并、画像和 N-best 重建路径均保留 `lexical_units`。
+- `lexical-unit-scan` 默认只输出最终计数，JSON 保存词条绑定、结构、状态、冲突和完整性。
+
+前三话审计：
+
+| 章节 | accepted | pending | rejected | conflict | 新 Bunsetsu 数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 第一话 | 318 | 87 | 7 | 2 | 10375 |
+| 第二话 | 325 | 86 | 6 | 0 | 9035 |
+| 第三话 | 309 | 76 | 7 | 2 | 7758 |
+
+三话重建和范围完整性均通过，未决 Bunsetsu 边界均为 0。相对旧 C 基线，文节分别减少 46、34、60 个。
+
+D 层 accepted 保持 39／11／13 不变；词典 pending 从 118／102／109 降为 88／76／67，减少项均由词汇层提前消费。第二话原有 2 项 rejected 保持不变。
+
+基线入口：
+
+- `data/baselines/chapter-*.lexical-units.json`
+- `data/baselines/chapter-*.bunsetsu.json`
+- `data/baselines/chapter-*.expression-candidates.json`
