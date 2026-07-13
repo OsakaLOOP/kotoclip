@@ -177,7 +177,27 @@ impl BunsetsuAnalyzer {
             formations,
             lexical_units,
             &self.catalog,
+            true,
         )
+    }
+
+    /// 正式阅读热路径只返回最终文节，不构建边界审计、重建字符串等诊断数据。
+    pub fn analyze_tokens_with_lexical(
+        &self,
+        morphemes: &[Morpheme],
+        merge_rules: &[Vec<String>],
+        formations: &[AcceptedWordFormation],
+        lexical_units: &[AcceptedDictionaryLexicalUnit],
+    ) -> Vec<Bunsetsu> {
+        analyze_with_catalog(
+            morphemes,
+            merge_rules,
+            formations,
+            lexical_units,
+            &self.catalog,
+            false,
+        )
+        .bunsetsus
     }
 }
 
@@ -234,6 +254,7 @@ fn analyze_with_catalog(
     formations: &[AcceptedWordFormation],
     lexical_units: &[AcceptedDictionaryLexicalUnit],
     catalog: &BunsetsuCatalog,
+    diagnostics: bool,
 ) -> BunsetsuAnalysisReport {
     if morphemes.is_empty() {
         return BunsetsuAnalysisReport {
@@ -251,53 +272,56 @@ fn analyze_with_catalog(
     let selected_path = choose_bunsetsu_path(morphemes, &atomic_joins, &features, catalog);
     let unresolved_boundaries = selected_path.unresolved;
     let spans = selected_path.spans;
-    let mut boundaries = Vec::with_capacity(n.saturating_sub(1));
-    let mut span_start = 0;
-    let split_points: HashSet<usize> = spans.iter().map(|range| range.1).collect();
-    for boundary in 1..n {
-        while boundary
-            > spans
-                .iter()
-                .find(|range| range.0 == span_start)
-                .map_or(n, |range| range.1)
-        {
-            span_start = boundary - 1;
-        }
-        let options = boundary_options(
-            morphemes,
-            span_start,
-            boundary,
-            &atomic_joins,
-            &features,
-            catalog,
-        );
-        let decision = if split_points.contains(&boundary) {
-            "split"
-        } else {
-            "join"
-        };
-        let selected = if options.preferred.decision == decision {
-            &options.preferred
-        } else {
-            &options.alternative
-        };
-        let alternative = if options.preferred.decision == decision {
-            &options.alternative
-        } else {
-            &options.preferred
-        };
-        boundaries.push(BunsetsuBoundaryDecision {
-            morpheme_index: boundary,
-            decision: decision.to_string(),
-            score: selected.score,
-            evidence: selected.evidence.clone(),
-            alternatives: vec![if decision == "split" { "join" } else { "split" }.to_string()],
-            alternative_score: alternative.score,
-            counter_evidence: alternative.evidence.clone(),
-            hard_constraint: selected.score.abs() == catalog.weights.hard,
-        });
-        if decision == "split" {
-            span_start = boundary;
+    let mut boundaries = Vec::new();
+    if diagnostics {
+        boundaries.reserve(n.saturating_sub(1));
+        let mut span_start = 0;
+        let split_points: HashSet<usize> = spans.iter().map(|range| range.1).collect();
+        for boundary in 1..n {
+            while boundary
+                > spans
+                    .iter()
+                    .find(|range| range.0 == span_start)
+                    .map_or(n, |range| range.1)
+            {
+                span_start = boundary - 1;
+            }
+            let options = boundary_options(
+                morphemes,
+                span_start,
+                boundary,
+                &atomic_joins,
+                &features,
+                catalog,
+            );
+            let decision = if split_points.contains(&boundary) {
+                "split"
+            } else {
+                "join"
+            };
+            let selected = if options.preferred.decision == decision {
+                &options.preferred
+            } else {
+                &options.alternative
+            };
+            let alternative = if options.preferred.decision == decision {
+                &options.alternative
+            } else {
+                &options.preferred
+            };
+            boundaries.push(BunsetsuBoundaryDecision {
+                morpheme_index: boundary,
+                decision: decision.to_string(),
+                score: selected.score,
+                evidence: selected.evidence.clone(),
+                alternatives: vec![if decision == "split" { "join" } else { "split" }.to_string()],
+                alternative_score: alternative.score,
+                counter_evidence: alternative.evidence.clone(),
+                hard_constraint: selected.score.abs() == catalog.weights.hard,
+            });
+            if decision == "split" {
+                span_start = boundary;
+            }
         }
     }
 
@@ -337,30 +361,34 @@ fn analyze_with_catalog(
     for bunsetsu in &mut bunsetsus {
         bunsetsu.function = Some(infer_function(bunsetsu));
     }
-    let reconstructed: String = bunsetsus
-        .iter()
-        .map(|bunsetsu| bunsetsu.surface.as_str())
-        .collect();
-    let expected: String = morphemes
-        .iter()
-        .map(|morpheme| morpheme.surface.as_str())
-        .collect();
-    let range_integrity_ok = bunsetsus.iter().all(|bunsetsu| {
-        bunsetsu.char_range.0 <= bunsetsu.char_range.1
-            && bunsetsu
-                .morphemes
-                .first()
-                .is_some_and(|item| item.char_range.0 == bunsetsu.char_range.0)
-            && bunsetsu
-                .morphemes
-                .last()
-                .is_some_and(|item| item.char_range.1 == bunsetsu.char_range.1)
-    });
+    let reconstruction_ok = !diagnostics || {
+        let reconstructed: String = bunsetsus
+            .iter()
+            .map(|bunsetsu| bunsetsu.surface.as_str())
+            .collect();
+        let expected: String = morphemes
+            .iter()
+            .map(|morpheme| morpheme.surface.as_str())
+            .collect();
+        reconstructed == expected
+    };
+    let range_integrity_ok = !diagnostics
+        || bunsetsus.iter().all(|bunsetsu| {
+            bunsetsu.char_range.0 <= bunsetsu.char_range.1
+                && bunsetsu
+                    .morphemes
+                    .first()
+                    .is_some_and(|item| item.char_range.0 == bunsetsu.char_range.0)
+                && bunsetsu
+                    .morphemes
+                    .last()
+                    .is_some_and(|item| item.char_range.1 == bunsetsu.char_range.1)
+        });
     BunsetsuAnalysisReport {
         bunsetsus,
         boundaries,
         unresolved_boundaries,
-        reconstruction_ok: reconstructed == expected,
+        reconstruction_ok,
         range_integrity_ok,
     }
 }

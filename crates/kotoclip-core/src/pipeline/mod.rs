@@ -11,7 +11,7 @@ pub mod word_formation;
 use crate::analysis_progress::{AnalysisPhase, AnalysisProgress};
 use crate::models::AnnotatedToken;
 use crate::performance::TimingCollector;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::time::Instant;
 
@@ -43,10 +43,24 @@ enum SegmentType {
     LineBreak,
 }
 
+#[derive(Debug, Clone, Copy)]
 struct TextSegment {
     seg_type: SegmentType,
     start_char_idx: usize,
     end_char_idx: usize,
+}
+
+struct ContentStage {
+    segment: TextSegment,
+    annotation_range: (usize, usize),
+    morphemes: Vec<crate::models::Morpheme>,
+    formations: Vec<word_formation::AcceptedWordFormation>,
+    lexical_candidates: Option<lexical::DictionaryLexicalCandidates>,
+}
+
+enum SegmentStage {
+    Content(ContentStage),
+    Literal(TextSegment),
 }
 
 fn is_punctuation_or_symbol(c: char) -> bool {
@@ -145,6 +159,55 @@ fn segment_text(chars: &[char]) -> Vec<TextSegment> {
         }
     }
     segments
+}
+
+fn literal_token(chars: &[char], segment: TextSegment) -> AnnotatedToken {
+    let surface: String = chars[segment.start_char_idx..segment.end_char_idx]
+        .iter()
+        .collect();
+    let (major, display_class) = if segment.seg_type == SegmentType::Punctuation {
+        ("記号", "punctuation")
+    } else {
+        ("改行", "line_break")
+    };
+    let pos = crate::models::PosTag {
+        major: major.to_string(),
+        sub1: "*".to_string(),
+        sub2: "*".to_string(),
+        sub3: "*".to_string(),
+    };
+    let morpheme = crate::models::Morpheme {
+        surface: surface.clone(),
+        pos: pos.clone(),
+        base_form: surface.clone(),
+        reading: String::new(),
+        conjugation_type: "*".to_string(),
+        conjugation_form: "*".to_string(),
+        char_range: (segment.start_char_idx, segment.end_char_idx),
+    };
+    AnnotatedToken {
+        bunsetsu: crate::models::Bunsetsu {
+            morphemes: vec![morpheme],
+            surface: surface.clone(),
+            head_word: crate::models::HeadWord {
+                surface: surface.clone(),
+                base_form: surface,
+                reading: String::new(),
+                pos,
+            },
+            grammar_tags: Vec::new(),
+            word_formations: Vec::new(),
+            lexical_units: Vec::new(),
+            function: None,
+            char_range: (segment.start_char_idx, segment.end_char_idx),
+        },
+        novelty_score: 0.0,
+        is_selected: false,
+        is_known: true,
+        inference_reason: None,
+        expressions: Vec::new(),
+        display_class: display_class.to_string(),
+    }
 }
 
 impl Pipeline {
@@ -423,10 +486,8 @@ impl Pipeline {
         let preparation_started = Instant::now();
         let prepared = ruby::prepare_text(text);
         let prepared_chars: Vec<char> = prepared.text.chars().collect();
-
-        // 2. 扫描并分割 text 为 content、punctuation、line_break 段
+        let document_readings = ruby::build_document_reading_map(&prepared.annotations);
         let segments = segment_text(&prepared_chars);
-        let mut all_tokens: Vec<AnnotatedToken> = Vec::new();
         if let Some(timings) = timings.as_deref_mut() {
             timings.add("准备原文与切分", preparation_started.elapsed());
         }
@@ -438,197 +499,205 @@ impl Pipeline {
         ));
 
         let total_chars = prepared_chars.len().max(1);
-        let mut processed_chars = 0;
+        let mut prepared_segments = Vec::with_capacity(segments.len());
+        let mut prepared_chars_count = 0;
+        let mut dictionary_queries = HashSet::new();
 
-        for seg in &segments {
-            let seg_len = seg.end_char_idx - seg.start_char_idx;
-            match seg.seg_type {
-                SegmentType::Content => {
-                    // 标注范围按字符位置有序。原先每个分段都会把全文所有 ruby
-                    // 标注交给后续语素/文节处理，长章节会退化为 O(语素×标注数)。
-                    // 显式 ruby 不会跨越标点或换行，因此只保留当前分段相交的子切片
-                    // 可保持读音覆盖和相邻标注合并语义。
-                    let annotation_start = prepared.annotations.partition_point(|annotation| {
-                        annotation.char_range.1 <= seg.start_char_idx
-                    });
-                    let annotation_end = prepared
-                        .annotations
-                        .partition_point(|annotation| annotation.char_range.0 < seg.end_char_idx);
-                    let segment_annotations =
-                        &prepared.annotations[annotation_start..annotation_end];
-                    let seg_text: String = prepared_chars[seg.start_char_idx..seg.end_char_idx]
-                        .iter()
-                        .collect();
-                    if seg_text.is_empty() {
-                        processed_chars += seg_len;
-                        continue;
-                    }
+        // 第一遍只生成段级中间产物。词典查询词跨分段汇总后统一进入 SQLite，
+        // 避免章节中每个短句分别执行一个小批次查询。
+        for segment in segments {
+            let segment_len = segment.end_char_idx - segment.start_char_idx;
+            if segment.seg_type != SegmentType::Content {
+                prepared_segments.push(SegmentStage::Literal(segment));
+                prepared_chars_count += segment_len;
+                continue;
+            }
+            let segment_text: String = prepared_chars[segment.start_char_idx..segment.end_char_idx]
+                .iter()
+                .collect();
+            if segment_text.is_empty() {
+                prepared_chars_count += segment_len;
+                continue;
+            }
+            let annotation_start = prepared
+                .annotations
+                .partition_point(|annotation| annotation.char_range.1 <= segment.start_char_idx);
+            let annotation_end = prepared
+                .annotations
+                .partition_point(|annotation| annotation.char_range.0 < segment.end_char_idx);
+            let segment_annotations = &prepared.annotations[annotation_start..annotation_end];
 
-                    let tokenizing_started = Instant::now();
-                    let mut morphemes = self.morpheme_analyzer.analyze(&seg_text);
+            let started = Instant::now();
+            let mut morphemes = self.morpheme_analyzer.analyze(&segment_text);
+            if let Some(timings) = timings.as_deref_mut() {
+                timings.add("形态素分析", started.elapsed());
+            }
+
+            let started = Instant::now();
+            for morpheme in &mut morphemes {
+                morpheme.char_range.0 += segment.start_char_idx;
+                morpheme.char_range.1 += segment.start_char_idx;
+            }
+            ruby::override_morpheme_readings_with_chars(
+                &prepared_chars,
+                &mut morphemes,
+                segment_annotations,
+            );
+            if let Some(timings) = timings.as_deref_mut() {
+                timings.add("形态素后处理", started.elapsed());
+            }
+
+            let started = Instant::now();
+            let formations = self
+                .word_formation_matcher
+                .match_morphemes(&morphemes)
+                .accepted;
+            if let Some(timings) = timings.as_deref_mut() {
+                timings.add("构词匹配", started.elapsed());
+            }
+
+            let lexical_candidates = dictionary.map(|_| {
+                let started = Instant::now();
+                let candidates = lexical::prepare_dictionary_lexical_candidates(&morphemes);
+                candidates.extend_queries(&mut dictionary_queries);
+                if let Some(timings) = timings.as_deref_mut() {
+                    timings.add("词典候选生成", started.elapsed());
+                }
+                candidates
+            });
+            prepared_segments.push(SegmentStage::Content(ContentStage {
+                segment,
+                annotation_range: (annotation_start, annotation_end),
+                morphemes,
+                formations,
+                lexical_candidates,
+            }));
+            prepared_chars_count += segment_len;
+            let percent = 3 + ((prepared_chars_count * 24) / total_chars) as u8;
+            report(AnalysisProgress::counted(
+                AnalysisPhase::Tokenizing,
+                prepared_chars_count,
+                total_chars,
+                percent.min(27),
+                "执行形态素分析与候选准备",
+            ));
+        }
+
+        let resolved_dictionary_forms = if let Some(dictionary) = dictionary {
+            let started = Instant::now();
+            let matches = dictionary.resolve_exact_forms_batch(&dictionary_queries);
+            if let Some(timings) = timings.as_deref_mut() {
+                timings.add("词典批量查询", started.elapsed());
+            }
+            matches
+        } else {
+            HashMap::new()
+        };
+
+        report(AnalysisProgress::stage(
+            AnalysisPhase::Chunking,
+            28,
+            "解析词典词汇并构建文节",
+        ));
+
+        let mut all_tokens = Vec::new();
+        let mut completed_chars = 0;
+        for stage in prepared_segments {
+            match stage {
+                SegmentStage::Literal(segment) => {
+                    let started = Instant::now();
+                    all_tokens.push(literal_token(&prepared_chars, segment));
                     if let Some(timings) = timings.as_deref_mut() {
-                        timings.add("形态素分析", tokenizing_started.elapsed());
+                        timings.add("Token 组装", started.elapsed());
                     }
-                    let morpheme_postprocess_started = Instant::now();
-                    let offset = seg.start_char_idx;
-                    for m in &mut morphemes {
-                        m.char_range.0 += offset;
-                        m.char_range.1 += offset;
-                    }
+                    completed_chars += segment.end_char_idx - segment.start_char_idx;
+                }
+                SegmentStage::Content(stage) => {
+                    let segment_annotations =
+                        &prepared.annotations[stage.annotation_range.0..stage.annotation_range.1];
+                    let lexical_units = if let Some(candidates) = stage.lexical_candidates {
+                        let started = Instant::now();
+                        let result = lexical::resolve_dictionary_lexical_candidates(
+                            &stage.morphemes,
+                            candidates,
+                            &resolved_dictionary_forms,
+                            &stage.formations,
+                        );
+                        if let Some(timings) = timings.as_deref_mut() {
+                            timings.add("词典候选解析", started.elapsed());
+                        }
+                        result.accepted
+                    } else {
+                        Vec::new()
+                    };
 
-                    ruby::override_morpheme_readings_with_chars(
-                        &prepared_chars,
-                        &mut morphemes,
-                        segment_annotations,
+                    let started = Instant::now();
+                    let bunsetsus = self.bunsetsu_analyzer.analyze_tokens_with_lexical(
+                        &stage.morphemes,
+                        merge_rules,
+                        &stage.formations,
+                        &lexical_units,
                     );
                     if let Some(timings) = timings.as_deref_mut() {
-                        timings.add("形态素后处理", morpheme_postprocess_started.elapsed());
+                        timings.add("文节分析", started.elapsed());
                     }
 
-                    let chunking_started = Instant::now();
-                    let formations = self.word_formation_matcher.match_morphemes(&morphemes);
-                    let lexical_units = dictionary
-                        .map(|dictionary| {
-                            lexical::match_dictionary_lexical_units(
-                                &morphemes,
-                                dictionary,
-                                &formations.accepted,
-                            )
-                        })
-                        .unwrap_or_default();
-                    let bunsetsus = self
-                        .bunsetsu_analyzer
-                        .analyze_with_lexical(
-                            &morphemes,
-                            merge_rules,
-                            &formations.accepted,
-                            &lexical_units.accepted,
-                        )
-                        .bunsetsus;
+                    let started = Instant::now();
                     let mut bunsetsus =
                         ruby::merge_annotated_bunsetsus(bunsetsus, segment_annotations);
-                    ruby::override_bunsetsu_readings_with_chars(
+                    ruby::override_bunsetsu_readings_with_document_map(
                         &prepared_chars,
                         &mut bunsetsus,
-                        &prepared.annotations,
+                        segment_annotations,
+                        &document_readings,
                     );
                     if let Some(timings) = timings.as_deref_mut() {
-                        timings.add("文节与振假名", chunking_started.elapsed());
+                        timings.add("文节振假名", started.elapsed());
                     }
 
-                    let grammar_started = Instant::now();
+                    let started = Instant::now();
                     self.grammar_matcher.match_patterns(&mut bunsetsus);
                     if let Some(timings) = timings.as_deref_mut() {
-                        timings.add("语法匹配", grammar_started.elapsed());
+                        timings.add("语法匹配", started.elapsed());
                     }
 
-                    let assembling_started = Instant::now();
-                    for b in bunsetsus {
-                        all_tokens.push(AnnotatedToken {
-                            bunsetsu: b,
-                            novelty_score: 1.0,
-                            is_selected: false,
-                            is_known: false,
-                            inference_reason: None,
-                            expressions: Vec::new(),
-                            display_class: "content".to_string(),
-                        });
-                    }
-                    if let Some(timings) = timings.as_deref_mut() {
-                        timings.add("Token 组装", assembling_started.elapsed());
-                    }
-                }
-                SegmentType::Punctuation | SegmentType::LineBreak => {
-                    let assembling_started = Instant::now();
-                    let seg_text: String = prepared_chars[seg.start_char_idx..seg.end_char_idx]
-                        .iter()
-                        .collect();
-
-                    let major_pos = if seg.seg_type == SegmentType::Punctuation {
-                        "記号".to_string()
-                    } else {
-                        "改行".to_string()
-                    };
-
-                    let p_morpheme = crate::models::Morpheme {
-                        surface: seg_text.clone(),
-                        pos: crate::models::PosTag {
-                            major: major_pos.clone(),
-                            sub1: "*".to_string(),
-                            sub2: "*".to_string(),
-                            sub3: "*".to_string(),
-                        },
-                        base_form: seg_text.clone(),
-                        reading: "".to_string(),
-                        conjugation_type: "*".to_string(),
-                        conjugation_form: "*".to_string(),
-                        char_range: (seg.start_char_idx, seg.end_char_idx),
-                    };
-
-                    let p_bunsetsu = crate::models::Bunsetsu {
-                        morphemes: vec![p_morpheme.clone()],
-                        surface: seg_text.clone(),
-                        head_word: crate::models::HeadWord {
-                            surface: seg_text.clone(),
-                            base_form: seg_text.clone(),
-                            reading: "".to_string(),
-                            pos: crate::models::PosTag {
-                                major: major_pos,
-                                sub1: "*".to_string(),
-                                sub2: "*".to_string(),
-                                sub3: "*".to_string(),
-                            },
-                        },
-                        grammar_tags: Vec::new(),
-                        word_formations: Vec::new(),
-                        lexical_units: Vec::new(),
-                        function: None,
-                        char_range: (seg.start_char_idx, seg.end_char_idx),
-                    };
-
-                    let disp = if seg.seg_type == SegmentType::Punctuation {
-                        "punctuation".to_string()
-                    } else {
-                        "line_break".to_string()
-                    };
-
-                    all_tokens.push(AnnotatedToken {
-                        bunsetsu: p_bunsetsu,
-                        novelty_score: 0.0,
+                    let started = Instant::now();
+                    all_tokens.extend(bunsetsus.into_iter().map(|bunsetsu| AnnotatedToken {
+                        bunsetsu,
+                        novelty_score: 1.0,
                         is_selected: false,
-                        is_known: true,
+                        is_known: false,
                         inference_reason: None,
                         expressions: Vec::new(),
-                        display_class: disp,
-                    });
+                        display_class: "content".to_string(),
+                    }));
                     if let Some(timings) = timings.as_deref_mut() {
-                        timings.add("Token 组装", assembling_started.elapsed());
+                        timings.add("Token 组装", started.elapsed());
                     }
+                    completed_chars += stage.segment.end_char_idx - stage.segment.start_char_idx;
                 }
             }
 
-            processed_chars += seg_len;
-
-            // 按最新回测的阶段占比校准：形态素分析约占管线 79%，文节约 8%，
-            // 语法约 3%，其余为准备、组装和排序。这里仍按字符平滑推进，
-            // 但把整段 NLP 管线限制在总进度 3%~40%。
-            let progress_percent = 3 + ((processed_chars * 37) / total_chars) as u8;
-            let (phase, msg) = if progress_percent < 32 {
-                (AnalysisPhase::Tokenizing, "执行形态素分析与分词")
-            } else if progress_percent < 37 {
-                (AnalysisPhase::Chunking, "构建文节组块")
+            let progress_percent = 27 + ((completed_chars * 13) / total_chars) as u8;
+            let (phase, message) = if progress_percent < 37 {
+                (AnalysisPhase::Chunking, "解析词典词汇并构建文节")
             } else {
                 (AnalysisPhase::GrammarMatching, "匹配语法模式")
             };
-
             report(AnalysisProgress::counted(
                 phase,
-                processed_chars,
+                completed_chars,
                 total_chars,
                 progress_percent.min(40),
-                msg,
+                message,
             ));
         }
+
+        report(AnalysisProgress::stage(
+            AnalysisPhase::GrammarMatching,
+            40,
+            "语法模式匹配完成",
+        ));
 
         let sorting_started = Instant::now();
         all_tokens.sort_by_key(|t| t.bunsetsu.char_range.0);

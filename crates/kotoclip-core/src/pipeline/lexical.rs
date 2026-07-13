@@ -32,6 +32,20 @@ struct RawCandidate {
     evidence: Vec<String>,
 }
 
+/// 词典词汇阶段的段级中间产物。
+///
+/// 候选生成只依赖形态素，可以先对整篇文章的所有分段执行，再把查询词汇
+/// 汇总为一次章节级 SQLite 批处理；解析阶段继续保留每个分段原有的冲突语义。
+pub struct DictionaryLexicalCandidates {
+    raw: Vec<RawCandidate>,
+}
+
+impl DictionaryLexicalCandidates {
+    pub fn extend_queries(&self, target: &mut HashSet<String>) {
+        target.extend(self.raw.iter().map(|candidate| candidate.query.clone()));
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LexicalCatalog {
@@ -116,13 +130,28 @@ pub fn match_dictionary_lexical_units(
     dictionary: &DictionaryEngine,
     formations: &[AcceptedWordFormation],
 ) -> DictionaryLexicalMatchResult {
-    let raw = generate_candidates(morphemes);
-    let queries: HashSet<_> = raw
-        .iter()
-        .map(|candidate| candidate.query.clone())
-        .collect();
+    let candidates = prepare_dictionary_lexical_candidates(morphemes);
+    let mut queries = HashSet::new();
+    candidates.extend_queries(&mut queries);
     let matches = dictionary.resolve_exact_forms_batch(&queries);
-    resolve_candidates(morphemes, raw, matches, formations)
+    resolve_dictionary_lexical_candidates(morphemes, candidates, &matches, formations)
+}
+
+pub fn prepare_dictionary_lexical_candidates(
+    morphemes: &[Morpheme],
+) -> DictionaryLexicalCandidates {
+    DictionaryLexicalCandidates {
+        raw: generate_candidates(morphemes),
+    }
+}
+
+pub fn resolve_dictionary_lexical_candidates(
+    morphemes: &[Morpheme],
+    candidates: DictionaryLexicalCandidates,
+    matches: &HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
+    formations: &[AcceptedWordFormation],
+) -> DictionaryLexicalMatchResult {
+    resolve_candidates(morphemes, candidates.raw, matches, formations)
 }
 
 fn is_lexical_atom(morpheme: &Morpheme) -> bool {
@@ -254,7 +283,7 @@ fn overlaps(left: (usize, usize), right: (usize, usize)) -> bool {
 fn resolve_candidates(
     morphemes: &[Morpheme],
     raw: Vec<RawCandidate>,
-    matches: HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
+    matches: &HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
     formations: &[AcceptedWordFormation],
 ) -> DictionaryLexicalMatchResult {
     let mut candidates = Vec::new();

@@ -223,6 +223,25 @@ pub fn override_bunsetsu_readings_with_chars(
     annotations: &[RubyAnnotation],
 ) {
     let document_readings = document_reading_map(annotations);
+    override_bunsetsu_readings_with_document_map(
+        text_chars,
+        bunsetsus,
+        annotations,
+        &document_readings,
+    );
+}
+
+pub fn build_document_reading_map(annotations: &[RubyAnnotation]) -> HashMap<String, String> {
+    document_reading_map(annotations)
+}
+
+/// 使用预先构建的全文词级读音映射，同时只扫描当前分段的显式 ruby 标注。
+pub fn override_bunsetsu_readings_with_document_map(
+    text_chars: &[char],
+    bunsetsus: &mut [Bunsetsu],
+    segment_annotations: &[RubyAnnotation],
+    document_readings: &HashMap<String, String>,
+) {
     for bunsetsu in bunsetsus {
         if let Some(reading) = document_readings
             .get(&bunsetsu.head_word.surface)
@@ -233,7 +252,7 @@ pub fn override_bunsetsu_readings_with_chars(
         }
         // A whole-word annotation is also an explicit lexical boundary. This covers
         // cases where the tokenizer kept the word in one bunsetsu but chose a shorter head.
-        if let Some(annotation) = annotations.iter().find(|annotation| {
+        if let Some(annotation) = segment_annotations.iter().find(|annotation| {
             annotation.char_range.0 >= bunsetsu.char_range.0
                 && annotation.char_range.1 <= bunsetsu.char_range.1
                 && bunsetsu.head_word.surface != annotation.base
@@ -262,7 +281,9 @@ pub fn override_bunsetsu_readings_with_chars(
                         bunsetsu.morphemes[start].char_range.0,
                         bunsetsu.morphemes[end].char_range.1,
                     );
-                    if let Some(reading) = reading_for_range(text_chars, char_range, annotations) {
+                    if let Some(reading) =
+                        reading_for_range(text_chars, char_range, segment_annotations)
+                    {
                         bunsetsu.head_word.reading = reading;
                     }
                     break;
