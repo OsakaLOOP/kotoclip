@@ -235,6 +235,22 @@ pub fn build_document_reading_map(annotations: &[RubyAnnotation]) -> HashMap<Str
     document_reading_map(annotations)
 }
 
+/// 将全文 ruby 归纳出的词级读音应用到已完成局部分段的 Token。
+/// 渐进批次必须复用这一全文 artifact，才能与一次性分析保持一致。
+pub fn override_token_readings_with_document_map(
+    tokens: &mut [crate::models::AnnotatedToken],
+    document_readings: &HashMap<String, String>,
+) {
+    for token in tokens {
+        if let Some(reading) = document_readings
+            .get(&token.bunsetsu.head_word.surface)
+            .or_else(|| document_readings.get(&token.bunsetsu.head_word.base_form))
+        {
+            token.bunsetsu.head_word.reading = reading.clone();
+        }
+    }
+}
+
 /// 使用预先构建的全文词级读音映射，同时只扫描当前分段的显式 ruby 标注。
 pub fn override_bunsetsu_readings_with_document_map(
     text_chars: &[char],

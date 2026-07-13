@@ -91,15 +91,19 @@ pub async fn open_document(
         .ok_or_else(|| "文档没有可分析内容".to_string())?;
     let engine = state.engine.lock().map_err(|error| error.to_string())?;
     let tokens = engine
-        .analyze_document_batch_with_progress(&batch.source, |progress| {
-            let _ = window.emit(
-                "analysis-progress",
-                AnalysisProgressEvent {
-                    request_id: request_id.clone(),
-                    progress,
-                },
-            );
-        })
+        .analyze_document_batch_with_progress(
+            &batch.source,
+            session.document_readings(),
+            |progress| {
+                let _ = window.emit(
+                    "analysis-progress",
+                    AnalysisProgressEvent {
+                        request_id: request_id.clone(),
+                        progress,
+                    },
+                );
+            },
+        )
         .map_err(|error| error.to_string())?;
     let patch = session
         .append_analyzed_batch(0, &batch, tokens)
@@ -147,7 +151,7 @@ pub async fn continue_document_analysis(
             .map_err(|error| error.to_string())?
     } else {
         engine
-            .analyze_document_batch(&batch.source)
+            .analyze_document_batch(&batch.source, session.document_readings())
             .map_err(|error| error.to_string())?
     };
     let patch = session
@@ -181,7 +185,7 @@ pub async fn request_document_range(
                 .map_err(|error| error.to_string())?
         } else {
             engine
-                .analyze_document_batch(&batch.source)
+                .analyze_document_batch(&batch.source, session.document_readings())
                 .map_err(|error| error.to_string())?
         };
         let patch = session

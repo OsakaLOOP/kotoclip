@@ -20,6 +20,7 @@ use models::{
 use performance::TimingCollector;
 use pipeline::Pipeline;
 use profile::ProfileEngine;
+use std::collections::HashMap;
 use std::path::Path;
 use std::time::Instant;
 
@@ -118,14 +119,17 @@ impl Engine {
     pub fn analyze_document_batch(
         &self,
         text: &str,
+        document_readings: &HashMap<String, String>,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
-        let tokens = self.analyze_stable_text(text);
+        let mut tokens = self.analyze_stable_text(text);
+        pipeline::ruby::override_token_readings_with_document_map(&mut tokens, document_readings);
         self.hydrate_stable_tokens_for_document_batch(tokens)
     }
 
     pub fn analyze_document_batch_with_progress<F>(
         &self,
         text: &str,
+        document_readings: &HashMap<String, String>,
         mut report: F,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>>
     where
@@ -142,6 +146,7 @@ impl Engine {
             &self.dictionary,
             &mut report,
         );
+        pipeline::ruby::override_token_readings_with_document_map(&mut tokens, document_readings);
         let choices = self.profile.get_segmentation_choices()?;
         self.pipeline
             .apply_segmentation_choices(&mut tokens, &choices);
@@ -815,8 +820,7 @@ mod progress_tests {
             directory.join("profile.sqlite"),
         )
         .unwrap();
-        let text =
-            "七日は警察署へ向かった。\n口を開くたびに、皆が振り返った。\n何があっても諦めない。";
+        let text = "七《なの》日《か》は警察署へ向かった。\n口を開くたびに、皆が振り返った。\n七日は何があっても諦めない。";
         let full_tokens = engine.analyze_text_with_exposure(text, false).unwrap();
         let full = crate::document::DocumentSession::new(
             "full".to_string(),
@@ -829,7 +833,9 @@ mod progress_tests {
             false,
         );
         while let Some(batch) = progressive.next_batch(1) {
-            let tokens = engine.analyze_document_batch(&batch.source).unwrap();
+            let tokens = engine
+                .analyze_document_batch(&batch.source, progressive.document_readings())
+                .unwrap();
             assert!(
                 tokens.iter().all(|token| token.expressions.is_empty()),
                 "渐进正文批次不应阻断等待表达阶段"

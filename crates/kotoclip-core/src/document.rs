@@ -2,7 +2,7 @@ use crate::models::AnnotatedToken;
 use crate::pipeline::ruby;
 use crate::transport::{CompactAnalysisPatch, CompactEncoder};
 use serde::Serialize;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub const DOCUMENT_SESSION_SCHEMA_VERSION: u32 = 1;
 pub const PIPELINE_ARTIFACT_VERSION: u32 = 1;
@@ -171,6 +171,7 @@ pub struct DocumentSession {
     record_exposure_on_complete: bool,
     exposure_recorded: bool,
     cached_stable_tokens: Vec<AnnotatedToken>,
+    document_readings: HashMap<String, String>,
 }
 
 impl DocumentSession {
@@ -178,6 +179,8 @@ impl DocumentSession {
         stabilize_expression_ids(&mut tokens);
         let token_ids = stable_token_ids(&tokens);
         let document_char_range = document_char_range(&tokens);
+        let prepared = ruby::prepare_text(&source);
+        let document_readings = ruby::build_document_reading_map(&prepared.annotations);
         Self {
             session_id,
             revision: 1,
@@ -192,6 +195,7 @@ impl DocumentSession {
             record_exposure_on_complete: false,
             exposure_recorded: false,
             cached_stable_tokens: Vec::new(),
+            document_readings,
         }
     }
 
@@ -200,6 +204,8 @@ impl DocumentSession {
         source: String,
         record_exposure_on_complete: bool,
     ) -> Self {
+        let prepared = ruby::prepare_text(&source);
+        let document_readings = ruby::build_document_reading_map(&prepared.annotations);
         let chunks = split_document_chunks(&source);
         let chunk_count = chunks.len();
         let document_end = chunks.last().map_or(0, |chunk| chunk.char_range.1);
@@ -217,6 +223,7 @@ impl DocumentSession {
             record_exposure_on_complete,
             exposure_recorded: false,
             cached_stable_tokens: Vec::new(),
+            document_readings,
         }
     }
 
@@ -227,6 +234,10 @@ impl DocumentSession {
 
     pub fn set_cached_stable_tokens(&mut self, tokens: Vec<AnnotatedToken>) {
         self.cached_stable_tokens = tokens;
+    }
+
+    pub fn document_readings(&self) -> &HashMap<String, String> {
+        &self.document_readings
     }
 
     pub fn take_cached_stable_tokens(
@@ -412,6 +423,8 @@ impl DocumentSession {
         let next_id_set: HashSet<_> = next_ids.iter().cloned().collect();
         let removed_token_ids = previous_ids.difference(&next_id_set).cloned().collect();
         self.source = source;
+        let prepared = ruby::prepare_text(&self.source);
+        self.document_readings = ruby::build_document_reading_map(&prepared.annotations);
         self.tokens = tokens;
         self.token_ids = next_ids;
         self.chunks.clear();
