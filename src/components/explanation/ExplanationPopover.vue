@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { AnnotatedToken, DictionaryLookup } from "../../types";
-import { placeExplanationPanels, type PopoverPlacement, type RectSnapshot } from "../../explanation/geometry";
+import { measureIntrinsicPanel, placeExplanationPanels, type PopoverPlacement, type RectSnapshot, type Size } from "../../explanation/geometry";
 import TooltipPanel from "../TooltipPanel.vue";
 
 const props = defineProps<{
@@ -36,19 +36,23 @@ const placement = ref<PopoverPlacement>({
 const panelWidth = ref(420);
 let observer: ResizeObserver | null = null;
 
+function intrinsicPanelSize(panelId: string): Size | undefined {
+  const panel = document.getElementById(panelId);
+  if (!panel) return undefined;
+  return measureIntrinsicPanel(panel);
+}
+
 function place() {
   if (!props.show || !props.anchor || !props.componentAnchor) return;
-  const componentElement = document.getElementById("explanation-component-panel");
-  if (!componentElement) return;
-  const componentRect = componentElement.getBoundingClientRect();
-  const wholeElement = document.getElementById("explanation-whole-panel");
-  const wholeRect = wholeElement?.getBoundingClientRect();
+  const componentSize = intrinsicPanelSize("explanation-component-panel");
+  if (!componentSize) return;
+  const wholeSize = intrinsicPanelSize("explanation-whole-panel");
   placement.value = placeExplanationPanels(
     props.anchor,
     props.componentAnchor,
-    { width: componentRect.width, height: componentRect.height },
+    componentSize,
     { width: window.innerWidth, height: window.innerHeight },
-    wholeRect ? { width: wholeRect.width, height: wholeRect.height } : undefined,
+    wholeSize,
   );
 }
 
@@ -58,10 +62,8 @@ async function connectAndPlace() {
   await nextTick();
   observer?.disconnect();
   observer = new ResizeObserver(place);
-  const component = document.getElementById("explanation-component-panel");
-  const whole = document.getElementById("explanation-whole-panel");
-  if (component) observer.observe(component);
-  if (whole) observer.observe(whole);
+  const contents = document.querySelectorAll("[data-explanation-content]");
+  contents.forEach((content) => observer?.observe(content));
   place();
 }
 

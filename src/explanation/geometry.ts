@@ -39,7 +39,15 @@ export function snapshotRect(rect: DOMRect): RectSnapshot {
   };
 }
 
-/** 使用实测面板尺寸生成候选，并按溢出、遮挡锚点、距离依次评分。 */
+/** 外框高度可能受 max-height 限制；scrollHeight 才是当前宽度下的内容固有高度。 */
+export function measureIntrinsicPanel(panel: Pick<HTMLElement, "getBoundingClientRect" | "scrollHeight">): Size {
+  return {
+    width: panel.getBoundingClientRect().width,
+    height: panel.scrollHeight,
+  };
+}
+
+/** 使用面板固有尺寸生成候选，并按溢出、遮挡锚点、距离依次评分。 */
 export function placeExplanationPanels(
   anchor: RectSnapshot,
   componentAnchor: RectSnapshot,

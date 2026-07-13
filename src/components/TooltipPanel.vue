@@ -192,7 +192,8 @@ function handleDefinitionClick(event: MouseEvent) {
       @pointerleave="emit('leave', $event)"
       @wheel.stop
     >
-      <header class="tooltip-header">
+      <div class="tooltip-content" :data-explanation-content="panelId">
+        <header class="tooltip-header">
         <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')">‹</button>
         <div class="headword-block">
           <span class="base-form">{{ activeHeadword }}</span>
@@ -200,23 +201,23 @@ function handleDefinitionClick(event: MouseEvent) {
         </div>
         <span v-if="isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
         <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
-      </header>
+        </header>
 
-      <DictionaryChoiceBar
+        <DictionaryChoiceBar
         v-if="candidateOptions.length"
         label="表记"
         :options="candidateOptions"
         @select="emit('select', $event)"
-      />
+        />
 
-      <DictionaryChoiceBar
+        <DictionaryChoiceBar
         v-if="readingOptions.length > 1"
         label="读音"
         :options="readingOptions"
         @select="selectedReadingKey = $event"
-      />
+        />
 
-      <div v-if="loading || dictionaryGroups.length || !lookup?.candidates.length" class="tooltip-section definitions" @click="handleDefinitionClick">
+        <div v-if="loading || dictionaryGroups.length || !lookup?.candidates.length" class="tooltip-section definitions" @click="handleDefinitionClick">
         <div class="definition-heading">
           <span class="section-title">词典释义</span>
           <span class="dictionary-sources">{{ dictionarySourceLabel }}</span>
@@ -249,6 +250,7 @@ function handleDefinitionClick(event: MouseEvent) {
             </div>
           </article>
           </section>
+        </div>
         </div>
       </div>
     </section>

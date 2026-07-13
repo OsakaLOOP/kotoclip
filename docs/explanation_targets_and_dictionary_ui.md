@@ -300,14 +300,14 @@ DOM 语义命中
 ### 12.2 组件边界
 
 - `useExplanationSession` 负责会话、请求竞争、缓存、关闭宽限和锚点刷新。
-- `ExplanationPopover` 只编排整体与内部面板，并监听面板真实尺寸变化。
+- `ExplanationPopover` 只编排整体与内部面板，并监听不受外框高度约束的内容层尺寸变化。
 - `TooltipPanel` 降为单面板内容外壳，不再包含语法说明或决定相邻面板位置。
 - `GrammarPopover` 独立展示 `GrammarTag`；badge 恢复指针命中，已知词不再隐藏语法入口。
 - `hitTest` 将 DOM 节点归一化为 `morpheme/token/grammar/panel/outside`，阅读器不再直接比较任意 DOM 子节点。
 
 ### 12.3 布局与回归
 
-- 定位使用文节／语素 `DOMRect` 与 `ResizeObserver` 实测面板尺寸。
+- 定位使用文节／语素 `DOMRect` 与 `ResizeObserver`。面板宽度取外框实测值，高度取 `scrollHeight`；观察内部内容层，不观察受 `max-height` 约束的滚动外框，避免排版结果反向改变下一轮布局输入。
 - 单面板比较上、下、左、右；双面板比较同侧横排和锚点上下分置，并按遮挡、重叠和距离评分。
 - 滚动和窗口缩放刷新锚点；虚拟列表已卸载锚点时关闭会话。
 - `npm run test:ui` 覆盖单面板视口边界、宽屏双面板、窄屏上下分置及跨语素／跨文节转换语义。

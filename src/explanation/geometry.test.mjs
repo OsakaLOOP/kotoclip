@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { placeExplanationPanels } from "./geometry.ts";
+import { measureIntrinsicPanel, placeExplanationPanels } from "./geometry.ts";
 
 const rect = (left, top, width, height) => ({
   left,
@@ -15,6 +15,26 @@ const overlaps = (left, right) => (
   Math.max(left.left, right.left) < Math.min(left.left + left.width, right.right)
   && Math.max(left.top, right.top) < Math.min(left.top + left.height, right.bottom)
 );
+
+test("布局读取内容固有高度而不是受约束的外框高度", () => {
+  const constrained = measureIntrinsicPanel({
+    getBoundingClientRect: () => rect(0, 0, 420, 300),
+    scrollHeight: 980,
+  });
+  const differentlyConstrained = measureIntrinsicPanel({
+    getBoundingClientRect: () => rect(0, 0, 420, 420),
+    scrollHeight: 980,
+  });
+  assert.deepEqual(constrained, { width: 420, height: 980 });
+  assert.deepEqual(differentlyConstrained, constrained);
+
+  const anchor = rect(430, 386, 40, 28);
+  const viewport = { width: 900, height: 800 };
+  assert.deepEqual(
+    placeExplanationPanels(anchor, anchor, constrained, viewport),
+    placeExplanationPanels(anchor, anchor, differentlyConstrained, viewport),
+  );
+});
 
 test("单面板保持在视口内且不遮挡语素", () => {
   const anchor = rect(380, 360, 42, 28);
