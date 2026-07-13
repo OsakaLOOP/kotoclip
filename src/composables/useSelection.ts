@@ -2,6 +2,7 @@ import { ref, Ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Paragraph } from "./useTokenization";
 import { ExportEntry, DictEntry } from "../types";
+import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 
 export function useSelection(paragraphs: Ref<Paragraph[]>) {
   // 当前被用户标记选中的 tokens (用于导出)
@@ -138,7 +139,8 @@ export function useSelection(paragraphs: Ref<Paragraph[]>) {
       }
 
       // 获取多词典释义列表
-      const dictDefs = await lookupFn(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
+      const dictionaryTarget = dictionaryTargetForToken(token);
+      const dictDefs = await lookupFn(dictionaryTarget.word, dictionaryTarget.reading);
 
       exportEntries.push({
         surface: token.bunsetsu.surface,

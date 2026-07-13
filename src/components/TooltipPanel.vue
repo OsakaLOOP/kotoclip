@@ -14,6 +14,8 @@ const props = defineProps<{
   lookup: DictionaryLookup | null;
   loading: boolean;
   canGoBack: boolean;
+  width?: number;
+  kindLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -187,7 +189,7 @@ function handleDefinitionClick(event: MouseEvent) {
       v-if="show && token"
       class="tooltip-panel"
       :class="`tooltip-${placement}`"
-      :style="{ left: x + 'px', top: y + 'px', maxHeight: panelMaxHeight }"
+      :style="{ left: x + 'px', top: y + 'px', width: width ? width + 'px' : undefined, maxHeight: panelMaxHeight }"
       role="dialog"
       aria-label="词典释义"
       @mouseenter="emit('enter')"
@@ -201,6 +203,7 @@ function handleDefinitionClick(event: MouseEvent) {
           <span v-if="activeReading" class="reading">【{{ activeReading }}】</span>
         </div>
         <span v-if="isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
+        <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
       </header>
 
       <div v-if="isSourceQuery && token.bunsetsu.grammar_tags.length" class="tooltip-section grammar-list">
@@ -271,6 +274,7 @@ function handleDefinitionClick(event: MouseEvent) {
 .back-button { flex: 0 0 28px; padding: 0; font-size: 1.35rem; line-height: 26px; }
 .base-form { color: var(--accent-color); font-size: 1.25rem; font-weight: 700; }
 .reading, .tooltip-pos { color: var(--text-muted); font-size: .78rem; }
+.tooltip-kind { flex: 0 0 auto; color: var(--text-muted); font: 700 .68rem var(--font-ui); }
 .tooltip-section { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px; }
 .section-title { margin-bottom: 7px; color: var(--text-muted); font: 700 .72rem var(--font-ui); letter-spacing: .04em; }
 .definition-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }

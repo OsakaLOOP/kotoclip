@@ -58,6 +58,7 @@ interface CompactBunsetsu {
   h: CompactHeadWord;
   g?: CompactGrammarTag[];
   w?: CompactWordFormation[];
+  v?: CompactLexicalUnit[];
   u?: CompactBunsetsuFunction;
   c: [number, number];
 }
@@ -76,6 +77,8 @@ interface CompactHeadWord { s: number; b: number; r: number; p: [number, number,
 interface CompactGrammarTag { i: number; j: number; e: number; l?: number; d: number; m: [number, number]; c: [number, number]; }
 interface CompactWordFormation { i: number; k: number; s: number; b: number; r: number; o: [number, number, number, number]; m: [number, number]; c: [number, number]; h: number; p?: CompactWordFormationCapture[]; q: number; }
 interface CompactWordFormationCapture { n: number; s: number; m: [number, number]; c: [number, number]; }
+interface CompactDictionaryEntryRef { k: number; d: number; h: number; f: number; m: number; r: number[]; }
+interface CompactLexicalUnit { s: number; b: number; r: number; o: [number, number, number, number]; m: [number, number]; c: [number, number]; h: number; k: number; d: CompactDictionaryEntryRef[]; a: number[]; q: number; e: number[]; }
 interface CompactBunsetsuFunction { f: number; c: number; e: number[]; }
 interface CompactExpression { m: number; i: number; l: number; d: number; o: number; t: number; p: number; b: number; c: number; q: number; r: [number, number]; a: [number, number]; z?: [number, number][]; s: number; }
 
@@ -107,6 +110,18 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
         captures: (formation.p ?? []).map((capture) => ({
           name: stringAt(capture.n), surface: stringAt(capture.s), morpheme_range: capture.m, char_range: capture.c,
         })),
+      })),
+      lexical_units: (token.b.v ?? []).map((unit) => ({
+        surface: stringAt(unit.s), base_form: stringAt(unit.b), reading: stringAt(unit.r),
+        output_pos: position(unit.o), morpheme_range: unit.m, char_range: unit.c,
+        head_morpheme: unit.h, lexical_shape: stringAt(unit.k),
+        dictionary_refs: unit.d.map((reference) => ({
+          entry_key: stringAt(reference.k), dict_name: stringAt(reference.d),
+          headword: stringAt(reference.h), matched_form: stringAt(reference.f),
+          match_type: stringAt(reference.m) as "exact_form" | "headword",
+          readings: reference.r.map(stringAt),
+        })),
+        reading_candidates: unit.a.map(stringAt), confidence: unit.q, evidence: unit.e.map(stringAt),
       })),
       function: token.b.u === undefined ? null : {
         function: stringAt(token.b.u.f) as import("../types").BunsetsuFunction,
@@ -313,6 +328,7 @@ export function useTokenization() {
                   },
                   grammar_tags: [],
                   word_formations: [],
+                  lexical_units: [],
                   char_range: [0, 0]
                 },
                 novelty_score: 0,

@@ -16,6 +16,7 @@ import ExportPanel from "./ExportPanel.vue";
 import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
 import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
+import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 
 // 状态定义
 const inputText = ref("");
@@ -71,6 +72,16 @@ let tooltipTimeout: number | null = null;
 let tooltipRequestId = 0;
 let tooltipPanelHovered = false;
 const tooltipHistory = ref<DictionaryLookup[]>([]);
+const tooltipWidth = ref(460);
+const tooltipWholeX = ref(0);
+const tooltipWholeY = ref(0);
+const tooltipWholePlacement = ref<"above" | "below">("above");
+const tooltipWholeToken = ref<AnnotatedToken | null>(null);
+const tooltipWholeLookup = ref<DictionaryLookup | null>(null);
+const tooltipWholeLoading = ref(false);
+const tooltipWholeHistory = ref<DictionaryLookup[]>([]);
+let focusedMorphemeKey = "";
+const tooltipKindLabel = ref("内部");
 
 function cancelTooltipClose() {
   if (tooltipTimeout) window.clearTimeout(tooltipTimeout);
@@ -83,6 +94,7 @@ function scheduleTooltipClose(delay = 180) {
     if (!tooltipPanelHovered) {
       tooltipShow.value = false;
       tooltipLookup.value = null;
+      tooltipWholeLookup.value = null;
     }
   }, delay);
 }
@@ -250,9 +262,6 @@ async function triggerAnalysis(recordExposure = true) {
 async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
   const target = e.target as HTMLElement;
   const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
-  const relatedCapsule = (e.relatedTarget as HTMLElement | null)?.closest?.("[data-token-index]");
-  if (capsuleEl && relatedCapsule === capsuleEl) return;
-  
   cancelTooltipClose();
 
   if (!capsuleEl) {
@@ -268,39 +277,122 @@ async function handleParagraphMouseOver(e: MouseEvent, paragraphId: number) {
   const token = p?.tokens[tokenIndex];
 
   const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
-  if (!token || token.is_known || isPunc) {
+  if (!token || isPunc) {
     ++tooltipRequestId;
     tooltipShow.value = false;
     return;
   }
 
+  const grammarBadgeEl = target.closest(".grammar-badge") as HTMLElement | null;
+  const morphemeEl = target.closest("[data-morpheme-index]") as HTMLElement | null;
+  const parsedMorphemeIndex = Number.parseInt(morphemeEl?.dataset.morphemeIndex ?? "", 10);
+  const morphemeIndex = Number.isNaN(parsedMorphemeIndex)
+    ? Math.min(token.bunsetsu.lexical_units[0]?.head_morpheme ?? 0, token.bunsetsu.morphemes.length - 1)
+    : parsedMorphemeIndex;
+  const focusKey = `${paragraphId}:${tokenIndex}:${grammarBadgeEl ? "grammar" : morphemeIndex}`;
+  if (tooltipShow.value && tooltipWholeToken.value === token && focusedMorphemeKey !== focusKey) {
+    focusedMorphemeKey = focusKey;
+    tooltipKindLabel.value = grammarBadgeEl ? "语法" : "内部";
+    const morpheme = token.bunsetsu.morphemes[morphemeIndex];
+    if (!morpheme) return;
+    tooltipToken.value = grammarBadgeEl ? token : tokenForMorphemeLookup(token, morpheme);
+    if (grammarBadgeEl) {
+      tooltipWholeLookup.value = null;
+      tooltipWholeLoading.value = false;
+      positionDictionaryPopover(capsuleEl, grammarBadgeEl, false);
+    } else if (!tooltipWholeLookup.value && morphemeEl) {
+      positionDictionaryPopover(capsuleEl, morphemeEl, false);
+    }
+    tooltipLookup.value = null;
+    tooltipLoading.value = true;
+    const requestId = ++tooltipRequestId;
+    const baseForm = grammarBadgeEl
+      ? token.bunsetsu.head_word.base_form
+      : morpheme.base_form && morpheme.base_form !== "*" ? morpheme.base_form : morpheme.surface;
+    const reading = grammarBadgeEl ? token.bunsetsu.head_word.reading : morpheme.reading;
+    void lookupWord(baseForm, reading).then((lookup) => {
+      if (requestId === tooltipRequestId) {
+        tooltipLookup.value = lookup;
+        tooltipLoading.value = false;
+      }
+    });
+    return;
+  }
+  const relatedCapsule = (e.relatedTarget as HTMLElement | null)?.closest?.("[data-token-index]");
+  if (capsuleEl && relatedCapsule === capsuleEl) return;
+
   // 延时 200ms 显示 Tooltip
   tooltipTimeout = window.setTimeout(async () => {
-    // 计算悬浮框展示坐标 (相对于视口，防止溢出)
-    const rect = capsuleEl.getBoundingClientRect();
-    const tooltipHalfWidth = Math.min(230, Math.max(0, window.innerWidth / 2 - 12));
-    tooltipX.value = Math.min(
-      window.innerWidth - tooltipHalfWidth,
-      Math.max(tooltipHalfWidth, rect.left + rect.width / 2)
-    );
-    tooltipPlacement.value = rect.top >= 340 ? "above" : "below";
-    tooltipY.value = tooltipPlacement.value === "above" ? rect.top : rect.bottom;
-
-    tooltipToken.value = token;
+    const morpheme = token.bunsetsu.morphemes[morphemeIndex];
+    if (!morpheme) return;
+    const lexicalUnit = grammarBadgeEl ? undefined : token.bunsetsu.lexical_units[0];
+    positionDictionaryPopover(capsuleEl, grammarBadgeEl ?? morphemeEl ?? capsuleEl, Boolean(lexicalUnit));
+    tooltipToken.value = grammarBadgeEl ? token : tokenForMorphemeLookup(token, morpheme);
+    tooltipWholeToken.value = token;
+    focusedMorphemeKey = focusKey;
+    tooltipKindLabel.value = grammarBadgeEl ? "语法" : "内部";
     tooltipPanelHovered = false;
     tooltipShow.value = true;
     tooltipLookup.value = null;
     tooltipHistory.value = [];
+    tooltipWholeHistory.value = [];
     tooltipLoading.value = true;
+    tooltipWholeLoading.value = Boolean(lexicalUnit);
+    tooltipWholeLookup.value = null;
     const requestId = ++tooltipRequestId;
 
-    // 异步查询词典释义摘要
-    const lookup = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
-    if (requestId === tooltipRequestId && tooltipToken.value === token) {
+    const baseForm = grammarBadgeEl
+      ? token.bunsetsu.head_word.base_form
+      : morpheme.base_form && morpheme.base_form !== "*" ? morpheme.base_form : morpheme.surface;
+    const reading = grammarBadgeEl ? token.bunsetsu.head_word.reading : morpheme.reading;
+    const [lookup, wholeLookup] = await Promise.all([
+      lookupWord(baseForm, reading),
+      lexicalUnit ? lookupWord(lexicalUnit.base_form, lexicalUnit.reading) : Promise.resolve(null),
+    ]);
+    if (requestId === tooltipRequestId && tooltipWholeToken.value === token) {
       tooltipLookup.value = lookup;
+      tooltipWholeLookup.value = wholeLookup;
       tooltipLoading.value = false;
+      tooltipWholeLoading.value = false;
     }
   }, 200);
+}
+
+function positionDictionaryPopover(capsuleEl: HTMLElement, morphemeEl: HTMLElement, dual: boolean) {
+  const anchor = (dual ? capsuleEl : morphemeEl).getBoundingClientRect();
+  const margin = 12;
+  const gap = 10;
+  if (dual) {
+    if (window.innerWidth >= 620) {
+      const width = Math.min(420, (window.innerWidth - margin * 2 - gap) / 2);
+      const groupWidth = width * 2 + gap;
+      const center = Math.min(window.innerWidth - margin - groupWidth / 2, Math.max(margin + groupWidth / 2, anchor.left + anchor.width / 2));
+      tooltipWidth.value = width;
+      tooltipWholeX.value = center - (width + gap) / 2;
+      tooltipX.value = center + (width + gap) / 2;
+      tooltipPlacement.value = anchor.top >= Math.min(340, window.innerHeight / 2) ? "above" : "below";
+      tooltipWholePlacement.value = tooltipPlacement.value;
+      tooltipY.value = tooltipPlacement.value === "above" ? anchor.top : anchor.bottom;
+      tooltipWholeY.value = tooltipY.value;
+      return;
+    }
+    const width = Math.min(460, window.innerWidth - margin * 2);
+    tooltipWidth.value = width;
+    tooltipWholeX.value = tooltipX.value = window.innerWidth / 2;
+    tooltipWholePlacement.value = "above";
+    tooltipPlacement.value = "below";
+    tooltipWholeY.value = anchor.top;
+    tooltipY.value = anchor.bottom;
+    return;
+  } else {
+    const width = Math.min(460, window.innerWidth - margin * 2);
+    tooltipWidth.value = width;
+    tooltipX.value = Math.min(window.innerWidth - margin - width / 2, Math.max(margin + width / 2, anchor.left + anchor.width / 2));
+  }
+  tooltipPlacement.value = anchor.top >= Math.min(340, window.innerHeight / 2) ? "above" : "below";
+  tooltipY.value = tooltipPlacement.value === "above" ? anchor.top : anchor.bottom;
+  tooltipWholePlacement.value = tooltipPlacement.value;
+  tooltipWholeY.value = tooltipY.value;
 }
 
 // 离开段落清除 hover 状态
@@ -327,6 +419,29 @@ async function navigateTooltip(target: string) {
     tooltipLookup.value = lookup;
     tooltipLoading.value = false;
   }
+}
+
+async function navigateWholeTooltip(target: string) {
+  if (tooltipWholeLookup.value) tooltipWholeHistory.value.push(tooltipWholeLookup.value);
+  tooltipWholeLoading.value = true;
+  tooltipWholeLookup.value = await lookupWord(target);
+  tooltipWholeLoading.value = false;
+}
+
+function backWholeTooltip() {
+  const previous = tooltipWholeHistory.value.pop();
+  if (previous) tooltipWholeLookup.value = previous;
+}
+
+async function selectWholeTooltipTarget(target: string) {
+  if (!tooltipWholeLookup.value) return;
+  tooltipWholeLoading.value = true;
+  tooltipWholeLookup.value = await chooseDictionaryTarget(
+    tooltipWholeLookup.value.query,
+    tooltipWholeLookup.value.reading,
+    target,
+  );
+  tooltipWholeLoading.value = false;
 }
 
 function backTooltip() {
@@ -374,51 +489,6 @@ function handleParagraphClick(e: MouseEvent, paragraphId: number) {
   toggleSelect(paragraphId, tokenIndex);
 }
 
-// 双击语素：合并后的词汇单位仍保留原始 morpheme，按实际点击项下钻查词。
-function handleParagraphDblClick(e: MouseEvent, paragraphId: number) {
-  const target = e.target as HTMLElement;
-  const morphemeEl = target.closest("[data-morpheme-index]") as HTMLElement;
-  const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
-  if (!capsuleEl || !morphemeEl) return;
-
-  const tokenIndex = parseInt(capsuleEl.getAttribute("data-token-index") || "", 10);
-  const morphemeIndex = parseInt(morphemeEl.getAttribute("data-morpheme-index") || "", 10);
-  if (isNaN(tokenIndex) || isNaN(morphemeIndex)) return;
-
-  const p = paragraphs.value.find((para) => para.id === paragraphId);
-  const token = p?.tokens[tokenIndex];
-  const isPunc = token && (token.display_class === "punctuation" || token.display_class === "line_break");
-  if (!token || isPunc) return;
-  const morpheme = token.bunsetsu.morphemes[morphemeIndex];
-  if (!morpheme) return;
-
-  cancelTooltipClose();
-  const rect = morphemeEl.getBoundingClientRect();
-  const tooltipHalfWidth = Math.min(230, Math.max(0, window.innerWidth / 2 - 12));
-  tooltipX.value = Math.min(
-    window.innerWidth - tooltipHalfWidth,
-    Math.max(tooltipHalfWidth, rect.left + rect.width / 2)
-  );
-  tooltipPlacement.value = rect.top >= 340 ? "above" : "below";
-  tooltipY.value = tooltipPlacement.value === "above" ? rect.top : rect.bottom;
-  tooltipToken.value = tokenForMorphemeLookup(token, morpheme);
-  tooltipPanelHovered = false;
-  tooltipShow.value = true;
-  tooltipLookup.value = null;
-  tooltipHistory.value = [];
-  tooltipLoading.value = true;
-  const requestId = ++tooltipRequestId;
-  const baseForm = morpheme.base_form && morpheme.base_form !== "*"
-    ? morpheme.base_form
-    : morpheme.surface;
-  void lookupWord(baseForm, morpheme.reading).then((lookup) => {
-    if (requestId === tooltipRequestId) {
-      tooltipLookup.value = lookup;
-      tooltipLoading.value = false;
-    }
-  });
-}
-
 function tokenForMorphemeLookup(token: AnnotatedToken, morpheme: Morpheme): AnnotatedToken {
   return {
     ...token,
@@ -434,6 +504,7 @@ function tokenForMorphemeLookup(token: AnnotatedToken, morpheme: Morpheme): Anno
       },
       grammar_tags: [],
       word_formations: [],
+      lexical_units: [],
     },
   };
 }
@@ -489,11 +560,12 @@ async function viewFullDefinition(paragraphId: number, tokenIndex: number) {
   const token = p?.tokens[tokenIndex];
   if (!token) return;
 
-  activeWordForModal.value = token.bunsetsu.head_word.base_form;
+  const target = dictionaryTargetForToken(token);
+  activeWordForModal.value = target.word;
   showDefinitionModal.value = true;
   modalDefinitions.value = [];
 
-  const lookup = await lookupWord(token.bunsetsu.head_word.base_form, token.bunsetsu.head_word.reading);
+  const lookup = await lookupWord(target.word, target.reading);
   modalDefinitions.value = lookup?.entries ?? [];
 }
 
@@ -651,7 +723,6 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             @mousedown="handleMouseDown($event, paragraphs[virtualRow.index].id)"
             @mousemove="handleMouseMove($event, paragraphs[virtualRow.index].id)"
             @click="handleParagraphClick($event, paragraphs[virtualRow.index].id)"
-            @dblclick="handleParagraphDblClick($event, paragraphs[virtualRow.index].id)"
             @contextmenu.prevent="handleParagraphContextMenu($event, paragraphs[virtualRow.index].id)"
           >
             <template v-if="paragraphs[virtualRow.index].tokens.length > 0">
@@ -675,13 +746,33 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
     <!-- 3. 全局 Tooltip 悬浮框 -->
     <TooltipPanel
+      v-if="tooltipWholeLookup || tooltipWholeLoading"
+      :show="tooltipShow"
+      :x="tooltipWholeX"
+      :y="tooltipWholeY"
+      :width="tooltipWidth"
+      :placement="tooltipWholePlacement"
+      :token="tooltipWholeToken"
+      :lookup="tooltipWholeLookup"
+      :loading="tooltipWholeLoading"
+      kind-label="整体"
+      @enter="handleTooltipEnter"
+      @leave="handleTooltipLeave"
+      @navigate="navigateWholeTooltip"
+      @select="selectWholeTooltipTarget"
+      @back="backWholeTooltip"
+      :can-go-back="tooltipWholeHistory.length > 0"
+    />
+    <TooltipPanel
       :show="tooltipShow"
       :x="tooltipX"
       :y="tooltipY"
+      :width="tooltipWidth"
       :placement="tooltipPlacement"
       :token="tooltipToken"
       :lookup="tooltipLookup"
       :loading="tooltipLoading"
+      :kind-label="tooltipKindLabel"
       @enter="handleTooltipEnter"
       @leave="handleTooltipLeave"
       @navigate="navigateTooltip"
