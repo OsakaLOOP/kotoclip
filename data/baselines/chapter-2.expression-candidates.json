@@ -2,7 +2,7 @@
   {
     "match_id": "correlative:rhetorical_ittai:1124:1129",
     "status": "accepted",
-    "rule_id": "-10002",
+    "rule_id": "rhetorical_ittai",
     "label": "一体〜か",
     "origin": "correlative",
     "description": "究竟呼应｜强调疑问或反问语气；到底、究竟如何。",
@@ -25,16 +25,20 @@
         2895
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "アは、誰かに名前をつけたことなど一度もなかった。【一体】どうやって名付ければいいのだろう【か】。もぐもぐとクチバシを動かすウミネコを見つめて考"
   },
   {
     "match_id": "correlative:simile_marude:4378:4381",
     "status": "accepted",
-    "rule_id": "-10000",
+    "rule_id": "simile_marude",
     "label": "まるで〜ようだ",
     "origin": "correlative",
     "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
@@ -57,16 +61,20 @@
         11204
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "綺麗な猫が大きな窓辺で日向ぼっこをしている様は、【まるで】一枚の絵の【よう】に優雅な光景だった。対照的に部屋は雑然としていて"
   },
   {
     "match_id": "correlative:simile_marude:4590:4595",
     "status": "accepted",
-    "rule_id": "-10000",
+    "rule_id": "simile_marude",
     "label": "まるで〜ようだ",
     "origin": "correlative",
     "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
@@ -89,16 +97,20 @@
         11772
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "同じくらいに艶やかな灰色の髪が覗いていた。  　【まるで】ヨーロッパの屋敷に飾られた人形の【よう】。  「......でも、日本語なのね....."
   },
   {
     "match_id": "builtin:concessive_nimo_kakawarazu:v1:5177:5179",
     "status": "accepted",
-    "rule_id": "-6",
+    "rule_id": "concessive_nimo_kakawarazu",
     "label": "にもかかわらず",
     "origin": "builtin",
     "description": "让步｜前项事实成立，却出现与通常预期相反或不受其影响的后项。",
@@ -117,16 +129,19 @@
         13176
       ]
     ],
+    "captures": [],
     "evidence": [
-      "builtin_rule_match"
+      "all_atoms_matched"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "出したのは、灰色猫だった。絶叫のど真ん中にいたの【にもかかわらず】、小さな寝息を立てて、静かに抱えられている。  "
   },
   {
     "match_id": "builtin:sequence_ru_ma_mo_naku:v1:6083:6085",
     "status": "accepted",
-    "rule_id": "-9",
+    "rule_id": "sequence_ru_ma_mo_naku",
     "label": "〜間もなく",
     "origin": "builtin",
     "description": "时间关系｜前项刚发生或尚未来得及充分完成，后项便紧接着发生。",
@@ -145,16 +160,19 @@
         15460
       ]
     ],
+    "captures": [],
     "evidence": [
-      "builtin_rule_match"
+      "all_atoms_matched"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "主人へナイフを振るった。頸動脈を一撃。主人は声を【上げる間もなく】、そこに倒れ、大量出血で絶命した」  「おお」 "
   },
   {
     "match_id": "correlative:simile_marude:7083:7087",
     "status": "accepted",
-    "rule_id": "-10000",
+    "rule_id": "simile_marude",
     "label": "まるで〜ようだ",
     "origin": "correlative",
     "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
@@ -177,16 +195,20 @@
         17873
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "る歌声に怯えているのではなかったか。その口振りは【まるで】、歌い神をかばっている【よう】に聞こえる。  　婦人は顔を横に振ってつぶやいた"
   },
   {
     "match_id": "correlative:negative_kesshite:7195:7199",
     "status": "accepted",
-    "rule_id": "-10007",
+    "rule_id": "negative_kesshite",
     "label": "決して〜ない",
     "origin": "correlative",
     "description": "否定呼应｜表示强烈的否定意志或客观事实：决不、绝对不。",
@@ -209,16 +231,20 @@
         18168
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": " 「きっと寂しくて鳴いてたんだわ。聞いた話だと、【決して】屋敷から出ようとし【なかっ】たみたい。ずっと待っていたのね。大好きなご家族の"
   },
   {
     "match_id": "correlative:simile_marude:7597:7599",
     "status": "accepted",
-    "rule_id": "-10000",
+    "rule_id": "simile_marude",
     "label": "まるで〜ようだ",
     "origin": "correlative",
     "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
@@ -241,16 +267,20 @@
         19198
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ではなくて。指の隙間からは、笑顔が見えた。  　【まるで】じゃれ合っている【よう】だ。音はなかったが、笑い声が聞こえてくるようだっ"
   },
   {
     "match_id": "correlative:simile_marude:8965:8967",
     "status": "accepted",
-    "rule_id": "-10000",
+    "rule_id": "simile_marude",
     "label": "まるで〜ようだ",
     "origin": "correlative",
     "description": "比喻呼应｜将某事物比作另一事物；中间为比喻内容。",
@@ -273,16 +303,20 @@
         22704
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "アの顔をうかがい、目が合うとすぐに逸らす。  　【まるで】小動物の【よう】だ。この少女の仕草には、いちいち庇護欲をそそられ"
   },
   {
     "match_id": "builtin:idiom_me_wo_hanasu:v1:11201:11203",
     "status": "accepted",
-    "rule_id": "-5",
+    "rule_id": "idiom_me_wo_hanasu",
     "label": "目を離す",
     "origin": "builtin",
     "description": "固定表达｜見続けることをやめる。",
@@ -301,16 +335,44 @@
         28287
       ]
     ],
-    "evidence": [
-      "builtin_rule_match"
+    "captures": [
+      {
+        "name": "object",
+        "surface": "目",
+        "morpheme_range": [
+          17401,
+          17402
+        ],
+        "char_range": [
+          28283,
+          28284
+        ]
+      },
+      {
+        "name": "predicate",
+        "surface": "離せ",
+        "morpheme_range": [
+          17403,
+          17404
+        ],
+        "char_range": [
+          28285,
+          28287
+        ]
+      }
     ],
+    "evidence": [
+      "all_atoms_matched"
+    ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "リアは早くも焦れた。この場を離れられない。  　【目を離せ】ばその瞬間に距離を縮められそうで、七日から視線を"
   },
   {
     "match_id": "correlative:rhetorical_ittai:13093:13096",
     "status": "accepted",
-    "rule_id": "-10002",
+    "rule_id": "rhetorical_ittai",
     "label": "一体〜か",
     "origin": "correlative",
     "description": "究竟呼应｜强调疑问或反问语气；到底、究竟如何。",
@@ -333,10 +395,14 @@
         32933
       ]
     ],
+    "captures": [],
     "evidence": [
-      "correlative_rule_match"
+      "nearest_compatible_tail",
+      "same_boundary_domain"
     ],
+    "counter_evidence": [],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "るのが、仕事だって言うのかね」  「まあ」  「【一体】誰の差し金【だ】。白状なさい。だいたいの見当はついているんだ。ど"
   },
   {
@@ -361,11 +427,16 @@
         21914
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "と同じ、マガツカミなんでしょう？」  　歌い神は【目を丸くし】た。  「......あなた、マガツカミなの？」"
   },
   {
@@ -390,11 +461,16 @@
         36449
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "メル」  　ラティメリアは尋ねた。すると歌い神は【目を丸くし】た。  「......今、私に言ったの？　違う。"
   },
   {
@@ -419,11 +495,16 @@
         36981
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ガツカミに」  「いつのことだ」  　カラメルは【首を横に振る】。  「これ以上は言わない......」  　そ"
   },
   {
@@ -448,11 +529,16 @@
         325
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ぼれ落ちている。  　ラティメリアはその真上──【天井裏】にいた。  　──くくく......。さすがに自"
   },
   {
@@ -477,11 +563,16 @@
         376
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "分の部屋じゃ隙だらけね、ナノ。  　天井に空いた【覗き穴】から七日の姿を見下ろし、ラティメリアは歪な笑みを"
   },
   {
@@ -506,11 +597,16 @@
         470
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "、ほんのわずかな音を立てただけで、七日は気づいて【目を覚まし】てしまう。  　ラティメリアはそのたび、サーベル"
   },
   {
@@ -535,11 +631,16 @@
         622
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "武器〟は、趣向を凝らしている。  　並の刃物では【敵わなかっ】た。武器の使用に関しては、向こうが一枚上手。多く"
   },
   {
@@ -564,11 +665,16 @@
         780
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "丸腰となった七日ならば、充分に勝算はある。  　【息を殺し】て天井の板を外し、ラティメリアがひょっこり顔を出"
   },
   {
@@ -593,11 +699,16 @@
         805
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "を殺して天井の板を外し、ラティメリアがひょっこり【顔を出す】。  　やかんを構えて、七日の頭上に飛び降りた。"
   },
   {
@@ -622,11 +733,16 @@
         869
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "....！」  　しかし七日はその一瞬のうちに、【目を覚まし】た。  「はっ......!?」  　振り下ろさ"
   },
   {
@@ -651,11 +767,16 @@
         893
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "目を覚ました。  「はっ......!?」  　【振り下ろさ】れたやかんは避けられ、柱にぶつかって熱湯を散らす"
   },
   {
@@ -680,11 +801,16 @@
         1108
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "」  　立ち上がろうとした七日の頭上に、やかんを【今一】度振り降ろした。  　七日はラティメリアの手首を"
   },
   {
@@ -709,11 +835,16 @@
         1828
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "明かりの下で喚き散らすラティメリアへ言い捨てて、【踵を返し】た七日は部屋に入り、ぴしゃんと障子を閉め切った。"
   },
   {
@@ -738,11 +869,16 @@
         2359
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "で、七日がいざ捌こうとまな板の上に寝かした途端、【息を吹き返し】たのだ。  　生き返ったのだから新鮮だ、とラティ"
   },
   {
@@ -767,11 +903,16 @@
         2603
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "た挙げ句、きちんと新鮮な状態になるまで、看護する【ことにし】たのだ。  　ウミネコはまだ飛べない。羽には深い"
   },
   {
@@ -796,11 +937,16 @@
         3454
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "に黄みがかった滑らかなボディ。てっぺんに敷かれた【カラメルソース】が光沢を放ち、その色はいかにも甘そうである。  "
   },
   {
@@ -825,11 +971,16 @@
         3699
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "..うぅ。喰い神が食うのを我慢するの？　それって【自己否定】じゃない......？　これは哲学の問題だわ」 "
   },
   {
@@ -854,11 +1005,16 @@
         3870
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "みながら食べていた。  「はっ」とラティメリアは【我に返る】。恐るべし濃厚カラメルプリン。舌の上でとろけるプ"
   },
   {
@@ -883,11 +1039,16 @@
         3926
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ンの甘さは奥ゆかしく、慎ましいのに、そこにほろ苦【カラメルソース】を絡めると、一気にゴージャスで濃厚な甘さへと変貌"
   },
   {
@@ -912,11 +1073,16 @@
         4039
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "続けた。最後の少し大きめの一欠片を、底に溜まった【カラメルソース】ごといただくことにする。カップを持ち上げ、口を大"
   },
   {
@@ -941,11 +1107,16 @@
         4050
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "一欠片を、底に溜まったカラメルソースごといただく【ことにする】。カップを持ち上げ、口を大きく開けたと同時に、ガ"
   },
   {
@@ -970,11 +1141,16 @@
         4793
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "。こっそりと、七日の部屋の襖を開ける。  　甘い【物好き】のあの男が、引き出しにおやつ箱を隠し持っているこ"
   },
   {
@@ -999,11 +1175,16 @@
         4993
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "はぁ......」  　喰い神ともあろう自分が、【人目を忍ん】で盗み食いとは。  　ロリポップを舐めるだけでは"
   },
   {
@@ -1028,11 +1209,16 @@
         5645
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "今でさえも、家で留守番をしているウミネコのことを【気にし】てしまう。  「うーん......。名前つけるの"
   },
   {
@@ -1057,11 +1243,16 @@
         6094
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "くね。食うんだったら食べ物の名前がいいと思うぞ。【情が移る】」  「苗字がテバなの」  「おお。食べる気満々"
   },
   {
@@ -1086,11 +1277,16 @@
         6178
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "　どう思う？」  　体を起こしたラティメリアは、【フロントガラス】越しに見える風景に驚いた。  　車はさっきまで工"
   },
   {
@@ -1115,11 +1311,16 @@
         6293
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "両脇に並んでいた。レンガ作りの背の高い屋敷には、【窓ガラス】がいくつも嵌め込まれている。どれもこれもが、ラテ"
   },
   {
@@ -1144,11 +1345,16 @@
         7154
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "あまりの悲しさに、自ら首を吊るんだそうだ」  　【対向車線】を走る霊柩車と擦れ違う。  　ラティメリアは、走"
   },
   {
@@ -1173,11 +1379,16 @@
         7670
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "  　びっしり蔦に覆われた二階の窓で、影が揺れた【気がし】た。ラティメリアは顔を上げる。  　誰も住んでい"
   },
   {
@@ -1202,11 +1413,16 @@
         8194
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "。  「いや、暑いな、外は」  　緑の柄シャツに【日に焼け】たその姿は、水辺に生息するゲンゴロウを思わせた。"
   },
   {
@@ -1231,11 +1447,16 @@
         8557
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "たちのものではありませんから......」  「【不法侵入】になりますね。承知しています」  　この二人は、"
   },
   {
@@ -1260,11 +1481,16 @@
         8639
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "けか、屋敷の幽霊を庇って、ある団体が対抗馬として【名乗りを上げ】たのだ。二組は、屋敷を巡って競り合っていた。だか"
   },
   {
@@ -1289,11 +1515,16 @@
         8705
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "を守る理由をなくすべく、幽霊退治を依頼したのだ。【秘密裏】に、どこにも属さないもぐりの祈祷士を使って。  "
   },
   {
@@ -1318,11 +1549,16 @@
         9090
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "けねっ、やべやべっ、死ぬわっ」  　ゲンゴロウが【耳を塞い】で、車内へと避難していく。  　アメンボもまた青"
   },
   {
@@ -1347,11 +1583,16 @@
         9200
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "いそと車へ駆けていくアメンボ。黒光りする高級車は【排気ガス】を巻き散らし、逃げるように去っていった。  「."
   },
   {
@@ -1376,11 +1617,16 @@
         9478
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "一声、カアと鳴いた。  　七日が玄関の鍵を開け、【中に入る】。こもった熱気と、古めかしい家の臭いにラティメリ"
   },
   {
@@ -1405,11 +1651,16 @@
         10391
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "んで。一緒に並んで歌を歌って〟」  〝お昼寝から【目を覚ます】たび、お日さまに尋ねるの。今日は日曜日？〟  〝"
   },
   {
@@ -1434,11 +1685,16 @@
         10425
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "さまに尋ねるの。今日は日曜日？〟  〝お昼寝から【目を覚ます】たび、がっかりする〟〝日曜日はまだ遠い〟  　待"
   },
   {
@@ -1463,11 +1719,16 @@
         10454
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "すたび、がっかりする〟〝日曜日はまだ遠い〟  　【待ちに待った】日曜日が訪れると、歌い手は〝あの子〟と仲良く遊ぶ"
   },
   {
@@ -1492,11 +1753,16 @@
         11447
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "垂れたシーツをめくった。ベッドの下の暗がりの中、【エメラルドグリーン】の瞳が、じっとこちらを見つめていた。  「うぇえ"
   },
   {
@@ -1521,11 +1787,16 @@
         11641
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "る。  「......。何......？」  　【鈴を転がすよう】な声で、少女は尋ねた。  　その少女は、中世ヨー"
   },
   {
@@ -1550,11 +1821,16 @@
         11717
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ートはふっくらと裾が広がっている。  　頭を覆う【ヘッドドレス】からは、猫の毛並みと同じくらいに艶やかな灰色の髪"
   },
   {
@@ -1579,11 +1855,16 @@
         12588
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "した次の動作で、サーベルの切っ先を歌い神の腹部へ【突き入れる】。  「......っ！」  　ほんの数秒の接触"
   },
   {
@@ -1608,11 +1889,16 @@
         12929
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "屋全体が震える。机の人形が倒れ、三面鏡が振動し、【窓ガラス】がヒビ割れる。ラティメリアは両手で耳を押さえ、七"
   },
   {
@@ -1637,11 +1923,16 @@
         13513
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "　言うが早いか、歌い神は窓の向こうへ真っ逆さまに【身を投げる】。  　七日が窓辺へ駆け寄り外を見下ろすが、歌い"
   },
   {
@@ -1666,11 +1957,16 @@
         13809
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "生まれたんだろうよ」  　七日は廊下の置物などに【目を配り】ながら、ついでのように答える。  「人は喰ってな"
   },
   {
@@ -1695,11 +1991,16 @@
         14755
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "っては困るわ。喰えないものに興味はないの」  　【胸を張っ】て否定して、ラティメリアは改めて考えた。果たして"
   },
   {
@@ -1724,11 +2025,16 @@
         15364
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "、代わりに板が宛がわれている。  「犯人は物陰で【息を殺し】、主人が来るのを待っていたそうだ」  　資料とし"
   },
   {
@@ -1753,11 +2059,16 @@
         15444
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": " 「そうして、やって来た主人へナイフを振るった。【頸動脈】を一撃。主人は声を上げる間もなく、そこに倒れ、大"
   },
   {
@@ -1782,11 +2093,16 @@
         16087
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ビ臭さにラティメリアは顔をしかめた。  　七日は【食器棚】から燭台を見つけ、ロウソクに火をつける。  「ホ"
   },
   {
@@ -1811,11 +2127,16 @@
         16398
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "頭上から垂れる紐を発見し、引いてみた。傘のついた【豆電球】だ。カチ、カチとむなしい音がするばかりで、当然の"
   },
   {
@@ -1840,11 +2161,16 @@
         17316
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "〝あの子が私の名前を忘れてしまう前に〟  　車の【バックドア】を開けて、エンジンのような形をした発電機を引っ張"
   },
   {
@@ -1869,11 +2195,16 @@
         18513
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "うか」  「どっちにしたって、祈祷士っていうのは【問答無用】でお祓いするんでしょう？　可哀相だわ」  「おば"
   },
   {
@@ -1898,11 +2229,16 @@
         18666
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "屋敷を見つめた。  「......悲しみってね、【癖になる】のよ」  　何言ってんだこの人、とラティメリアは"
   },
   {
@@ -1927,11 +2263,16 @@
         18911
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "腰かけ、足をぶらぶらとさせている。  　映写機が【光を放ち】、壁に四角い光が投射されると、ラティメリアは興奮"
   },
   {
@@ -1956,11 +2297,16 @@
         20404
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ける。  　鳴り続く呼び鈴と発電機の音が、いやに【耳に障っ】た。   「一つ、訊いてもいい......？」 "
   },
   {
@@ -1985,11 +2331,16 @@
         20517
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "とそこには、歌い神が立っていた。薄暗い中に浮かぶ【エメラルドグリーン】の瞳。腕に抱く灰色猫は未だ眠り続けている。  「"
   },
   {
@@ -2014,11 +2365,16 @@
         20550
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "く灰色猫は未だ眠り続けている。  「こ、この私に【勘付か】せないとは、たいしたものだよ......」  　"
   },
   {
@@ -2043,11 +2399,16 @@
         20611
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "メリアは不敵に笑う。  　歌い神はラティメリアを【気にする】様子もなく、ただじっと映像を見つめていた。  「"
   },
   {
@@ -2072,11 +2433,16 @@
         20767
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "アはそっと、光の反射する歌い神の横顔を覗き見た。【エメラルドグリーン】の瞳に、かつてこの屋敷に住んでいた家族の姿が映っ"
   },
   {
@@ -2101,11 +2467,16 @@
         22465
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ミに、七日のおやつ箱から盗んだロリポップをあげる【ことにし】た。歌い神は意外にも、このキャンディーを知ってい"
   },
   {
@@ -2130,11 +2501,16 @@
         22684
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "つむいていた。ちらとラティメリアの顔をうかがい、【目が合う】とすぐに逸らす。  　まるで小動物のようだ。この"
   },
   {
@@ -2159,11 +2535,16 @@
         23102
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "　ラティメリアは鼻歌を歌った。歌い神の歌っていた【スローテンポ】の歌だ。ひとしきり歌ってから、隣に座る歌い神につ"
   },
   {
@@ -2188,11 +2569,16 @@
         23982
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "？」  　つぶやきながら歌い神は、テーブルの上に【横になる】。  「いいな......。あの方と同じ。あの方"
   },
   {
@@ -2217,11 +2603,16 @@
         24096
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "敷に立ち寄ってくれた......」  　歌い神は【横になっ】たまま、どこかぼんやりとした瞳で、虚空を見つめる"
   },
   {
@@ -2246,11 +2637,16 @@
         24525
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "....そっか。敵だった」  　ぽたり。歌い神が【横になる】テーブルの下に、赤い血が垂れていた。歌い神の傷口"
   },
   {
@@ -2275,11 +2671,16 @@
         25634
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "転した。  「じゃじゃーん」  　ラティメリアは【耳を立て】た。顔の側の耳ではなく。頭の上にちょこんとついた"
   },
   {
@@ -2304,11 +2705,16 @@
         25664
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "側の耳ではなく。頭の上にちょこんとついた、灰色の【獣耳】である。  「あの子の依り代、わかったの。なんと"
   },
   {
@@ -2333,11 +2739,16 @@
         25956
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "吸をしていた。しかしその魂はもう、召されていた。【目を覚ます】ことは、二度とない。  　家族を失ったその日から"
   },
   {
@@ -2362,11 +2773,16 @@
         26351
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "依り代に関するヒントを得られることもある。  　【ヘッドドレス】や長いスカートで隠れてはいたが、歌い神にもまた、"
   },
   {
@@ -2391,11 +2807,16 @@
         26459
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "に長生きする猫ってのは、結構事例があるんだ。一〇【年を経】てしっぽが割れ、二〇年目で人の味を知り、三〇年目"
   },
   {
@@ -2420,11 +2841,16 @@
         26499
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "人の味を知り、三〇年目で祀られた猫もいた。そんな【化け猫】ってのは、どっかで一度死んでマガツカミになってる"
   },
   {
@@ -2449,11 +2875,16 @@
         27245
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "、次の瞬間。ラティメリアもまたテーブルを蹴って、【スタートダッシュ】を切った。七日と並走する。  　七日は速い。しか"
   },
   {
@@ -2478,11 +2909,16 @@
         27274
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "切った。七日と並走する。  　七日は速い。しかし【身体能力】において、人間はマガツカミに及ばない。  　七日"
   },
   {
@@ -2507,11 +2943,16 @@
         27544
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "を見つけに来たんじゃない」  　降ってくる白刃を【側転】で避けて、ラティメリアは歌い神の前に立つ。  「"
   },
   {
@@ -2536,11 +2977,16 @@
         28103
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ただけ。しかしそうされると、隙がなくなる。  　【身体能力】はマガツカミのほうが高いが、七日には技術がある。"
   },
   {
@@ -2565,11 +3011,16 @@
         28546
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "あああああっ!!」  「っ......！」  　【窓ガラス】が振動し、頭上でシャンデリアが揺れる。  　七日"
   },
   {
@@ -2594,11 +3045,16 @@
         28629
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "  　ラティメリアは駆けた。振るう鉤爪を、七日は【身を引き】、かろうじて避ける。  　二手目、三手目。ラティ"
   },
   {
@@ -2623,11 +3079,16 @@
         28738
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "　ラティメリアはその弱点を見逃さなかった。執拗に【足払い】を仕掛け、七日は膝を浮かしてそれを避ける。やがて"
   },
   {
@@ -2652,11 +3113,16 @@
         28825
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "......速いっ！」  　歌い神の持つ敏捷性を【手に入れ】たラティメリアは、一層速くなっていた。  　七手"
   },
   {
@@ -2681,11 +3147,16 @@
         29542
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "。必要なのは、スピードだった。七日が内ポケットに【手を入れる】その前に、攻撃は再開できる。  　それだけのスピ"
   },
   {
@@ -2710,11 +3181,16 @@
         29961
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "このっ......野郎っ」  　ラティメリアは、【宙に浮い】た巾着を掴んだ。  「やったっ......！」 "
   },
   {
@@ -2739,11 +3215,16 @@
         30022
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "リアの昂揚は最高潮に達し、全身が粟立った。今まで【質に取ら】れていた弱点を、とうとう取り返したのだ。七日の支"
   },
   {
@@ -2768,11 +3249,16 @@
         30479
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "あっ......!?」  　背中を強打した衝撃で【息が詰まる】。倒れたラティメリアの胸を、直後に七日が踏みつけ"
   },
   {
@@ -2797,11 +3283,16 @@
         31240
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "前は俺が死ぬまでずっと、俺の側にいるんだ」  　【息をつい】た七日はラティメリアの上から足をどかし、歌い神へ"
   },
   {
@@ -2826,11 +3317,16 @@
         31313
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "神は、微かに震えていた。  　近づく七日に怯え、【後退る】。  「......どうして......仲間じゃ"
   },
   {
@@ -2855,11 +3351,16 @@
         32220
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "巡って競り合っている団体だ。  「その子を離しな【さいっ】！」  　眼鏡をかけた白髪交じりの中年男性が、今"
   },
   {
@@ -2884,11 +3385,16 @@
         32274
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "まさに歌い神を斬ろうとする七日に向かって叫んだ。【年甲斐もなく】ピンク色のＴシャツは痛々しいが、その表情は勇まし"
   },
   {
@@ -2913,11 +3419,16 @@
         32570
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": " 「ほらあの子！　あれが歌う幽霊の子よ！」  　【指を差さ】れ、大勢の視線が集まって、歌い神が困惑する。  "
   },
   {
@@ -2942,11 +3453,16 @@
         32886
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "　リーダー格の男は額に汗を滲ませながらも、ずいと【胸を張っ】た。  「あの子に剣を突き立てるのが、仕事だって"
   },
   {
@@ -2971,11 +3487,16 @@
         32965
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "さい。だいたいの見当はついているんだ。どうせ裏で【糸を引い】ているのは、あの不動産屋だろう」  「捕まえまし"
   },
   {
@@ -3000,11 +3521,16 @@
         33228
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "　ひざまずかされたゲンゴロウの前に、リーダー格の【男が立つ】。  「......どうしてあなた、あの祈祷士が"
   },
   {
@@ -3029,11 +3555,16 @@
         33401
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "だ、誰のものでもないんだ。あなたのやったことは、【不法侵入】、器物破損になりますよ」  「知らんと言っておる"
   },
   {
@@ -3058,11 +3589,16 @@
         33447
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "と言っておるだろうがっ」  　暴れるゲンゴロウに【背を向け】て、リーダーは七日へと提案した。  「あなたはつ"
   },
   {
@@ -3087,11 +3623,16 @@
         33615
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "を呑んで事の成り行きを見守っている。  　七日は【今一】度溜息をつき、この場の全員に聞かせるように、声を"
   },
   {
@@ -3116,11 +3657,16 @@
         34207
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "を鞘に納める。  　静寂に満ちたフロアに、チンと【鍔鳴り】が響き渡る。  「じゃあ誰か喰われてからご連絡を"
   },
   {
@@ -3145,11 +3691,16 @@
         36628
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "　ラティメリアは七日へと振り返る。  　七日は「【好きにしろ】」と答えて、カラメルを睨みつけた。  「斬られた"
   },
   {
@@ -3174,11 +3725,16 @@
         37643
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "る濃厚プリン」  「あれは通販限定だ。今日はもう【手に入ら】ねえよ」  「まじかー......」  　そんな"
   },
   {
@@ -3203,11 +3759,16 @@
         37897
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "の名前が同じなのよ」  「偶然だろ」  　七日は【何でもない】ように答える。  　ラティメリアは今日一日の出来"
   },
   {
@@ -3232,11 +3793,16 @@
         38284
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "か！」  「偶然だって。しつこいな」  　七日は【フロントガラス】を向いたまま、溜息をつく。ラティメリアはその横顔"
   },
   {
@@ -3261,11 +3827,16 @@
         38668
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "ラメルの歌」  「いらん」  「わふ」  　頭に【タオルを投げ】返されて、ラティメリアはシートに倒れこんだ。  "
   },
   {
@@ -3290,11 +3861,16 @@
         38950
       ]
     ],
+    "captures": [],
     "evidence": [
       "dictionary_exact_headword",
       "composition_shape_compatible"
     ],
+    "counter_evidence": [
+      "missing_structured_idiom_evidence"
+    ],
     "rejection_reason": null,
+    "entry_key": null,
     "context": "がら、つぶやいた。  「ねえナノ。悲しみってね、【癖になる】のよ」  「何だそりゃ」  　ハンドルを握る七日"
   },
   {
@@ -3319,10 +3895,15 @@
         5686
       ]
     ],
+    "captures": [],
     "evidence": [
       "koto_followed_by_nai"
     ],
+    "counter_evidence": [
+      "negative_not_connective_form"
+    ],
     "rejection_reason": "conjugation_form_mismatch",
+    "entry_key": null,
     "context": "....。名前つけるのって難しいんだよね。つけた【ことない】から」  　組んだ足をぶらぶらと揺らし、ラティメ"
   },
   {
@@ -3347,10 +3928,15 @@
         33670
       ]
     ],
+    "captures": [],
     "evidence": [
       "koto_followed_by_nai"
     ],
+    "counter_evidence": [
+      "negative_not_connective_form"
+    ],
     "rejection_reason": "conjugation_form_mismatch",
+    "entry_key": null,
     "context": "。  「金持ちってのはさあ......。他にやる【ことない】んですかね。あんたらにとって、あのマガツカミは何"
   }
 ]
