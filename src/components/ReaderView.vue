@@ -19,7 +19,7 @@ import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 import { useExplanationSession } from "../composables/useExplanationSession";
-import { belongsToSameToken, explanationHitFromTarget, isExplanationBridgePoint, keepsExplanationOpen } from "../explanation/hitTest";
+import { belongsToSameToken, explanationHitFromTarget, keepsExplanationOpen } from "../explanation/hitTest";
 
 // 状态定义
 const inputText = ref("");
@@ -275,10 +275,7 @@ function handleParagraphPointerOut(event: PointerEvent) {
     explanation.cancelClose();
     return;
   }
-  const source = event.target instanceof Element
-    ? event.target.closest<HTMLElement>("[data-morpheme-index], [data-grammar-index], [data-token-index]")
-    : null;
-  closeExplanationAfterLeave(event, source, visibleExplanationPanelRects());
+  explanation.scheduleClose();
 }
 
 function handlePopoverLeave(event: PointerEvent) {
@@ -287,40 +284,7 @@ function handlePopoverLeave(event: PointerEvent) {
     explanation.cancelClose();
     return;
   }
-  const source = event.currentTarget instanceof HTMLElement
-    ? event.currentTarget
-    : event.target instanceof Element
-      ? event.target.closest<HTMLElement>("[data-explanation-panel]")
-      : null;
-  const destinations = [
-    ...visibleExplanationPanelRects(source),
-    explanation.anchorRect.value,
-    explanation.componentAnchorRect.value,
-    explanation.grammarAnchorRect.value,
-  ].filter((rect) => rect !== null);
-  closeExplanationAfterLeave(event, source, destinations);
-}
-
-function visibleExplanationPanelRects(exclude?: Element | null) {
-  return Array.from(document.querySelectorAll<HTMLElement>("[data-explanation-panel]"))
-    .filter((panel) => panel !== exclude && panel.getClientRects().length > 0)
-    .map((panel) => panel.getBoundingClientRect());
-}
-
-function closeExplanationAfterLeave(
-  event: PointerEvent,
-  source: HTMLElement | null,
-  destinations: Array<{ left: number; top: number; right: number; bottom: number }>,
-) {
-  if (source && isExplanationBridgePoint(
-    { x: event.clientX, y: event.clientY },
-    source.getBoundingClientRect(),
-    destinations,
-  )) {
-    explanation.scheduleClose();
-    return;
-  }
-  explanation.closeAll();
+  explanation.scheduleClose();
 }
 
 // 事件委托：段落内的点击 (切换选中/已知)

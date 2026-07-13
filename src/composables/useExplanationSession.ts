@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 import type { AnnotatedToken, DictionaryLookup, GrammarTag, Morpheme } from "../types";
 import { snapshotRect, type RectSnapshot } from "../explanation/geometry";
+import { scheduleCloseGrace } from "../explanation/closeGrace";
 
 type LookupWord = (word: string, reading?: string) => Promise<DictionaryLookup | null>;
 type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
@@ -47,8 +48,11 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
 
   /** 只用于跨越正文与浮层之间的物理间隙。 */
   function scheduleClose() {
-    cancelClose();
-    closeTimer = window.setTimeout(closeAll, 140);
+    closeTimer = scheduleCloseGrace(
+      closeTimer,
+      (callback, delay) => window.setTimeout(callback, delay),
+      closeAll,
+    );
   }
 
   function closeAll() {
