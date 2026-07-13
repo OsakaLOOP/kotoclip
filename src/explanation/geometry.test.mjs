@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { measureIntrinsicPanel, placeExplanationPanels } from "./geometry.ts";
+import { explanationPanelWidth, measureIntrinsicPanel, placeExplanationPanels } from "./geometry.ts";
 
 const rect = (left, top, width, height) => ({
   left,
@@ -46,22 +46,45 @@ test("单面板保持在视口内且不遮挡语素", () => {
   assert.ok(placement.component.top + placement.component.height <= 708);
 });
 
-test("宽屏双面板作为同组排列且互不覆盖", () => {
-  const anchor = rect(430, 500, 80, 30);
+test("16:9 视口中双面板强制左右捆绑并限制高度", () => {
+  const anchor = rect(920, 520, 80, 30);
   const placement = placeExplanationPanels(
     anchor,
     anchor,
-    { width: 400, height: 300 },
-    { width: 1100, height: 800 },
-    { width: 400, height: 280 },
+    { width: 420, height: 1200 },
+    { width: 1920, height: 1080 },
+    { width: 420, height: 900 },
   );
   assert.ok(placement.whole);
+  assert.equal(placement.whole.top, placement.component.top);
+  assert.equal(placement.whole.left + placement.whole.width + 10, placement.component.left);
+  assert.equal(placement.whole.maxHeight, placement.component.maxHeight);
+  assert.ok(placement.component.maxHeight <= 480);
   assert.equal(overlaps(placement.whole, placement.component), false);
   assert.equal(overlaps(placement.whole, anchor), false);
   assert.equal(overlaps(placement.component, anchor), false);
 });
 
-test("窄屏双面板分置锚点上下", () => {
+test("靠近水平边界时只平移整个双面板组", () => {
+  const viewport = { width: 1920, height: 1080 };
+  for (const anchor of [rect(8, 700, 60, 28), rect(1850, 700, 60, 28)]) {
+    const placement = placeExplanationPanels(
+      anchor,
+      anchor,
+      { width: 420, height: 300 },
+      viewport,
+      { width: 420, height: 280 },
+    );
+    assert.ok(placement.whole);
+    assert.equal(placement.whole.top, placement.component.top);
+    assert.equal(placement.whole.left + placement.whole.width + 10, placement.component.left);
+    assert.ok(placement.whole.left >= 12);
+    assert.ok(placement.component.left + placement.component.width <= 1908);
+  }
+});
+
+test("窄屏安全收窄时仍保持左右捆绑", () => {
+  assert.equal(explanationPanelWidth(360, true), 163);
   const anchor = rect(150, 320, 60, 28);
   const placement = placeExplanationPanels(
     anchor,
@@ -71,6 +94,9 @@ test("窄屏双面板分置锚点上下", () => {
     { width: 336, height: 220 },
   );
   assert.ok(placement.whole);
+  assert.equal(placement.whole.top, placement.component.top);
+  assert.equal(placement.whole.left + placement.whole.width + 10, placement.component.left);
+  assert.ok(placement.component.left + placement.component.width <= 348);
   assert.equal(overlaps(placement.whole, placement.component), false);
   assert.equal(overlaps(placement.whole, anchor), false);
   assert.equal(overlaps(placement.component, anchor), false);

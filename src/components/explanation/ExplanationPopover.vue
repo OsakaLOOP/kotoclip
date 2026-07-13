@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { AnnotatedToken, DictionaryLookup } from "../../types";
-import { measureIntrinsicPanel, placeExplanationPanels, type PopoverPlacement, type RectSnapshot, type Size } from "../../explanation/geometry";
+import { explanationPanelWidth, measureIntrinsicPanel, placeExplanationPanels, type PopoverPlacement, type RectSnapshot, type Size } from "../../explanation/geometry";
 import TooltipPanel from "../TooltipPanel.vue";
 
 const props = defineProps<{
@@ -58,7 +58,8 @@ function place() {
 
 async function connectAndPlace() {
   if (!props.show) return;
-  panelWidth.value = Math.min(420, window.innerWidth - 24);
+  const hasWhole = Boolean(props.wholeLookup || props.wholeLoading);
+  panelWidth.value = explanationPanelWidth(window.innerWidth, hasWhole);
   await nextTick();
   observer?.disconnect();
   observer = new ResizeObserver(place);

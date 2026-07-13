@@ -27,6 +27,8 @@ export interface PopoverPlacement {
 
 const MARGIN = 12;
 const GAP = 10;
+const DEFAULT_PANEL_WIDTH = 420;
+const MAX_PANEL_HEIGHT = 480;
 
 export function snapshotRect(rect: DOMRect): RectSnapshot {
   return {
@@ -47,7 +49,17 @@ export function measureIntrinsicPanel(panel: Pick<HTMLElement, "getBoundingClien
   };
 }
 
-/** 使用面板固有尺寸生成候选，并按溢出、遮挡锚点、距离依次评分。 */
+export function explanationPanelWidth(viewportWidth: number, paired: boolean) {
+  const availableWidth = paired
+    ? (viewportWidth - MARGIN * 2 - GAP) / 2
+    : viewportWidth - MARGIN * 2;
+  return Math.min(DEFAULT_PANEL_WIDTH, Math.max(0, availableWidth));
+}
+
+/**
+ * 先确定浮层组位于锚点上方或下方，再整体进行水平平移。
+ * 双面板始终左右捆绑，不把上下分置作为桌面布局候选。
+ */
 export function placeExplanationPanels(
   anchor: RectSnapshot,
   componentAnchor: RectSnapshot,
@@ -55,104 +67,82 @@ export function placeExplanationPanels(
   viewport: Size,
   wholeSize?: Size,
 ): PopoverPlacement {
-  const component = constrainedSize(componentSize, viewport);
+  let component = constrainedSize(componentSize, viewport);
   if (!wholeSize) {
     return {
-      component: bestSinglePlacement(componentAnchor, component, viewport),
+      component: placeSinglePanel(componentAnchor, component, viewport),
     };
   }
 
-  const whole = constrainedSize(wholeSize, viewport);
-  const center = anchor.left + anchor.width / 2;
+  let whole = constrainedSize(wholeSize, viewport);
+  const availableGroupWidth = Math.max(0, viewport.width - MARGIN * 2 - GAP);
+  const combinedPanelWidth = whole.width + component.width;
+  const widthScale = combinedPanelWidth > 0
+    ? Math.min(1, availableGroupWidth / combinedPanelWidth)
+    : 1;
+  whole = { ...whole, width: whole.width * widthScale };
+  component = { ...component, width: component.width * widthScale };
   const groupWidth = whole.width + GAP + component.width;
-  const horizontalLeft = center - groupWidth / 2;
-  const aboveHeight = Math.max(120, anchor.top - GAP - MARGIN);
-  const belowHeight = Math.max(120, viewport.height - anchor.bottom - GAP - MARGIN);
-  const candidates: PopoverPlacement[] = [
-    {
-      whole: abovePanel(horizontalLeft, anchor.top, whole, viewport, aboveHeight),
-      component: abovePanel(horizontalLeft + whole.width + GAP, anchor.top, component, viewport, aboveHeight),
-    },
-    {
-      whole: belowPanel(horizontalLeft, anchor.bottom, whole, viewport, belowHeight),
-      component: belowPanel(horizontalLeft + whole.width + GAP, anchor.bottom, component, viewport, belowHeight),
-    },
-    {
-      whole: abovePanel(center - whole.width / 2, anchor.top, whole, viewport, aboveHeight),
-      component: belowPanel(center - component.width / 2, anchor.bottom, component, viewport, belowHeight),
-    },
-  ];
-  return candidates.sort((left, right) => scoreGroup(left, anchor, viewport) - scoreGroup(right, anchor, viewport))[0];
+  const groupLeft = clamp(
+    anchor.left + anchor.width / 2 - groupWidth / 2,
+    MARGIN,
+    Math.max(MARGIN, viewport.width - MARGIN - groupWidth),
+  );
+  const desiredHeight = Math.min(MAX_PANEL_HEIGHT, Math.max(whole.height, component.height));
+  const vertical = chooseVerticalPlacement(anchor, desiredHeight, viewport);
+  const top = vertical.side === "above"
+    ? anchor.top - GAP - vertical.height
+    : anchor.bottom + GAP;
+
+  return {
+    whole: placedPanel(groupLeft, top, whole, vertical.height),
+    component: placedPanel(groupLeft + whole.width + GAP, top, component, vertical.height),
+  };
 }
 
-function bestSinglePlacement(anchor: RectSnapshot, size: Size, viewport: Size): PanelPlacement {
-  const centerX = anchor.left + anchor.width / 2;
-  const centerY = anchor.top + anchor.height / 2;
-  const aboveHeight = Math.max(120, anchor.top - GAP - MARGIN);
-  const belowHeight = Math.max(120, viewport.height - anchor.bottom - GAP - MARGIN);
-  const candidates = [
-    abovePanel(centerX - size.width / 2, anchor.top, size, viewport, aboveHeight),
-    belowPanel(centerX - size.width / 2, anchor.bottom, size, viewport, belowHeight),
-    panel(anchor.left - GAP - size.width, centerY - size.height / 2, size, viewport, 620),
-    panel(anchor.right + GAP, centerY - size.height / 2, size, viewport, 620),
-  ];
-  return candidates.sort((left, right) => scorePanel(left, anchor, viewport) - scorePanel(right, anchor, viewport))[0];
+function placeSinglePanel(anchor: RectSnapshot, size: Size, viewport: Size): PanelPlacement {
+  const desiredHeight = Math.min(MAX_PANEL_HEIGHT, size.height);
+  const vertical = chooseVerticalPlacement(anchor, desiredHeight, viewport);
+  const left = clamp(
+    anchor.left + anchor.width / 2 - size.width / 2,
+    MARGIN,
+    Math.max(MARGIN, viewport.width - MARGIN - size.width),
+  );
+  const top = vertical.side === "above"
+    ? anchor.top - GAP - vertical.height
+    : anchor.bottom + GAP;
+  return placedPanel(left, top, size, vertical.height);
 }
 
 function constrainedSize(size: Size, viewport: Size): Size {
   return {
-    width: Math.min(size.width, viewport.width - MARGIN * 2),
-    height: Math.min(size.height, viewport.height - MARGIN * 2),
+    width: Math.min(size.width, Math.max(0, viewport.width - MARGIN * 2)),
+    height: Math.min(size.height, Math.max(0, viewport.height - MARGIN * 2)),
   };
 }
 
-function abovePanel(left: number, anchorTop: number, size: Size, viewport: Size, maxHeight: number) {
-  const height = Math.min(size.height, maxHeight);
-  return panel(left, anchorTop - GAP - height, { ...size, height }, viewport, maxHeight);
-}
-
-function belowPanel(left: number, anchorBottom: number, size: Size, viewport: Size, maxHeight: number) {
-  const height = Math.min(size.height, maxHeight);
-  return panel(left, anchorBottom + GAP, { ...size, height }, viewport, maxHeight);
-}
-
-function panel(left: number, top: number, size: Size, viewport: Size, maxHeight: number): PanelPlacement {
+function chooseVerticalPlacement(anchor: RectSnapshot, desiredHeight: number, viewport: Size) {
+  const above = Math.max(0, anchor.top - GAP - MARGIN);
+  const below = Math.max(0, viewport.height - anchor.bottom - GAP - MARGIN);
+  const side = above >= desiredHeight && below < desiredHeight
+    ? "above"
+    : below >= desiredHeight && above < desiredHeight
+      ? "below"
+      : above >= below ? "above" : "below";
   return {
-    left: clamp(left, MARGIN, Math.max(MARGIN, viewport.width - MARGIN - size.width)),
-    top: clamp(top, MARGIN, Math.max(MARGIN, viewport.height - MARGIN - size.height)),
+    side,
+    height: Math.min(desiredHeight, side === "above" ? above : below),
+  } as const;
+}
+
+function placedPanel(left: number, top: number, size: Size, maxHeight: number): PanelPlacement {
+  return {
+    left,
+    top,
     width: size.width,
-    height: size.height,
-    maxHeight: Math.max(120, Math.min(maxHeight, viewport.height - MARGIN * 2)),
+    height: Math.min(size.height, maxHeight),
+    maxHeight,
   };
-}
-
-function scoreGroup(group: PopoverPlacement, anchor: RectSnapshot, viewport: Size) {
-  const wholeScore = group.whole ? scorePanel(group.whole, anchor, viewport) : 0;
-  const componentScore = scorePanel(group.component, anchor, viewport);
-  const overlap = group.whole ? intersectionArea(group.whole, group.component) * 50 : 0;
-  return wholeScore + componentScore + overlap;
-}
-
-function scorePanel(panel: PanelPlacement, anchor: RectSnapshot, viewport: Size) {
-  const overflow = Math.max(0, -panel.left) + Math.max(0, -panel.top)
-    + Math.max(0, panel.left + panel.width - viewport.width)
-    + Math.max(0, panel.top + panel.height - viewport.height);
-  const anchorOverlap = intersectionArea(panel, anchor);
-  const panelCenterX = panel.left + panel.width / 2;
-  const panelCenterY = panel.top + panel.height / 2;
-  const anchorCenterX = anchor.left + anchor.width / 2;
-  const anchorCenterY = anchor.top + anchor.height / 2;
-  const distance = Math.hypot(panelCenterX - anchorCenterX, panelCenterY - anchorCenterY);
-  return overflow * 1000 + anchorOverlap * 100 + distance;
-}
-
-function intersectionArea(left: Pick<RectSnapshot, "left" | "top"> & Partial<RectSnapshot>, right: Pick<RectSnapshot, "left" | "top"> & Partial<RectSnapshot>) {
-  const leftRight = left.right ?? left.left + (left.width ?? 0);
-  const leftBottom = left.bottom ?? left.top + (left.height ?? 0);
-  const rightRight = right.right ?? right.left + (right.width ?? 0);
-  const rightBottom = right.bottom ?? right.top + (right.height ?? 0);
-  return Math.max(0, Math.min(leftRight, rightRight) - Math.max(left.left, right.left))
-    * Math.max(0, Math.min(leftBottom, rightBottom) - Math.max(left.top, right.top));
 }
 
 function clamp(value: number, minimum: number, maximum: number) {

@@ -185,7 +185,7 @@ function handleDefinitionClick(event: MouseEvent) {
       class="tooltip-panel"
       :id="panelId"
       :data-explanation-panel="panelId"
-      :style="{ left: x + 'px', top: y + 'px', width: width ? width + 'px' : undefined, maxHeight: maxHeight ? maxHeight + 'px' : undefined }"
+      :style="{ left: x + 'px', top: y + 'px', width: width ? width + 'px' : undefined, maxHeight: maxHeight === undefined ? undefined : maxHeight + 'px' }"
       role="dialog"
       aria-label="词典释义"
       @pointerenter="emit('enter', $event)"
