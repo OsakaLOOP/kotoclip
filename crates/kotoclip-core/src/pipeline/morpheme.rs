@@ -37,6 +37,48 @@ fn parse_morpheme(surface: &str, feature: &str, char_range: (usize, usize)) -> M
     }
 }
 
+/// 修正系统词典无法表达、且 N-best 中不存在正确词性的已确认口语形。
+/// 完整的口语音变与词汇别名处理应由后续独立模块接管。
+fn apply_tokenization_compatibility(morphemes: Vec<Morpheme>) -> Vec<Morpheme> {
+    let mut corrected = Vec::with_capacity(morphemes.len());
+    let mut index = 0;
+    while index < morphemes.len() {
+        if index + 1 < morphemes.len()
+            && morphemes[index].surface == "だっせ"
+            && morphemes[index].base_form == "だっする"
+            && morphemes[index].pos.major == "動詞"
+            && morphemes[index + 1].surface == "え"
+            && matches!(
+                morphemes[index + 1].pos.major.as_str(),
+                "フィラー" | "感動詞"
+            )
+        {
+            corrected.push(Morpheme {
+                surface: "だっせえ".to_string(),
+                pos: PosTag {
+                    major: "形容詞".to_string(),
+                    sub1: "自立".to_string(),
+                    sub2: "*".to_string(),
+                    sub3: "*".to_string(),
+                },
+                base_form: "ダサい".to_string(),
+                reading: "ダッセエ".to_string(),
+                conjugation_type: "形容詞・アウオ段".to_string(),
+                conjugation_form: "基本形".to_string(),
+                char_range: (
+                    morphemes[index].char_range.0,
+                    morphemes[index + 1].char_range.1,
+                ),
+            });
+            index += 2;
+            continue;
+        }
+        corrected.push(morphemes[index].clone());
+        index += 1;
+    }
+    corrected
+}
+
 impl MorphemeAnalyzer {
     /// 构造函数，加载编译好的 Vibrato 二进制字典 (如 system.dic)
     pub fn new<P: AsRef<Path>>(dict_path: P) -> Result<Self, Box<dyn std::error::Error>> {
@@ -67,7 +109,7 @@ impl MorphemeAnalyzer {
             ));
         }
 
-        morphemes
+        apply_tokenization_compatibility(morphemes)
     }
 
     /// 从 Vibrato lattice 获取带真实路径成本的 N-best 形态素序列。

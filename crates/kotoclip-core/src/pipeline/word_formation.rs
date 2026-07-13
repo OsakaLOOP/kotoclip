@@ -1,4 +1,6 @@
-use crate::models::{Morpheme, PosTag, WordFormationAnnotation, WordFormationCapture};
+use crate::models::{
+    Morpheme, PosTag, RuleCatalogAudit, WordFormationAnnotation, WordFormationCapture,
+};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet};
 
@@ -28,22 +30,31 @@ pub struct WordFormationMatcher {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Catalog {
     schema_version: u32,
+    catalog_version: u32,
     rules: Vec<WordFormationRule>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct WordFormationRule {
     id: String,
+    rule_version: u32,
+    source: String,
+    enabled: bool,
     category: String,
     #[serde(default)]
     priority: i32,
     atoms: Vec<Atom>,
     output: Output,
+    examples: Vec<String>,
+    counter_examples: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Atom {
     #[serde(default)]
     surfaces: Vec<String>,
@@ -67,6 +78,7 @@ struct Atom {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct PartialPos {
     major: String,
     #[serde(default)]
@@ -78,6 +90,7 @@ struct PartialPos {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Output {
     pos: PosTag,
     head_atom: usize,
@@ -85,21 +98,41 @@ struct Output {
     confidence: u8,
 }
 
-fn one() -> usize { 1 }
-fn surface_normalization() -> String { "surface".to_string() }
-fn default_confidence() -> u8 { 90 }
+fn one() -> usize {
+    1
+}
+fn surface_normalization() -> String {
+    "surface".to_string()
+}
+fn default_confidence() -> u8 {
+    90
+}
 
 impl WordFormationMatcher {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let catalog: Catalog = serde_json::from_str(include_str!("../../resources/word_formation_patterns.json"))?;
-        if catalog.schema_version != 1 {
-            return Err(format!("不支持的构词规则 schema_version：{}", catalog.schema_version).into());
+        let catalog: Catalog =
+            serde_json::from_str(include_str!("../../resources/word_formation_patterns.json"))?;
+        if catalog.schema_version != 2 || catalog.catalog_version == 0 {
+            return Err(format!(
+                "不支持的构词规则 schema_version：{}",
+                catalog.schema_version
+            )
+            .into());
+        }
+        if catalog.rules.is_empty() {
+            return Err("构词规则目录不能为空".into());
         }
         let mut ids = HashSet::new();
         for rule in &catalog.rules {
             validate_rule(rule, &mut ids)?;
         }
-        Ok(Self { rules: catalog.rules })
+        Ok(Self {
+            rules: catalog
+                .rules
+                .into_iter()
+                .filter(|rule| rule.enabled)
+                .collect(),
+        })
     }
 
     pub fn match_morphemes(&self, morphemes: &[Morpheme]) -> WordFormationMatchResult {
@@ -108,7 +141,15 @@ impl WordFormationMatcher {
         for rule in &self.rules {
             for start in 0..morphemes.len() {
                 let mut matches = Vec::new();
-                match_rule(rule, morphemes, start, 0, start, &mut Vec::new(), &mut matches);
+                match_rule(
+                    rule,
+                    morphemes,
+                    start,
+                    0,
+                    start,
+                    &mut Vec::new(),
+                    &mut matches,
+                );
                 if matches.is_empty() && atom_matches(&rule.atoms[0], &morphemes[start]) {
                     rejected.push(RejectedWordFormation {
                         rule_id: rule.id.clone(),
@@ -125,7 +166,10 @@ impl WordFormationMatcher {
             }
         }
         candidates.sort_by(|left, right| {
-            right.rule.priority.cmp(&left.rule.priority)
+            right
+                .rule
+                .priority
+                .cmp(&left.rule.priority)
                 .then_with(|| (right.end - right.start).cmp(&(left.end - left.start)))
                 .then_with(|| left.rule.id.cmp(&right.rule.id))
                 .then_with(|| left.start.cmp(&right.start))
@@ -134,7 +178,10 @@ impl WordFormationMatcher {
         let mut accepted = Vec::new();
         let mut conflicts = 0;
         for candidate in candidates {
-            if claimed[candidate.start..candidate.end].iter().any(|claimed| *claimed) {
+            if claimed[candidate.start..candidate.end]
+                .iter()
+                .any(|claimed| *claimed)
+            {
                 conflicts += 1;
                 rejected.push(RejectedWordFormation {
                     rule_id: candidate.rule.id.clone(),
@@ -147,23 +194,90 @@ impl WordFormationMatcher {
             accepted.push(candidate.accepted);
         }
         accepted.sort_by_key(|item| item.morpheme_range.0);
-        WordFormationMatchResult { accepted, rejected, conflicts }
+        WordFormationMatchResult {
+            accepted,
+            rejected,
+            conflicts,
+        }
     }
 }
 
-fn validate_rule(rule: &WordFormationRule, ids: &mut HashSet<String>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn catalog_audit() -> Result<RuleCatalogAudit, Box<dyn std::error::Error>> {
+    let catalog: Catalog =
+        serde_json::from_str(include_str!("../../resources/word_formation_patterns.json"))?;
+    if catalog.schema_version != 2 || catalog.catalog_version == 0 || catalog.rules.is_empty() {
+        return Err("构词规则目录版本或内容非法".into());
+    }
+    let mut ids = HashSet::new();
+    for rule in &catalog.rules {
+        validate_rule(rule, &mut ids)?;
+    }
+    Ok(RuleCatalogAudit {
+        layer: "word_formation".to_string(),
+        schema_version: catalog.schema_version,
+        catalog_version: catalog.catalog_version,
+        rule_count: catalog.rules.len(),
+        enabled_rule_count: catalog.rules.iter().filter(|rule| rule.enabled).count(),
+        capabilities: vec![
+            "surface_set".to_string(),
+            "base_form_set".to_string(),
+            "four_level_pos".to_string(),
+            "conjugation_type_exact".to_string(),
+            "conjugation_type_prefix".to_string(),
+            "conjugation_form_set".to_string(),
+            "bounded_repeat".to_string(),
+            "named_capture".to_string(),
+            "typed_output_head".to_string(),
+            "strict_unknown_field_rejection".to_string(),
+        ],
+    })
+}
+
+fn validate_rule(
+    rule: &WordFormationRule,
+    ids: &mut HashSet<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
     if rule.id.trim().is_empty() || !ids.insert(rule.id.clone()) {
         return Err(format!("构词规则 ID 为空或重复：{}", rule.id).into());
     }
-    if rule.atoms.is_empty() || rule.output.head_atom >= rule.atoms.len() || rule.output.confidence > 100 {
+    if rule.rule_version == 0
+        || rule.source.trim().is_empty()
+        || rule.category.trim().is_empty()
+        || rule.examples.is_empty()
+        || rule.counter_examples.is_empty()
+    {
+        return Err(format!("构词规则治理字段不完整：{}", rule.id).into());
+    }
+    if rule.atoms.is_empty()
+        || rule.output.head_atom >= rule.atoms.len()
+        || rule.output.confidence > 100
+    {
         return Err(format!("构词规则输出非法：{}", rule.id).into());
     }
     for atom in &rule.atoms {
-        if atom.min == 0 || atom.max < atom.min || atom.max > 8 || atom.normalization != "surface" && atom.normalization != "base_form" {
+        if atom.min == 0
+            || atom.max < atom.min
+            || atom.max > 8
+            || atom.normalization != "surface" && atom.normalization != "base_form"
+        {
             return Err(format!("构词规则原子非法：{}", rule.id).into());
         }
-        if atom.surfaces.is_empty() && atom.base_forms.is_empty() && atom.pos.is_none() && atom.conjugation_types.is_empty() && atom.conjugation_type_prefixes.is_empty() && atom.conjugation_forms.is_empty() {
+        if atom.surfaces.is_empty()
+            && atom.base_forms.is_empty()
+            && atom.pos.is_none()
+            && atom.conjugation_types.is_empty()
+            && atom.conjugation_type_prefixes.is_empty()
+            && atom.conjugation_forms.is_empty()
+        {
             return Err(format!("构词规则原子缺少约束：{}", rule.id).into());
+        }
+        if let Some(pos) = &atom.pos {
+            if pos.major.trim().is_empty()
+                || pos.sub2.is_some() && pos.sub1.is_none()
+                || pos.sub3.is_some() && pos.sub2.is_none()
+            {
+                return Err(format!("构词规则词性层级非法：{}", rule.id).into());
+            }
         }
     }
     Ok(())
@@ -171,16 +285,41 @@ fn validate_rule(rule: &WordFormationRule, ids: &mut HashSet<String>) -> Result<
 
 fn atom_matches(atom: &Atom, morpheme: &Morpheme) -> bool {
     (atom.surfaces.is_empty() || atom.surfaces.iter().any(|value| value == &morpheme.surface))
-        && (atom.base_forms.is_empty() || atom.base_forms.iter().any(|value| value == &morpheme.base_form))
+        && (atom.base_forms.is_empty()
+            || atom
+                .base_forms
+                .iter()
+                .any(|value| value == &morpheme.base_form))
         && atom.pos.as_ref().is_none_or(|pos| {
             pos.major == morpheme.pos.major
-                && pos.sub1.as_ref().is_none_or(|value| value == &morpheme.pos.sub1)
-                && pos.sub2.as_ref().is_none_or(|value| value == &morpheme.pos.sub2)
-                && pos.sub3.as_ref().is_none_or(|value| value == &morpheme.pos.sub3)
+                && pos
+                    .sub1
+                    .as_ref()
+                    .is_none_or(|value| value == &morpheme.pos.sub1)
+                && pos
+                    .sub2
+                    .as_ref()
+                    .is_none_or(|value| value == &morpheme.pos.sub2)
+                && pos
+                    .sub3
+                    .as_ref()
+                    .is_none_or(|value| value == &morpheme.pos.sub3)
         })
-        && (atom.conjugation_types.is_empty() || atom.conjugation_types.iter().any(|value| value == &morpheme.conjugation_type))
-        && (atom.conjugation_type_prefixes.is_empty() || atom.conjugation_type_prefixes.iter().any(|value| morpheme.conjugation_type.starts_with(value)))
-        && (atom.conjugation_forms.is_empty() || atom.conjugation_forms.iter().any(|value| value == &morpheme.conjugation_form))
+        && (atom.conjugation_types.is_empty()
+            || atom
+                .conjugation_types
+                .iter()
+                .any(|value| value == &morpheme.conjugation_type))
+        && (atom.conjugation_type_prefixes.is_empty()
+            || atom
+                .conjugation_type_prefixes
+                .iter()
+                .any(|value| morpheme.conjugation_type.starts_with(value)))
+        && (atom.conjugation_forms.is_empty()
+            || atom
+                .conjugation_forms
+                .iter()
+                .any(|value| value == &morpheme.conjugation_form))
 }
 
 #[derive(Clone)]
@@ -195,19 +334,45 @@ struct CompleteMatch {
     atoms: Vec<AtomMatch>,
 }
 
-fn match_rule(rule: &WordFormationRule, morphemes: &[Morpheme], start: usize, atom_index: usize, cursor: usize, matched: &mut Vec<AtomMatch>, results: &mut Vec<CompleteMatch>) {
+fn match_rule(
+    rule: &WordFormationRule,
+    morphemes: &[Morpheme],
+    start: usize,
+    atom_index: usize,
+    cursor: usize,
+    matched: &mut Vec<AtomMatch>,
+    results: &mut Vec<CompleteMatch>,
+) {
     if atom_index == rule.atoms.len() {
-        results.push(CompleteMatch { end: cursor, atoms: matched.clone() });
+        results.push(CompleteMatch {
+            end: cursor,
+            atoms: matched.clone(),
+        });
         return;
     }
     let atom = &rule.atoms[atom_index];
     let mut maximum = 0;
-    while maximum < atom.max && cursor + maximum < morphemes.len() && atom_matches(atom, &morphemes[cursor + maximum]) {
+    while maximum < atom.max
+        && cursor + maximum < morphemes.len()
+        && atom_matches(atom, &morphemes[cursor + maximum])
+    {
         maximum += 1;
     }
     for count in (atom.min..=maximum).rev() {
-        matched.push(AtomMatch { atom: atom_index, start: cursor, end: cursor + count });
-        match_rule(rule, morphemes, start, atom_index + 1, cursor + count, matched, results);
+        matched.push(AtomMatch {
+            atom: atom_index,
+            start: cursor,
+            end: cursor + count,
+        });
+        match_rule(
+            rule,
+            morphemes,
+            start,
+            atom_index + 1,
+            cursor + count,
+            matched,
+            results,
+        );
         matched.pop();
     }
 }
@@ -219,7 +384,12 @@ struct Candidate<'a> {
     accepted: AcceptedWordFormation,
 }
 
-fn candidate_from_match<'a>(rule: &'a WordFormationRule, morphemes: &[Morpheme], start: usize, matched: CompleteMatch) -> Candidate<'a> {
+fn candidate_from_match<'a>(
+    rule: &'a WordFormationRule,
+    morphemes: &[Morpheme],
+    start: usize,
+    matched: CompleteMatch,
+) -> Candidate<'a> {
     let end = matched.end;
     let mut captures: BTreeMap<String, (usize, usize)> = BTreeMap::new();
     let mut base_form = String::new();
@@ -231,21 +401,47 @@ fn candidate_from_match<'a>(rule: &'a WordFormationRule, morphemes: &[Morpheme],
             head_morpheme = atom_match.end - 1;
         }
         if let Some(name) = &atom.capture {
-            captures.entry(name.clone()).and_modify(|range| range.1 = atom_match.end).or_insert((atom_match.start, atom_match.end));
+            captures
+                .entry(name.clone())
+                .and_modify(|range| range.1 = atom_match.end)
+                .or_insert((atom_match.start, atom_match.end));
         }
         for morpheme in &morphemes[atom_match.start..atom_match.end] {
-            base_form.push_str(if atom.normalization == "base_form" { &morpheme.base_form } else { &morpheme.surface });
-            if morpheme.reading != "*" { reading.push_str(&morpheme.reading); }
+            base_form.push_str(if atom.normalization == "base_form" {
+                &morpheme.base_form
+            } else {
+                &morpheme.surface
+            });
+            if morpheme.reading != "*" {
+                reading.push_str(&morpheme.reading);
+            }
         }
     }
-    let surface: String = morphemes[start..end].iter().map(|morpheme| morpheme.surface.as_str()).collect();
-    let char_range = (morphemes[start].char_range.0, morphemes[end - 1].char_range.1);
-    let captures = captures.into_iter().map(|(name, (capture_start, capture_end))| WordFormationCapture {
-        name,
-        surface: morphemes[capture_start..capture_end].iter().map(|morpheme| morpheme.surface.as_str()).collect(),
-        morpheme_range: (capture_start, capture_end),
-        char_range: (morphemes[capture_start].char_range.0, morphemes[capture_end - 1].char_range.1),
-    }).collect();
+    let surface: String = morphemes[start..end]
+        .iter()
+        .map(|morpheme| morpheme.surface.as_str())
+        .collect();
+    let char_range = (
+        morphemes[start].char_range.0,
+        morphemes[end - 1].char_range.1,
+    );
+    let captures = captures
+        .into_iter()
+        .map(
+            |(name, (capture_start, capture_end))| WordFormationCapture {
+                name,
+                surface: morphemes[capture_start..capture_end]
+                    .iter()
+                    .map(|morpheme| morpheme.surface.as_str())
+                    .collect(),
+                morpheme_range: (capture_start, capture_end),
+                char_range: (
+                    morphemes[capture_start].char_range.0,
+                    morphemes[capture_end - 1].char_range.1,
+                ),
+            },
+        )
+        .collect();
     Candidate {
         rule,
         start,
@@ -276,30 +472,60 @@ mod tests {
     use crate::pipeline::morpheme::MorphemeAnalyzer;
 
     fn analyzer() -> Option<MorphemeAnalyzer> {
-        ["../../ipadic/system.dic", "../ipadic/system.dic", "ipadic/system.dic"].into_iter().find(|path| std::path::Path::new(path).is_file()).and_then(|path| MorphemeAnalyzer::new(path).ok())
+        [
+            "../../ipadic/system.dic",
+            "../ipadic/system.dic",
+            "ipadic/system.dic",
+        ]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file())
+        .and_then(|path| MorphemeAnalyzer::new(path).ok())
     }
 
     #[test]
     fn matches_representative_compounds_without_crossing_boundaries() {
-        let Some(analyzer) = analyzer() else { return; };
+        let Some(analyzer) = analyzer() else {
+            return;
+        };
         let matcher = WordFormationMatcher::new().unwrap();
-        for (text, expected_rule) in [("冷やし神", "deity_by_godan_action"), ("食べ放題", "renyou_houdai"), ("煙草臭い", "noun_adjectival_suffix"), ("第一話", "ordinal_counter"), ("数千冊", "numeric_counter")] {
+        for (text, expected_rule) in [
+            ("冷やし神", "deity_by_godan_action"),
+            ("食べ放題", "renyou_houdai"),
+            ("煙草臭い", "noun_adjectival_suffix"),
+            ("第一話", "ordinal_counter"),
+            ("数千冊", "numeric_counter"),
+        ] {
             let result = matcher.match_morphemes(&analyzer.analyze(text));
-            assert!(result.accepted.iter().any(|item| item.annotation.rule_id == expected_rule), "{text} 未命中 {expected_rule}");
+            assert!(
+                result
+                    .accepted
+                    .iter()
+                    .any(|item| item.annotation.rule_id == expected_rule),
+                "{text} 未命中 {expected_rule}"
+            );
         }
         for text in ["煙草が臭い", "冷やして神を見る", "第一", "第話"] {
             let result = matcher.match_morphemes(&analyzer.analyze(text));
             assert!(result.accepted.is_empty(), "{text} 不应产生构词单位");
         }
         let spaced = matcher.match_morphemes(&analyzer.analyze("数 千冊"));
-        assert!(spaced.accepted.iter().all(|item| item.annotation.surface != "数 千冊"));
+        assert!(spaced
+            .accepted
+            .iter()
+            .all(|item| item.annotation.surface != "数 千冊"));
     }
 
     #[test]
     fn accepted_formation_drives_bunsetsu_head_without_losing_morphemes() {
-        let Some(path) = ["../../ipadic/system.dic", "../ipadic/system.dic", "ipadic/system.dic"]
-            .into_iter()
-            .find(|path| std::path::Path::new(path).is_file()) else { return; };
+        let Some(path) = [
+            "../../ipadic/system.dic",
+            "../ipadic/system.dic",
+            "ipadic/system.dic",
+        ]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file()) else {
+            return;
+        };
         let pipeline = crate::pipeline::Pipeline::new(path).unwrap();
         for (text, surface, base_form, pos) in [
             ("冷やし神が座る。", "冷やし神が", "冷やし神", "名詞"),
@@ -307,13 +533,30 @@ mod tests {
             ("本を数千冊集める。", "数千冊", "数千冊", "名詞"),
         ] {
             let tokens = pipeline.process(text, &[]);
-            let token = tokens.iter().find(|token| token.bunsetsu.surface == surface).unwrap();
+            let token = tokens
+                .iter()
+                .find(|token| token.bunsetsu.surface == surface)
+                .unwrap();
             assert_eq!(token.bunsetsu.head_word.base_form, base_form);
             assert_eq!(token.bunsetsu.head_word.pos.major, pos);
             assert!(!token.bunsetsu.word_formations.is_empty());
             assert!(token.bunsetsu.morphemes.len() >= 2);
-            let reconstructed: String = tokens.iter().map(|token| token.bunsetsu.surface.as_str()).collect();
+            let reconstructed: String = tokens
+                .iter()
+                .map(|token| token.bunsetsu.surface.as_str())
+                .collect();
             assert_eq!(reconstructed, text);
         }
+    }
+
+    #[test]
+    fn catalog_rejects_unknown_fields() {
+        let invalid = r#"{"schema_version":2,"catalog_version":1,"rules":[],"typo":true}"#;
+        assert!(serde_json::from_str::<Catalog>(invalid).is_err());
+        let audit = catalog_audit().unwrap();
+        assert!(audit.capabilities.contains(&"four_level_pos".to_string()));
+        assert!(audit
+            .capabilities
+            .contains(&"conjugation_type_prefix".to_string()));
     }
 }

@@ -11,6 +11,40 @@ fn normalized_lemma(surface: &str, base_form: &str) -> String {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_lexical_rules_are_disabled_for_review() {
+        let json = r#"{
+            "parts": [],
+            "expression_type": "lexical_unit",
+            "boundary_effect": "merge_lexical_unit"
+        }"#;
+        let parsed = parse_pattern_json(json).unwrap();
+        assert!(!parsed.enabled);
+        assert!(parsed.requires_review);
+        assert_eq!(parsed.schema_version, 1);
+    }
+
+    #[test]
+    fn user_rule_v2_rejects_unknown_fields() {
+        let json = r#"{
+            "schema_version": 2,
+            "rule_version": 1,
+            "enabled": true,
+            "requires_review": false,
+            "parts": [],
+            "expression_type": "idiom",
+            "priority": 70,
+            "boundary_effect": "annotate_only",
+            "unknown": true
+        }"#;
+        assert!(parse_pattern_json(json).is_err());
+    }
+}
+
 fn structural_lemma(surface: &str, base_form: &str, pos: &str) -> Option<String> {
     let lemma = normalized_lemma(surface, base_form);
     if pos == "助詞" && matches!(lemma.as_str(), "か" | "ね" | "よ") {
@@ -27,9 +61,12 @@ fn structural_lemma(surface: &str, base_form: &str, pos: &str) -> Option<String>
     }
 }
 
-fn parts_match(actual: &ExpressionPatternPart, expected: &ExpressionPatternPart) -> bool {
+fn part_match_offset(
+    actual: &ExpressionPatternPart,
+    expected: &ExpressionPatternPart,
+) -> Option<usize> {
     if expected.is_any {
-        return true;
+        return Some(0);
     }
     let range_matches = |actual_start: usize, expected_start: usize, len: usize| {
         let actual_end = actual_start + len;
@@ -47,28 +84,33 @@ fn parts_match(actual: &ExpressionPatternPart, expected: &ExpressionPatternPart)
     match expected.alignment.as_str() {
         "suffix" => {
             if actual.pos.len() < expected.pos.len() {
-                return false;
+                return None;
             }
             let off = actual.pos.len() - expected.pos.len();
-            actual.pos[off..] == expected.pos[..]
+            (actual.pos[off..] == expected.pos[..]
                 && range_matches(off, 0, expected.pos.len())
-                && (expected.is_slot || actual.lemmas[off..] == expected.lemmas[..])
+                && (expected.is_slot || actual.lemmas[off..] == expected.lemmas[..]))
+                .then_some(off)
         }
         "prefix" => {
             if actual.pos.len() < expected.pos.len() {
-                return false;
+                return None;
             }
-            actual.pos[..expected.pos.len()] == expected.pos[..]
+            (actual.pos[..expected.pos.len()] == expected.pos[..]
                 && range_matches(0, 0, expected.pos.len())
                 && (expected.is_slot
-                    || actual.lemmas[..expected.lemmas.len()] == expected.lemmas[..])
+                    || actual.lemmas[..expected.lemmas.len()] == expected.lemmas[..]))
+                .then_some(0)
         }
-        _ => {
-            actual.pos == expected.pos
-                && range_matches(0, 0, expected.pos.len())
-                && (expected.is_slot || actual.lemmas == expected.lemmas)
-        }
+        _ => (actual.pos == expected.pos
+            && range_matches(0, 0, expected.pos.len())
+            && (expected.is_slot || actual.lemmas == expected.lemmas))
+            .then_some(0),
     }
+}
+
+fn parts_match(actual: &ExpressionPatternPart, expected: &ExpressionPatternPart) -> bool {
+    part_match_offset(actual, expected).is_some()
 }
 
 fn token_part(token: &AnnotatedToken) -> ExpressionPatternPart {
@@ -104,6 +146,34 @@ fn token_part(token: &AnnotatedToken) -> ExpressionPatternPart {
         alignment: "full".to_string(),
         is_any: false,
     }
+}
+
+fn matched_part_char_range(
+    token: &AnnotatedToken,
+    expected: &ExpressionPatternPart,
+) -> Option<(usize, usize)> {
+    let actual = token_part(token);
+    let offset = part_match_offset(&actual, expected)?;
+    if expected.is_any {
+        return Some(token.bunsetsu.char_range);
+    }
+    let morphemes: Vec<_> = token
+        .bunsetsu
+        .morphemes
+        .iter()
+        .filter(|morpheme| {
+            !morpheme.surface.trim().is_empty()
+                && structural_lemma(&morpheme.surface, &morpheme.base_form, &morpheme.pos.major)
+                    .is_some()
+        })
+        .collect();
+    let end = offset + expected.pos.len();
+    (end > offset && end <= morphemes.len()).then(|| {
+        (
+            morphemes[offset].char_range.0,
+            morphemes[end - 1].char_range.1,
+        )
+    })
 }
 
 fn token_part_masked(token: &AnnotatedToken, mask: &[bool]) -> ExpressionPatternPart {
@@ -210,21 +280,31 @@ fn default_label(tokens: &[AnnotatedToken]) -> String {
     label
 }
 
-fn parse_pattern_json(
-    json: &str,
-) -> Result<
-    (
-        Vec<ExpressionPatternPart>,
-        Option<usize>,
-        (usize, usize),
-        String,
-        i32,
-        String,
-    ),
-    Box<dyn std::error::Error>,
-> {
+struct ParsedExpressionPattern {
+    schema_version: u32,
+    rule_version: u32,
+    enabled: bool,
+    requires_review: bool,
+    parts: Vec<ExpressionPatternPart>,
+    gap_after: Option<usize>,
+    gap_bunsetsu: (usize, usize),
+    expression_type: String,
+    priority: i32,
+    boundary_effect: String,
+}
+
+fn parse_pattern_json(json: &str) -> Result<ParsedExpressionPattern, Box<dyn std::error::Error>> {
     #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
     struct Envelope {
+        #[serde(default = "default_schema_local")]
+        schema_version: u32,
+        #[serde(default = "default_rule_version_local")]
+        rule_version: u32,
+        #[serde(default = "default_enabled_local")]
+        enabled: bool,
+        #[serde(default)]
+        requires_review: bool,
         parts: Vec<ExpressionPatternPart>,
         #[serde(default)]
         gap_after: Option<usize>,
@@ -238,6 +318,15 @@ fn parse_pattern_json(
         boundary_effect: String,
     }
 
+    fn default_schema_local() -> u32 {
+        1
+    }
+    fn default_rule_version_local() -> u32 {
+        1
+    }
+    fn default_enabled_local() -> bool {
+        true
+    }
     fn default_gap_range_local() -> (usize, usize) {
         (0, 10)
     }
@@ -252,25 +341,37 @@ fn parse_pattern_json(
     }
 
     if let Ok(env) = serde_json::from_str::<Envelope>(json) {
-        return Ok((
-            env.parts,
-            env.gap_after,
-            env.gap_bunsetsu,
-            env.expression_type,
-            env.priority,
-            env.boundary_effect,
-        ));
+        if env.schema_version == 0 || env.schema_version > 2 || env.rule_version == 0 {
+            return Err("用户表达规则版本非法".into());
+        }
+        let migrated_lexical = env.expression_type == "lexical_unit";
+        return Ok(ParsedExpressionPattern {
+            schema_version: env.schema_version,
+            rule_version: env.rule_version,
+            enabled: env.enabled && !migrated_lexical,
+            requires_review: env.requires_review || migrated_lexical,
+            parts: env.parts,
+            gap_after: env.gap_after,
+            gap_bunsetsu: env.gap_bunsetsu,
+            expression_type: env.expression_type,
+            priority: env.priority,
+            boundary_effect: env.boundary_effect,
+        });
     }
 
     let parts: Vec<ExpressionPatternPart> = serde_json::from_str(json)?;
-    Ok((
+    Ok(ParsedExpressionPattern {
+        schema_version: 1,
+        rule_version: 1,
+        enabled: true,
+        requires_review: false,
         parts,
-        None,
-        (0, 10),
-        "grammar_construction".to_string(),
-        50,
-        "annotate_only".to_string(),
-    ))
+        gap_after: None,
+        gap_bunsetsu: (0, 10),
+        expression_type: "grammar_construction".to_string(),
+        priority: 50,
+        boundary_effect: "annotate_only".to_string(),
+    })
 }
 
 impl ProfileEngine {
@@ -293,15 +394,15 @@ impl ProfileEngine {
         }
         if !matches!(
             expression_type,
-            "lexical_unit" | "idiom" | "grammar_construction" | "correlative"
+            "idiom" | "grammar_construction" | "correlative"
         ) {
-            return Err("未知的表达类型".into());
+            return Err("未知或已迁移的表达类型；词汇单位必须进入构词层".into());
         }
         if expression_type == "correlative" && gap_after.is_none() {
             return Err("非连续呼应必须配置前后锚点之间的间隔".into());
         }
-        if expression_type != "lexical_unit" && boundary_effect != "annotate_only" {
-            return Err("只有词汇单位可以改变边界".into());
+        if boundary_effect != "annotate_only" {
+            return Err("表达规则只能添加语义注解，不能修改构词或文节边界".into());
         }
         if tokens.iter().any(|token| {
             token.bunsetsu.surface.contains(['\n', '\r']) || token.bunsetsu.morphemes.is_empty()
@@ -312,6 +413,9 @@ impl ProfileEngine {
         let states = if bunsetsu_states.is_empty() {
             vec!["fixed".to_string(); tokens.len()]
         } else {
+            if bunsetsu_states.len() != tokens.len() {
+                return Err("文节匹配状态数量与所选文节不一致".into());
+            }
             bunsetsu_states.to_vec()
         };
 
@@ -321,6 +425,14 @@ impl ProfileEngine {
                 .map(|t| vec![true; t.bunsetsu.morphemes.len()])
                 .collect::<Vec<_>>()
         } else {
+            if morpheme_masks.len() != tokens.len()
+                || morpheme_masks
+                    .iter()
+                    .zip(tokens)
+                    .any(|(mask, token)| mask.len() != token.bunsetsu.morphemes.len())
+            {
+                return Err("语素选择范围与所选文节不一致".into());
+            }
             morpheme_masks.to_vec()
         };
 
@@ -330,6 +442,9 @@ impl ProfileEngine {
         let mut parts_before_gap = 0;
 
         for (i, state) in states.iter().enumerate() {
+            if !matches!(state.as_str(), "fixed" | "slot" | "any" | "gap") {
+                return Err(format!("未知的文节匹配状态：{state}").into());
+            }
             if state == "gap" {
                 if first_gap_idx.is_none() {
                     first_gap_idx = Some(i);
@@ -337,6 +452,18 @@ impl ProfileEngine {
                 }
                 gap_count += 1;
             } else {
+                if state != "any" {
+                    let selected: Vec<_> = masks[i]
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(index, selected)| selected.then_some(index))
+                        .collect();
+                    if selected.is_empty()
+                        || selected.windows(2).any(|window| window[1] != window[0] + 1)
+                    {
+                        return Err(format!("文节 {} 的规则语素必须连续且非空", i + 1).into());
+                    }
+                }
                 let mut part = token_part_masked(&tokens[i], &masks[i]);
                 if state == "slot" {
                     part.is_slot = true;
@@ -357,9 +484,16 @@ impl ProfileEngine {
         } else {
             None
         };
+        if gap_after.is_some_and(|index| index + 1 >= parts.len()) {
+            return Err("可变间隔必须位于两个有效锚点之间".into());
+        }
 
         #[derive(Serialize)]
         struct ExpressionPatternEnvelope<'a> {
+            schema_version: u32,
+            rule_version: u32,
+            enabled: bool,
+            requires_review: bool,
             parts: &'a [ExpressionPatternPart],
             gap_after: Option<usize>,
             gap_bunsetsu: (usize, usize),
@@ -369,6 +503,10 @@ impl ProfileEngine {
         }
 
         let envelope = ExpressionPatternEnvelope {
+            schema_version: 2,
+            rule_version: 1,
+            enabled: true,
+            requires_review: false,
             parts: &parts,
             gap_after,
             gap_bunsetsu: (0, 10),
@@ -426,19 +564,22 @@ impl ProfileEngine {
             .optional()?;
         row.map(
             |(id, label, description, origin, pattern_json, created_at)| {
-                let (parts, gap_after, gap_bunsetsu, expression_type, priority, boundary_effect) =
-                    parse_pattern_json(&pattern_json)?;
+                let pattern = parse_pattern_json(&pattern_json)?;
                 Ok(ExpressionRule {
                     id,
+                    schema_version: pattern.schema_version,
+                    rule_version: pattern.rule_version,
+                    enabled: pattern.enabled,
+                    requires_review: pattern.requires_review,
                     label,
                     description,
                     origin,
-                    expression_type,
-                    priority,
-                    boundary_effect,
-                    parts,
-                    gap_after,
-                    gap_bunsetsu,
+                    expression_type: pattern.expression_type,
+                    priority: pattern.priority,
+                    boundary_effect: pattern.boundary_effect,
+                    parts: pattern.parts,
+                    gap_after: pattern.gap_after,
+                    gap_bunsetsu: pattern.gap_bunsetsu,
                     created_at,
                 })
             },
@@ -464,19 +605,22 @@ impl ProfileEngine {
         let mut rules = Vec::new();
         for row in rows {
             let (id, label, description, origin, pattern_json, created_at) = row?;
-            let (parts, gap_after, gap_bunsetsu, expression_type, priority, boundary_effect) =
-                parse_pattern_json(&pattern_json)?;
+            let pattern = parse_pattern_json(&pattern_json)?;
             rules.push(ExpressionRule {
                 id,
+                schema_version: pattern.schema_version,
+                rule_version: pattern.rule_version,
+                enabled: pattern.enabled,
+                requires_review: pattern.requires_review,
                 label,
                 description,
                 origin,
-                expression_type,
-                priority,
-                boundary_effect,
-                parts,
-                gap_after,
-                gap_bunsetsu,
+                expression_type: pattern.expression_type,
+                priority: pattern.priority,
+                boundary_effect: pattern.boundary_effect,
+                parts: pattern.parts,
+                gap_after: pattern.gap_after,
+                gap_bunsetsu: pattern.gap_bunsetsu,
                 created_at,
             });
         }
@@ -518,7 +662,7 @@ impl ProfileEngine {
 
         for rule in rules {
             // lexical_unit 已迁移到构词层。旧规则保留只读，但不得再从表达层改写边界。
-            if rule.expression_type == "lexical_unit" {
+            if !rule.enabled || rule.requires_review || rule.expression_type == "lexical_unit" {
                 continue;
             }
             let canonical_rule: Vec<ExpressionPatternPart> =
@@ -577,53 +721,34 @@ impl ProfileEngine {
                         let t_end = t_start + tail.len();
 
                         let orig_h_start = content_indices[h_start];
+                        let orig_h_last = content_indices[h_end - 1];
                         let orig_t_end = content_indices[t_end - 1] + 1; // 半开区间
 
-                        // 计算精确的字符匹配起点和终点
-                        let char_start = {
-                            let actual_start = &tokens[orig_h_start];
-                            let expected_start = &head[0];
-                            let non_empty_morphemes: Vec<_> = actual_start
-                                .bunsetsu
-                                .morphemes
-                                .iter()
-                                .filter(|m| !m.surface.trim().is_empty())
-                                .collect();
-                            if expected_start.alignment == "suffix"
-                                && non_empty_morphemes.len() >= expected_start.pos.len()
-                            {
-                                let idx = non_empty_morphemes.len() - expected_start.pos.len();
-                                non_empty_morphemes[idx].char_range.0
-                            } else {
-                                actual_start.bunsetsu.char_range.0
-                            }
-                        };
-
-                        let char_end = {
-                            let actual_end = &tokens[orig_t_end - 1];
-                            let expected_end = &tail[tail.len() - 1];
-                            let non_empty_morphemes: Vec<_> = actual_end
-                                .bunsetsu
-                                .morphemes
-                                .iter()
-                                .filter(|m| !m.surface.trim().is_empty())
-                                .collect();
-                            if expected_end.alignment == "prefix"
-                                && non_empty_morphemes.len() >= expected_end.pos.len()
-                            {
-                                let idx = expected_end.pos.len() - 1;
-                                non_empty_morphemes[idx].char_range.1
-                            } else {
-                                actual_end.bunsetsu.char_range.1
-                            }
-                        };
+                        let head_range = (
+                            matched_part_char_range(&tokens[orig_h_start], &head[0])
+                                .map_or(tokens[orig_h_start].bunsetsu.char_range.0, |range| {
+                                    range.0
+                                }),
+                            matched_part_char_range(&tokens[orig_h_last], &head[head.len() - 1])
+                                .map_or(tokens[orig_h_last].bunsetsu.char_range.1, |range| range.1),
+                        );
+                        let tail_range = (
+                            matched_part_char_range(&tokens[orig_t_start], &tail[0])
+                                .map_or(tokens[orig_t_start].bunsetsu.char_range.0, |range| {
+                                    range.0
+                                }),
+                            matched_part_char_range(&tokens[orig_t_end - 1], &tail[tail.len() - 1])
+                                .map_or(tokens[orig_t_end - 1].bunsetsu.char_range.1, |range| {
+                                    range.1
+                                }),
+                        );
 
                         let surface: String = tokens[orig_h_start..orig_t_end]
                             .iter()
                             .map(|token| token.bunsetsu.surface.as_str())
                             .collect();
                         let match_id = format!("{}:{}:{}", rule.id, orig_h_start, orig_t_end);
-                        let char_range = (char_start, char_end);
+                        let char_range = (head_range.0, tail_range.1);
 
                         let width = orig_t_end - orig_h_start;
                         for (offset, token) in
@@ -650,7 +775,7 @@ impl ProfileEngine {
                                 position: position.to_string(),
                                 token_range: (orig_h_start, orig_t_end),
                                 char_range,
-                                matched_ranges: vec![char_range],
+                                matched_ranges: vec![head_range, tail_range],
                                 surface: surface.clone(),
                             });
                         }
@@ -677,44 +802,12 @@ impl ProfileEngine {
                     let orig_start = content_indices[start];
                     let orig_end = content_indices[end - 1] + 1; // 半开区间
 
-                    // 计算精确的字符匹配起点和终点
-                    let char_start = {
-                        let actual_start = &tokens[orig_start];
-                        let expected_start = &canonical_rule[0];
-                        let non_empty_morphemes: Vec<_> = actual_start
-                            .bunsetsu
-                            .morphemes
-                            .iter()
-                            .filter(|m| !m.surface.trim().is_empty())
-                            .collect();
-                        if expected_start.alignment == "suffix"
-                            && non_empty_morphemes.len() >= expected_start.pos.len()
-                        {
-                            let idx = non_empty_morphemes.len() - expected_start.pos.len();
-                            non_empty_morphemes[idx].char_range.0
-                        } else {
-                            actual_start.bunsetsu.char_range.0
-                        }
-                    };
-
-                    let char_end = {
-                        let actual_end = &tokens[orig_end - 1];
-                        let expected_end = &canonical_rule[width - 1];
-                        let non_empty_morphemes: Vec<_> = actual_end
-                            .bunsetsu
-                            .morphemes
-                            .iter()
-                            .filter(|m| !m.surface.trim().is_empty())
-                            .collect();
-                        if expected_end.alignment == "prefix"
-                            && non_empty_morphemes.len() >= expected_end.pos.len()
-                        {
-                            let idx = expected_end.pos.len() - 1;
-                            non_empty_morphemes[idx].char_range.1
-                        } else {
-                            actual_end.bunsetsu.char_range.1
-                        }
-                    };
+                    let char_start =
+                        matched_part_char_range(&tokens[orig_start], &canonical_rule[0])
+                            .map_or(tokens[orig_start].bunsetsu.char_range.0, |range| range.0);
+                    let char_end =
+                        matched_part_char_range(&tokens[orig_end - 1], &canonical_rule[width - 1])
+                            .map_or(tokens[orig_end - 1].bunsetsu.char_range.1, |range| range.1);
 
                     let surface: String = tokens[orig_start..orig_end]
                         .iter()

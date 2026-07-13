@@ -167,7 +167,10 @@ impl Pipeline {
             .into_iter()
             .filter(|segment| segment.seg_type == SegmentType::Content)
             .filter_map(|segment| {
-                let segment_text: String = prepared_chars[segment.start_char_idx..segment.end_char_idx].iter().collect();
+                let segment_text: String = prepared_chars
+                    [segment.start_char_idx..segment.end_char_idx]
+                    .iter()
+                    .collect();
                 if segment_text.is_empty() {
                     return None;
                 }
@@ -192,15 +195,23 @@ impl Pipeline {
             .into_iter()
             .filter(|segment| segment.seg_type == SegmentType::Content)
             .filter_map(|segment| {
-                let segment_text: String = prepared_chars[segment.start_char_idx..segment.end_char_idx].iter().collect();
-                if segment_text.is_empty() { return None; }
+                let segment_text: String = prepared_chars
+                    [segment.start_char_idx..segment.end_char_idx]
+                    .iter()
+                    .collect();
+                if segment_text.is_empty() {
+                    return None;
+                }
                 let mut morphemes = self.morpheme_analyzer.analyze(&segment_text);
                 for morpheme in &mut morphemes {
                     morpheme.char_range.0 += segment.start_char_idx;
                     morpheme.char_range.1 += segment.start_char_idx;
                 }
                 let formations = self.word_formation_matcher.match_morphemes(&morphemes);
-                Some(self.bunsetsu_analyzer.analyze(&morphemes, &[], &formations.accepted))
+                Some(
+                    self.bunsetsu_analyzer
+                        .analyze(&morphemes, &[], &formations.accepted),
+                )
             })
             .collect()
     }
@@ -374,7 +385,7 @@ impl Pipeline {
                     ruby::override_bunsetsu_readings_with_chars(
                         &prepared_chars,
                         &mut bunsetsus,
-                        segment_annotations,
+                        &prepared.annotations,
                     );
                     if let Some(timings) = timings.as_deref_mut() {
                         timings.add("文节与振假名", chunking_started.elapsed());

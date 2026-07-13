@@ -7,7 +7,6 @@ use std::path::Path;
 use std::sync::Mutex;
 use unicode_normalization::UnicodeNormalization;
 
-
 #[derive(Debug, Clone, Serialize)]
 pub struct DictionaryStats {
     pub file_name: String,
@@ -178,8 +177,7 @@ impl DictionaryEngine {
                 continue;
             };
             for (_, connection) in &self.connections {
-                let sql =
-                    "WITH candidates(word, normalized) AS (\
+                let sql = "WITH candidates(word, normalized) AS (\
                          SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') \
                          FROM json_each(?1)\
                      ) \
@@ -225,6 +223,11 @@ impl DictionaryEngine {
             return redirected;
         }
         let mut direct = self.lookup_direct(headword, reading);
+        if direct.is_empty() {
+            if let Some(target) = compatibility_redirect_target(headword) {
+                direct = self.lookup_direct(target, None);
+            }
+        }
         rank_readings(&mut direct, normalized_reading.as_deref());
         direct
     }
@@ -394,6 +397,14 @@ impl DictionaryEngine {
     }
 }
 
+// 口语形归一化将在独立词汇模块中实现；此处仅保留已确认词条的有限兼容跳转。
+fn compatibility_redirect_target(headword: &str) -> Option<&'static str> {
+    match normalize_form(headword).as_str() {
+        "だっせえ" => Some("ダサい"),
+        _ => None,
+    }
+}
+
 fn rank_readings(entries: &mut [DictEntry], requested: Option<&str>) {
     for entry in entries.iter_mut() {
         entry.is_preferred = requested.is_some_and(|requested| {
@@ -516,6 +527,7 @@ mod tests {
              INSERT INTO entries VALUES (4, 'いる', NULL, '<p>☞ <a href="entry://いる【入る】">いる【入る】</a><br>☞ <a href="entry://いる【居る】">いる【居る】</a></p>', '三省堂Super大辞林3.1');
              INSERT INTO entries VALUES (5, 'いる【入る】', NULL, '<p><span class="bss">いる</span> 入る释义</p>', '三省堂Super大辞林3.1');
              INSERT INTO entries VALUES (6, 'こ【子】', NULL, '<p><span class="bss">こ</span>【<hy>子</hy>】<br><div><div class="no">①</div><div class="lefta">子供。⇔<a href="entry://親">親</a>・<a href="entry://祖">祖</a>。</div></div></p>', '三省堂Super大辞林3.1');
+             INSERT INTO entries VALUES (7, 'ダサい', 'ださい', '<p>野暮ったい。</p>', '三省堂Super大辞林3.1');
              INSERT INTO metadata VALUES (3, '三省堂Super大辞林3.1', '2026-07-11T00:00:00Z');
              INSERT INTO entry_forms VALUES (1, 'けいさつしょ', 'けいさつしょ', 'kana', 1);
              INSERT INTO entry_forms VALUES (2, '警察署', '警察署', 'kanji', 1);
@@ -523,12 +535,14 @@ mod tests {
              INSERT INTO entry_forms VALUES (4, 'いる', 'いる', 'kana', 1);
              INSERT INTO entry_forms VALUES (5, '入る', '入る', 'mixed', 1);
              INSERT INTO entry_forms VALUES (6, 'こ', 'こ', 'kana', 1);
+             INSERT INTO entry_forms VALUES (7, 'ダサい', 'ダサい', 'mixed', 1);
              INSERT INTO entry_readings VALUES (1, 'けいさつしょ', 'ケイサツショ', 1);
              INSERT INTO entry_readings VALUES (2, 'けいさつしょ', 'ケイサツショ', 1);
              INSERT INTO entry_readings VALUES (3, 'つなぐ', 'ツナグ', 1);
              INSERT INTO entry_readings VALUES (4, 'いる', 'イル', 1);
              INSERT INTO entry_readings VALUES (5, 'いる', 'イル', 1);
              INSERT INTO entry_readings VALUES (6, 'こ', 'コ', 1);
+             INSERT INTO entry_readings VALUES (7, 'ださい', 'ダサイ', 1);
              INSERT INTO entries_fts(entries_fts) VALUES('rebuild');"#
         ).unwrap();
         drop(connection);
@@ -551,14 +565,30 @@ mod tests {
 
         let navigation = engine.lookup("いる", None);
         assert!(navigation.iter().any(|entry| entry.links.len() == 2));
-        assert!(navigation.iter().flat_map(|entry| &entry.links).all(|link| link.relation == "candidate"));
+        assert!(navigation
+            .iter()
+            .flat_map(|entry| &entry.links)
+            .all(|link| link.relation == "candidate"));
         let target = engine.lookup("いる【入る】", None);
-        assert!(target.iter().any(|entry| entry.definition_html.contains("入る释义")));
-        assert!(target.iter().any(|entry| entry.definition_html.contains("class=\"bss\"")));
+        assert!(target
+            .iter()
+            .any(|entry| entry.definition_html.contains("入る释义")));
+        assert!(target
+            .iter()
+            .any(|entry| entry.definition_html.contains("class=\"bss\"")));
 
         let kana_definition = engine.lookup("こ", None);
-        assert!(kana_definition.iter().any(|entry| entry.definition_html.contains("子供")));
-        assert!(kana_definition.iter().flat_map(|entry| &entry.links).all(|link| link.relation == "antonym"));
+        assert!(kana_definition
+            .iter()
+            .any(|entry| entry.definition_html.contains("子供")));
+        assert!(kana_definition
+            .iter()
+            .flat_map(|entry| &entry.links)
+            .all(|link| link.relation == "antonym"));
+
+        let colloquial = engine.lookup("だっせえ", None);
+        assert_eq!(colloquial.len(), 1);
+        assert_eq!(colloquial[0].headword, "ダサい");
 
         drop(engine);
         std::fs::remove_dir_all(directory).unwrap();

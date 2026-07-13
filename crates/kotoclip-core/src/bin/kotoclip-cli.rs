@@ -157,6 +157,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "expression-verify" => expression_verify(&args),
         "expression-add" => expression_add(&args),
         "expression-repl" => expression_repl(&args),
+        "schema-audit" => schema_audit(&args),
         "repl" => repl(&args),
         "help" | "--help" | "-h" => {
             print_help();
@@ -164,6 +165,29 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
         _ => Err(format!("未知命令：{command}。运行 help 查看用法。").into()),
     }
+}
+
+fn schema_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let audits = vec![
+        kotoclip_core::pipeline::word_formation::catalog_audit()?,
+        kotoclip_core::pipeline::bunsetsu::catalog_audit()?,
+        kotoclip_core::pipeline::expressions::catalog_audit(),
+    ];
+    if let Some(path) = args.options.get("json") {
+        std::fs::write(path, serde_json::to_string_pretty(&audits)?)?;
+    }
+    let rules: usize = audits.iter().map(|audit| audit.rule_count).sum();
+    let capabilities: HashSet<_> = audits
+        .iter()
+        .flat_map(|audit| audit.capabilities.iter())
+        .collect();
+    println!(
+        "规则审计：层 {}，规则 {}，能力 {}，严格校验通过。",
+        audits.len(),
+        rules,
+        capabilities.len()
+    );
+    Ok(())
 }
 
 fn dictionary(args: &CliArgs) -> Result<DictionaryEngine, Box<dyn Error>> {
@@ -753,8 +777,11 @@ struct ScanItem {
     token_range: (usize, usize),
     char_range: (usize, usize),
     matched_ranges: Vec<(usize, usize)>,
+    captures: Vec<kotoclip_core::models::ExpressionCandidateCapture>,
     evidence: Vec<String>,
+    counter_evidence: Vec<String>,
     rejection_reason: Option<String>,
+    entry_key: Option<String>,
     context: String,
 }
 
@@ -802,6 +829,12 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let write_json = args.options.get("json");
     let include_pending = args.flags.contains("include-pending");
     let include_rejected = args.flags.contains("include-rejected");
+    let accepted_candidates: HashMap<_, _> =
+        kotoclip_core::pipeline::expressions::builtin_expression_candidates(&tokens)
+            .into_iter()
+            .chain(kotoclip_core::pipeline::expressions::correlative_expression_candidates(&tokens))
+            .map(|candidate| (candidate.candidate_id.clone(), candidate))
+            .collect();
 
     for token in &tokens {
         for expression in token
@@ -820,10 +853,13 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
             let clean_context = render_matched_context(&analyzed_text, &ranges, 24);
 
             if write_json.is_some() {
+                let structured = accepted_candidates.get(&expression.match_id);
                 items.push(ScanItem {
                     match_id: expression.match_id.clone(),
                     status: "accepted".to_string(),
-                    rule_id: expression.rule_id.to_string(),
+                    rule_id: structured
+                        .map(|candidate| candidate.rule_id.clone())
+                        .unwrap_or_else(|| expression.rule_id.to_string()),
                     label: expression.label.clone(),
                     origin: expression.origin.clone(),
                     description: expression.description.clone(),
@@ -831,8 +867,17 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                     token_range: expression.token_range,
                     char_range: expression.char_range,
                     matched_ranges: ranges,
-                    evidence: vec![format!("{}_rule_match", expression.origin)],
+                    captures: structured
+                        .map(|candidate| candidate.captures.clone())
+                        .unwrap_or_default(),
+                    evidence: structured
+                        .map(|candidate| candidate.evidence.clone())
+                        .unwrap_or_else(|| vec![format!("{}_rule_match", expression.origin)]),
+                    counter_evidence: structured
+                        .map(|candidate| candidate.counter_evidence.clone())
+                        .unwrap_or_default(),
                     rejection_reason: None,
+                    entry_key: structured.and_then(|candidate| candidate.entry_key.clone()),
                     context: clean_context,
                 });
             } else {
@@ -879,8 +924,11 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                 token_range: candidate.covered_token_range,
                 char_range: candidate.char_range,
                 matched_ranges: candidate.matched_ranges,
+                captures: candidate.captures,
                 evidence: candidate.evidence,
+                counter_evidence: candidate.counter_evidence,
                 rejection_reason: candidate.rejection_reason,
+                entry_key: candidate.entry_key,
                 context,
             });
         }
@@ -900,8 +948,11 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                     token_range: candidate.covered_token_range,
                     char_range: candidate.char_range,
                     matched_ranges: candidate.matched_ranges,
+                    captures: candidate.captures,
                     evidence: candidate.evidence,
+                    counter_evidence: candidate.counter_evidence,
                     rejection_reason: candidate.rejection_reason,
+                    entry_key: candidate.entry_key,
                     context,
                 });
             }
@@ -997,7 +1048,7 @@ fn word_formation_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let accepted_count = items.len();
     if let Some(path) = args.options.get("json") {
         let report = WordFormationScanReport {
-            schema_version: 1,
+            schema_version: 2,
             accepted_count,
             rejected_count,
             conflict_count,
@@ -1481,12 +1532,21 @@ fn extract_chapter<'a>(source: &'a str, chapter: Option<&str>) -> Result<&'a str
     let Some(chapter) = chapter else {
         return Ok(source);
     };
-    let marker = source
-        .find(chapter)
-        .ok_or_else(|| format!("找不到章节标题：{chapter}"))?;
-    let body_start = source[marker..]
-        .find('\n')
-        .map_or(source.len(), |offset| marker + offset + 1);
+    let requested = chapter.trim().trim_start_matches('#').trim();
+    let mut line_start = 0;
+    let mut body_start = None;
+    for line in source.split_inclusive('\n') {
+        let title = line.trim_end_matches(['\r', '\n']).trim();
+        if title
+            .strip_prefix("## ")
+            .is_some_and(|value| value.trim() == requested)
+        {
+            body_start = Some(line_start + line.len());
+            break;
+        }
+        line_start += line.len();
+    }
+    let body_start = body_start.ok_or_else(|| format!("找不到章节标题：{chapter}"))?;
     let body = &source[body_start..];
     let end = body.find("\n## ").unwrap_or(body.len());
     Ok(&body[..end])
@@ -1563,6 +1623,7 @@ fn print_help() {
         --start-token N --end-token N [--slots 0,1]
         [--label LABEL --description TEXT]
   expression-repl --profile PATH
+  schema-audit [--json PATH]
   repl
 "#
     );
@@ -1574,10 +1635,11 @@ mod tests {
 
     #[test]
     fn extracts_requested_markdown_chapter() {
-        let source = "# 书\n## 第一話\n甲\n乙\n## 第二話\n丙";
+        let source = "# 书\n第一話\n第二話\n## 第一話\n甲\n乙\n## 第二話\n丙";
         assert_eq!(
-            extract_chapter(source, Some("## 第一話")).unwrap(),
+            extract_chapter(source, Some("第一話")).unwrap(),
             "甲\n乙"
         );
+        assert_eq!(extract_chapter(source, Some("## 第二話")).unwrap(), "丙");
     }
 }

@@ -68,6 +68,12 @@ pub struct BunsetsuBoundaryDecision {
     pub score: i32,
     pub evidence: Vec<String>,
     pub alternatives: Vec<String>,
+    #[serde(default)]
+    pub alternative_score: i32,
+    #[serde(default)]
+    pub counter_evidence: Vec<String>,
+    #[serde(default)]
+    pub hard_constraint: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -160,6 +166,14 @@ fn default_alignment() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExpressionRule {
     pub id: i64,
+    #[serde(default = "default_user_rule_schema")]
+    pub schema_version: u32,
+    #[serde(default = "default_user_rule_version")]
+    pub rule_version: u32,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub requires_review: bool,
     pub label: String,
     #[serde(default)]
     pub description: String,
@@ -209,12 +223,40 @@ pub struct ExpressionAnnotation {
     pub surface: String,
 }
 
+fn default_user_rule_schema() -> u32 {
+    1
+}
+fn default_user_rule_version() -> u32 {
+    1
+}
+fn default_true() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ExpressionCandidateStatus {
     Accepted,
     Pending,
     Rejected,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpressionCandidateCapture {
+    pub name: String,
+    pub surface: String,
+    pub morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RuleCatalogAudit {
+    pub layer: String,
+    pub schema_version: u32,
+    pub catalog_version: u32,
+    pub rule_count: usize,
+    pub enabled_rule_count: usize,
+    pub capabilities: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -233,7 +275,7 @@ pub struct ExpressionCandidate {
     pub char_range: (usize, usize),
     pub surface: String,
     #[serde(default)]
-    pub captures: Vec<String>,
+    pub captures: Vec<ExpressionCandidateCapture>,
     #[serde(default)]
     pub evidence: Vec<String>,
     #[serde(default)]

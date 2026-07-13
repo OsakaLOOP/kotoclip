@@ -1,36 +1,45 @@
 {
   "schema_version": 2,
+  "catalog_version": 1,
+  "source": "kotoclip_builtin",
   "patterns": [
     {
       "id": "idiom_mimi_wo_katamukeru", "rule_version": 1, "expression_type": "idiom",
       "label": "耳を傾ける", "description": "注意して聞く。", "category": "固定表达",
-      "atoms": [{"lemmas":["耳"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["傾ける"],"pos":"動詞"}]
+      "examples": ["彼の話に耳を傾ける。"], "counter_examples": ["耳を洗う。"],
+      "atoms": [{"lemmas":["耳"],"pos":"名詞","capture":"object"},{"lemmas":["を"],"pos":"助詞","pos_sub1":"格助詞","pos_sub2":"一般"},{"lemmas":["傾ける"],"pos":"動詞","pos_sub1":"自立","capture":"predicate"}]
     },
     {
       "id": "idiom_te_wo_hiku", "rule_version": 1, "expression_type": "idiom",
       "label": "手を引く", "description": "関係していた事柄から退く。", "category": "固定表达",
-      "atoms": [{"lemmas":["手"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["引く"],"pos":"動詞"}]
+      "examples": ["この事業から手を引く。"], "counter_examples": ["手を挙げる。"],
+      "atoms": [{"lemmas":["手"],"pos":"名詞","capture":"object"},{"lemmas":["を"],"pos":"助詞","pos_sub1":"格助詞","pos_sub2":"一般"},{"lemmas":["引く"],"pos":"動詞","pos_sub1":"自立","capture":"predicate"}]
     },
     {
       "id": "idiom_kuchi_wo_hiraku", "rule_version": 1, "expression_type": "idiom",
       "label": "口を開く", "description": "話し始める。", "category": "固定表达",
-      "atoms": [{"lemmas":["口"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["開く"],"pos":"動詞"}]
+      "examples": ["彼は口を開くたびに嘘をつく。"], "counter_examples": ["口を閉じる。"],
+      "atoms": [{"lemmas":["口"],"pos":"名詞","capture":"object"},{"lemmas":["を"],"pos":"助詞","pos_sub1":"格助詞","pos_sub2":"一般"},{"lemmas":["開く"],"pos":"動詞","pos_sub1":"自立","capture":"predicate"}]
     },
     {
       "id": "idiom_ki_wo_tsukau", "rule_version": 1, "expression_type": "idiom",
       "label": "気を遣う", "description": "相手や周囲に配慮する。", "category": "固定表达",
-      "atoms": [{"lemmas":["気"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["遣う"],"pos":"動詞"}]
+      "examples": ["気を遣うことも大切だ。"], "counter_examples": ["気を失う。"],
+      "atoms": [{"lemmas":["気"],"pos":"名詞","capture":"object"},{"lemmas":["を"],"pos":"助詞","pos_sub1":"格助詞","pos_sub2":"一般"},{"lemmas":["遣う"],"pos":"動詞","pos_sub1":"自立","capture":"predicate"}]
     },
     {
       "id": "idiom_me_wo_hanasu", "rule_version": 1, "expression_type": "idiom",
       "label": "目を離す", "description": "見続けることをやめる。", "category": "固定表达",
-      "atoms": [{"lemmas":["目"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["離す"],"pos":"動詞"}]
+      "examples": ["目を離すなよ。"], "counter_examples": ["目を閉じる。"],
+      "atoms": [{"lemmas":["目"],"pos":"名詞","capture":"object"},{"lemmas":["を"],"pos":"助詞","pos_sub1":"格助詞","pos_sub2":"一般"},{"lemmas":["離す"],"pos":"動詞","pos_sub1":"自立","capture":"predicate"}]
     },
     {
       "id": "concessive_nimo_kakawarazu",
       "label": "にもかかわらず",
       "description": "前项事实成立，却出现与通常预期相反或不受其影响的后项。",
       "category": "让步",
+      "examples": ["雨にもかかわらず出かけた。"],
+      "counter_examples": ["雨に関わる問題だ。"],
       "atoms": [
         { "lemmas": ["に"], "pos": "助詞" },
         { "lemmas": ["も"], "pos": "助詞" },
@@ -40,9 +49,12 @@
     },
     {
       "id": "idiom_umu_wo_iwasazu",
+      "expression_type": "idiom",
       "label": "有無を言わさず",
       "description": "对方没有答应、拒绝或辩解的余地；不由分说地采取行动。",
       "category": "固定表达",
+      "examples": ["有無を言わさず連れ出した。"],
+      "counter_examples": ["有無を確認して言う。"],
       "atoms": [
         { "lemmas": ["有無"], "pos": "名詞" },
         { "lemmas": ["を"], "pos": "助詞" },
@@ -55,6 +67,8 @@
       "label": "に負けるところが多い",
       "description": "在不少方面逊于前接对象；前接名词是比较对象，不属于固定表记。",
       "category": "比较句式",
+      "examples": ["兄に負けるところが多い。"],
+      "counter_examples": ["兄に負ける。"],
       "atoms": [
         { "lemmas": ["に"], "pos": "助詞" },
         { "lemmas": ["負ける"], "pos": "動詞" },
@@ -68,6 +82,8 @@
       "label": "〜間もなく",
       "description": "前项刚发生或尚未来得及充分完成，后项便紧接着发生。",
       "category": "时间关系",
+      "examples": ["着く間もなく出発した。"],
+      "counter_examples": ["長い間もなく静かだった。"],
       "atoms": [
         { "pos": "動詞" },
         { "lemmas": ["間もなく"], "pos": "副詞" }
@@ -75,9 +91,12 @@
     },
     {
       "id": "negative_koto_naku",
+      "requires_following_content": true,
       "label": "〜ことなく",
       "description": "没有进行前项动作，便发生或持续后项。",
       "category": "否定方式",
+      "examples": ["何一つすることなく一日が終わった。"],
+      "counter_examples": ["やることないから帰る。"],
       "atoms": [
         { "lemmas": ["こと"], "pos": "名詞" },
         { "lemmas": ["ない"], "surfaces": ["なく"], "pos": "形容詞", "conjugation_forms": ["連用テ接続"] }
@@ -88,6 +107,8 @@
       "label": "〜にすぎない",
       "description": "把对象限定在较低或较窄的程度：只不过是、仅仅是。",
       "category": "限定",
+      "examples": ["噂にすぎない。"],
+      "counter_examples": ["駅を通りすぎない。"],
       "atoms": [
         { "lemmas": ["に"], "pos": "助詞" },
         { "lemmas": ["すぎる"], "pos": "動詞" },
@@ -99,6 +120,8 @@
       "label": "〜にしては",
       "description": "以前接条件或身份作为评价基准，后项结果与通常预期不符。",
       "category": "评价让步",
+      "examples": ["新人にしては上手だ。"],
+      "counter_examples": ["新人にして仕事を始める。"],
       "atoms": [
         { "lemmas": ["に"], "pos": "助詞" },
         { "lemmas": ["する"], "pos": "動詞" },
@@ -108,9 +131,12 @@
     },
     {
       "id": "idiom_nani_ga_nan_demo",
+      "expression_type": "idiom",
       "label": "何が何でも",
       "description": "不论条件和手段如何，无论如何都要实现后项。",
       "category": "固定表达",
+      "examples": ["何が何でもやり遂げる。"],
+      "counter_examples": ["何が何でもない。"],
       "atoms": [
         { "lemmas": ["何"], "pos": "名詞" },
         { "lemmas": ["が"], "pos": "助詞" },
@@ -120,9 +146,12 @@
     },
     {
       "id": "idiom_me_mo_kurezu",
+      "expression_type": "idiom",
       "label": "目もくれず",
       "description": "完全不去看、不予理会某对象，专注于另一行动。",
       "category": "固定表达",
+      "examples": ["周囲には目もくれず走った。"],
+      "counter_examples": ["目も赤くなった。"],
       "atoms": [
         { "lemmas": ["目"], "pos": "名詞" },
         { "lemmas": ["も"], "pos": "助詞" },
@@ -132,9 +161,12 @@
     },
     {
       "id": "idiom_nasuga_mamani",
+      "expression_type": "idiom",
       "label": "なすがままに",
       "description": "不作抵抗或主动控制，任凭他人或事态摆布。",
       "category": "固定表达",
+      "examples": ["相手のなすがままになった。"],
+      "counter_examples": ["仕事をなす。"],
       "atoms": [
         { "lemmas": ["なす", "為す"] },
         { "lemmas": ["が"], "pos": "助詞" },
@@ -149,6 +181,8 @@
       "label": "まるで〜ようだ",
       "description": "将某事物比作另一事物；中间为比喻内容。",
       "category": "比喻呼应",
+      "examples": ["まるで夢のようだ。"],
+      "counter_examples": ["まるで終わった。次は夢のようだ。"],
       "head_atoms": [
         { "lemmas": ["まるで"], "pos": "副詞" }
       ],
@@ -173,6 +207,8 @@
       "label": "さながら〜ように",
       "description": "恰似、宛如某状态或场景。",
       "category": "比喻呼应",
+      "examples": ["さながら獣のように走る。"],
+      "counter_examples": ["さながら終わった。次は獣のようだ。"],
       "head_atoms": [
         { "lemmas": ["さながら"], "pos": "副詞" }
       ],
@@ -191,6 +227,8 @@
       "label": "一体〜か",
       "description": "强调疑问或反问语气；到底、究竟如何。",
       "category": "究竟呼应",
+      "examples": ["一体どうしたのか。"],
+      "counter_examples": ["一体となった。"],
       "head_atoms": [
         { "lemmas": ["一体", "いったい"] }
       ],
@@ -209,6 +247,8 @@
       "label": "どんなに〜ても",
       "description": "表示无论怎样做前项，后项结果均不改变。",
       "category": "让步呼应",
+      "examples": ["どんなに危険であっても行く。"],
+      "counter_examples": ["どんなに危険はありませんと説明されたところで、信じない。"],
       "head_atoms": [
         { "lemmas": ["どんなに"], "pos": "副詞" }
       ],
@@ -226,6 +266,8 @@
       "label": "いくら〜ても",
       "description": "表示无论多么频繁或程度多么深，也无济于事。",
       "category": "让步呼应",
+      "examples": ["いくら頼んでも変わらない。"],
+      "counter_examples": ["値段はいくら。頼んでもいい。"],
       "head_atoms": [
         { "lemmas": ["いくら"] }
       ],
@@ -245,6 +287,8 @@
       "label": "たとえ〜ても",
       "description": "假设一种极端的让步条件：即使、纵然……也。",
       "category": "让步呼应",
+      "examples": ["たとえ雨でも行く。"],
+      "counter_examples": ["たとえ話だ。雨でも行く。"],
       "head_atoms": [
         { "lemmas": ["たとえ", "たとい"] }
       ],
@@ -265,6 +309,8 @@
       "label": "どうして〜のか",
       "description": "询问原因或表示反问：为什么、怎么会……呢。",
       "category": "疑问呼应",
+      "examples": ["どうして来ないのか。"],
+      "counter_examples": ["どうしても行く。"],
       "head_atoms": [
         { "lemmas": ["どうして"] }
       ],
@@ -281,6 +327,8 @@
       "label": "決して〜ない",
       "description": "表示强烈的否定意志或客观事实：决不、绝对不。",
       "category": "否定呼应",
+      "examples": ["決して忘れない。"],
+      "counter_examples": ["決して終わった。"],
       "head_atoms": [
         { "lemmas": ["決して"] }
       ],
@@ -297,6 +345,8 @@
       "label": "絶対に〜ない",
       "description": "断定在任何情况下都不会发生某事：绝对不。",
       "category": "否定呼应",
+      "examples": ["絶対に許さない。"],
+      "counter_examples": ["絶対に必要だ。"],
       "head_atoms": [
         { "lemmas": ["絶対", "ぜったい"] },
         { "lemmas": ["に"] }
@@ -314,6 +364,8 @@
       "label": "とても〜ない",
       "description": "表示能力或状况上怎么也无法做到：怎么也（无法）……。",
       "category": "否定呼应",
+      "examples": ["とても信じられない。"],
+      "counter_examples": ["とても美しい。"],
       "head_atoms": [
         { "lemmas": ["とても"] }
       ],
@@ -332,6 +384,8 @@
       "label": "まさか〜とは",
       "description": "表示对出乎意料的事情感到震惊或否认：没想到、该不会……吧。",
       "category": "惊异呼应",
+      "examples": ["まさか彼が来るとは。"],
+      "counter_examples": ["まさかりを持つ。"],
       "head_atoms": [
         { "lemmas": ["まさか"] }
       ],
@@ -347,6 +401,8 @@
       "label": "せめて〜よう",
       "description": "表示哪怕是最低限度也希望实现某种主观愿望：哪怕是……也想。",
       "category": "期许呼应",
+      "examples": ["せめて謝ろう。"],
+      "counter_examples": ["せめて終わった。"],
       "head_atoms": [
         { "lemmas": ["せめて"] }
       ],

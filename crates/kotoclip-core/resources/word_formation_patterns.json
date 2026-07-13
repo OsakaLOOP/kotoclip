@@ -1,8 +1,12 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "catalog_version": 1,
   "rules": [
     {
       "id": "deity_by_godan_action",
+      "rule_version": 1,
+      "source": "project_representative_cases",
+      "enabled": true,
       "category": "action_deity",
       "priority": 100,
       "atoms": [
@@ -24,10 +28,15 @@
         "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
         "head_atom": 1,
         "confidence": 95
-      }
+      },
+      "examples": ["冷やし神", "歌い神", "喰い神"],
+      "counter_examples": ["冷やして神を見る"]
     },
     {
       "id": "renyou_houdai",
+      "rule_version": 1,
+      "source": "project_representative_cases",
+      "enabled": true,
       "category": "verbal_nominal_suffix",
       "priority": 90,
       "atoms": [
@@ -48,10 +57,15 @@
         "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
         "head_atom": 1,
         "confidence": 95
-      }
+      },
+      "examples": ["食べ放題"],
+      "counter_examples": ["食べて放題を読む"]
     },
     {
       "id": "noun_adjectival_suffix",
+      "rule_version": 1,
+      "source": "project_representative_cases",
+      "enabled": true,
       "category": "derived_adjective",
       "priority": 80,
       "atoms": [
@@ -70,10 +84,15 @@
         "pos": { "major": "形容詞", "sub1": "自立", "sub2": "*", "sub3": "*" },
         "head_atom": 1,
         "confidence": 90
-      }
+      },
+      "examples": ["煙草臭い", "子供っぽい"],
+      "counter_examples": ["煙草が臭い"]
     },
     {
       "id": "ordinal_counter",
+      "rule_version": 1,
+      "source": "project_representative_cases",
+      "enabled": true,
       "category": "ordinal_counter",
       "priority": 85,
       "atoms": [
@@ -85,10 +104,15 @@
         "pos": { "major": "名詞", "sub1": "数", "sub2": "*", "sub3": "*" },
         "head_atom": 2,
         "confidence": 95
-      }
+      },
+      "examples": ["第一話", "第二回"],
+      "counter_examples": ["第一", "第話"]
     },
     {
       "id": "numeric_counter",
+      "rule_version": 1,
+      "source": "project_representative_cases",
+      "enabled": true,
       "category": "numeric_counter",
       "priority": 75,
       "atoms": [
@@ -99,7 +123,9 @@
         "pos": { "major": "名詞", "sub1": "数", "sub2": "*", "sub3": "*" },
         "head_atom": 1,
         "confidence": 95
-      }
+      },
+      "examples": ["数千冊", "三冊"],
+      "counter_examples": ["数千", "冊"]
     }
   ]
 }

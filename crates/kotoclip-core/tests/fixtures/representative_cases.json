@@ -193,6 +193,27 @@
     }
   },
   {
+    "id": "C4_prefix_numeric_counter",
+    "category": "bunsetsu_rule_interaction",
+    "description": "接头词与构词原子必须联合决定边界",
+    "text": "お二人で行く。",
+    "expected_observed": {
+      "bunsetsu": ["お", "二人で", "行く", "。"],
+      "expressions": []
+    },
+    "expected_stage_b": {
+      "bunsetsu": ["お", "二人で", "行く", "。"],
+      "word_formations": ["numeric_counter"]
+    },
+    "expected_stage_c": {
+      "bunsetsu": ["お二人で", "行く", "。"]
+    },
+    "expected_target": {
+      "bunsetsu": ["お二人で", "行く。"],
+      "expressions": []
+    }
+  },
+  {
     "id": "D1_yarukotonai_false",
     "category": "grammar_false_positive",
     "description": "やることない (〜ことなく误报)",

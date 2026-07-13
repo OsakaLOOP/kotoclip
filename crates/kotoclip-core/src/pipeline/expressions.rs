@@ -1,8 +1,10 @@
 use crate::models::{
-    AnnotatedToken, ExpressionAnnotation, ExpressionCandidate, ExpressionCandidateStatus,
+    AnnotatedToken, ExpressionAnnotation, ExpressionCandidate, ExpressionCandidateCapture,
+    ExpressionCandidateStatus, RuleCatalogAudit,
 };
 use serde::Deserialize;
 use std::collections::HashSet;
+use std::sync::OnceLock;
 
 /// 对所有候选来源执行统一的优先级排序与同类范围排重。
 pub fn resolve_expression_conflicts(tokens: &mut [AnnotatedToken]) {
@@ -25,174 +27,25 @@ pub fn resolve_expression_conflicts(tokens: &mut [AnnotatedToken]) {
     }
 }
 
-/// 应用最高优先级的词汇单位边界，同时保留合并范围内的底层语素。
-pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<AnnotatedToken> {
-    let mut lexical_ranges: Vec<_> = tokens
-        .iter()
-        .flat_map(|token| &token.expressions)
-        .filter(|item| item.boundary_effect == "merge_lexical_unit")
-        .map(|item| {
-            (
-                item.token_range,
-                item.priority,
-                item.confidence,
-                item.match_id.clone(),
-            )
-        })
-        .collect();
-    lexical_ranges.sort_by(|left, right| {
-        right
-            .1
-            .cmp(&left.1)
-            .then_with(|| right.2.total_cmp(&left.2))
-            .then_with(|| {
-                right
-                    .0
-                     .1
-                    .saturating_sub(right.0 .0)
-                    .cmp(&left.0 .1.saturating_sub(left.0 .0))
-            })
-    });
-    lexical_ranges.dedup_by(|left, right| left.3 == right.3);
-
-    let mut claimed = vec![false; tokens.len()];
-    let mut accepted = Vec::new();
-    for (range, _, _, _) in lexical_ranges {
-        if range.0 >= range.1
-            || range.1 > tokens.len()
-            || claimed[range.0..range.1].iter().any(|value| *value)
-            || tokens[range.0..range.1]
-                .iter()
-                .any(|token| token.display_class != "content")
-        {
-            continue;
-        }
-        claimed[range.0..range.1].fill(true);
-        accepted.push(range);
-    }
-    accepted.sort_by_key(|range| range.0);
-
-    let mut old_to_new = vec![0usize; tokens.len()];
-    let mut result = Vec::new();
-    let mut index = 0;
-    let mut range_index = 0;
-    while index < tokens.len() {
-        if accepted
-            .get(range_index)
-            .is_some_and(|range| range.0 == index)
-        {
-            let range = accepted[range_index];
-            let mut merged = tokens[index].clone();
-            merged.bunsetsu.morphemes = tokens[range.0..range.1]
-                .iter()
-                .flat_map(|token| token.bunsetsu.morphemes.clone())
-                .collect();
-            merged.bunsetsu.surface = tokens[range.0..range.1]
-                .iter()
-                .map(|token| token.bunsetsu.surface.as_str())
-                .collect();
-            merged.bunsetsu.char_range = (
-                tokens[range.0].bunsetsu.char_range.0,
-                tokens[range.1 - 1].bunsetsu.char_range.1,
-            );
-            merged.bunsetsu.grammar_tags = tokens[range.0..range.1]
-                .iter()
-                .flat_map(|token| token.bunsetsu.grammar_tags.clone())
-                .collect();
-            let mut word_formations = Vec::new();
-            let mut morpheme_offset = 0;
-            for token in &tokens[range.0..range.1] {
-                for formation in &token.bunsetsu.word_formations {
-                    let mut formation = formation.clone();
-                    formation.morpheme_range.0 += morpheme_offset;
-                    formation.morpheme_range.1 += morpheme_offset;
-                    formation.head_morpheme += morpheme_offset;
-                    for capture in &mut formation.captures {
-                        capture.morpheme_range.0 += morpheme_offset;
-                        capture.morpheme_range.1 += morpheme_offset;
-                    }
-                    word_formations.push(formation);
-                }
-                morpheme_offset += token.bunsetsu.morphemes.len();
-            }
-            merged.bunsetsu.word_formations = word_formations;
-            if let Some(expression) = tokens[range.0..range.1]
-                .iter()
-                .flat_map(|token| &token.expressions)
-                .find(|item| {
-                    item.boundary_effect == "merge_lexical_unit" && item.token_range == range
-                })
-            {
-                merged.bunsetsu.head_word.surface = expression.surface.clone();
-                merged.bunsetsu.head_word.base_form = expression.label.clone();
-                merged.bunsetsu.head_word.reading = merged
-                    .bunsetsu
-                    .morphemes
-                    .iter()
-                    .map(|morpheme| morpheme.reading.as_str())
-                    .collect();
-            }
-            merged.novelty_score = tokens[range.0..range.1]
-                .iter()
-                .map(|token| token.novelty_score)
-                .fold(0.0, f32::max);
-            merged.is_selected = tokens[range.0..range.1]
-                .iter()
-                .any(|token| token.is_selected);
-            merged.is_known = tokens[range.0..range.1].iter().all(|token| token.is_known);
-            merged.expressions = tokens[range.0..range.1]
-                .iter()
-                .flat_map(|token| token.expressions.clone())
-                .collect();
-            let new_index = result.len();
-            old_to_new[range.0..range.1].fill(new_index);
-            result.push(merged);
-            index = range.1;
-            range_index += 1;
-        } else {
-            old_to_new[index] = result.len();
-            result.push(tokens[index].clone());
-            index += 1;
-        }
-    }
-
-    for (new_index, token) in result.iter_mut().enumerate() {
-        let mut seen = HashSet::new();
-        token.expressions.retain_mut(|item| {
-            let old_range = item.token_range;
-            if old_range.0 >= old_range.1 || old_range.1 > old_to_new.len() {
-                return false;
-            }
-            let start = old_to_new[old_range.0];
-            let end = old_to_new[old_range.1 - 1] + 1;
-            item.token_range = (start, end);
-            item.position = if end - start == 1 {
-                "single"
-            } else if new_index == start {
-                "start"
-            } else if new_index + 1 == end {
-                "end"
-            } else {
-                "middle"
-            }
-            .to_string();
-            seen.insert(item.match_id.clone())
-        });
-    }
-    result
-}
-
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ExpressionCatalog {
     schema_version: u32,
+    catalog_version: u32,
+    source: String,
     patterns: Vec<BuiltinExpressionPattern>,
     #[serde(default)]
     correlative_patterns: Vec<CorrelativePattern>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct CorrelativePattern {
     id: String,
+    #[serde(default = "default_rule_version")]
+    rule_version: u32,
+    #[serde(default = "enabled_by_default")]
+    enabled: bool,
     label: String,
     description: String,
     category: String,
@@ -200,6 +53,10 @@ struct CorrelativePattern {
     tail_variants: Vec<Vec<ExpressionAtom>>,
     #[serde(default = "default_gap_bunsetsu")]
     gap_bunsetsu: (usize, usize),
+    #[serde(default)]
+    examples: Vec<String>,
+    #[serde(default)]
+    counter_examples: Vec<String>,
 }
 
 fn default_gap_bunsetsu() -> (usize, usize) {
@@ -207,6 +64,7 @@ fn default_gap_bunsetsu() -> (usize, usize) {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct BuiltinExpressionPattern {
     id: String,
     label: String,
@@ -216,7 +74,19 @@ struct BuiltinExpressionPattern {
     expression_type: String,
     #[serde(default = "default_rule_version")]
     rule_version: u32,
+    #[serde(default = "enabled_by_default")]
+    enabled: bool,
+    #[serde(default)]
+    priority: Option<i32>,
+    #[serde(default = "default_expression_confidence")]
+    confidence: u8,
     atoms: Vec<ExpressionAtom>,
+    #[serde(default)]
+    examples: Vec<String>,
+    #[serde(default)]
+    counter_examples: Vec<String>,
+    #[serde(default)]
+    requires_following_content: bool,
 }
 
 fn default_builtin_expression_type() -> String {
@@ -225,8 +95,15 @@ fn default_builtin_expression_type() -> String {
 fn default_rule_version() -> u32 {
     1
 }
+fn enabled_by_default() -> bool {
+    true
+}
+fn default_expression_confidence() -> u8 {
+    95
+}
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ExpressionAtom {
     #[serde(default)]
     lemmas: Vec<String>,
@@ -243,7 +120,21 @@ struct ExpressionAtom {
     #[serde(default)]
     conjugation_type: Option<String>,
     #[serde(default)]
+    conjugation_types: Vec<String>,
+    #[serde(default)]
+    conjugation_type_prefixes: Vec<String>,
+    #[serde(default)]
     conjugation_forms: Vec<String>,
+    #[serde(default)]
+    capture: Option<String>,
+    #[serde(default = "one_atom")]
+    min: usize,
+    #[serde(default = "one_atom")]
+    max: usize,
+}
+
+fn one_atom() -> usize {
+    1
 }
 
 #[derive(Debug)]
@@ -260,12 +151,128 @@ struct FlatMorpheme {
     char_range: (usize, usize),
 }
 
-fn catalog() -> ExpressionCatalog {
-    let catalog: ExpressionCatalog =
-        serde_json::from_str(include_str!("../../resources/expression_patterns.json"))
-            .expect("内置跨文节表达目录格式无效");
-    assert_eq!(catalog.schema_version, 2, "内置表达目录 schema 必须为 v2");
-    catalog
+fn catalog() -> &'static ExpressionCatalog {
+    static CATALOG: OnceLock<ExpressionCatalog> = OnceLock::new();
+    CATALOG.get_or_init(|| {
+        let catalog: ExpressionCatalog =
+            serde_json::from_str(include_str!("../../resources/expression_patterns.json"))
+                .expect("内置跨文节表达目录格式无效");
+        validate_catalog(&catalog).expect("内置表达目录语义校验失败");
+        catalog
+    })
+}
+
+fn validate_catalog(catalog: &ExpressionCatalog) -> Result<(), String> {
+    if catalog.schema_version != 2
+        || catalog.catalog_version == 0
+        || catalog.source.trim().is_empty()
+    {
+        return Err("表达目录版本或来源非法".to_string());
+    }
+    let mut ids = HashSet::new();
+    for pattern in &catalog.patterns {
+        if pattern.id.trim().is_empty()
+            || !ids.insert(pattern.id.clone())
+            || pattern.rule_version == 0
+            || pattern.confidence > 100
+            || pattern.atoms.is_empty()
+            || pattern.examples.is_empty()
+            || pattern.counter_examples.is_empty()
+            || !matches!(
+                pattern.expression_type.as_str(),
+                "idiom" | "grammar_construction"
+            )
+        {
+            return Err(format!("连续表达规则非法：{}", pattern.id));
+        }
+        for atom in &pattern.atoms {
+            validate_expression_atom(atom).map_err(|reason| format!("{}：{reason}", pattern.id))?;
+        }
+    }
+    for pattern in &catalog.correlative_patterns {
+        if pattern.id.trim().is_empty()
+            || !ids.insert(pattern.id.clone())
+            || pattern.rule_version == 0
+            || pattern.head_atoms.is_empty()
+            || pattern.tail_variants.is_empty()
+            || pattern.examples.is_empty()
+            || pattern.counter_examples.is_empty()
+            || pattern.gap_bunsetsu.0 > pattern.gap_bunsetsu.1
+            || pattern.gap_bunsetsu.1 > 64
+        {
+            return Err(format!("呼应表达规则非法：{}", pattern.id));
+        }
+        for atom in pattern
+            .head_atoms
+            .iter()
+            .chain(pattern.tail_variants.iter().flatten())
+        {
+            validate_expression_atom(atom).map_err(|reason| format!("{}：{reason}", pattern.id))?;
+            if atom.min != 1 || atom.max != 1 || atom.capture.is_some() {
+                return Err(format!(
+                    "呼应锚点当前只允许单次原子且不允许捕获：{}",
+                    pattern.id
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_expression_atom(atom: &ExpressionAtom) -> Result<(), &'static str> {
+    if atom.min == 0 || atom.max < atom.min || atom.max > 8 {
+        return Err("重复范围非法");
+    }
+    if atom.lemmas.is_empty()
+        && atom.surfaces.is_empty()
+        && atom.pos.is_none()
+        && atom.pos_sub1.is_none()
+        && atom.pos_sub2.is_none()
+        && atom.pos_sub3.is_none()
+        && atom.conjugation_type.is_none()
+        && atom.conjugation_types.is_empty()
+        && atom.conjugation_type_prefixes.is_empty()
+        && atom.conjugation_forms.is_empty()
+    {
+        return Err("原子缺少约束");
+    }
+    if atom.pos_sub2.is_some() && atom.pos_sub1.is_none()
+        || atom.pos_sub3.is_some() && atom.pos_sub2.is_none()
+    {
+        return Err("四级词性层级非法");
+    }
+    Ok(())
+}
+
+pub fn catalog_audit() -> RuleCatalogAudit {
+    let catalog = catalog();
+    RuleCatalogAudit {
+        layer: "expression".to_string(),
+        schema_version: catalog.schema_version,
+        catalog_version: catalog.catalog_version,
+        rule_count: catalog.patterns.len() + catalog.correlative_patterns.len(),
+        enabled_rule_count: catalog.patterns.iter().filter(|rule| rule.enabled).count()
+            + catalog
+                .correlative_patterns
+                .iter()
+                .filter(|rule| rule.enabled)
+                .count(),
+        capabilities: vec![
+            "surface_set".to_string(),
+            "base_form_set".to_string(),
+            "four_level_pos".to_string(),
+            "conjugation_type_exact".to_string(),
+            "conjugation_type_prefix".to_string(),
+            "conjugation_form_set".to_string(),
+            "bounded_repeat_continuous".to_string(),
+            "named_capture_continuous".to_string(),
+            "finite_bunsetsu_gap".to_string(),
+            "nearest_tail_same_domain".to_string(),
+            "accepted_pending_rejected".to_string(),
+            "discontinuous_matched_ranges".to_string(),
+            "strict_unknown_field_rejection".to_string(),
+        ],
+    }
 }
 
 fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
@@ -341,6 +348,16 @@ fn atom_matches(atom: &ExpressionAtom, morpheme: &FlatMorpheme) -> bool {
             .conjugation_type
             .as_ref()
             .map_or(true, |value| value == &morpheme.conjugation_type)
+        && (atom.conjugation_types.is_empty()
+            || atom
+                .conjugation_types
+                .iter()
+                .any(|value| value == &morpheme.conjugation_type))
+        && (atom.conjugation_type_prefixes.is_empty()
+            || atom
+                .conjugation_type_prefixes
+                .iter()
+                .any(|value| morpheme.conjugation_type.starts_with(value)))
         && (atom.conjugation_forms.is_empty()
             || atom
                 .conjugation_forms
@@ -348,80 +365,217 @@ fn atom_matches(atom: &ExpressionAtom, morpheme: &FlatMorpheme) -> bool {
                 .any(|value| value == &morpheme.conjugation_form))
 }
 
+#[derive(Clone)]
+struct ExpressionAtomSpan {
+    atom_index: usize,
+    start: usize,
+    end: usize,
+}
+
+struct ExpressionSequenceMatch {
+    end: usize,
+    atoms: Vec<ExpressionAtomSpan>,
+}
+
+fn match_expression_atoms(
+    atoms: &[ExpressionAtom],
+    morphemes: &[FlatMorpheme],
+    atom_index: usize,
+    cursor: usize,
+    matched: &mut Vec<ExpressionAtomSpan>,
+    output: &mut Vec<ExpressionSequenceMatch>,
+) {
+    if atom_index == atoms.len() {
+        output.push(ExpressionSequenceMatch {
+            end: cursor,
+            atoms: matched.clone(),
+        });
+        return;
+    }
+    let atom = &atoms[atom_index];
+    let mut maximum = 0;
+    while maximum < atom.max
+        && cursor + maximum < morphemes.len()
+        && atom_matches(atom, &morphemes[cursor + maximum])
+    {
+        maximum += 1;
+    }
+    if maximum < atom.min {
+        return;
+    }
+    for count in (atom.min..=maximum).rev() {
+        matched.push(ExpressionAtomSpan {
+            atom_index,
+            start: cursor,
+            end: cursor + count,
+        });
+        match_expression_atoms(
+            atoms,
+            morphemes,
+            atom_index + 1,
+            cursor + count,
+            matched,
+            output,
+        );
+        matched.pop();
+    }
+}
+
 /// 在跨文节的完整语素流上运行确定性状态机。匹配范围从第一个锚点语素开始，
 /// 因此 `兄に｜負けるところが｜多い` 的参数“兄”不会被误标为表达本体。
-pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
-    let morphemes = flatten(tokens);
-    let mut count = 0;
-    let mut seen = HashSet::new();
+struct AcceptedBuiltinCandidate {
+    candidate: ExpressionCandidate,
+    legacy_rule_id: i64,
+    priority: i32,
+}
 
-    for (pattern_index, pattern) in catalog().patterns.into_iter().enumerate() {
-        if pattern.atoms.is_empty() || pattern.atoms.len() > morphemes.len() {
-            continue;
-        }
-        for start in 0..=morphemes.len() - pattern.atoms.len() {
-            let window = &morphemes[start..start + pattern.atoms.len()];
-            if !pattern
-                .atoms
-                .iter()
-                .zip(window)
-                .all(|(atom, morpheme)| atom_matches(atom, morpheme))
-            {
-                continue;
-            }
-            let start_token = window.first().unwrap().token_index;
-            let end_token = window.last().unwrap().token_index + 1;
-            let match_id = format!(
-                "builtin:{}:v{}:{}:{}",
-                pattern.id, pattern.rule_version, start_token, end_token
+fn accepted_builtin_candidates(tokens: &[AnnotatedToken]) -> Vec<AcceptedBuiltinCandidate> {
+    let morphemes = flatten(tokens);
+    let mut seen = HashSet::new();
+    let mut output = Vec::new();
+
+    for (pattern_index, pattern) in catalog()
+        .patterns
+        .iter()
+        .enumerate()
+        .filter(|(_, pattern)| pattern.enabled)
+    {
+        for start in 0..morphemes.len() {
+            let mut matches = Vec::new();
+            match_expression_atoms(
+                &pattern.atoms,
+                &morphemes,
+                0,
+                start,
+                &mut Vec::new(),
+                &mut matches,
             );
-            if !seen.insert(match_id.clone()) {
-                continue;
-            }
-            let char_range = (
-                window.first().unwrap().char_range.0,
-                window.last().unwrap().char_range.1,
-            );
-            let surface: String = window
-                .iter()
-                .map(|morpheme| morpheme.surface.as_str())
-                .collect();
-            let width = end_token - start_token;
-            for (offset, token) in tokens[start_token..end_token].iter_mut().enumerate() {
-                let position = if width == 1 {
-                    "single"
-                } else if offset == 0 {
-                    "start"
-                } else if offset + 1 == width {
-                    "end"
-                } else {
-                    "middle"
-                };
-                token.expressions.push(ExpressionAnnotation {
-                    match_id: match_id.clone(),
-                    rule_id: -((pattern_index as i64) + 1),
-                    label: pattern.label.clone(),
-                    description: format!("{}｜{}", pattern.category, pattern.description),
-                    origin: "builtin".to_string(),
-                    expression_type: pattern.expression_type.clone(),
-                    priority: if pattern.expression_type == "idiom" {
-                        70
-                    } else {
-                        60
+            for matched in matches {
+                if pattern.requires_following_content
+                    && !morphemes[matched.end..]
+                        .iter()
+                        .take_while(|morpheme| !is_sentence_boundary(morpheme))
+                        .any(|morpheme| {
+                            !morpheme.surface.trim().is_empty() && morpheme.pos != "記号"
+                        })
+                {
+                    continue;
+                }
+                let window = &morphemes[start..matched.end];
+                let start_token = window.first().unwrap().token_index;
+                let end_token = window.last().unwrap().token_index + 1;
+                let match_id = format!(
+                    "builtin:{}:v{}:{}:{}",
+                    pattern.id, pattern.rule_version, start_token, end_token
+                );
+                if !seen.insert(match_id.clone()) {
+                    continue;
+                }
+                let char_range = (
+                    window.first().unwrap().char_range.0,
+                    window.last().unwrap().char_range.1,
+                );
+                let surface: String = window
+                    .iter()
+                    .map(|morpheme| morpheme.surface.as_str())
+                    .collect();
+                let captures = matched
+                    .atoms
+                    .iter()
+                    .filter_map(|span| {
+                        let name = pattern.atoms[span.atom_index].capture.as_ref()?;
+                        Some(ExpressionCandidateCapture {
+                            name: name.clone(),
+                            surface: morphemes[span.start..span.end]
+                                .iter()
+                                .map(|morpheme| morpheme.surface.as_str())
+                                .collect(),
+                            morpheme_range: (span.start, span.end),
+                            char_range: (
+                                morphemes[span.start].char_range.0,
+                                morphemes[span.end - 1].char_range.1,
+                            ),
+                        })
+                    })
+                    .collect();
+                output.push(AcceptedBuiltinCandidate {
+                    legacy_rule_id: -((pattern_index as i64) + 1),
+                    priority: pattern
+                        .priority
+                        .unwrap_or(if pattern.expression_type == "idiom" {
+                            70
+                        } else {
+                            60
+                        }),
+                    candidate: ExpressionCandidate {
+                        candidate_id: match_id,
+                        rule_id: pattern.id.clone(),
+                        rule_version: pattern.rule_version,
+                        origin: "builtin".to_string(),
+                        expression_type: pattern.expression_type.clone(),
+                        status: ExpressionCandidateStatus::Accepted,
+                        confidence: pattern.confidence,
+                        label: pattern.label.clone(),
+                        description: format!("{}｜{}", pattern.category, pattern.description),
+                        matched_ranges: vec![char_range],
+                        covered_token_range: (start_token, end_token),
+                        char_range,
+                        surface,
+                        captures,
+                        evidence: vec!["all_atoms_matched".to_string()],
+                        counter_evidence: Vec::new(),
+                        rejection_reason: None,
+                        entry_key: None,
                     },
-                    boundary_effect: "annotate_only".to_string(),
-                    confidence: 0.95,
-                    position: position.to_string(),
-                    token_range: (start_token, end_token),
-                    char_range,
-                    matched_ranges: vec![char_range],
-                    surface: surface.clone(),
                 });
             }
-            count += 1;
         }
     }
-    count
+    output
+}
+
+pub fn builtin_expression_candidates(tokens: &[AnnotatedToken]) -> Vec<ExpressionCandidate> {
+    accepted_builtin_candidates(tokens)
+        .into_iter()
+        .map(|item| item.candidate)
+        .collect()
+}
+
+pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
+    let candidates = accepted_builtin_candidates(tokens);
+    for item in &candidates {
+        let candidate = &item.candidate;
+        let (start_token, end_token) = candidate.covered_token_range;
+        let width = end_token - start_token;
+        for (offset, token) in tokens[start_token..end_token].iter_mut().enumerate() {
+            let position = if width == 1 {
+                "single"
+            } else if offset == 0 {
+                "start"
+            } else if offset + 1 == width {
+                "end"
+            } else {
+                "middle"
+            };
+            token.expressions.push(ExpressionAnnotation {
+                match_id: candidate.candidate_id.clone(),
+                rule_id: item.legacy_rule_id,
+                label: candidate.label.clone(),
+                description: candidate.description.clone(),
+                origin: candidate.origin.clone(),
+                expression_type: candidate.expression_type.clone(),
+                priority: item.priority,
+                boundary_effect: "annotate_only".to_string(),
+                confidence: f32::from(candidate.confidence) / 100.0,
+                position: position.to_string(),
+                token_range: candidate.covered_token_range,
+                char_range: candidate.char_range,
+                matched_ranges: candidate.matched_ranges.clone(),
+                surface: candidate.surface.clone(),
+            });
+        }
+    }
+    candidates.len()
 }
 
 struct MatchInfo {
@@ -464,7 +618,7 @@ fn classify_dictionary_composition(
     }) || (morphemes.len() >= 2
         && first.pos.major == "名詞"
         && morphemes.last().is_some_and(|m| m.pos.major == "動詞"));
-    lexical_shape.then_some(("lexical_unit", 0.9))
+    lexical_shape.then_some(("unclassified_dictionary_phrase", 0.7))
 }
 
 /// 基于本地词典自动匹配的跨文节固定表达扫描
@@ -650,15 +804,40 @@ pub fn rejected_builtin_candidates(tokens: &[AnnotatedToken]) -> Vec<ExpressionC
             });
         }
     }
+    for (index, window) in morphemes.windows(2).enumerate() {
+        if window[0].lemma == "こと"
+            && window[1].lemma == "ない"
+            && window[1].surface == "なく"
+            && window[1].conjugation_form == "連用テ接続"
+            && !morphemes[index + 2..]
+                .iter()
+                .take_while(|morpheme| !is_sentence_boundary(morpheme))
+                .any(|morpheme| !morpheme.surface.trim().is_empty() && morpheme.pos != "記号")
+        {
+            let char_range = (window[0].char_range.0, window[1].char_range.1);
+            result.push(ExpressionCandidate {
+                candidate_id: format!("rejected:negative_koto_naku_following:{}", char_range.0),
+                rule_id: "negative_koto_naku".to_string(),
+                rule_version: 2,
+                origin: "builtin".to_string(),
+                expression_type: "grammar_construction".to_string(),
+                status: ExpressionCandidateStatus::Rejected,
+                confidence: 100,
+                label: "〜ことなく".to_string(),
+                description: "连接形「なく」之后缺少被连接的内容。".to_string(),
+                matched_ranges: vec![char_range],
+                covered_token_range: (window[0].token_index, window[1].token_index + 1),
+                char_range,
+                surface: format!("{}{}", window[0].surface, window[1].surface),
+                captures: Vec::new(),
+                evidence: vec!["connective_koto_naku".to_string()],
+                counter_evidence: vec!["missing_following_clause".to_string()],
+                rejection_reason: Some("missing_following_clause".to_string()),
+                entry_key: None,
+            });
+        }
+    }
     result
-}
-
-pub fn apply_dictionary_expressions(
-    tokens: &mut [AnnotatedToken],
-    dictionary: &crate::dictionary::lookup::DictionaryEngine,
-) -> usize {
-    let _ = dictionary_expression_candidates(tokens, dictionary);
-    0
 }
 
 fn is_sentence_boundary(morpheme: &FlatMorpheme) -> bool {
@@ -674,11 +853,13 @@ fn is_sentence_boundary(morpheme: &FlatMorpheme) -> bool {
         || (morpheme.lemma == "と" && morpheme.pos == "助詞" && morpheme.pos_sub2 == "引用")
 }
 
+#[derive(Clone)]
 struct CorrelativeMatchInfo {
     id: String,
     label: String,
     category: String,
     description: String,
+    rule_version: u32,
     rule_idx: usize,
     start_token: usize,
     end_token: usize,
@@ -687,13 +868,17 @@ struct CorrelativeMatchInfo {
     surface: String,
 }
 
-/// 非连续呼应表达匹配层
-pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
+fn find_correlative_matches(tokens: &[AnnotatedToken]) -> Vec<CorrelativeMatchInfo> {
     let morphemes = flatten(tokens);
     let mut matches: Vec<CorrelativeMatchInfo> = Vec::new();
     let catalog = catalog();
 
-    for (pattern_index, pattern) in catalog.correlative_patterns.iter().enumerate() {
+    for (pattern_index, pattern) in catalog
+        .correlative_patterns
+        .iter()
+        .enumerate()
+        .filter(|(_, pattern)| pattern.enabled)
+    {
         let head_len = pattern.head_atoms.len();
         if head_len == 0 || head_len > morphemes.len() {
             continue;
@@ -777,6 +962,7 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                         label: pattern.label.clone(),
                         category: pattern.category.clone(),
                         description: pattern.description.clone(),
+                        rule_version: pattern.rule_version,
                         rule_idx: pattern_index,
                         start_token: head_start_token,
                         end_token: tail_end_token,
@@ -833,12 +1019,45 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
             }
         }
         if !is_sub {
-            final_matches.push(m_i);
+            final_matches.push(m_i.clone());
         }
     }
+    final_matches
+}
 
-    let mut count = 0;
-    for m in final_matches {
+pub fn correlative_expression_candidates(tokens: &[AnnotatedToken]) -> Vec<ExpressionCandidate> {
+    find_correlative_matches(tokens)
+        .into_iter()
+        .map(|m| ExpressionCandidate {
+            candidate_id: format!("correlative:{}:{}:{}", m.id, m.start_token, m.end_token),
+            rule_id: m.id,
+            rule_version: m.rule_version,
+            origin: "correlative".to_string(),
+            expression_type: "correlative".to_string(),
+            status: ExpressionCandidateStatus::Accepted,
+            confidence: 90,
+            label: m.label,
+            description: format!("{}｜{}", m.category, m.description),
+            matched_ranges: m.matched_ranges,
+            covered_token_range: (m.start_token, m.end_token),
+            char_range: m.char_range,
+            surface: m.surface,
+            captures: Vec::new(),
+            evidence: vec![
+                "nearest_compatible_tail".to_string(),
+                "same_boundary_domain".to_string(),
+            ],
+            counter_evidence: Vec::new(),
+            rejection_reason: None,
+            entry_key: None,
+        })
+        .collect()
+}
+
+/// 非连续呼应表达匹配层
+pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
+    let matches = find_correlative_matches(tokens);
+    for m in &matches {
         let match_id = format!("correlative:{}:{}:{}", m.id, m.start_token, m.end_token);
         let width = m.end_token - m.start_token;
 
@@ -868,10 +1087,8 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                 surface: m.surface.clone(),
             });
         }
-        count += 1;
     }
-
-    count
+    matches.len()
 }
 
 #[cfg(test)]
@@ -951,6 +1168,38 @@ mod tests {
             );
             assert!(tokens.iter().all(|token| token.expressions.is_empty()));
         }
+    }
+
+    #[test]
+    fn builtin_candidates_preserve_captures_and_following_clause_requirement() {
+        let Some(ipadic_path) = get_test_ipadic_path() else {
+            return;
+        };
+        let pipeline = Pipeline::new(&ipadic_path).unwrap();
+
+        let tokens = pipeline.process("彼は口を開くたびに嘘をつく。", &[]);
+        let candidate = builtin_expression_candidates(&tokens)
+            .into_iter()
+            .find(|candidate| candidate.rule_id == "idiom_kuchi_wo_hiraku")
+            .expect("口を開く应生成结构化候选");
+        assert_eq!(candidate.status, ExpressionCandidateStatus::Accepted);
+        assert_eq!(
+            candidate
+                .captures
+                .iter()
+                .map(|capture| (capture.name.as_str(), capture.surface.as_str()))
+                .collect::<Vec<_>>(),
+            vec![("object", "口"), ("predicate", "開く")]
+        );
+
+        let terminal = pipeline.process("何もすることなく。", &[]);
+        assert!(builtin_expression_candidates(&terminal)
+            .iter()
+            .all(|candidate| candidate.rule_id != "negative_koto_naku"));
+        assert!(rejected_builtin_candidates(&terminal)
+            .iter()
+            .any(|candidate| candidate.rejection_reason.as_deref()
+                == Some("missing_following_clause")));
     }
 
     #[test]

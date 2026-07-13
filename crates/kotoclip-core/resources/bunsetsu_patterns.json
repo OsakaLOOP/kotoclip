@@ -1,5 +1,6 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "catalog_version": 1,
   "weights": {
     "hard": 1000,
     "structural": 200,
@@ -7,5 +8,47 @@
     "default_join": 40
   },
   "formal_nouns": ["こと", "もの", "ところ", "わけ", "ため", "はず", "つもり"],
-  "relational_nouns": ["中", "上", "下", "前", "後", "ため"]
+  "relational_nouns": ["中", "上", "下", "前", "後", "ため"],
+  "boundary_rules": [
+    { "id": "hard_symbol_boundary", "kind": "hard_symbol_boundary", "decision": "split", "weight": "hard", "priority": 1000 },
+    { "id": "formal_noun_starts_functional_bunsetsu", "kind": "formal_noun_after_predicate", "decision": "split", "weight": "structural", "priority": 900 },
+    { "id": "relational_noun_after_no", "kind": "relational_noun_after_no", "decision": "split", "weight": "structural", "priority": 850 },
+    { "id": "nominal_predicate_with_suru", "kind": "nominal_predicate_with_suru", "decision": "join", "weight": "structural", "priority": 800 },
+    {
+      "id": "prefixed_renyou_with_suru",
+      "kind": "span_pattern",
+      "decision": "join",
+      "weight": "structural",
+      "priority": 775,
+      "span_alternatives": [
+        {
+          "span_first": { "pos_major": ["接頭詞"] },
+          "span_last": { "pos_major": ["動詞"], "conjugation_type_prefixes": ["五段", "一段"], "conjugation_forms": ["連用形", "連用タ接続", "連用テ接続"] },
+          "current": { "base_forms": ["する"], "pos_major": ["動詞"] }
+        }
+      ]
+    },
+    { "id": "formal_noun_negative_predicate", "kind": "formal_noun_negative_predicate", "decision": "join", "weight": "structural", "priority": 750 },
+    { "id": "functional_attachment", "kind": "functional_attachment", "decision": "join", "weight": "structural", "priority": 700 },
+    {
+      "id": "prefix_attachment",
+      "kind": "prefix_attachment",
+      "decision": "join",
+      "weight": "structural",
+      "priority": 650,
+      "alternatives": [
+        { "left": { "pos_major": ["接頭詞"] }, "right": { "pos_major": ["名詞"] } },
+        { "left": { "pos_major": ["接頭詞"] }, "right": { "pos_major": ["形容詞"] } },
+        {
+          "left": { "pos_major": ["接頭詞"] },
+          "right": {
+            "pos_major": ["動詞"],
+            "conjugation_forms": ["連用形", "連用タ接続", "連用テ接続"]
+          }
+        }
+      ]
+    },
+    { "id": "new_independent_core", "kind": "new_independent_core", "decision": "split", "weight": "default_split", "priority": 200 },
+    { "id": "default_attachment", "kind": "default_attachment", "decision": "join", "weight": "default_join", "priority": 0 }
+  ]
 }
