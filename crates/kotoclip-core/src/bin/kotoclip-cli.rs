@@ -744,24 +744,66 @@ fn expression_add(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 #[derive(Serialize)]
 struct ScanItem {
     match_id: String,
+    status: String,
+    rule_id: String,
     label: String,
     origin: String,
     description: String,
     surface: String,
     token_range: (usize, usize),
     char_range: (usize, usize),
+    matched_ranges: Vec<(usize, usize)>,
+    evidence: Vec<String>,
+    rejection_reason: Option<String>,
     context: String,
+}
+
+fn render_matched_context(text: &str, ranges: &[(usize, usize)], padding: usize) -> String {
+    if ranges.is_empty() {
+        return String::new();
+    }
+    let chars: Vec<char> = text.chars().collect();
+    let start = ranges
+        .iter()
+        .map(|range| range.0)
+        .min()
+        .unwrap_or(0)
+        .saturating_sub(padding);
+    let end = ranges
+        .iter()
+        .map(|range| range.1)
+        .max()
+        .unwrap_or(0)
+        .saturating_add(padding)
+        .min(chars.len());
+    let mut output = String::new();
+    for index in start..end {
+        if ranges.iter().any(|range| range.0 == index) {
+            output.push('【');
+        }
+        output.push(chars[index]);
+        if ranges.iter().any(|range| range.1 == index + 1) {
+            output.push('】');
+        }
+    }
+    output.replace(['\n', '\r'], " ")
 }
 
 fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let text = read_text_selection(args)?;
     let tokens = engine(args)?.analyze_text_with_exposure(&text, false)?;
+    let analyzed_text: String = tokens
+        .iter()
+        .map(|token| token.bunsetsu.surface.as_str())
+        .collect();
     let mut shown = HashSet::new();
     let mut count = 0;
     let mut items = Vec::new();
     let write_json = args.options.get("json");
+    let include_pending = args.flags.contains("include-pending");
+    let include_rejected = args.flags.contains("include-rejected");
 
-    for (index, token) in tokens.iter().enumerate() {
+    for token in &tokens {
         for expression in token
             .expressions
             .iter()
@@ -770,23 +812,27 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
             if !shown.insert(expression.match_id.clone()) {
                 continue;
             }
-            let context_start = index.saturating_sub(2);
-            let context_end = (expression.token_range.1 + 3).min(tokens.len());
-            let context: String = tokens[context_start..context_end]
-                .iter()
-                .map(|item| item.bunsetsu.surface.as_str())
-                .collect();
-            let clean_context = context.replace(['\n', '\r'], " ");
+            let ranges = if expression.matched_ranges.is_empty() {
+                vec![expression.char_range]
+            } else {
+                expression.matched_ranges.clone()
+            };
+            let clean_context = render_matched_context(&analyzed_text, &ranges, 24);
 
             if write_json.is_some() {
                 items.push(ScanItem {
                     match_id: expression.match_id.clone(),
+                    status: "accepted".to_string(),
+                    rule_id: expression.rule_id.to_string(),
                     label: expression.label.clone(),
                     origin: expression.origin.clone(),
                     description: expression.description.clone(),
                     surface: expression.surface.clone(),
                     token_range: expression.token_range,
                     char_range: expression.char_range,
+                    matched_ranges: ranges,
+                    evidence: vec![format!("{}_rule_match", expression.origin)],
+                    rejection_reason: None,
                     context: clean_context,
                 });
             } else {
@@ -803,6 +849,62 @@ fn expression_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                 );
             }
             count += 1;
+        }
+    }
+
+    if include_pending || include_rejected {
+        let dictionary = dictionary(args)?;
+        for candidate in kotoclip_core::pipeline::expressions::dictionary_expression_candidates(
+            &tokens,
+            &dictionary,
+        ) {
+            let status = match candidate.status {
+                kotoclip_core::models::ExpressionCandidateStatus::Accepted => "accepted",
+                kotoclip_core::models::ExpressionCandidateStatus::Pending => "pending",
+                kotoclip_core::models::ExpressionCandidateStatus::Rejected => "rejected",
+            };
+            if status == "pending" && !include_pending || status == "rejected" && !include_rejected
+            {
+                continue;
+            }
+            let context = render_matched_context(&analyzed_text, &candidate.matched_ranges, 24);
+            items.push(ScanItem {
+                match_id: candidate.candidate_id,
+                status: status.to_string(),
+                rule_id: candidate.rule_id,
+                label: candidate.label,
+                origin: candidate.origin,
+                description: candidate.description,
+                surface: candidate.surface,
+                token_range: candidate.covered_token_range,
+                char_range: candidate.char_range,
+                matched_ranges: candidate.matched_ranges,
+                evidence: candidate.evidence,
+                rejection_reason: candidate.rejection_reason,
+                context,
+            });
+        }
+        if include_rejected {
+            for candidate in
+                kotoclip_core::pipeline::expressions::rejected_builtin_candidates(&tokens)
+            {
+                let context = render_matched_context(&analyzed_text, &candidate.matched_ranges, 24);
+                items.push(ScanItem {
+                    match_id: candidate.candidate_id,
+                    status: "rejected".to_string(),
+                    rule_id: candidate.rule_id,
+                    label: candidate.label,
+                    origin: candidate.origin,
+                    description: candidate.description,
+                    surface: candidate.surface,
+                    token_range: candidate.covered_token_range,
+                    char_range: candidate.char_range,
+                    matched_ranges: candidate.matched_ranges,
+                    evidence: candidate.evidence,
+                    rejection_reason: candidate.rejection_reason,
+                    context,
+                });
+            }
         }
     }
 
@@ -855,7 +957,8 @@ fn word_formation_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     for segment in pipeline.inspect_word_formations(&text) {
         conflict_count += segment.result.conflicts;
         for formation in segment.result.accepted {
-            let signature = segment.morphemes[formation.morpheme_range.0..formation.morpheme_range.1]
+            let signature = segment.morphemes
+                [formation.morpheme_range.0..formation.morpheme_range.1]
                 .iter()
                 .map(|morpheme| format!("{}/{}", morpheme.base_form, morpheme.pos.major))
                 .collect();
@@ -922,7 +1025,10 @@ fn bunsetsu_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     }
     let bunsetsu_count: usize = reports.iter().map(|report| report.bunsetsus.len()).sum();
     let determined: usize = reports.iter().map(|report| report.boundaries.len()).sum();
-    let unresolved: usize = reports.iter().map(|report| report.unresolved_boundaries).sum();
+    let unresolved: usize = reports
+        .iter()
+        .map(|report| report.unresolved_boundaries)
+        .sum();
     if let Some(path) = args.options.get("json") {
         std::fs::write(path, serde_json::to_string_pretty(&reports)?)?;
     }
@@ -940,6 +1046,7 @@ struct VerifyItem {
     surface: String,
     token_range: (usize, usize),
     char_range: (usize, usize),
+    matched_ranges: Vec<(usize, usize)>,
     context: String,
     decision: VerifyDecision,
 }
@@ -955,6 +1062,10 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let text = read_text_selection(args)?;
     let engine = engine(args)?;
     let tokens = engine.analyze_text_with_exposure(&text, false)?;
+    let analyzed_text: String = tokens
+        .iter()
+        .map(|token| token.bunsetsu.surface.as_str())
+        .collect();
 
     let mut items = Vec::new();
     let mut seen = HashSet::new();
@@ -962,27 +1073,12 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     for token in &tokens {
         for expression in &token.expressions {
             if expression.position == "start" && seen.insert(expression.match_id.clone()) {
-                let context_start = expression.token_range.0.saturating_sub(6);
-                let context_end = (expression.token_range.1 + 6).min(tokens.len());
-                let left_context: String = tokens[context_start..expression.token_range.0]
-                    .iter()
-                    .map(|t| t.bunsetsu.surface.as_str())
-                    .collect();
-                let match_surface: String = tokens
-                    [expression.token_range.0..expression.token_range.1]
-                    .iter()
-                    .map(|t| t.bunsetsu.surface.as_str())
-                    .collect();
-                let right_context: String = tokens[expression.token_range.1..context_end]
-                    .iter()
-                    .map(|t| t.bunsetsu.surface.as_str())
-                    .collect();
-                let context = format!(
-                    "{}【{}】{}",
-                    left_context.replace('\n', " "),
-                    match_surface,
-                    right_context.replace('\n', " ")
-                );
+                let matched_ranges = if expression.matched_ranges.is_empty() {
+                    vec![expression.char_range]
+                } else {
+                    expression.matched_ranges.clone()
+                };
+                let context = render_matched_context(&analyzed_text, &matched_ranges, 36);
 
                 items.push(VerifyItem {
                     id: 0,
@@ -993,6 +1089,7 @@ fn expression_verify(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                     surface: expression.surface.clone(),
                     token_range: expression.token_range,
                     char_range: expression.char_range,
+                    matched_ranges,
                     context,
                     decision: VerifyDecision::Pending,
                 });
@@ -1455,6 +1552,7 @@ fn print_help() {
         [--chapter TITLE --page-lines N --page N]
   expression-scan --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N] [--json PATH]
+        [--include-pending --include-rejected]
   word-formation-scan --profile PATH (--text TEXT | --source PATH)
         [--chapter TITLE --page-lines N --page N] [--json PATH --include-rejected]
   bunsetsu-scan --profile PATH (--text TEXT | --source PATH)

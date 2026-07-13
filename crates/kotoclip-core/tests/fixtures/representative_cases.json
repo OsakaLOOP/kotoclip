@@ -248,6 +248,11 @@
     "expected_stage_c": {
       "bunsetsu": ["どんなに", "危険は", "ありませんと", "説明された", "ところで", "、", "信じる", "。"]
     },
+    "expected_stage_d": {
+      "accepted": [],
+      "pending": [],
+      "rejected": []
+    },
     "expected_target": {
       "bunsetsu": ["どんなに", "危険は", "ありませんと", "説明された", "ところで、", "信じる。"],
       "expressions": []
@@ -261,6 +266,11 @@
     "expected_observed": {
       "bunsetsu": ["どんなに", "危険であっても", "、", "行くべきだ", "。"],
       "expressions": ["どんなに〜ても"]
+    },
+    "expected_stage_d": {
+      "accepted": ["どんなに〜ても"],
+      "pending": [],
+      "rejected": []
     },
     "expected_target": {
       "bunsetsu": ["どんなに", "危険であっても、", "行くべきだ。"],
@@ -297,6 +307,11 @@
     },
     "expected_stage_c": {
       "bunsetsu": ["部屋の", "中に", "入る", "。"]
+    },
+    "expected_stage_d": {
+      "accepted": [],
+      "pending": ["中に入る"],
+      "rejected": []
     },
     "expected_target": {
       "bunsetsu": ["部屋の", "中に", "入る。"],
@@ -350,6 +365,11 @@
       "bunsetsu": ["この", "事業から", "手を", "引く", "。"],
       "expressions": ["手を引く"]
     },
+    "expected_stage_d": {
+      "accepted": ["手を引く"],
+      "pending": [],
+      "rejected": []
+    },
     "expected_target": {
       "bunsetsu": ["この", "事業から", "手を引く。"],
       "expressions": ["手を引く"]
@@ -385,6 +405,10 @@
     "expected_stage_c": {
       "bunsetsu": ["気を", "遣う", "ことも", "大切だ", "。"]
     },
+    "expected_stage_d": {
+      "accepted": ["気を遣う"],
+      "matched_surfaces": ["気を遣う"]
+    },
     "expected_target": {
       "bunsetsu": ["気を遣うことも", "大切だ。"],
       "expressions": ["気を遣う"]
@@ -398,6 +422,10 @@
     "expected_observed": {
       "bunsetsu": ["目を", "離すなよ", "。"],
       "expressions": ["目を離す"]
+    },
+    "expected_stage_d": {
+      "accepted": ["目を離す"],
+      "matched_surfaces": ["目を離す"]
     },
     "expected_target": {
       "bunsetsu": ["目を離すなよ。"],

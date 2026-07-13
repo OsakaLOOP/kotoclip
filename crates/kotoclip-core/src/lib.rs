@@ -182,12 +182,6 @@ impl Engine {
         ));
         pipeline::expressions::apply_builtin_expressions(&mut annotated);
         report(AnalysisProgress::stage(
-            AnalysisPhase::DictionaryMatching,
-            54,
-            "匹配词典固定表达",
-        ));
-        pipeline::expressions::apply_dictionary_expressions(&mut annotated, &self.dictionary);
-        report(AnalysisProgress::stage(
             AnalysisPhase::ExpressionMatching,
             92,
             "匹配呼应表达",
@@ -199,7 +193,6 @@ impl Engine {
             "整理表达边界",
         ));
         pipeline::expressions::resolve_expression_conflicts(&mut annotated);
-        annotated = pipeline::expressions::apply_expression_boundaries(annotated);
         if record_exposure {
             self.profile
                 .record_token_exposures_with_progress(&annotated, |completed, total| {
@@ -270,16 +263,11 @@ impl Engine {
         timings.add("内置表达", started.elapsed());
 
         let started = Instant::now();
-        pipeline::expressions::apply_dictionary_expressions(&mut annotated, &self.dictionary);
-        timings.add("词典表达", started.elapsed());
-
-        let started = Instant::now();
         pipeline::expressions::apply_correlative_expressions(&mut annotated);
         timings.add("呼应表达", started.elapsed());
 
         let started = Instant::now();
         pipeline::expressions::resolve_expression_conflicts(&mut annotated);
-        annotated = pipeline::expressions::apply_expression_boundaries(annotated);
         timings.add("表达边界", started.elapsed());
 
         if record_exposure {

@@ -77,7 +77,7 @@ interface CompactGrammarTag { i: number; j: number; e: number; l?: number; d: nu
 interface CompactWordFormation { i: number; k: number; s: number; b: number; r: number; o: [number, number, number, number]; m: [number, number]; c: [number, number]; h: number; p?: CompactWordFormationCapture[]; q: number; }
 interface CompactWordFormationCapture { n: number; s: number; m: [number, number]; c: [number, number]; }
 interface CompactBunsetsuFunction { f: number; c: number; e: number[]; }
-interface CompactExpression { m: number; i: number; l: number; d: number; o: number; t: number; p: number; b: number; c: number; q: number; r: [number, number]; a: [number, number]; s: number; }
+interface CompactExpression { m: number; i: number; l: number; d: number; o: number; t: number; p: number; b: number; c: number; q: number; r: [number, number]; a: [number, number]; z?: [number, number][]; s: number; }
 
 /** 将热路径的字符串表 IPC 模型恢复为现有组件使用的 AnnotatedToken。 */
 function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
@@ -125,7 +125,7 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
       origin: stringAt(expression.o), expression_type: stringAt(expression.t) as ExpressionType,
       priority: expression.p, boundary_effect: stringAt(expression.b) as ExpressionBoundaryEffect,
       confidence: expression.c, position: stringAt(expression.q) as "start" | "middle" | "end" | "single",
-      token_range: expression.r, char_range: expression.a, surface: stringAt(expression.s),
+      token_range: expression.r, char_range: expression.a, matched_ranges: expression.z ?? [expression.a], surface: stringAt(expression.s),
     })),
     display_class: stringAt(token.d) as "content" | "punctuation" | "line_break",
   }));

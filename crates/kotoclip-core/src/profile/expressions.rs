@@ -517,6 +517,10 @@ impl ProfileEngine {
         let mut matched = 0;
 
         for rule in rules {
+            // lexical_unit 已迁移到构词层。旧规则保留只读，但不得再从表达层改写边界。
+            if rule.expression_type == "lexical_unit" {
+                continue;
+            }
             let canonical_rule: Vec<ExpressionPatternPart> =
                 rule.parts.iter().map(canonical_part).collect();
 
@@ -646,6 +650,7 @@ impl ProfileEngine {
                                 position: position.to_string(),
                                 token_range: (orig_h_start, orig_t_end),
                                 char_range,
+                                matched_ranges: vec![char_range],
                                 surface: surface.clone(),
                             });
                         }
@@ -742,6 +747,7 @@ impl ProfileEngine {
                             position: position.to_string(),
                             token_range: (orig_start, orig_end),
                             char_range,
+                            matched_ranges: vec![char_range],
                             surface: surface.clone(),
                         });
                     }

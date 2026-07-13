@@ -1,5 +1,31 @@
 {
+  "schema_version": 2,
   "patterns": [
+    {
+      "id": "idiom_mimi_wo_katamukeru", "rule_version": 1, "expression_type": "idiom",
+      "label": "耳を傾ける", "description": "注意して聞く。", "category": "固定表达",
+      "atoms": [{"lemmas":["耳"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["傾ける"],"pos":"動詞"}]
+    },
+    {
+      "id": "idiom_te_wo_hiku", "rule_version": 1, "expression_type": "idiom",
+      "label": "手を引く", "description": "関係していた事柄から退く。", "category": "固定表达",
+      "atoms": [{"lemmas":["手"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["引く"],"pos":"動詞"}]
+    },
+    {
+      "id": "idiom_kuchi_wo_hiraku", "rule_version": 1, "expression_type": "idiom",
+      "label": "口を開く", "description": "話し始める。", "category": "固定表达",
+      "atoms": [{"lemmas":["口"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["開く"],"pos":"動詞"}]
+    },
+    {
+      "id": "idiom_ki_wo_tsukau", "rule_version": 1, "expression_type": "idiom",
+      "label": "気を遣う", "description": "相手や周囲に配慮する。", "category": "固定表达",
+      "atoms": [{"lemmas":["気"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["遣う"],"pos":"動詞"}]
+    },
+    {
+      "id": "idiom_me_wo_hanasu", "rule_version": 1, "expression_type": "idiom",
+      "label": "目を離す", "description": "見続けることをやめる。", "category": "固定表达",
+      "atoms": [{"lemmas":["目"],"pos":"名詞"},{"lemmas":["を"],"pos":"助詞"},{"lemmas":["離す"],"pos":"動詞"}]
+    },
     {
       "id": "concessive_nimo_kakawarazu",
       "label": "にもかかわらず",
@@ -54,7 +80,7 @@
       "category": "否定方式",
       "atoms": [
         { "lemmas": ["こと"], "pos": "名詞" },
-        { "lemmas": ["ない"], "pos": "形容詞" }
+        { "lemmas": ["ない"], "surfaces": ["なく"], "pos": "形容詞", "conjugation_forms": ["連用テ接続"] }
       ]
     },
     {

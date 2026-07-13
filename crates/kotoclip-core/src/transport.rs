@@ -119,6 +119,8 @@ pub struct CompactExpression {
     pub q: u32,
     pub r: (usize, usize),
     pub a: (usize, usize),
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub z: Vec<(usize, usize)>,
     pub s: u32,
 }
 
@@ -257,6 +259,7 @@ impl StringTable {
             q: self.intern(&value.position),
             r: value.token_range,
             a: value.char_range,
+            z: value.matched_ranges.clone(),
             s: self.intern(&value.surface),
         }
     }

@@ -1,4 +1,6 @@
-use crate::models::{AnnotatedToken, ExpressionAnnotation};
+use crate::models::{
+    AnnotatedToken, ExpressionAnnotation, ExpressionCandidate, ExpressionCandidateStatus,
+};
 use serde::Deserialize;
 use std::collections::HashSet;
 
@@ -29,12 +31,27 @@ pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<Annotated
         .iter()
         .flat_map(|token| &token.expressions)
         .filter(|item| item.boundary_effect == "merge_lexical_unit")
-        .map(|item| (item.token_range, item.priority, item.confidence, item.match_id.clone()))
+        .map(|item| {
+            (
+                item.token_range,
+                item.priority,
+                item.confidence,
+                item.match_id.clone(),
+            )
+        })
         .collect();
     lexical_ranges.sort_by(|left, right| {
-        right.1.cmp(&left.1)
+        right
+            .1
+            .cmp(&left.1)
             .then_with(|| right.2.total_cmp(&left.2))
-            .then_with(|| right.0.1.saturating_sub(right.0.0).cmp(&left.0.1.saturating_sub(left.0.0)))
+            .then_with(|| {
+                right
+                    .0
+                     .1
+                    .saturating_sub(right.0 .0)
+                    .cmp(&left.0 .1.saturating_sub(left.0 .0))
+            })
     });
     lexical_ranges.dedup_by(|left, right| left.3 == right.3);
 
@@ -60,7 +77,10 @@ pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<Annotated
     let mut index = 0;
     let mut range_index = 0;
     while index < tokens.len() {
-        if accepted.get(range_index).is_some_and(|range| range.0 == index) {
+        if accepted
+            .get(range_index)
+            .is_some_and(|range| range.0 == index)
+        {
             let range = accepted[range_index];
             let mut merged = tokens[index].clone();
             merged.bunsetsu.morphemes = tokens[range.0..range.1]
@@ -99,7 +119,9 @@ pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<Annotated
             if let Some(expression) = tokens[range.0..range.1]
                 .iter()
                 .flat_map(|token| &token.expressions)
-                .find(|item| item.boundary_effect == "merge_lexical_unit" && item.token_range == range)
+                .find(|item| {
+                    item.boundary_effect == "merge_lexical_unit" && item.token_range == range
+                })
             {
                 merged.bunsetsu.head_word.surface = expression.surface.clone();
                 merged.bunsetsu.head_word.base_form = expression.label.clone();
@@ -114,7 +136,9 @@ pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<Annotated
                 .iter()
                 .map(|token| token.novelty_score)
                 .fold(0.0, f32::max);
-            merged.is_selected = tokens[range.0..range.1].iter().any(|token| token.is_selected);
+            merged.is_selected = tokens[range.0..range.1]
+                .iter()
+                .any(|token| token.is_selected);
             merged.is_known = tokens[range.0..range.1].iter().all(|token| token.is_known);
             merged.expressions = tokens[range.0..range.1]
                 .iter()
@@ -160,6 +184,7 @@ pub fn apply_expression_boundaries(tokens: Vec<AnnotatedToken>) -> Vec<Annotated
 
 #[derive(Debug, Deserialize)]
 struct ExpressionCatalog {
+    schema_version: u32,
     patterns: Vec<BuiltinExpressionPattern>,
     #[serde(default)]
     correlative_patterns: Vec<CorrelativePattern>,
@@ -187,13 +212,26 @@ struct BuiltinExpressionPattern {
     label: String,
     description: String,
     category: String,
+    #[serde(default = "default_builtin_expression_type")]
+    expression_type: String,
+    #[serde(default = "default_rule_version")]
+    rule_version: u32,
     atoms: Vec<ExpressionAtom>,
+}
+
+fn default_builtin_expression_type() -> String {
+    "grammar_construction".to_string()
+}
+fn default_rule_version() -> u32 {
+    1
 }
 
 #[derive(Debug, Deserialize)]
 struct ExpressionAtom {
     #[serde(default)]
     lemmas: Vec<String>,
+    #[serde(default)]
+    surfaces: Vec<String>,
     #[serde(default)]
     pos: Option<String>,
     #[serde(default)]
@@ -220,12 +258,14 @@ struct FlatMorpheme {
     conjugation_type: String,
     conjugation_form: String,
     char_range: (usize, usize),
-    is_boundary: bool,
 }
 
 fn catalog() -> ExpressionCatalog {
-    serde_json::from_str(include_str!("../../resources/expression_patterns.json"))
-        .expect("内置跨文节表达目录格式无效")
+    let catalog: ExpressionCatalog =
+        serde_json::from_str(include_str!("../../resources/expression_patterns.json"))
+            .expect("内置跨文节表达目录格式无效");
+    assert_eq!(catalog.schema_version, 2, "内置表达目录 schema 必须为 v2");
+    catalog
 }
 
 fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
@@ -245,7 +285,6 @@ fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
                     conjugation_type: String::new(),
                     conjugation_form: String::new(),
                     char_range: token.bunsetsu.char_range,
-                    is_boundary: true,
                 }];
             }
             token
@@ -271,7 +310,6 @@ fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
                         conjugation_type: morpheme.conjugation_type.clone(),
                         conjugation_form: morpheme.conjugation_form.clone(),
                         char_range: morpheme.char_range,
-                        is_boundary: false,
                     })
                 })
                 .collect()
@@ -281,6 +319,11 @@ fn flatten(tokens: &[AnnotatedToken]) -> Vec<FlatMorpheme> {
 
 fn atom_matches(atom: &ExpressionAtom, morpheme: &FlatMorpheme) -> bool {
     (atom.lemmas.is_empty() || atom.lemmas.iter().any(|lemma| lemma == &morpheme.lemma))
+        && (atom.surfaces.is_empty()
+            || atom
+                .surfaces
+                .iter()
+                .any(|surface| surface == &morpheme.surface))
         && atom.pos.as_ref().map_or(true, |pos| pos == &morpheme.pos)
         && atom
             .pos_sub1
@@ -328,10 +371,10 @@ pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
             }
             let start_token = window.first().unwrap().token_index;
             let end_token = window.last().unwrap().token_index + 1;
-            if end_token - start_token < 2 {
-                continue;
-            }
-            let match_id = format!("builtin:{}:{}:{}", pattern.id, start_token, end_token);
+            let match_id = format!(
+                "builtin:{}:v{}:{}:{}",
+                pattern.id, pattern.rule_version, start_token, end_token
+            );
             if !seen.insert(match_id.clone()) {
                 continue;
             }
@@ -345,7 +388,9 @@ pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                 .collect();
             let width = end_token - start_token;
             for (offset, token) in tokens[start_token..end_token].iter_mut().enumerate() {
-                let position = if offset == 0 {
+                let position = if width == 1 {
+                    "single"
+                } else if offset == 0 {
                     "start"
                 } else if offset + 1 == width {
                     "end"
@@ -358,13 +403,18 @@ pub fn apply_builtin_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                     label: pattern.label.clone(),
                     description: format!("{}｜{}", pattern.category, pattern.description),
                     origin: "builtin".to_string(),
-                    expression_type: "grammar_construction".to_string(),
-                    priority: 60,
+                    expression_type: pattern.expression_type.clone(),
+                    priority: if pattern.expression_type == "idiom" {
+                        70
+                    } else {
+                        60
+                    },
                     boundary_effect: "annotate_only".to_string(),
                     confidence: 0.95,
                     position: position.to_string(),
                     token_range: (start_token, end_token),
                     char_range,
+                    matched_ranges: vec![char_range],
                     surface: surface.clone(),
                 });
             }
@@ -381,8 +431,6 @@ struct MatchInfo {
     char_range: (usize, usize),
     surface: String,
     expression_type: String,
-    boundary_effect: String,
-    priority: i32,
     confidence: f32,
 }
 
@@ -390,7 +438,7 @@ struct MatchInfo {
 /// 以助词起始的「に＋つく」「と＋する」等普通句法不进入自动表达层。
 fn classify_dictionary_composition(
     morphemes: &[&crate::models::Morpheme],
-) -> Option<(&'static str, &'static str, i32, f32)> {
+) -> Option<(&'static str, f32)> {
     let first = morphemes.first()?;
     if first.pos.major == "助詞" || first.pos.major == "助動詞" {
         return None;
@@ -403,7 +451,7 @@ fn classify_dictionary_composition(
             .skip(1)
             .any(|m| matches!(m.pos.major.as_str(), "動詞" | "形容詞"));
         if morphemes.len() >= 3 && has_content_head && has_predicate {
-            return Some(("idiom", "annotate_only", 70, 0.82));
+            return Some(("idiom", 0.82));
         }
         return None;
     }
@@ -416,15 +464,14 @@ fn classify_dictionary_composition(
     }) || (morphemes.len() >= 2
         && first.pos.major == "名詞"
         && morphemes.last().is_some_and(|m| m.pos.major == "動詞"));
-    lexical_shape.then_some(("lexical_unit", "merge_lexical_unit", 90, 0.9))
+    lexical_shape.then_some(("lexical_unit", 0.9))
 }
 
 /// 基于本地词典自动匹配的跨文节固定表达扫描
-pub fn apply_dictionary_expressions(
-    tokens: &mut [AnnotatedToken],
+pub fn dictionary_expression_candidates(
+    tokens: &[AnnotatedToken],
     dictionary: &crate::dictionary::lookup::DictionaryEngine,
-) -> usize {
-    let mut count = 0;
+) -> Vec<ExpressionCandidate> {
     let mut matched_char_ranges: Vec<(usize, usize)> = Vec::new();
     let mut matches_found: Vec<MatchInfo> = Vec::new();
     let mut candidates = Vec::new();
@@ -496,7 +543,7 @@ pub fn apply_dictionary_expressions(
                     if invalid {
                         continue;
                     }
-                    let Some((expression_type, boundary_effect, priority, confidence)) =
+                    let Some((expression_type, confidence)) =
                         classify_dictionary_composition(&selected_morphemes)
                     else {
                         continue;
@@ -509,8 +556,6 @@ pub fn apply_dictionary_expressions(
                         char_range,
                         surface,
                         expression_type: expression_type.to_string(),
-                        boundary_effect: boundary_effect.to_string(),
-                        priority,
                         confidence,
                     });
                 }
@@ -535,55 +580,89 @@ pub fn apply_dictionary_expressions(
         matches_found.push(candidate);
     }
 
-    // 第三阶段：应用匹配到的跨文节表达
+    // 第三阶段：词典存在性不足以确认惯用义，统一输出 pending 候选。
+    let mut result = Vec::new();
     for info in matches_found {
-        let match_id = format!("dict:{}:{}:{}", info.query, info.s, info.e + 1);
-        let width = info.e + 1 - info.s;
-
-        // 排重：如果本 token 范围已被其他同等范围的表达标注过，则跳过
-        let has_duplicate = tokens[info.s..=info.e].iter().any(|token| {
+        if tokens[info.s..=info.e].iter().any(|token| {
             token
                 .expressions
                 .iter()
-                .any(|exp| exp.char_range == info.char_range)
-        });
-        if has_duplicate {
+                .any(|expression| expression.char_range == info.char_range)
+        }) {
             continue;
         }
+        let match_id = format!("dict:{}:{}:{}", info.query, info.s, info.e + 1);
+        result.push(ExpressionCandidate {
+            candidate_id: match_id,
+            rule_id: "dictionary_exact_window".to_string(),
+            rule_version: 1,
+            origin: "dictionary".to_string(),
+            expression_type: info.expression_type,
+            status: ExpressionCandidateStatus::Pending,
+            confidence: (info.confidence * 100.0) as u8,
+            label: info.query,
+            description: "词典存在性候选；尚无结构化惯用语证据。".to_string(),
+            matched_ranges: vec![info.char_range],
+            covered_token_range: (info.s, info.e + 1),
+            char_range: info.char_range,
+            surface: info.surface,
+            captures: Vec::new(),
+            evidence: vec![
+                "dictionary_exact_headword".to_string(),
+                "composition_shape_compatible".to_string(),
+            ],
+            counter_evidence: vec!["missing_structured_idiom_evidence".to_string()],
+            rejection_reason: None,
+            entry_key: None,
+        });
+    }
+    result
+}
 
-        for (offset, token) in tokens[info.s..=info.e].iter_mut().enumerate() {
-            let position = if offset == 0 {
-                "start"
-            } else if offset + 1 == width {
-                "end"
-            } else {
-                "middle"
-            };
-            token.expressions.push(ExpressionAnnotation {
-                match_id: match_id.clone(),
-                rule_id: -9999,
-                label: info.query.clone(),
-                description: "词典惯用语｜在本地词典中匹配到的固定跨文节表达。".to_string(),
-                origin: "dictionary".to_string(),
-                expression_type: info.expression_type.clone(),
-                priority: info.priority,
-                boundary_effect: info.boundary_effect.clone(),
-                confidence: info.confidence,
-                position: position.to_string(),
-                token_range: (info.s, info.e + 1),
-                char_range: info.char_range,
-                surface: info.surface.clone(),
+pub fn rejected_builtin_candidates(tokens: &[AnnotatedToken]) -> Vec<ExpressionCandidate> {
+    let morphemes = flatten(tokens);
+    let mut result = Vec::new();
+    for window in morphemes.windows(2) {
+        if window[0].lemma == "こと"
+            && window[1].lemma == "ない"
+            && (window[1].surface != "なく" || window[1].conjugation_form != "連用テ接続")
+        {
+            let char_range = (window[0].char_range.0, window[1].char_range.1);
+            result.push(ExpressionCandidate {
+                candidate_id: format!("rejected:negative_koto_naku:{}", char_range.0),
+                rule_id: "builtin_negative_koto_naku".to_string(),
+                rule_version: 2,
+                origin: "builtin".to_string(),
+                expression_type: "grammar_construction".to_string(),
+                status: ExpressionCandidateStatus::Rejected,
+                confidence: 100,
+                label: "〜ことなく".to_string(),
+                description: "否定成分不是连接形「なく」。".to_string(),
+                matched_ranges: vec![char_range],
+                covered_token_range: (window[0].token_index, window[1].token_index + 1),
+                char_range,
+                surface: format!("{}{}", window[0].surface, window[1].surface),
+                captures: Vec::new(),
+                evidence: vec!["koto_followed_by_nai".to_string()],
+                counter_evidence: vec!["negative_not_connective_form".to_string()],
+                rejection_reason: Some("conjugation_form_mismatch".to_string()),
+                entry_key: None,
             });
         }
-        count += 1;
     }
+    result
+}
 
-    count
+pub fn apply_dictionary_expressions(
+    tokens: &mut [AnnotatedToken],
+    dictionary: &crate::dictionary::lookup::DictionaryEngine,
+) -> usize {
+    let _ = dictionary_expression_candidates(tokens, dictionary);
+    0
 }
 
 fn is_sentence_boundary(morpheme: &FlatMorpheme) -> bool {
-    morpheme.is_boundary
-        || morpheme.lemma == "。"
+    morpheme.lemma == "。"
         || morpheme.lemma == "！"
         || morpheme.lemma == "？"
         || morpheme.surface.contains('。')
@@ -592,6 +671,7 @@ fn is_sentence_boundary(morpheme: &FlatMorpheme) -> bool {
         || morpheme.surface.contains('\n')
         || morpheme.surface.contains('?')
         || morpheme.surface.contains('!')
+        || (morpheme.lemma == "と" && morpheme.pos == "助詞" && morpheme.pos_sub2 == "引用")
 }
 
 struct CorrelativeMatchInfo {
@@ -603,6 +683,7 @@ struct CorrelativeMatchInfo {
     start_token: usize,
     end_token: usize,
     char_range: (usize, usize),
+    matched_ranges: Vec<(usize, usize)>,
     surface: String,
 }
 
@@ -700,6 +781,16 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                         start_token: head_start_token,
                         end_token: tail_end_token,
                         char_range,
+                        matched_ranges: vec![
+                            (
+                                h_window.first().unwrap().char_range.0,
+                                h_window.last().unwrap().char_range.1,
+                            ),
+                            (
+                                t_window.first().unwrap().char_range.0,
+                                t_window.last().unwrap().char_range.1,
+                            ),
+                        ],
                         surface,
                     };
 
@@ -773,6 +864,7 @@ pub fn apply_correlative_expressions(tokens: &mut [AnnotatedToken]) -> usize {
                 position: position.to_string(),
                 token_range: (m.start_token, m.end_token),
                 char_range: m.char_range,
+                matched_ranges: m.matched_ranges.clone(),
                 surface: m.surface.clone(),
             });
         }
@@ -818,7 +910,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dictionary_expressions() {
+    fn test_dictionary_expressions_are_pending_without_structured_evidence() {
         let ipadic_path = match get_test_ipadic_path() {
             Some(p) => p,
             None => {
@@ -846,28 +938,18 @@ mod tests {
         ];
 
         for (text, expected_label) in cases {
-            let mut tokens = pipeline.process(text, &[]);
-            let count = apply_dictionary_expressions(&mut tokens, &dictionary);
-            println!(
-                "Text: '{}', Matched: {}, Expressions: {:?}",
-                text,
-                count,
-                tokens
-                    .iter()
-                    .flat_map(|t| t.expressions.clone())
-                    .collect::<Vec<_>>()
-            );
-
-            let found = tokens.iter().any(|t| {
-                t.expressions
-                    .iter()
-                    .any(|exp| exp.label == expected_label && exp.rule_id == -9999)
+            let tokens = pipeline.process(text, &[]);
+            let candidates = dictionary_expression_candidates(&tokens, &dictionary);
+            let found = candidates.iter().any(|candidate| {
+                candidate.label == expected_label
+                    && candidate.status == ExpressionCandidateStatus::Pending
             });
             assert!(
                 found,
-                "无法在文本 '{}' 中匹配到预期的跨文节表达 '{}'",
+                "无法在文本 '{}' 中生成预期待定词典候选 '{}'",
                 text, expected_label
             );
+            assert!(tokens.iter().all(|token| token.expressions.is_empty()));
         }
     }
 
@@ -951,6 +1033,8 @@ mod tests {
         expected_stage_b: Option<ExpectedStageB>,
         #[serde(default)]
         expected_stage_c: Option<ExpectedStageC>,
+        #[serde(default)]
+        expected_stage_d: Option<ExpectedStageD>,
     }
 
     #[derive(Deserialize)]
@@ -965,6 +1049,18 @@ mod tests {
         bunsetsu: Vec<String>,
         #[serde(default)]
         functions: Vec<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct ExpectedStageD {
+        #[serde(default)]
+        accepted: Vec<String>,
+        #[serde(default)]
+        pending: Vec<String>,
+        #[serde(default)]
+        rejected: Vec<String>,
+        #[serde(default)]
+        matched_surfaces: Vec<String>,
     }
 
     #[test]
@@ -988,7 +1084,8 @@ mod tests {
         let dictionary = DictionaryEngine::new(&dict_dir).expect("初始化 dictionary 失败");
 
         let json_str = include_str!("../../tests/fixtures/representative_cases.json");
-        let cases: Vec<TestCase> = serde_json::from_str(json_str).expect("解析 test_cases JSON 失败");
+        let cases: Vec<TestCase> =
+            serde_json::from_str(json_str).expect("解析 test_cases JSON 失败");
 
         let mut printed_placeholders = false;
 
@@ -1003,15 +1100,21 @@ mod tests {
                 }
             }
             apply_builtin_expressions(&mut tokens);
-            apply_dictionary_expressions(&mut tokens, &dictionary);
+            let dictionary_candidates = dictionary_expression_candidates(&tokens, &dictionary);
             apply_correlative_expressions(&mut tokens);
             resolve_expression_conflicts(&mut tokens);
-            let tokens = apply_expression_boundaries(tokens);
+            let builtin_rejected = rejected_builtin_candidates(&tokens);
 
-            let actual_bunsetsu: Vec<String> = tokens.iter().map(|t| t.bunsetsu.surface.clone()).collect();
+            let actual_bunsetsu: Vec<String> =
+                tokens.iter().map(|t| t.bunsetsu.surface.clone()).collect();
             let mut actual_word_formations: Vec<String> = tokens
                 .iter()
-                .flat_map(|t| t.bunsetsu.word_formations.iter().map(|item| item.rule_id.clone()))
+                .flat_map(|t| {
+                    t.bunsetsu
+                        .word_formations
+                        .iter()
+                        .map(|item| item.rule_id.clone())
+                })
                 .collect();
             actual_word_formations.sort();
             let mut actual_expressions: Vec<String> = tokens
@@ -1022,30 +1125,113 @@ mod tests {
             actual_expressions.dedup();
 
             if let Some(expected_stage_c) = &case.expected_stage_c {
-                assert_eq!(actual_bunsetsu, expected_stage_c.bunsetsu, "用例 {} 的阶段 C 文节切分不一致", case.id);
+                assert_eq!(
+                    actual_bunsetsu, expected_stage_c.bunsetsu,
+                    "用例 {} 的阶段 C 文节切分不一致",
+                    case.id
+                );
                 if !expected_stage_c.functions.is_empty() {
-                    let actual_functions: Vec<String> = tokens.iter().filter(|token| token.display_class == "content").map(|token| {
-                        token.bunsetsu.function.as_ref().map_or("unknown", |annotation| match annotation.function {
-                            crate::models::BunsetsuFunction::Predicate => "predicate",
-                            crate::models::BunsetsuFunction::CasePhrase => "case_phrase",
-                            crate::models::BunsetsuFunction::Adnominal => "adnominal",
-                            crate::models::BunsetsuFunction::Adverbial => "adverbial",
-                            crate::models::BunsetsuFunction::Conjunctive => "conjunctive",
-                            crate::models::BunsetsuFunction::Nominal => "nominal",
-                            crate::models::BunsetsuFunction::Standalone => "standalone",
-                            crate::models::BunsetsuFunction::Unknown => "unknown",
-                        }).to_string()
-                    }).collect();
-                    assert_eq!(actual_functions, expected_stage_c.functions, "用例 {} 的阶段 C 功能标签不一致", case.id);
+                    let actual_functions: Vec<String> = tokens
+                        .iter()
+                        .filter(|token| token.display_class == "content")
+                        .map(|token| {
+                            token
+                                .bunsetsu
+                                .function
+                                .as_ref()
+                                .map_or("unknown", |annotation| match annotation.function {
+                                    crate::models::BunsetsuFunction::Predicate => "predicate",
+                                    crate::models::BunsetsuFunction::CasePhrase => "case_phrase",
+                                    crate::models::BunsetsuFunction::Adnominal => "adnominal",
+                                    crate::models::BunsetsuFunction::Adverbial => "adverbial",
+                                    crate::models::BunsetsuFunction::Conjunctive => "conjunctive",
+                                    crate::models::BunsetsuFunction::Nominal => "nominal",
+                                    crate::models::BunsetsuFunction::Standalone => "standalone",
+                                    crate::models::BunsetsuFunction::Unknown => "unknown",
+                                })
+                                .to_string()
+                        })
+                        .collect();
+                    assert_eq!(
+                        actual_functions, expected_stage_c.functions,
+                        "用例 {} 的阶段 C 功能标签不一致",
+                        case.id
+                    );
                 }
+            }
+
+            if let Some(expected_stage_d) = &case.expected_stage_d {
+                assert_eq!(
+                    actual_expressions, expected_stage_d.accepted,
+                    "用例 {} 的阶段 D accepted 不一致",
+                    case.id
+                );
+                let mut pending: Vec<String> = dictionary_candidates
+                    .iter()
+                    .filter(|candidate| candidate.status == ExpressionCandidateStatus::Pending)
+                    .map(|candidate| candidate.label.clone())
+                    .collect();
+                pending.sort();
+                pending.dedup();
+                assert_eq!(
+                    pending, expected_stage_d.pending,
+                    "用例 {} 的阶段 D pending 不一致",
+                    case.id
+                );
+                let mut rejected: Vec<String> = builtin_rejected
+                    .iter()
+                    .map(|candidate| candidate.rule_id.clone())
+                    .collect();
+                rejected.sort();
+                rejected.dedup();
+                assert_eq!(
+                    rejected, expected_stage_d.rejected,
+                    "用例 {} 的阶段 D rejected 不一致",
+                    case.id
+                );
+                if !expected_stage_d.matched_surfaces.is_empty() {
+                    let chars: Vec<char> = case.text.chars().collect();
+                    let mut surfaces: Vec<String> = tokens
+                        .iter()
+                        .flat_map(|token| token.expressions.iter())
+                        .filter(|expression| {
+                            matches!(expression.position.as_str(), "start" | "single")
+                        })
+                        .map(|expression| {
+                            expression
+                                .matched_ranges
+                                .iter()
+                                .map(|range| chars[range.0..range.1].iter().collect::<String>())
+                                .collect::<String>()
+                        })
+                        .collect();
+                    surfaces.sort();
+                    surfaces.dedup();
+                    assert_eq!(
+                        surfaces, expected_stage_d.matched_surfaces,
+                        "用例 {} 的阶段 D 精确表层不一致",
+                        case.id
+                    );
+                }
+                continue;
+            }
+            if case.expected_stage_c.is_some() {
                 continue;
             }
 
             if let Some(expected_stage_b) = &case.expected_stage_b {
                 if let Some(expected_bunsetsu) = &expected_stage_b.bunsetsu {
-                    assert_eq!(actual_bunsetsu, *expected_bunsetsu, "用例 {} 的阶段 B 文节切分不一致", case.id);
+                    assert_eq!(
+                        actual_bunsetsu, *expected_bunsetsu,
+                        "用例 {} 的阶段 B 文节切分不一致",
+                        case.id
+                    );
                 }
-                assert_eq!(actual_word_formations, expected_stage_b.word_formations, "用例 {} 的阶段 B 构词规则不一致", case.id);
+                assert_eq!(
+                    actual_word_formations, expected_stage_b.word_formations,
+                    "用例 {} 的阶段 B 构词规则不一致",
+                    case.id
+                );
             } else if case.expected_observed.bunsetsu.is_empty() {
                 if !printed_placeholders {
                     println!("\n=== 代表性案例当前运行 Observed 输出 ===");

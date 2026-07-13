@@ -116,10 +116,10 @@ function isGrammarMorpheme(index: number) {
 
 function isExpressionMorpheme(index: number) {
   const morpheme = props.token.bunsetsu.morphemes[index];
-  return props.token.expressions.some((expression) =>
-    morpheme.char_range[0] >= expression.char_range[0]
-    && morpheme.char_range[1] <= expression.char_range[1]
-  );
+  return props.token.expressions.some((expression) => {
+    const ranges = expression.matched_ranges.length > 0 ? expression.matched_ranges : [expression.char_range];
+    return ranges.some((range) => morpheme.char_range[0] >= range[0] && morpheme.char_range[1] <= range[1]);
+  });
 }
 </script>
 

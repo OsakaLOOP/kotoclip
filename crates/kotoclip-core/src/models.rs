@@ -204,7 +204,44 @@ pub struct ExpressionAnnotation {
     pub token_range: (usize, usize),
     #[serde(default)]
     pub char_range: (usize, usize),
+    #[serde(default)]
+    pub matched_ranges: Vec<(usize, usize)>,
     pub surface: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ExpressionCandidateStatus {
+    Accepted,
+    Pending,
+    Rejected,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpressionCandidate {
+    pub candidate_id: String,
+    pub rule_id: String,
+    pub rule_version: u32,
+    pub origin: String,
+    pub expression_type: String,
+    pub status: ExpressionCandidateStatus,
+    pub confidence: u8,
+    pub label: String,
+    pub description: String,
+    pub matched_ranges: Vec<(usize, usize)>,
+    pub covered_token_range: (usize, usize),
+    pub char_range: (usize, usize),
+    pub surface: String,
+    #[serde(default)]
+    pub captures: Vec<String>,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub counter_evidence: Vec<String>,
+    #[serde(default)]
+    pub rejection_reason: Option<String>,
+    #[serde(default)]
+    pub entry_key: Option<String>,
 }
 
 fn default_expression_origin() -> String {
