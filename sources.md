@@ -50,3 +50,31 @@
 - **FSRS Rust 实现**: [GitHub - open-spaced-repetition/fsrs-rs](https://github.com/open-spaced-repetition/fsrs-rs) — BSD-3-Clause 许可的 Rust 实现，包含调度、模拟、记忆状态计算及基于复习历史的参数优化，可直接集成到当前 Rust core。
 - **FSRS crate**: [crates.io - fsrs](https://crates.io/crates/fsrs) — Rust 项目的正式包入口。
 - **Anki FSRS 说明**: [Anki Manual - FSRS](https://docs.ankiweb.net/deck-options.html#fsrs) — 说明 desired retention、复习历史、参数优化和工作量权衡；同时指出个性化优化需要积累足够的真实复习记录。
+
+## 日语学习市场与相邻产品
+
+### 学习者和考试规模
+
+- **日本国际交流基金 2021 海外日语教育调查**: [Survey Report](https://www.jpf.go.jp/e/project/japanese/survey/result/survey21.html) / [Chapter 1 Overview PDF](https://www.jpf.go.jp/e/project/japanese/survey/result/dl/survey2021/Chapter1_Overview_r2.pdf) — 统计 141 个国家和地区、18,272 个机构、74,592 名教师和 3,794,714 名机构内学习者；明确不包含通过互联网、书籍、广播等方式自学的人群。
+- **日本国际交流基金 2021 东亚分区报告**: [East Asia PDF](https://www.jpf.go.jp/e/project/japanese/survey/result/dl/survey2021/1_East_Asia.pdf) — 中国共有 2,965 个受调查机构、21,361 名教师和 1,057,318 名机构内日语学习者，是唯一超过 100 万机构内学习者的国家；该口径不能直接视为应用活跃用户。
+- **JLPT 历年数据**: [Past Test Data](https://www.jlpt.jp/e/statistics/archive.html) — 2025 年报名 1,940,852 人次、实际应试 1,645,713 人次；2024 年分别为 1,718,943 和 1,470,989。
+- **JLPT 2025 年 7 月分级数据**: [Data of the test in 2025 July](https://www.jlpt.jp/e/statistics/archive/202501.html) — N1、N2、N3 报名人次分别为 137,239、224,658、253,758。
+- **JLPT 2025 年 12 月分级数据**: [Data of the test in 2025 December](https://www.jlpt.jp/e/statistics/archive/202502.html) — N1、N2、N3 报名人次分别为 147,617、270,422、292,359。
+- **JLPT 2025 年 7 月中国大陆考点数据**: [Site Data XLSX](https://www.jlpt.jp/statistics/pdf/2025_1_3.xlsx) — 中国大陆报名 174,560 人次，其中 N1 至 N3 为 155,026 人次；实际应试 138,377 人次。
+- **JLPT 2025 年 12 月中国大陆考点数据**: [Site Data XLSX](https://www.jlpt.jp/statistics/pdf/2025_2_3.xlsx) — 中国大陆报名 166,660 人次，其中 N1 至 N3 为 144,096 人次；实际应试 138,832 人次。两期合计报名 341,220 人次，N1 至 N3 为 299,122 人次，但同一考生可能重复报名，不能当作独立用户数。
+- **Duolingo 2025 Language Report**: [2025 Duolingo Language Report](https://blog.duolingo.com/2025-duolingo-language-report/) — 基于全球数百万学习者的数据，日语在 2025 年成为全球第四受欢迎的学习语言；该排名反映 Duolingo 用户趋势，不等同于全部日语学习市场。
+
+### 产品功能与价格参照
+
+- **Satori Reader**: [产品主页](https://www.satorireader.com/) / [价格](https://www.satorireader.com/pricing) — 面向中级日语学习者的人工策划阅读、语法和上下文释义产品，公开价格为每月 9 美元或每年 89 美元。
+- **Bunpro**: [价格与功能](https://bunpro.jp/pricing) — Premium 为每月 5 美元，公开列出 900+ 文法条目、10,000+ 文法例句、120+ 分级阅读和 SRS 等能力。
+- **Migaku**: [产品主页](https://migaku.com/) — 将网页、Netflix、YouTube 等真实内容转为学习材料，提供上下文查词、AI 解释、一键卡片、SRS、已知词追踪和内容理解度估计，是 Kotoclip 在沉浸学习闭环上的直接参照产品。
+- **jpdb**: [产品主页](https://jpdb.io/) — 提供文本词汇抽取、全局词汇状态、媒体预制词表、SRS、i+1 例句和内容难度推荐，证明“真实材料到自动复习”的需求已存在，同时构成直接竞争。
+- **Yomitan**: [GitHub - yomidevs/yomitan](https://github.com/yomidevs/yomitan) — 活跃维护的开源浏览器弹出词典，是免费、快速查词和用户自备词典生态的主要替代品。
+- **Anki**: [GitHub - ankitects/anki](https://github.com/ankitects/anki) — 成熟的开源间隔重复系统，是卡片导出、数据可迁移和复习算法的基准替代品。
+
+### 中国市场与 MOJi
+
+- **MOJi 官方产品入口**: [MOJi](https://www.mojidict.com/) — 展示 MOJi辞書、MOJi阅读、MOJiTest 等产品矩阵；说明竞争对象不是单一词典功能，而是已经形成品牌和交叉导流的日语学习产品族。
+- **MOJi辞書中国区 App Store**: [App Store](https://apps.apple.com/cn/app/id1021094295) — 2026-07-14 查询时约有 113,069 个评分、平均 4.81 分；开发者描述使用“百万用户共建”，并公开列出长文本／网页辅助阅读、句子结构解析、背词、同步和备份等能力。页面内购包含约 12 元月度、58 元年度和 228 元长期档位。评分数不是下载量或月活，开发者宣传也不是经审计的活跃用户数据。
+- **MOJi阅读中国区 App Store**: [App Store](https://apps.apple.com/cn/app/id1634175524) — 2026-07-14 查询时约有 5,904 个评分、平均 4.85 分；支持本地 EPUB/TXT、青空文库、查词、注音、结构标注、翻译和笔记。页面内购包含约 12 元月度、38 元年度和 128 元长期档位，构成中国区独立阅读工具的直接价格锚点。
