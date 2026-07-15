@@ -2,6 +2,20 @@
 
 本文档按主题记录 Kotoclip 调研中引用的关键外部链接与事实来源。
 
+## 独立 v1.0 盲评方案引用
+
+- **JMdict**: [EDRDG JMdict](https://www.edrdg.org/jmdict/j_jmdict.html) — 日英及多语种词汇、读音、词性和义项数据源。
+- **KANJIDIC2**: [EDRDG KANJIDIC Project](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) — 汉字读音、部件和级别元数据参考。
+- **MeCab**: [官方主页](https://taku910.github.io/mecab/) — 日语形态素分析器及词典接口参考。
+- **Sudachi**: [WorksApplications/Sudachi](https://github.com/WorksApplications/Sudachi) — 可替换的日语形态分析和词边界参考实现。
+- **Yomichan**: [FooSoft/yomichan](https://github.com/FooSoft/yomichan) — 本地词典弹出查询和用户词典生态参考。
+- **10ten Japanese Reader**: [birjolax/10ten-ja-reader](https://github.com/birjolax/10ten-ja-reader) — 低干扰网页查词交互参考。
+- **jpdb**: [jpdb.io](https://jpdb.io/) — 从真实文本抽取词汇、难度估计与 SRS 回流的竞品参考。
+- **LingQ**: [LingQ](https://www.lingq.com/) — 阅读中查词、收藏和复习闭环参考。
+- **Migaku**: [Migaku](https://migaku.com/) — 上下文查词、AI 解释、媒体内容采集和 SRS 竞品参考。
+- **EPUB 3**: [W3C Recommendation](https://www.w3.org/TR/epub-33/) — 本地电子书导入的公开规范边界。
+- **青空文庫**: [Aozora Bunko](https://www.aozora.gr.jp/) — 日本公共领域文本入口与版权边界参考。
+
 ## Pretext 相关
 - **Pretext (JS/TS 库) 源码仓库**: [GitHub - chenglou/pretext](https://github.com/chenglou/pretext) — 由 Cheng Lou 编写的 15KB、零依赖多行文本测量和布局库，主要用于避免浏览器的 DOM 重排（Layout Reflow）。
 - **Pretext 社区主页与 Demo**: [pretext.cool](https://pretext.cool) — 展示了 pretext 库在前端实现动力学排版（Kinetic Typography）与包裹排版的各类用例。
