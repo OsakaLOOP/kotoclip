@@ -1,6 +1,32 @@
 /* E-ink 墨水屏低能耗/高对比度降级样式 */
 
 body.eink-mode {
+  color-scheme: light;
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #000000;
+  --text-secondary: #000000;
+  --text-muted: #333333;
+  --accent-color: #000000;
+  --accent-hover: #000000;
+  --accent-light: transparent;
+  --border-color: #000000;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --novelty-high-bg: transparent;
+  --novelty-high-border: #000000;
+  --novelty-high-text: #000000;
+  --novelty-mid-bg: transparent;
+  --novelty-mid-border: #000000;
+  --novelty-mid-text: #000000;
+  --selection-indicator: #000000;
+  --glass-bg: #ffffff;
+  --glass-border: #000000;
+  --glass-filter: none;
   background-color: #ffffff !important;
   color: #000000 !important;
 }
@@ -12,6 +38,47 @@ body.eink-mode * {
   scroll-behavior: auto !important;
   text-shadow: none !important;
   box-shadow: none !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+}
+
+body.eink-mode #app,
+body.eink-mode .reader-shell,
+body.eink-mode .reader-container,
+body.eink-mode .main-layout,
+body.eink-mode .reader-viewport,
+body.eink-mode .input-section,
+body.eink-mode .app-header {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.eink-mode .app-header,
+body.eink-mode .insider-notice {
+  border-color: #000000 !important;
+}
+
+body.eink-mode .insider-notice {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.eink-mode button,
+body.eink-mode input,
+body.eink-mode textarea,
+body.eink-mode select {
+  border: 1px solid #000000 !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.eink-mode button:disabled,
+body.eink-mode input:disabled,
+body.eink-mode textarea:disabled,
+body.eink-mode select:disabled {
+  opacity: 1 !important;
+  color: #555555 !important;
 }
 
 /* 墨水屏下的嵌套胶囊 */
@@ -92,10 +159,16 @@ body.eink-mode .expression-anchor {
 /* 弹窗与悬浮面板 */
 body.eink-mode .tooltip-panel,
 body.eink-mode .context-menu,
-body.eink-mode .export-panel {
+body.eink-mode .export-panel,
+body.eink-mode .modal-card,
+body.eink-mode .workbench-shell {
   background-color: #ffffff !important;
   border: 2px solid #000000 !important;
   border-radius: 0 !important;
+}
+
+body.eink-mode .modal-overlay {
+  background: rgba(255, 255, 255, 0.92) !important;
 }
 
 body.eink-mode .paragraph-block {
