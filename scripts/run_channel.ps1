@@ -44,6 +44,41 @@ function Clear-TargetIfOverLimit {
     Write-Output ("cleaned target at {0:N2} GiB before {1} build." -f ($targetBytes / 1GB), $Channel)
 }
 
+function Stop-PackagedExecutable([string]$ExecutablePath) {
+    $fullPath = [System.IO.Path]::GetFullPath($ExecutablePath)
+    $processes = Get-Process -ErrorAction SilentlyContinue
+
+    foreach ($process in $processes) {
+        try {
+            $processPath = [System.IO.Path]::GetFullPath($process.Path)
+        } catch {
+            continue
+        }
+
+        if ([string]::Equals($processPath, $fullPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+            Stop-Process -Id $process.Id -Force
+            if (-not $process.WaitForExit(5000)) {
+                throw "packaged executable process did not exit: $fullPath"
+            }
+        }
+    }
+
+    if (Test-Path -LiteralPath $fullPath) {
+        for ($attempt = 0; $attempt -lt 20; $attempt++) {
+            try {
+                $stream = [System.IO.File]::Open($fullPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+                $stream.Dispose()
+                return
+            } catch [System.IO.IOException] {
+                if ($attempt -eq 19) {
+                    throw
+                }
+                Start-Sleep -Milliseconds 100
+            }
+        }
+    }
+}
+
 function Create-InsiderPackage {
     $packageRoot = Join-Path $workspace "packages"
     $packageName = "Kotoclip-insider-portable-win64"
@@ -59,12 +94,6 @@ function Create-InsiderPackage {
     }
 
     New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
-    if (Test-Path -LiteralPath $packageDir) {
-        Remove-Item -LiteralPath $packageDir -Recurse -Force
-    }
-    if (Test-Path -LiteralPath $archive) {
-        Remove-Item -LiteralPath $archive -Force
-    }
 
     $mdxSource = (Get-ChildItem -LiteralPath $workspace -File -Filter "*.mdx" | Select-Object -First 1).FullName
     $txtSource = (Get-ChildItem -LiteralPath (Join-Path $workspace "data\tmp_dict") -File -Filter "*.txt" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
@@ -86,8 +115,10 @@ function Create-InsiderPackage {
         }
     }
 
+    $packagedExecutable = Join-Path $packageDir "Kotoclip.exe"
+    Stop-PackagedExecutable $packagedExecutable
     New-Item -ItemType Directory -Force -Path (Join-Path $packageDir "ipadic"), (Join-Path $packageDir "dict-sources") | Out-Null
-    Copy-Item -LiteralPath "target\release\tauri-app.exe" -Destination (Join-Path $packageDir "Kotoclip.exe") -Force
+    Copy-Item -LiteralPath "target\release\tauri-app.exe" -Destination $packagedExecutable -Force
     Copy-Item -LiteralPath "ipadic\system.dic" -Destination (Join-Path $packageDir "ipadic\system.dic") -Force
     Copy-Item -LiteralPath $dictionaryBundle -Destination (Join-Path $packageDir "dict-sources\daijirin.kdict") -Force
     Compress-Archive -Path (Join-Path $packageDir "*") -DestinationPath $archive -Force
