@@ -6,7 +6,14 @@ use kotoclip_core::{cache::AnalysisCache, Engine};
 use state::AppState;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicU64, Mutex};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BackendReadyEvent {
+    ready: bool,
+    error: Option<String>,
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,38 +21,75 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            // 1. 初始化本地数据存储目录与字典放置路径
-            let paths = paths::AppPaths::resolve(app.handle())?;
-            if let Some(patterns) = &paths.grammar_patterns {
-                std::env::set_var("KOTOCLIP_GRAMMAR_PATTERNS", patterns);
-            }
-
-            // 自动创建本地 data 和 data/dicts 文件夹
-            // 2. 初始化核心分词及查词 Engine 实例
-            let engine = Engine::new(
-                &paths.system_dictionary,
-                &paths.dictionary_dir,
-                &paths.profile_db,
-            )?;
-            let analysis_cache = AnalysisCache::new(
-                paths.data_dir.join("cache").join("analysis"),
-                &paths.system_dictionary,
-                &paths.dictionary_dir,
-            )?;
-
-            // 注册全局并发安全状态供 Command 使用
+            // 先注册可等待的资源，让 Tauri 能立即进入事件循环并绘制前端。
+            let engine = state::LazyResource::pending();
+            let analysis_cache = state::LazyResource::pending();
             app.manage(AppState {
-                engine: Mutex::new(engine),
+                engine: engine.clone(),
                 sessions: Mutex::new(HashMap::new()),
                 next_session_id: AtomicU64::new(1),
-                analysis_cache: Mutex::new(analysis_cache),
+                analysis_cache: analysis_cache.clone(),
             });
+
+            // 词典和 SQLite 初始化可能持续数百毫秒到数秒，不能阻塞 WebView 首次绘制。
+            let app_handle = app.handle().clone();
+            std::thread::Builder::new()
+                .name("kotoclip-backend-init".to_string())
+                .spawn(move || {
+                    let result = (|| -> Result<(), String> {
+                        let paths = paths::AppPaths::resolve(&app_handle)
+                            .map_err(|error| error.to_string())?;
+                        if let Some(patterns) = &paths.grammar_patterns {
+                            std::env::set_var("KOTOCLIP_GRAMMAR_PATTERNS", patterns);
+                        }
+
+                        let engine_value = Engine::new(
+                            &paths.system_dictionary,
+                            &paths.dictionary_dir,
+                            &paths.profile_db,
+                        )
+                        .map_err(|error| error.to_string())?;
+                        engine.initialize(Ok(engine_value));
+
+                        let cache_value = AnalysisCache::new(
+                            paths.data_dir.join("cache").join("analysis"),
+                            &paths.system_dictionary,
+                            &paths.dictionary_dir,
+                        )
+                        .map_err(|error| error.to_string())?;
+                        analysis_cache.initialize(Ok(cache_value));
+                        Ok(())
+                    })();
+
+                    if let Err(error) = result {
+                        engine.initialize(Err(error.clone()));
+                        analysis_cache.initialize(Err(error.clone()));
+                        let _ = app_handle.emit(
+                            "backend-ready",
+                            BackendReadyEvent {
+                                ready: false,
+                                error: Some(error),
+                            },
+                        );
+                        return;
+                    }
+
+                    let _ = app_handle.emit(
+                        "backend-ready",
+                        BackendReadyEvent {
+                            ready: true,
+                            error: None,
+                        },
+                    );
+                })
+                .map_err(|error| format!("无法启动后台初始化线程：{error}"))?;
 
             Ok(())
         })
         // 注册所有和前端 IPC 交互的 Command 处理器
         .invoke_handler(tauri::generate_handler![
             commands::open_document,
+            commands::backend_status,
             commands::continue_document_analysis,
             commands::finalize_document,
             commands::persist_document_cache,

@@ -14,8 +14,18 @@ impl AppPaths {
     pub fn resolve(app: &AppHandle) -> Result<Self, Box<dyn std::error::Error>> {
         // 允许 KOTOCLIP_DATA_DIR 作为显式的开发/测试重写
         let env_data_dir = std::env::var("KOTOCLIP_DATA_DIR").ok();
+        // 便携测试包直接把数据放在 EXE 同目录，允许用户双击 GUI 启动。
+        let portable_data_dir = std::env::current_exe()
+            .ok()
+            .and_then(|path| path.parent().map(PathBuf::from))
+            .filter(|path| {
+                path.join("ipadic").join("system.dic").is_file()
+                    && path.join("dicts").is_dir()
+            });
         let data_dir = if let Some(env_dir) = &env_data_dir {
             PathBuf::from(env_dir)
+        } else if let Some(portable_dir) = &portable_data_dir {
+            portable_dir.clone()
         } else {
             app.path().app_data_dir()?
         };
@@ -33,27 +43,35 @@ impl AppPaths {
         let system_dictionary = match system_dictionary {
             Some(p) => p,
             None => {
+                let portable_dictionary = portable_data_dir
+                    .as_ref()
+                    .map(|path| path.join("ipadic").join("system.dic"))
+                    .filter(|path| path.is_file());
+                if let Some(path) = portable_dictionary {
+                    path
+                } else {
                 // 在 Tauri 2.0 中，使用 PathResolver 的 resolve 方法解析资源路径
-                app.path()
-                    .resolve("../ipadic/system.dic", BaseDirectory::Resource)
-                    .or_else(|_| {
-                        app.path()
-                            .resolve("ipadic/system.dic", BaseDirectory::Resource)
-                    })
-                    .or_else(|_| app.path().resolve("system.dic", BaseDirectory::Resource))
-                    .unwrap_or_else(|_| {
-                        let res_dir = app
-                            .path()
-                            .resource_dir()
-                            .unwrap_or_else(|_| PathBuf::from("."));
-                        res_dir.join("ipadic").join("system.dic")
-                    })
+                    app.path()
+                        .resolve("../ipadic/system.dic", BaseDirectory::Resource)
+                        .or_else(|_| {
+                            app.path()
+                                .resolve("ipadic/system.dic", BaseDirectory::Resource)
+                        })
+                        .or_else(|_| app.path().resolve("system.dic", BaseDirectory::Resource))
+                        .unwrap_or_else(|_| {
+                            let res_dir = app
+                                .path()
+                                .resource_dir()
+                                .unwrap_or_else(|_| PathBuf::from("."));
+                            res_dir.join("ipadic").join("system.dic")
+                        })
+                }
             }
         };
 
         // 开发构建直接使用仓库 data/dicts，确保真实外部词典参与流程；
         // 安装构建仍使用应用数据目录，避免依赖源码路径。
-        let dictionary_dir = if env_data_dir.is_some() {
+        let dictionary_dir = if env_data_dir.is_some() || portable_data_dir.is_some() {
             data_dir.join("dicts")
         } else if cfg!(debug_assertions) {
             let repository_dicts = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

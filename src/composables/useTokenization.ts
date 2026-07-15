@@ -293,10 +293,33 @@ export function useTokenization() {
   const lastOpenCacheHit = ref(false);
   const lastPatchBytes = ref(0);
   const lastInvalidation = ref<AnalysisPatch["invalidation"] | null>(null);
+  const backendReady = ref(false);
+  const backendError = ref<string | null>(null);
+  let unlistenBackendReady: UnlistenFn | undefined;
   const tokenCache = new Map<string, AnnotatedToken>();
   const sessionStrings: string[] = [];
   let orderedTokenIds: string[] = [];
   let documentOperation = Promise.resolve();
+
+  async function initializeBackendStatus() {
+    try {
+      unlistenBackendReady = await listen<{ ready: boolean; error?: string }>("backend-ready", ({ payload }) => {
+        backendReady.value = payload.ready;
+        backendError.value = payload.error ?? null;
+      });
+      const status = await invoke<{ ready: boolean }>("backend_status");
+      backendReady.value = status.ready;
+      backendError.value = null;
+    } catch (error) {
+      backendReady.value = false;
+      backendError.value = String(error);
+    }
+  }
+
+  function disposeBackendStatusListener() {
+    unlistenBackendReady?.();
+    unlistenBackendReady = undefined;
+  }
 
   function enqueueDocumentOperation<T>(operation: () => Promise<T>): Promise<T> {
     const result = documentOperation.then(operation, operation);
@@ -611,6 +634,10 @@ export function useTokenization() {
     lastOpenCacheHit,
     lastPatchBytes,
     lastInvalidation,
+    backendReady,
+    backendError,
+    initializeBackendStatus,
+    disposeBackendStatusListener,
     analyzeText,
     requestDocumentRange,
     replaceDocumentText,

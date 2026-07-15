@@ -4,8 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_channel.ps1 -Channel dev",
+    "frontend:dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
+    "insider": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_channel.ps1 -Channel insider",
     "test:ui": "node --test --experimental-strip-types src/explanation/*.test.mjs",
     "preview": "vite preview",
     "tauri": "tauri"

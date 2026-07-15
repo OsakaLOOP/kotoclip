@@ -4,3 +4,13 @@ members = [
     "src-tauri",
 ]
 resolver = "2"
+
+# 开发渠道只保留实时调试所需的增量编译，不生成完整 debug 符号。
+[profile.dev]
+debug = 0
+incremental = true
+
+# Insider 只生成发布产物，不保留 release 增量缓存。
+[profile.release]
+debug = 0
+incremental = false

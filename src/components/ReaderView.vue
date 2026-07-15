@@ -56,6 +56,10 @@ const {
   lastOpenCacheHit,
   lastPatchBytes,
   lastInvalidation,
+  backendReady,
+  backendError,
+  initializeBackendStatus,
+  disposeBackendStatusListener,
   addExpressionRule,
   previewExpressionRule,
   getExpressionRules,
@@ -232,11 +236,13 @@ async function handleReaderScroll() {
 
 // 监听拖拽的鼠标松开事件 (挂载在 window 以防在胶囊外松开失效)
 onMounted(() => {
+  void initializeBackendStatus();
   window.addEventListener("mouseup", handleMouseUp);
   window.addEventListener("resize", explanation.refreshAnchor);
 });
 
 onBeforeUnmount(() => {
+  disposeBackendStatusListener();
   window.removeEventListener("mouseup", handleMouseUp);
   window.removeEventListener("resize", explanation.refreshAnchor);
   explanation.closeAll();
@@ -519,6 +525,12 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <div v-if="errorMsg" class="error-message">
           ⚠️ 分析出错: {{ errorMsg }}
         </div>
+        <div v-if="backendError" class="error-message">
+          ⚠️ 本地分析引擎启动失败: {{ backendError }}
+        </div>
+        <div v-else-if="!backendReady" class="backend-status" role="status">
+          正在启动本地分析引擎，请稍候…
+        </div>
         <AnalysisProgressPanel
           :progress="analysisProgress"
           :active="isAnalyzing"
@@ -526,10 +538,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <div class="btn-group">
           <button
             class="analyze-btn"
-            :disabled="isAnalyzing"
+            :disabled="isAnalyzing || !backendReady"
             @click="triggerAnalysis()"
           >
-            {{ isAnalyzing ? analysisProgress.message : '解析生词胶囊' }}
+            {{ isAnalyzing ? analysisProgress.message : backendReady ? '解析生词胶囊' : '正在启动分析引擎…' }}
           </button>
         </div>
       </div>
@@ -698,7 +710,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 .reader-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
   width: 100vw;
   background-color: var(--bg-primary);
 }
@@ -887,6 +900,12 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   font-size: 0.9rem;
   margin-top: -10px;
   margin-bottom: 10px;
+}
+
+.backend-status {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 /* 阅读器视口样式 */

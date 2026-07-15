@@ -8,7 +8,32 @@
   </head>
 
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="boot-screen" role="status" aria-live="polite">
+        <strong>Kotoclip</strong>
+        <span>正在启动本地分析引擎…</span>
+      </div>
+    </div>
+    <style>
+      html, body, #app { margin: 0; width: 100%; min-height: 100%; }
+      .boot-screen {
+        display: grid;
+        place-content: center;
+        gap: 8px;
+        width: 100vw;
+        height: 100vh;
+        color: #1c2438;
+        background: #fcfbfa;
+        font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      .boot-screen strong { font-size: 1.3rem; }
+      .boot-screen span { color: #5a6882; font-size: 0.9rem; }
+      @media (prefers-color-scheme: dark) {
+        .boot-screen { color: #e2e8f0; background: #12141c; }
+        .boot-screen span { color: #94a3b8; }
+      }
+    </style>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

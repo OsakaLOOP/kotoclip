@@ -26,6 +26,19 @@ pub struct DocumentResponse {
     pub cache_hit: bool,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackendStatus {
+    pub ready: bool,
+}
+
+#[tauri::command]
+pub async fn backend_status(state: State<'_, AppState>) -> Result<BackendStatus, String> {
+    Ok(BackendStatus {
+        ready: state.engine.status()? && state.analysis_cache.status()?,
+    })
+}
+
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum DocumentMutation {
