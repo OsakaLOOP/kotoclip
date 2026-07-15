@@ -126,3 +126,13 @@ cargo test -p kotoclip-core
 cargo check -p tauri-app
 npm run build
 ```
+
+## 悬浮交互调试
+
+词典／语法浮层的命中、关闭宽限、请求代次、最终渲染门和布局探针默认全部关闭。仅使用以下 Tauri dev 配置启动时显示调试浮层：
+
+```powershell
+npx tauri dev --config src-tauri/tauri.float-debug.conf.json
+```
+
+该配置只把 devUrl 标记为 `ui-float-debug=true`。前端还会同时校验 Vite DEV 与 Tauri WebView；普通 `npm run dev`、独立 Vite 页面和生产构建均不会显示。浮层内可暂停采样、清空历史、调整历史上限与透明度、切换停靠位置，并分别启停命中、判断、会话、定时器、请求、门控和布局记录。

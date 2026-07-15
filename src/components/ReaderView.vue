@@ -19,7 +19,7 @@ import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 import { useExplanationSession } from "../composables/useExplanationSession";
-import { belongsToSameToken, explanationHitFromTarget, keepsExplanationOpen } from "../explanation/hitTest";
+import { useExplanationInteraction } from "../composables/useExplanationInteraction";
 
 // 状态定义
 const inputText = ref("");
@@ -72,6 +72,12 @@ const {
 const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs, markDocumentKnown);
 const { lookupWord, chooseDictionaryTarget } = useDictionary();
 const explanation = useExplanationSession(lookupWord, chooseDictionaryTarget);
+const explanationInteraction = useExplanationInteraction({
+  findToken(paragraphId, tokenIndex) {
+    return paragraphs.value.find((item) => item.id === paragraphId)?.tokens[tokenIndex];
+  },
+  session: explanation,
+});
 
 // 详细释义弹窗状态
 const showDefinitionModal = ref(false);
@@ -283,60 +289,6 @@ async function triggerAnalysis(recordExposure = true) {
       console.error("Background document analysis failed:", error);
     });
   }
-}
-
-function handleParagraphPointerOver(event: PointerEvent) {
-  const hit = explanationHitFromTarget(event.target);
-  const previous = explanationHitFromTarget(event.relatedTarget);
-  if (hit.key === previous.key) return;
-  explanation.cancelClose();
-  if (hit.kind === "outside" || hit.kind === "panel") return;
-  const paragraph = paragraphs.value.find((item) => item.id === hit.paragraphId);
-  const token = paragraph?.tokens[hit.tokenIndex];
-  if (!token || token.display_class !== "content") {
-    explanation.closeAll();
-    return;
-  }
-  const capsule = (event.target as Element).closest<HTMLElement>("[data-token-index]");
-  if (!capsule) return;
-
-  if (hit.kind === "grammar") {
-    const tag = token.bunsetsu.grammar_tags[hit.grammarIndex];
-    const badge = (event.target as Element).closest<HTMLElement>("[data-grammar-index]");
-    if (tag && badge) explanation.focusGrammar(tag, badge);
-    return;
-  }
-
-  if (hit.kind === "token" && belongsToSameToken(hit, previous)) return;
-  const morphemeIndex = hit.kind === "morpheme"
-    ? hit.morphemeIndex
-    : Math.min(token.bunsetsu.lexical_units[0]?.head_morpheme ?? 0, token.bunsetsu.morphemes.length - 1);
-  const morpheme = capsule.querySelector<HTMLElement>(`[data-morpheme-index="${morphemeIndex}"]`);
-  if (!morpheme) return;
-  explanation.focusMorpheme(
-    { paragraphId: hit.paragraphId, tokenIndex: hit.tokenIndex, morphemeIndex },
-    token,
-    capsule,
-    morpheme,
-  );
-}
-
-function handleParagraphPointerOut(event: PointerEvent) {
-  const next = explanationHitFromTarget(event.relatedTarget);
-  if (keepsExplanationOpen(next)) {
-    explanation.cancelClose();
-    return;
-  }
-  explanation.scheduleClose();
-}
-
-function handlePopoverLeave(event: PointerEvent) {
-  const next = explanationHitFromTarget(event.relatedTarget);
-  if (keepsExplanationOpen(next)) {
-    explanation.cancelClose();
-    return;
-  }
-  explanation.scheduleClose();
 }
 
 // 事件委托：段落内的点击 (切换选中/已知)
@@ -581,8 +533,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             :data-index="virtualRow.index"
             :ref="measureVirtualRow"
             :class="['paragraph-block', { 'dialogue-block': paragraphs[virtualRow.index].isDialogue }]"
-            @pointerover="handleParagraphPointerOver"
-            @pointerout="handleParagraphPointerOut"
+            @pointerover="explanationInteraction.handleParagraphPointerOver"
+            @pointerout="explanationInteraction.handleParagraphPointerOut"
             @mousedown="handleMouseDown($event, paragraphs[virtualRow.index].id)"
             @mousemove="handleMouseMove($event, paragraphs[virtualRow.index].id)"
             @click="handleParagraphClick($event, paragraphs[virtualRow.index].id)"
@@ -609,7 +561,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
     <!-- 3. 词典浮层组与独立语法说明 -->
     <ExplanationPopover
-      :show="explanation.visible.value"
+      :show="explanation.renderGate.value.dictionary"
       :anchor="explanation.anchorRect.value"
       :component-anchor="explanation.hasWholePanel.value ? explanation.anchorRect.value : explanation.componentAnchorRect.value"
       :whole-token="explanation.wholeToken.value"
@@ -621,8 +573,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       :component-loading="explanation.componentLoading.value"
       :component-can-go-back="explanation.componentHistory.value.length > 0"
       :component-label="explanation.componentLabel.value"
-      @enter="explanation.cancelClose"
-      @leave="handlePopoverLeave"
+      @enter="explanationInteraction.handlePopoverEnter"
+      @leave="explanationInteraction.handlePopoverLeave"
       @navigate-whole="explanation.navigateWhole"
       @navigate-component="explanation.navigateComponent"
       @select-whole="explanation.selectWhole"
@@ -631,11 +583,11 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       @back-component="explanation.backComponent"
     />
     <GrammarPopover
-      :show="explanation.grammarVisible.value"
+      :show="explanation.renderGate.value.grammar"
       :tag="explanation.grammarTag.value"
       :anchor="explanation.grammarAnchorRect.value"
-      @enter="explanation.cancelClose"
-      @leave="handlePopoverLeave"
+      @enter="explanationInteraction.handlePopoverEnter"
+      @leave="explanationInteraction.handlePopoverLeave"
     />
 
     <!-- 4. 双击上下文操作菜单 -->

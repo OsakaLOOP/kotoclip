@@ -312,3 +312,36 @@ DOM 语义命中
 - `140ms` 关闭宽限从首次离开正文或面板时开始；后续外部 `pointerout` 不得重建或续期，进入正文或任一面板时取消。可达性不受离开点与面板的几何距离限制，因此允许用户水平或斜向移动到词条标题。
 - `npm run test:ui` 覆盖单面板视口边界、16:9 双面板捆绑与高度限制、水平边缘平移、窄屏安全收窄、跨语素／跨文节转换语义，以及关闭宽限不可重复启动的状态约束。
 - `npm run build` 同时执行 TypeScript 类型检查和生产构建。
+
+## 13. 交互门控与调试浮层
+
+悬浮交互继续拆分为三个可复用边界：
+
+```text
+hitTest DOM 语义命中
+→ interactionGate 纯决策
+→ useExplanationInteraction DOM 控制器
+→ useExplanationSession 会话与请求
+→ renderGate 最终显隐
+```
+
+- `interactionGate.ts` 只根据当前与相邻 hit 输出忽略、取消关闭、聚焦来源或安排关闭，并统一生成词典／整体／内部／语法的最终渲染门与阻断原因。
+- `useExplanationInteraction.ts` 负责从委托事件解析 token、语素和 grammar DOM，不持有查询状态；后续键盘、焦点或触控入口可复用门控和会话接口。
+- `useExplanationSession.ts` 持有关闭宽限、请求代次、缓存、导航历史和锚点；组件只消费 `renderGate`，不再组合多个请求布尔值决定显隐。
+
+调试探针使用 `floatDebug.ts` 的统一有界事件流和命名快照，覆盖：
+
+- 当前／相邻 hit、语义 key 变化与门控动作。
+- 正文、整体面板、内部面板和语法面板的进入／离开。
+- 关闭定时器 ID、开始时间、截止时间、取消、重复安排和到期。
+- 整体／内部请求 generation、缓存命中、inflight 合并、接受和过期丢弃。
+- 会话来源、导航历史、loading、最终渲染门及阻断原因。
+- 锚点矩形、面板固有尺寸、ResizeObserver 连接和最终布局。
+
+启用命令：
+
+```powershell
+npx tauri dev --config src-tauri/tauri.float-debug.conf.json
+```
+
+`tauri.float-debug.conf.json` 仅在 devUrl 上增加 `ui-float-debug=true`。调试浮层还要求 Vite DEV 和 Tauri WebView 同时成立，因此普通开发入口、浏览器预览和发布包均保持关闭。浮层配置保存在本机 localStorage，可调整停靠位置、透明度、历史上限和分类采样；暂停时同时冻结实时快照与历史。

@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from "vue";
 import ReaderView from "./components/ReaderView.vue";
+import { floatDebug } from "./explanation/floatDebug";
 
 const isInsider = import.meta.env.VITE_BUILD_CHANNEL === "insider";
+const FloatDebugOverlay = import.meta.env.DEV && floatDebug.enabled
+  ? defineAsyncComponent(() => import("./components/dev/FloatDebugOverlay.vue"))
+  : null;
 </script>
 
 <template>
@@ -12,6 +17,7 @@ const isInsider = import.meta.env.VITE_BUILD_CHANNEL === "insider";
   <div class="reader-shell">
     <ReaderView />
   </div>
+  <FloatDebugOverlay v-if="FloatDebugOverlay" />
 </template>
 
 <style>

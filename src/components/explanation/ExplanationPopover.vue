@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { AnnotatedToken, DictionaryLookup } from "../../types";
+import { floatDebug } from "../../explanation/floatDebug";
 import { explanationPanelWidth, measureIntrinsicPanel, placeExplanationPanels, type PopoverPlacement, type RectSnapshot, type Size } from "../../explanation/geometry";
 import TooltipPanel from "../TooltipPanel.vue";
 
@@ -43,9 +44,19 @@ function intrinsicPanelSize(panelId: string): Size | undefined {
 }
 
 function place() {
-  if (!props.show || !props.anchor || !props.componentAnchor) return;
+  if (!props.show || !props.anchor || !props.componentAnchor) {
+    floatDebug.record("layout", "explanation-popover", "place-skipped", "render-input-missing", {
+      show: props.show,
+      hasAnchor: Boolean(props.anchor),
+      hasComponentAnchor: Boolean(props.componentAnchor),
+    });
+    return;
+  }
   const componentSize = intrinsicPanelSize("explanation-component-panel");
-  if (!componentSize) return;
+  if (!componentSize) {
+    floatDebug.record("layout", "explanation-popover", "place-skipped", "component-panel-unmounted");
+    return;
+  }
   const wholeSize = intrinsicPanelSize("explanation-whole-panel");
   placement.value = placeExplanationPanels(
     props.anchor,
@@ -54,10 +65,26 @@ function place() {
     { width: window.innerWidth, height: window.innerHeight },
     wholeSize,
   );
+  floatDebug.snapshot("layout", {
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+    panelWidth: panelWidth.value,
+    componentIntrinsic: sizeSnapshot(componentSize),
+    wholeIntrinsic: sizeSnapshot(wholeSize),
+    component: placementSnapshot(placement.value.component),
+    whole: placementSnapshot(placement.value.whole),
+  });
+  floatDebug.record("layout", "explanation-popover", "placed", wholeSize ? "dual-panel" : "single-panel", {
+    panelWidth: panelWidth.value,
+    component: placementSnapshot(placement.value.component),
+    whole: placementSnapshot(placement.value.whole),
+  });
 }
 
 async function connectAndPlace() {
-  if (!props.show) return;
+  if (!props.show) {
+    floatDebug.record("layout", "explanation-popover", "connect-skipped", "render-gate-closed");
+    return;
+  }
   const hasWhole = Boolean(props.wholeLookup || props.wholeLoading);
   panelWidth.value = explanationPanelWidth(window.innerWidth, hasWhole);
   await nextTick();
@@ -65,7 +92,23 @@ async function connectAndPlace() {
   observer = new ResizeObserver(place);
   const contents = document.querySelectorAll("[data-explanation-content]");
   contents.forEach((content) => observer?.observe(content));
+  floatDebug.record("layout", "explanation-popover", "observer-connected", `${contents.length} content nodes`);
   place();
+}
+
+function sizeSnapshot(size: Size | undefined) {
+  return size ? { width: Math.round(size.width), height: Math.round(size.height) } : null;
+}
+
+function placementSnapshot(value: PopoverPlacement["component"] | undefined) {
+  if (!value) return null;
+  return {
+    left: Math.round(value.left),
+    top: Math.round(value.top),
+    width: Math.round(value.width),
+    height: Math.round(value.height),
+    maxHeight: Math.round(value.maxHeight),
+  };
 }
 
 watch(
