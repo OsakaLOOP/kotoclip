@@ -185,7 +185,7 @@ resolve_exact_forms_batch(queries)
 
 ### 6.3 词典元数据深化
 
-当前 schema v3 有稳定表记和读音索引，但没有结构化“单词／复合词／连语／惯用句”和词性。以后可增加：
+当前 schema v4 有稳定表记和读音索引，但没有结构化“单词／复合词／连语／惯用句”和词性。以后可增加：
 
 ```text
 entry_lexical_metadata

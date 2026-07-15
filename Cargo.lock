@@ -2079,6 +2079,7 @@ dependencies = [
  "aho-corasick",
  "ammonia",
  "chrono",
+ "flate2",
  "log",
  "regex",
  "rusqlite",

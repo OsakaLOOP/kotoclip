@@ -265,7 +265,10 @@ fn schema_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 }
 
 fn dictionary(args: &CliArgs) -> Result<DictionaryEngine, Box<dyn Error>> {
-    Ok(DictionaryEngine::new(
+    Ok(DictionaryEngine::prepare(
+        args.options
+            .get("dict-source-dir")
+            .map_or("data/dict-sources", String::as_str),
         args.options
             .get("dict-dir")
             .map_or("data/dicts", String::as_str),
@@ -281,10 +284,13 @@ fn pipeline(args: &CliArgs) -> Result<Pipeline, Box<dyn Error>> {
 }
 
 fn engine(args: &CliArgs) -> Result<Engine, Box<dyn Error>> {
-    Ok(Engine::new(
+    Ok(Engine::new_from_dictionary_sources(
         args.options
             .get("system-dict")
             .map_or("ipadic/system.dic", String::as_str),
+        args.options
+            .get("dict-source-dir")
+            .map_or("data/dict-sources", String::as_str),
         args.options
             .get("dict-dir")
             .map_or("data/dicts", String::as_str),
@@ -2131,6 +2137,7 @@ fn print_help() {
 
 公共参数：
   --dict-dir PATH       SQLite 词典目录，默认 data/dicts
+  --dict-source-dir PATH 词典源包目录，默认 data/dict-sources
   --system-dict PATH    Vibrato system.dic，默认 ipadic/system.dic
 
 命令：

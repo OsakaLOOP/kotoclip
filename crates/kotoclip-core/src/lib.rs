@@ -49,6 +49,29 @@ impl Engine {
         })
     }
 
+    /// 从可分发词典源包重建或复用本机 schema v4 数据库后初始化引擎。
+    pub fn new_from_dictionary_sources<
+        P1: AsRef<Path>,
+        P2: AsRef<Path>,
+        P3: AsRef<Path>,
+        P4: AsRef<Path>,
+    >(
+        dict_path: P1,
+        dictionary_source_dir: P2,
+        dicts_dir: P3,
+        user_db_path: P4,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let pipeline = Pipeline::new(dict_path)?;
+        let dictionary = DictionaryEngine::prepare(dictionary_source_dir, dicts_dir)?;
+        let profile = ProfileEngine::new(user_db_path)?;
+
+        Ok(Self {
+            pipeline,
+            dictionary,
+            profile,
+        })
+    }
+
     /// 诊断专用初始化入口，拆分词法模型、外部词典与画像数据库的真实冷启动耗时。
     pub fn new_profiled<P1: AsRef<Path>, P2: AsRef<Path>, P3: AsRef<Path>>(
         dict_path: P1,

@@ -1,9 +1,10 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
 pub struct AppPaths {
     pub system_dictionary: PathBuf,
+    pub dictionary_source_dir: PathBuf,
     pub dictionary_dir: PathBuf,
     pub profile_db: PathBuf,
     pub data_dir: PathBuf,
@@ -12,113 +13,98 @@ pub struct AppPaths {
 
 impl AppPaths {
     pub fn resolve(app: &AppHandle) -> Result<Self, Box<dyn std::error::Error>> {
-        // 允许 KOTOCLIP_DATA_DIR 作为显式的开发/测试重写
-        let env_data_dir = std::env::var("KOTOCLIP_DATA_DIR").ok();
-        // 便携测试包直接把数据放在 EXE 同目录，允许用户双击 GUI 启动。
-        let portable_data_dir = std::env::current_exe()
+        let repository_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .to_path_buf();
+        let env_data_dir = std::env::var("KOTOCLIP_DATA_DIR").ok().map(PathBuf::from);
+        let portable_root = std::env::current_exe()
             .ok()
             .and_then(|path| path.parent().map(PathBuf::from))
             .filter(|path| {
                 path.join("ipadic").join("system.dic").is_file()
-                    && path.join("dicts").is_dir()
+                    && path.join("dict-sources").is_dir()
             });
-        let data_dir = if let Some(env_dir) = &env_data_dir {
-            PathBuf::from(env_dir)
-        } else if let Some(portable_dir) = &portable_data_dir {
-            portable_dir.clone()
-        } else {
-            app.path().app_data_dir()?
-        };
+        let data_dir = env_data_dir
+            .clone()
+            .unwrap_or(app.path().app_data_dir()?);
 
-        // system_dictionary 在正常打包运行时，应从打包的只读资源中获取
-        // 在开发模式下，也可以作为资源文件解析；如果定义了 KOTOCLIP_DATA_DIR，优先检查该路径下的 ipadic/system.dic
-        let mut system_dictionary = None;
-        if let Ok(env_dir) = std::env::var("KOTOCLIP_DATA_DIR") {
-            let path = PathBuf::from(&env_dir).join("ipadic").join("system.dic");
-            if path.exists() {
-                system_dictionary = Some(path);
-            }
-        }
-
-        let system_dictionary = match system_dictionary {
-            Some(p) => p,
-            None => {
-                let portable_dictionary = portable_data_dir
+        let system_dictionary = env_data_dir
+            .as_ref()
+            .map(|path| path.join("ipadic").join("system.dic"))
+            .filter(|path| path.is_file())
+            .or_else(|| {
+                portable_root
                     .as_ref()
                     .map(|path| path.join("ipadic").join("system.dic"))
-                    .filter(|path| path.is_file());
-                if let Some(path) = portable_dictionary {
-                    path
-                } else {
-                // 在 Tauri 2.0 中，使用 PathResolver 的 resolve 方法解析资源路径
+                    .filter(|path| path.is_file())
+            })
+            .or_else(|| {
+                let repository_dictionary = repository_root.join("ipadic").join("system.dic");
+                (cfg!(debug_assertions) && repository_dictionary.is_file())
+                    .then_some(repository_dictionary)
+            })
+            .or_else(|| {
+                [
+                    "../ipadic/system.dic",
+                    "ipadic/system.dic",
+                    "system.dic",
+                ]
+                .into_iter()
+                .find_map(|candidate| {
                     app.path()
-                        .resolve("../ipadic/system.dic", BaseDirectory::Resource)
-                        .or_else(|_| {
-                            app.path()
-                                .resolve("ipadic/system.dic", BaseDirectory::Resource)
-                        })
-                        .or_else(|_| app.path().resolve("system.dic", BaseDirectory::Resource))
-                        .unwrap_or_else(|_| {
-                            let res_dir = app
-                                .path()
-                                .resource_dir()
-                                .unwrap_or_else(|_| PathBuf::from("."));
-                            res_dir.join("ipadic").join("system.dic")
-                        })
-                }
+                        .resolve(candidate, BaseDirectory::Resource)
+                        .ok()
+                        .filter(|path| path.is_file())
+                })
+            })
+            .ok_or("未找到 ipadic/system.dic")?;
+
+        let dictionary_source_dir = if let Some(path) = &env_data_dir {
+            path.join("dict-sources")
+        } else if let Some(path) = &portable_root {
+            path.join("dict-sources")
+        } else if cfg!(debug_assertions) && repository_root.join("data/dict-sources").is_dir() {
+            repository_root.join("data/dict-sources")
+        } else {
+            let resource_source = [
+                "../data/dict-sources/starter.kdict",
+                "data/dict-sources/starter.kdict",
+                "dict-sources/starter.kdict",
+                "starter.kdict",
+            ]
+            .into_iter()
+            .find_map(|candidate| {
+                app.path()
+                    .resolve(candidate, BaseDirectory::Resource)
+                    .ok()
+                    .filter(|path| path.is_file())
+            });
+            if let Some(source) = resource_source {
+                source
+                    .parent()
+                    .map(PathBuf::from)
+                    .ok_or("starter.kdict 缺少父目录")?
+            } else {
+                data_dir.join("dict-sources")
             }
         };
 
-        // 开发构建直接使用仓库 data/dicts，确保真实外部词典参与流程；
-        // 安装构建仍使用应用数据目录，避免依赖源码路径。
-        let dictionary_dir = if env_data_dir.is_some() || portable_data_dir.is_some() {
+        let dictionary_dir = if env_data_dir.is_some() {
             data_dir.join("dicts")
         } else if cfg!(debug_assertions) {
-            let repository_dicts = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .parent()
-                .unwrap_or_else(|| std::path::Path::new("."))
-                .join("data")
-                .join("dicts");
-            if repository_dicts.is_dir() {
-                repository_dicts
-            } else {
-                data_dir.join("dicts")
-            }
+            repository_root.join("data/dicts")
         } else {
             data_dir.join("dicts")
         };
+        std::fs::create_dir_all(&dictionary_source_dir)?;
+        std::fs::create_dir_all(&dictionary_dir)?;
+
         let profile_db = data_dir.join("user_profile.db");
         let grammar_patterns = data_dir.join("grammar_patterns.json");
-
-        // A starter database is optional; user dictionaries are never overwritten.
-        std::fs::create_dir_all(&dictionary_dir)?;
-        let starter = app
-            .path()
-            .resolve("../data/dicts/starter.sqlite", BaseDirectory::Resource)
-            .or_else(|_| {
-                app.path()
-                    .resolve("data/dicts/starter.sqlite", BaseDirectory::Resource)
-            })
-            .or_else(|_| {
-                app.path()
-                    .resolve("dicts/starter.sqlite", BaseDirectory::Resource)
-            })
-            .or_else(|_| {
-                app.path()
-                    .resolve("starter.sqlite", BaseDirectory::Resource)
-            })
-            .ok()
-            .filter(|p| p.exists());
-
-        if let Some(starter_path) = starter {
-            let destination = dictionary_dir.join("starter.sqlite");
-            if !destination.exists() {
-                std::fs::copy(starter_path, &destination)?;
-            }
-        }
-
         Ok(Self {
             system_dictionary,
+            dictionary_source_dir,
             dictionary_dir,
             profile_db,
             data_dir,

@@ -415,7 +415,10 @@ fn resolve_candidates(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rusqlite::Connection;
+    use crate::dictionary::bundle::BASE_SCHEMA;
+    use flate2::{write::ZlibEncoder, Compression};
+    use rusqlite::{params, Connection};
+    use std::io::Write;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn morpheme(surface: &str, start: usize, major: &str, sub1: &str) -> Morpheme {
@@ -444,7 +447,28 @@ mod tests {
         let directory = std::env::temp_dir().join(format!("kotoclip-lexical-{nonce}"));
         std::fs::create_dir_all(&directory).unwrap();
         let connection = Connection::open(directory.join("test.sqlite")).unwrap();
-        connection.execute_batch("CREATE TABLE entries (id INTEGER PRIMARY KEY, headword TEXT, reading TEXT, definition TEXT, dict_name TEXT); CREATE TABLE entry_forms (entry_id INTEGER, form TEXT, normalized_form TEXT, form_type TEXT, is_primary INTEGER); CREATE TABLE entry_readings (entry_id INTEGER, reading TEXT, normalized_reading TEXT, is_primary INTEGER); CREATE TABLE metadata (schema_version INTEGER); INSERT INTO entries VALUES (1, '血飛沫', 'ちしぶき', 'definition', 'test'), (2, '一和', 'いちわ', 'wrong', 'test'); INSERT INTO entry_forms VALUES (1, '血飛沫', '血飛沫', 'kanji', 1), (2, '一和', '一和', 'kanji', 1); INSERT INTO entry_readings VALUES (2, 'いちわ', 'イチワ', 1); INSERT INTO metadata VALUES (3);").unwrap();
+        connection.execute_batch(BASE_SCHEMA).unwrap();
+        connection.execute(
+            "INSERT INTO metadata VALUES(1, 4, 1, 'test', 'test', 2, 0, 2)",
+            [],
+        ).unwrap();
+        for (id, headword, definition) in [(1, "血飛沫", "definition"), (2, "一和", "wrong")] {
+            let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
+            encoder.write_all(definition.as_bytes()).unwrap();
+            connection.execute(
+                "INSERT INTO definition_blocks VALUES(?1, ?2, ?3)",
+                params![id, definition.len(), encoder.finish().unwrap()],
+            ).unwrap();
+            connection.execute(
+                "INSERT INTO entries VALUES(?1, ?2, ?1, 0, ?3)",
+                params![id, headword, definition.len()],
+            ).unwrap();
+        }
+        connection.execute_batch(
+            "INSERT INTO entry_keys VALUES(1, 0, '血飛沫', NULL, 0);
+             INSERT INTO entry_keys VALUES(2, 0, '一和', NULL, 0);
+             INSERT INTO entry_keys VALUES(2, 1, 'イチワ', 'いちわ', 0);"
+        ).unwrap();
         drop(connection);
         let dictionary = DictionaryEngine::new(&directory).unwrap();
         let blood = vec![

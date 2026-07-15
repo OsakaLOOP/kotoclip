@@ -43,8 +43,9 @@ pub fn run() {
                             std::env::set_var("KOTOCLIP_GRAMMAR_PATTERNS", patterns);
                         }
 
-                        let engine_value = Engine::new(
+                        let engine_value = Engine::new_from_dictionary_sources(
                             &paths.system_dictionary,
+                            &paths.dictionary_source_dir,
                             &paths.dictionary_dir,
                             &paths.profile_db,
                         )

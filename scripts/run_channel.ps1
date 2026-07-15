@@ -66,11 +66,30 @@ function Create-InsiderPackage {
         Remove-Item -LiteralPath $archive -Force
     }
 
-    New-Item -ItemType Directory -Force -Path (Join-Path $packageDir "ipadic"), (Join-Path $packageDir "dicts") | Out-Null
+    $mdxSource = (Get-ChildItem -LiteralPath $workspace -File -Filter "*.mdx" | Select-Object -First 1).FullName
+    $txtSource = (Get-ChildItem -LiteralPath (Join-Path $workspace "data\tmp_dict") -File -Filter "*.txt" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+    $dictionarySource = if ($txtSource) { $txtSource } else { $mdxSource }
+    if (-not $dictionarySource) {
+        throw "no MDX or equivalent TXT dictionary source found"
+    }
+    $dictionaryBundle = Join-Path $workspace "data\dict-sources\daijirin.kdict"
+    $bundleDirectory = Split-Path -Parent $dictionaryBundle
+    New-Item -ItemType Directory -Force -Path $bundleDirectory | Out-Null
+    $bundleOutdated = -not (Test-Path -LiteralPath $dictionaryBundle)
+    if (-not $bundleOutdated) {
+        $bundleOutdated = (Get-Item -LiteralPath $dictionaryBundle).LastWriteTimeUtc -lt (Get-Item -LiteralPath $dictionarySource).LastWriteTimeUtc
+    }
+    if ($bundleOutdated) {
+        & python "scripts\build_dictionary_bundle.py" $dictionarySource $dictionaryBundle
+        if ($LASTEXITCODE -ne 0) {
+            throw "dictionary bundle build failed with exit code $LASTEXITCODE"
+        }
+    }
+
+    New-Item -ItemType Directory -Force -Path (Join-Path $packageDir "ipadic"), (Join-Path $packageDir "dict-sources") | Out-Null
     Copy-Item -LiteralPath "target\release\tauri-app.exe" -Destination (Join-Path $packageDir "Kotoclip.exe") -Force
     Copy-Item -LiteralPath "ipadic\system.dic" -Destination (Join-Path $packageDir "ipadic\system.dic") -Force
-    Copy-Item -LiteralPath "data\dicts\daijirin.db" -Destination (Join-Path $packageDir "dicts\daijirin.db") -Force
-    Copy-Item -LiteralPath "data\dicts\starter.sqlite" -Destination (Join-Path $packageDir "dicts\starter.sqlite") -Force
+    Copy-Item -LiteralPath $dictionaryBundle -Destination (Join-Path $packageDir "dict-sources\daijirin.kdict") -Force
     Compress-Archive -Path (Join-Path $packageDir "*") -DestinationPath $archive -Force
     Write-Output "package: $archive"
 }

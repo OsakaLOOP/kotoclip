@@ -6,6 +6,7 @@ import argparse
 import json
 import re
 import sqlite3
+import zlib
 from collections import Counter
 from pathlib import Path
 
@@ -31,33 +32,54 @@ def main() -> int:
 
     connection = sqlite3.connect(args.dictionary)
     entry_count = connection.execute("SELECT count(*) FROM entries").fetchone()[0]
+    alias_count = connection.execute("SELECT count(*) FROM aliases").fetchone()[0]
+    blocks = {
+        block_id: zlib.decompress(data)
+        for block_id, data in connection.execute(
+            "SELECT id, data FROM definition_blocks"
+        )
+    }
+
+    def read_definition(row: tuple[int, int, int] | None) -> str:
+        if row is None:
+            return ""
+        block_id, offset, length = row
+        return blocks[block_id][offset : offset + length].decode("utf-8")
+
     checks: dict[str, bool] = {}
     for query in ["ボリューム", "ひやし", "七日"]:
         checks[f"redirect:{query}"] = bool(
             connection.execute(
-                "SELECT 1 FROM entries WHERE headword = ? AND definition LIKE '@@@LINK=%' LIMIT 1",
+                "SELECT 1 FROM aliases WHERE alias = ? LIMIT 1",
                 (query,),
             ).fetchone()
         )
     for query in ["いる", "ある", "かみ"]:
         row = connection.execute(
-            "SELECT definition FROM entries WHERE headword = ? AND definition LIKE '%entry://%' LIMIT 1",
+            "SELECT e.definition_block_id, e.definition_offset, e.definition_length "
+            "FROM entries e JOIN entry_keys k ON k.entry_id = e.id "
+            "WHERE k.kind = 0 AND k.normalized_value = ? LIMIT 1",
             (query,),
         ).fetchone()
-        checks[f"kana-navigation:{query}"] = bool(row and row[0].count("entry://") >= 2)
+        checks[f"kana-navigation:{query}"] = read_definition(row).count("entry://") >= 2
 
     tags: Counter[str] = Counter()
     link_entries = 0
     sample_step = max(entry_count // 2500, 1)
-    for (definition,) in connection.execute(
-        "SELECT definition FROM entries WHERE id % ? = 0 LIMIT 2500", (sample_step,)
+    for row in connection.execute(
+        "SELECT definition_block_id, definition_offset, definition_length "
+        "FROM entries WHERE id % ? = 0 LIMIT 2500",
+        (sample_step,),
     ):
-        tags.update(tag.lower() for tag in re.findall(r"<\s*/?\s*([a-zA-Z][\w:-]*)", definition))
-        link_entries += int("entry://" in definition)
+        definition_text = read_definition(row)
+        tags.update(tag.lower() for tag in re.findall(r"<\s*/?\s*([a-zA-Z][\w:-]*)", definition_text))
+        link_entries += int("entry://" in definition_text)
 
     report = {
         "dictionary": str(args.dictionary),
         "entry_count": entry_count,
+        "alias_count": alias_count,
+        "total_source_entries": entry_count + alias_count,
         "stratified_sample_size": 2500,
         "sample_link_entries": link_entries,
         "sample_tags": dict(tags.most_common(20)),

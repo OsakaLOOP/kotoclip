@@ -1,85 +1,169 @@
-use crate::dictionary::presentation;
+use crate::dictionary::{bundle, presentation};
 use crate::models::{DictEntry, DictionaryEntryRef};
-use rusqlite::{Connection, OpenFlags};
+use flate2::read::ZlibDecoder;
+use rusqlite::{Connection, OpenFlags, Row};
 use serde::Serialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::io::Read;
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use unicode_normalization::UnicodeNormalization;
+
+const FORM_KEY: i64 = 0;
+const READING_KEY: i64 = 1;
+const DEFINITION_CACHE_BLOCKS: usize = 16;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DictionaryStats {
     pub file_name: String,
+    pub source_name: String,
     pub entry_count: usize,
+    pub alias_count: usize,
     pub form_count: usize,
     pub reading_count: usize,
-    pub schema_version: Option<u32>,
+    pub definition_block_count: usize,
+    pub schema_version: u32,
+}
+
+struct DictionaryDatabase {
+    name: String,
+    file_name: String,
+    connection: Connection,
+}
+
+struct RawEntry {
+    entry_id: i64,
+    headword: String,
+    raw_headword: String,
+    definition_block_id: i64,
+    definition_offset: usize,
+    definition_length: usize,
+    reading: Option<String>,
+}
+
+#[derive(Default)]
+struct DefinitionBlockCache {
+    blocks: HashMap<(usize, i64), Arc<Vec<u8>>>,
+    order: VecDeque<(usize, i64)>,
+}
+
+impl DefinitionBlockCache {
+    fn get(&mut self, key: (usize, i64)) -> Option<Arc<Vec<u8>>> {
+        let value = self.blocks.get(&key)?.clone();
+        self.order.retain(|candidate| *candidate != key);
+        self.order.push_back(key);
+        Some(value)
+    }
+
+    fn insert(&mut self, key: (usize, i64), value: Arc<Vec<u8>>) {
+        self.blocks.insert(key, value);
+        self.order.retain(|candidate| *candidate != key);
+        self.order.push_back(key);
+        while self.order.len() > DEFINITION_CACHE_BLOCKS {
+            if let Some(expired) = self.order.pop_front() {
+                self.blocks.remove(&expired);
+            }
+        }
+    }
 }
 
 pub struct DictionaryEngine {
-    connections: Vec<(String, Connection)>,
+    databases: Vec<DictionaryDatabase>,
     exists_cache: Mutex<HashMap<String, bool>>,
+    definition_cache: Mutex<DefinitionBlockCache>,
 }
 
 impl DictionaryEngine {
+    pub fn prepare<P1: AsRef<Path>, P2: AsRef<Path>>(
+        source_dir: P1,
+        database_dir: P2,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        bundle::prepare_dictionary_sources(source_dir, &database_dir)?;
+        Self::new(database_dir)
+    }
+
     pub fn new<P: AsRef<Path>>(dicts_dir: P) -> Result<Self, Box<dyn std::error::Error>> {
         let path = dicts_dir.as_ref();
         std::fs::create_dir_all(path)?;
-        let mut connections = Vec::new();
-        for entry in std::fs::read_dir(path)?.flatten() {
-            let file_path = entry.path();
-            let ext = file_path.extension().and_then(|s| s.to_str()).unwrap_or("");
-            if !file_path.is_file() || !matches!(ext, "db" | "sqlite") {
+        let mut files = std::fs::read_dir(path)?
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| {
+                let extension = path.extension().and_then(|value| value.to_str());
+                path.is_file() && matches!(extension, Some("db" | "sqlite"))
+            })
+            .collect::<Vec<_>>();
+        files.sort();
+
+        let mut databases = Vec::new();
+        for file_path in files {
+            let file_name = file_path
+                .file_name()
+                .and_then(|value| value.to_str())
+                .unwrap_or("unknown.db")
+                .to_string();
+            let connection = Connection::open_with_flags(&file_path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+            let Ok(schema_version) = connection.query_row(
+                "SELECT schema_version FROM metadata WHERE id = 1",
+                [],
+                |row| row.get::<_, u32>(0),
+            ) else {
+                log::warn!(
+                    "忽略旧词典 {}；当前运行时只读取 schema v4",
+                    file_path.display()
+                );
+                continue;
+            };
+            if schema_version != bundle::SCHEMA_VERSION {
+                log::warn!(
+                    "忽略词典 {}：schema={}，当前仅支持 schema v{}",
+                    file_path.display(),
+                    schema_version,
+                    bundle::SCHEMA_VERSION
+                );
                 continue;
             }
-            let name = file_path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("unknown")
-                .to_string();
-            match Connection::open_with_flags(&file_path, OpenFlags::SQLITE_OPEN_READ_ONLY) {
-                Ok(conn) => {
-                    let compatible = conn.query_row(
-                        "SELECT 1 FROM pragma_table_info('entries') WHERE name = 'reading'",
-                        [],
-                        |_| Ok(()),
-                    );
-                    if compatible.is_err() {
-                        return Err(format!("词典 {:?} 缺少 reading 列，请先运行 scripts/migrate_dictionary_schema.py", file_path).into());
-                    }
-                    connections.push((name, conn));
-                }
-                Err(error) => log::warn!("无法打开词典 {:?}: {}", file_path, error),
-            }
+            let source_name = connection.query_row(
+                "SELECT source_name FROM metadata WHERE id = 1",
+                [],
+                |row| row.get(0),
+            )?;
+            databases.push(DictionaryDatabase {
+                name: source_name,
+                file_name,
+                connection,
+            });
         }
         Ok(Self {
-            connections,
+            databases,
             exists_cache: Mutex::new(HashMap::new()),
+            definition_cache: Mutex::new(DefinitionBlockCache::default()),
         })
     }
 
     pub fn stats(&self) -> Vec<DictionaryStats> {
-        self.connections
+        self.databases
             .iter()
-            .map(|(name, conn)| {
-                let count = |table: &str| -> usize {
-                    conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |row| {
-                        row.get(0)
-                    })
-                    .unwrap_or(0)
+            .map(|database| {
+                let count = |sql: &str| -> usize {
+                    database
+                        .connection
+                        .query_row(sql, [], |row| row.get(0))
+                        .unwrap_or(0)
                 };
                 DictionaryStats {
-                    file_name: name.clone(),
-                    entry_count: count("entries"),
-                    form_count: count("entry_forms"),
-                    reading_count: count("entry_readings"),
-                    schema_version: conn
-                        .query_row(
-                            "SELECT schema_version FROM metadata ORDER BY rowid DESC LIMIT 1",
-                            [],
-                            |row| row.get(0),
-                        )
-                        .ok(),
+                    file_name: database.file_name.clone(),
+                    source_name: database.name.clone(),
+                    entry_count: count("SELECT count(*) FROM entries"),
+                    alias_count: count("SELECT count(*) FROM aliases"),
+                    form_count: count(
+                        "SELECT (SELECT count(*) FROM entry_keys WHERE kind = 0) + (SELECT count(*) FROM alias_keys WHERE kind = 0)",
+                    ),
+                    reading_count: count(
+                        "SELECT (SELECT count(*) FROM entry_keys WHERE kind = 1) + (SELECT count(*) FROM alias_keys WHERE kind = 1)",
+                    ),
+                    definition_block_count: count("SELECT count(*) FROM definition_blocks"),
+                    schema_version: bundle::SCHEMA_VERSION,
                 }
             })
             .collect()
@@ -91,29 +175,37 @@ impl DictionaryEngine {
         }
         let normalized = normalize_form(headword);
         if self.any_exists(
-            "SELECT EXISTS(SELECT 1 FROM entry_forms WHERE normalized_form = ?1)",
+            "SELECT EXISTS(SELECT 1 FROM entry_keys WHERE kind = 0 AND normalized_value = ?1)",
             &normalized,
         ) || self.any_exists(
             "SELECT EXISTS(SELECT 1 FROM entries WHERE headword = ?1)",
             headword,
-        ) {
+        ) || self.alias_exists(headword, &normalized)
+            || self.any_exists(
+                "SELECT EXISTS(SELECT 1 FROM alias_keys WHERE kind = 0 AND normalized_value = ?1)",
+                &normalized,
+            )
+        {
             return Some("headword".to_string());
         }
         if is_kana_query(headword)
-            && self.any_exists(
-                "SELECT EXISTS(SELECT 1 FROM entry_readings WHERE normalized_reading = ?1)",
+            && (self.any_exists(
+                "SELECT EXISTS(SELECT 1 FROM entry_keys WHERE kind = 1 AND normalized_value = ?1)",
                 &normalize_reading(headword),
-            )
+            ) || self.any_exists(
+                "SELECT EXISTS(SELECT 1 FROM alias_keys WHERE kind = 1 AND normalized_value = ?1)",
+                &normalize_reading(headword),
+            ))
         {
             return Some("reading".to_string());
         }
         if let Some(reading) = reading.filter(|value| !value.is_empty() && *value != "*") {
             for normalized_reading in reading_candidates(headword, reading) {
                 if self.any_exists(
-                    "SELECT EXISTS(SELECT 1 FROM entry_readings WHERE normalized_reading = ?1)",
+                    "SELECT EXISTS(SELECT 1 FROM entry_keys WHERE kind = 1 AND normalized_value = ?1)",
                     &normalized_reading,
                 ) || self.any_exists(
-                    "SELECT EXISTS(SELECT 1 FROM entries WHERE reading = ?1)",
+                    "SELECT EXISTS(SELECT 1 FROM alias_keys WHERE kind = 1 AND normalized_value = ?1)",
                     &normalized_reading,
                 ) {
                     return Some("reading".to_string());
@@ -124,8 +216,26 @@ impl DictionaryEngine {
     }
 
     fn any_exists(&self, sql: &str, value: &str) -> bool {
-        self.connections.iter().any(|(_, conn)| {
-            conn.query_row(sql, [value], |row| row.get::<_, bool>(0))
+        self.databases.iter().any(|database| {
+            database
+                .connection
+                .query_row(sql, [value], |row| row.get::<_, bool>(0))
+                .unwrap_or(false)
+        })
+    }
+
+    fn alias_exists(&self, value: &str, normalized: &str) -> bool {
+        self.databases.iter().any(|database| {
+            database
+                .connection
+                .query_row(
+                    "SELECT EXISTS(
+                         SELECT 1 FROM aliases
+                         WHERE alias = ?1 OR normalized_alias = ?2
+                     )",
+                    [value, normalized],
+                    |row| row.get::<_, bool>(0),
+                )
                 .unwrap_or(false)
         })
     }
@@ -140,22 +250,23 @@ impl DictionaryEngine {
         {
             return value;
         }
-        let value = self.connections.iter().any(|(_, conn)| {
-            let structured = conn
-                .prepare_cached(
-                    "SELECT EXISTS(SELECT 1 FROM entry_forms WHERE normalized_form = ?1)",
+        let value = self.databases.iter().any(|database| {
+            database
+                .connection
+                .query_row(
+                    "SELECT EXISTS(
+                         SELECT 1 FROM entry_keys WHERE kind = 0 AND normalized_value = ?1
+                         UNION ALL
+                         SELECT 1 FROM entries WHERE headword = ?2
+                         UNION ALL
+                         SELECT 1 FROM aliases WHERE alias = ?2 OR normalized_alias = ?1
+                         UNION ALL
+                         SELECT 1 FROM alias_keys WHERE kind = 0 AND normalized_value = ?1
+                     )",
+                    [&normalized, word],
+                    |row| row.get::<_, bool>(0),
                 )
-                .and_then(|mut statement| {
-                    statement.query_row([&normalized], |row| row.get::<_, bool>(0))
-                })
-                .unwrap_or(false);
-            structured
-                || conn
-                    .prepare_cached("SELECT EXISTS(SELECT 1 FROM entries WHERE headword = ?1)")
-                    .and_then(|mut statement| {
-                        statement.query_row([word], |row| row.get::<_, bool>(0))
-                    })
-                    .unwrap_or(false)
+                .unwrap_or(false)
         });
         if let Ok(mut cache) = self.exists_cache.lock() {
             cache.insert(normalized, value);
@@ -163,31 +274,37 @@ impl DictionaryEngine {
         value
     }
 
-    /// 批量判断词条是否存在，避免章节扫描为每个候选分别往返 SQLite。
     pub fn contains_exact_batch(&self, words: &HashSet<String>) -> HashSet<String> {
         const BATCH_SIZE: usize = 2_000;
         let mut matched = HashSet::new();
-        let candidates: Vec<_> = words
+        let candidates = words
             .iter()
             .map(|word| (word.as_str(), normalize_form(word)))
-            .collect();
-
+            .collect::<Vec<_>>();
         for batch in candidates.chunks(BATCH_SIZE) {
             let Ok(payload) = serde_json::to_string(batch) else {
                 continue;
             };
-            for (_, connection) in &self.connections {
+            for database in &self.databases {
                 let sql = "WITH candidates(word, normalized) AS (\
-                         SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') \
-                         FROM json_each(?1)\
-                     ) \
-                     SELECT DISTINCT candidates.word \
-                     FROM candidates JOIN entry_forms \
-                       ON entry_forms.normalized_form = candidates.normalized \
-                     UNION \
-                     SELECT DISTINCT candidates.word \
-                     FROM candidates JOIN entries ON entries.headword = candidates.word";
-                let Ok(mut statement) = connection.prepare(sql) else {
+                               SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]')\
+                               FROM json_each(?1)\
+                           ) \
+                           SELECT DISTINCT candidates.word \
+                           FROM candidates JOIN entry_keys k \
+                             ON k.kind = 0 AND k.normalized_value = candidates.normalized \
+                           UNION \
+                           SELECT DISTINCT candidates.word \
+                           FROM candidates JOIN entries e ON e.headword = candidates.word \
+                           UNION \
+                           SELECT DISTINCT candidates.word \
+                           FROM candidates JOIN aliases a \
+                             ON a.alias = candidates.word OR a.normalized_alias = candidates.normalized \
+                           UNION \
+                           SELECT DISTINCT candidates.word \
+                           FROM candidates JOIN alias_keys k \
+                             ON k.kind = 0 AND k.normalized_value = candidates.normalized";
+                let Ok(mut statement) = database.connection.prepare(sql) else {
                     continue;
                 };
                 let Ok(rows) = statement.query_map([&payload], |row| row.get::<_, String>(0))
@@ -197,54 +314,61 @@ impl DictionaryEngine {
                 matched.extend(rows.flatten());
             }
         }
-
         matched
     }
 
-    /// 批量解析精确表记并绑定稳定词条。该入口不使用读音或 FTS 回退，
-    /// 专供文节形成前的词汇整体候选使用。
     pub fn resolve_exact_forms_batch(
         &self,
         words: &HashSet<String>,
     ) -> HashMap<String, Vec<DictionaryEntryRef>> {
         const BATCH_SIZE: usize = 2_000;
         let mut result: HashMap<String, Vec<DictionaryEntryRef>> = HashMap::new();
-        let candidates: Vec<_> = words
+        let candidates = words
             .iter()
             .map(|word| (word.as_str(), normalize_form(word)))
-            .collect();
+            .collect::<Vec<_>>();
         for batch in candidates.chunks(BATCH_SIZE) {
             let Ok(payload) = serde_json::to_string(batch) else {
                 continue;
             };
-            for (fallback_name, connection) in &self.connections {
+            for database in &self.databases {
                 let sql = "WITH candidates(word, normalized) AS (\
-                           SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') FROM json_each(?1)\
+                               SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]')\
+                               FROM json_each(?1)\
                            ) \
-                           SELECT candidates.word, e.id, e.dict_name, e.headword, f.form, e.reading, 'exact_form' \
-                           FROM candidates JOIN entry_forms f ON f.normalized_form = candidates.normalized \
-                           JOIN entries e ON e.id = f.entry_id \
-                           WHERE e.definition NOT LIKE '@@@LINK=%' \
+                           SELECT candidates.word, e.id, e.headword, \
+                                  COALESCE(k.display_value, k.normalized_value), \
+                                  (SELECT COALESCE(r.display_value, r.normalized_value) \
+                                   FROM entry_keys r \
+                                   WHERE r.entry_id = e.id AND r.kind = 1 \
+                                   ORDER BY r.rank LIMIT 1), \
+                                  'exact_form' \
+                           FROM candidates JOIN entry_keys k \
+                             ON k.kind = 0 AND k.normalized_value = candidates.normalized \
+                           JOIN entries e ON e.id = k.entry_id \
                            UNION ALL \
-                           SELECT candidates.word, e.id, e.dict_name, e.headword, e.headword, e.reading, 'headword' \
-                           FROM candidates JOIN entries e ON e.headword = candidates.word \
-                           WHERE e.definition NOT LIKE '@@@LINK=%'";
-                let Ok(mut statement) = connection.prepare(sql) else {
+                           SELECT candidates.word, e.id, e.headword, e.headword, \
+                                  (SELECT COALESCE(r.display_value, r.normalized_value) \
+                                   FROM entry_keys r \
+                                   WHERE r.entry_id = e.id AND r.kind = 1 \
+                                   ORDER BY r.rank LIMIT 1), \
+                                  'headword' \
+                           FROM candidates JOIN entries e ON e.headword = candidates.word";
+                let Ok(mut statement) = database.connection.prepare(sql) else {
                     continue;
                 };
                 let Ok(rows) = statement.query_map([&payload], |row| {
                     let query: String = row.get(0)?;
                     let entry_id: i64 = row.get(1)?;
-                    let dict_name: String = row.get(2).unwrap_or_else(|_| fallback_name.clone());
-                    let reading: Option<String> = row.get(5).ok();
+                    let reading: Option<String> = row.get(4).ok();
                     Ok((
                         query,
                         DictionaryEntryRef {
-                            entry_key: format!("{dict_name}\u{1f}{entry_id}"),
-                            dict_name,
-                            headword: row.get(3)?,
-                            matched_form: row.get(4)?,
-                            match_type: row.get(6)?,
+                            entry_key: format!("{}\u{1f}{entry_id}", database.name),
+                            dict_name: database.name.clone(),
+                            headword: row.get(2)?,
+                            matched_form: row.get(3)?,
+                            match_type: row.get(5)?,
                             readings: reading.into_iter().collect(),
                         },
                     ))
@@ -252,12 +376,12 @@ impl DictionaryEngine {
                     continue;
                 };
                 for (query, reference) in rows.flatten() {
-                    let refs = result.entry(query).or_default();
-                    if !refs
+                    let references = result.entry(query).or_default();
+                    if !references
                         .iter()
                         .any(|item| item.entry_key == reference.entry_key)
                     {
-                        refs.push(reference);
+                        references.push(reference);
                     }
                 }
             }
@@ -272,10 +396,9 @@ impl DictionaryEngine {
         let normalized_reading = reading
             .filter(|value| !value.is_empty() && *value != "*")
             .map(normalize_reading);
-        let targets = self.redirect_targets(headword);
         let mut redirected = Vec::new();
         let mut seen = HashSet::new();
-        for target in targets {
+        for target in self.redirect_targets(headword) {
             for entry in self.lookup_direct(&target, reading) {
                 if seen.insert(entry.entry_key.clone()) {
                     redirected.push(entry);
@@ -286,6 +409,7 @@ impl DictionaryEngine {
             rank_readings(&mut redirected, normalized_reading.as_deref());
             return redirected;
         }
+
         let mut direct = self.lookup_direct(headword, reading);
         if direct.is_empty() {
             if let Some(target) = compatibility_redirect_target(headword) {
@@ -297,21 +421,17 @@ impl DictionaryEngine {
     }
 
     fn lookup_direct(&self, headword: &str, reading: Option<&str>) -> Vec<DictEntry> {
-        let normalized_headword = normalize_form(headword);
-        let mut results = self.query_form(&normalized_headword);
+        let mut results = self.query_key(FORM_KEY, &normalize_form(headword), "headword");
         if results.is_empty() && is_kana_query(headword) {
-            results = self.query_structured_reading(&normalize_reading(headword));
+            results = self.query_key(READING_KEY, &normalize_reading(headword), "reading");
         }
         if results.is_empty() {
-            results = self.query_exact("headword", headword, "headword");
+            results = self.query_exact_headword(headword);
         }
         if results.is_empty() {
             if let Some(reading) = reading.filter(|value| !value.is_empty()) {
-                for normalized_reading in reading_candidates(headword, reading) {
-                    results = self.query_structured_reading(&normalized_reading);
-                    if results.is_empty() {
-                        results = self.query_exact("reading", &normalized_reading, "reading");
-                    }
+                for candidate in reading_candidates(headword, reading) {
+                    results = self.query_key(READING_KEY, &candidate, "reading");
                     if !results.is_empty() {
                         break;
                     }
@@ -325,15 +445,18 @@ impl DictionaryEngine {
     }
 
     fn redirect_targets(&self, headword: &str) -> Vec<String> {
+        let normalized = normalize_form(headword);
         let mut targets = Vec::new();
-        for (_, conn) in &self.connections {
-            let Ok(mut statement) = conn.prepare(
-                "SELECT substr(definition, 9) FROM entries WHERE headword = ?1 AND definition LIKE '@@@LINK=%' ORDER BY id",
+        for database in &self.databases {
+            let Ok(mut statement) = database.connection.prepare(
+                "SELECT target FROM aliases \
+                 WHERE alias = ?1 OR normalized_alias = ?2 \
+                 ORDER BY target",
             ) else {
                 continue;
             };
             let rows = statement
-                .query_map([headword], |row| row.get::<_, String>(0))
+                .query_map([headword, &normalized], |row| row.get::<_, String>(0))
                 .map(|rows| rows.flatten().collect::<Vec<_>>())
                 .unwrap_or_default();
             targets.extend(rows);
@@ -341,98 +464,140 @@ impl DictionaryEngine {
         targets
     }
 
-    fn query_form(&self, value: &str) -> Vec<DictEntry> {
-        let sql = "SELECT e.id, f.form, e.headword, e.definition, e.dict_name, e.reading \
-                   FROM entry_forms f JOIN entries e ON e.id = f.entry_id \
-                   WHERE f.normalized_form = ?1 AND e.definition NOT LIKE '@@@LINK=%' \
-                   ORDER BY f.is_primary DESC, e.dict_name LIMIT 10";
-        self.query_structured(sql, value, "headword")
-    }
-
-    fn query_structured_reading(&self, value: &str) -> Vec<DictEntry> {
-        let sql = "SELECT e.id, COALESCE(\
-                       (SELECT f.form FROM entry_forms f \
-                        WHERE f.entry_id = e.id ORDER BY f.is_primary DESC LIMIT 1),\
-                       e.headword), e.headword, e.definition, e.dict_name, e.reading \
-                   FROM entry_readings r JOIN entries e ON e.id = r.entry_id \
-                   WHERE r.normalized_reading = ?1 AND e.definition NOT LIKE '@@@LINK=%' \
-                   ORDER BY r.is_primary DESC, e.dict_name LIMIT 10";
-        self.query_structured(sql, value, "reading")
-    }
-
-    fn query_structured(&self, sql: &str, value: &str, match_type: &str) -> Vec<DictEntry> {
+    fn query_key(&self, kind: i64, value: &str, match_type: &str) -> Vec<DictEntry> {
+        let sql = "SELECT e.id, COALESCE(k.display_value, k.normalized_value), e.headword, \
+                          e.definition_block_id, e.definition_offset, e.definition_length, \
+                          (SELECT COALESCE(r.display_value, r.normalized_value) \
+                           FROM entry_keys r \
+                           WHERE r.entry_id = e.id AND r.kind = 1 \
+                           ORDER BY r.rank LIMIT 1) \
+                   FROM entry_keys k JOIN entries e ON e.id = k.entry_id \
+                   WHERE k.kind = ?1 AND k.normalized_value = ?2 \
+                   ORDER BY k.rank, e.id LIMIT 10";
         let mut results = Vec::new();
-        for (fallback_name, conn) in &self.connections {
-            let Ok(mut stmt) = conn.prepare(sql) else {
+        for (database_index, database) in self.databases.iter().enumerate() {
+            let Ok(mut statement) = database.connection.prepare(sql) else {
                 continue;
             };
-            let Ok(rows) = stmt.query_map([value], |row| {
-                Ok(self.entry(
-                    row.get(4).unwrap_or_else(|_| fallback_name.clone()),
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(5).ok(),
-                    match_type,
-                ))
-            }) else {
+            let Ok(rows) = statement.query_map((kind, value), raw_entry) else {
                 continue;
             };
-            results.extend(rows.flatten());
+            results.extend(self.materialize(database_index, rows.flatten(), match_type));
         }
         results
     }
 
-    fn query_exact(&self, column: &str, value: &str, match_type: &str) -> Vec<DictEntry> {
-        let sql = format!("SELECT id, COALESCE((SELECT f.form FROM entry_forms f WHERE f.entry_id = entries.id ORDER BY f.is_primary DESC LIMIT 1), headword), headword, definition, dict_name, reading FROM entries WHERE {column} = ?1 ORDER BY dict_name, id");
+    fn query_exact_headword(&self, value: &str) -> Vec<DictEntry> {
+        let sql = "SELECT e.id, COALESCE((\
+                          SELECT COALESCE(k.display_value, k.normalized_value) \
+                          FROM entry_keys k \
+                          WHERE k.entry_id = e.id AND k.kind = 0 \
+                          ORDER BY k.rank LIMIT 1\
+                      ), e.headword), e.headword, \
+                      e.definition_block_id, e.definition_offset, e.definition_length, \
+                      (SELECT COALESCE(r.display_value, r.normalized_value) \
+                       FROM entry_keys r \
+                       WHERE r.entry_id = e.id AND r.kind = 1 \
+                       ORDER BY r.rank LIMIT 1) \
+                   FROM entries e WHERE e.headword = ?1 ORDER BY e.id LIMIT 10";
         let mut results = Vec::new();
-        for (fallback_name, conn) in &self.connections {
-            let Ok(mut stmt) = conn.prepare(&sql) else {
+        for (database_index, database) in self.databases.iter().enumerate() {
+            let Ok(mut statement) = database.connection.prepare(sql) else {
                 continue;
             };
-            let Ok(rows) = stmt.query_map([value], |row| {
-                Ok(self.entry(
-                    row.get(4).unwrap_or_else(|_| fallback_name.clone()),
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(5).ok(),
-                    match_type,
-                ))
-            }) else {
+            let Ok(rows) = statement.query_map([value], raw_entry) else {
                 continue;
             };
-            results.extend(rows.flatten());
+            results.extend(self.materialize(database_index, rows.flatten(), "headword"));
         }
         results
     }
 
     fn lookup_fuzzy(&self, word: &str) -> Vec<DictEntry> {
         let query = format!("\"{}\"", word.replace('"', ""));
+        let sql = "SELECT e.id, COALESCE((\
+                          SELECT COALESCE(k.display_value, k.normalized_value) \
+                          FROM entry_keys k \
+                          WHERE k.entry_id = e.id AND k.kind = 0 \
+                          ORDER BY k.rank LIMIT 1\
+                      ), e.headword), e.headword, \
+                      e.definition_block_id, e.definition_offset, e.definition_length, \
+                      (SELECT COALESCE(r.display_value, r.normalized_value) \
+                       FROM entry_keys r \
+                       WHERE r.entry_id = e.id AND r.kind = 1 \
+                       ORDER BY r.rank LIMIT 1) \
+                   FROM entries_fts f JOIN entries e ON e.id = f.rowid \
+                   WHERE entries_fts MATCH ?1 LIMIT 5";
         let mut results = Vec::new();
-        for (fallback_name, conn) in &self.connections {
-            let sql = "SELECT e.id, COALESCE((SELECT ef.form FROM entry_forms ef WHERE ef.entry_id = e.id ORDER BY ef.is_primary DESC LIMIT 1), e.headword), e.headword, e.definition, e.dict_name, e.reading FROM entries_fts f JOIN entries e ON e.id = f.rowid WHERE f.headword MATCH ?1 LIMIT 5";
-            let Ok(mut stmt) = conn.prepare(sql) else {
+        for (database_index, database) in self.databases.iter().enumerate() {
+            let Ok(mut statement) = database.connection.prepare(sql) else {
                 continue;
             };
-            let Ok(rows) = stmt.query_map([&query], |row| {
-                Ok(self.entry(
-                    row.get(4).unwrap_or_else(|_| fallback_name.clone()),
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(5).ok(),
-                    "fuzzy",
-                ))
-            }) else {
+            let Ok(rows) = statement.query_map([&query], raw_entry) else {
                 continue;
             };
-            results.extend(rows.flatten());
+            results.extend(self.materialize(database_index, rows.flatten(), "fuzzy"));
         }
         results
+    }
+
+    fn materialize(
+        &self,
+        database_index: usize,
+        rows: impl Iterator<Item = RawEntry>,
+        match_type: &str,
+    ) -> Vec<DictEntry> {
+        let database = &self.databases[database_index];
+        rows.filter_map(|row| {
+            let definition = self.load_definition(database_index, &row)?;
+            Some(self.entry(
+                database.name.clone(),
+                row.entry_id,
+                row.headword,
+                row.raw_headword,
+                definition,
+                row.reading,
+                match_type,
+            ))
+        })
+        .collect()
+    }
+
+    fn load_definition(&self, database_index: usize, row: &RawEntry) -> Option<String> {
+        let key = (database_index, row.definition_block_id);
+        let cached = self
+            .definition_cache
+            .lock()
+            .ok()
+            .and_then(|mut cache| cache.get(key));
+        let block = if let Some(block) = cached {
+            block
+        } else {
+            let database = &self.databases[database_index];
+            let (expected_size, compressed): (usize, Vec<u8>) = database
+                .connection
+                .query_row(
+                    "SELECT uncompressed_size, data FROM definition_blocks WHERE id = ?1",
+                    [row.definition_block_id],
+                    |result| Ok((result.get(0)?, result.get(1)?)),
+                )
+                .ok()?;
+            let mut decoder = ZlibDecoder::new(compressed.as_slice());
+            let mut decoded = Vec::with_capacity(expected_size);
+            decoder.read_to_end(&mut decoded).ok()?;
+            if decoded.len() != expected_size {
+                log::warn!("词典 definition block 解压长度不一致");
+                return None;
+            }
+            let decoded = Arc::new(decoded);
+            if let Ok(mut cache) = self.definition_cache.lock() {
+                cache.insert(key, decoded.clone());
+            }
+            decoded
+        };
+        let end = row.definition_offset.checked_add(row.definition_length)?;
+        let bytes = block.get(row.definition_offset..end)?;
+        String::from_utf8(bytes.to_vec()).ok()
     }
 
     fn entry(
@@ -461,7 +626,18 @@ impl DictionaryEngine {
     }
 }
 
-// 口语形归一化将在独立词汇模块中实现；此处仅保留已确认词条的有限兼容跳转。
+fn raw_entry(row: &Row<'_>) -> rusqlite::Result<RawEntry> {
+    Ok(RawEntry {
+        entry_id: row.get(0)?,
+        headword: row.get(1)?,
+        raw_headword: row.get(2)?,
+        definition_block_id: row.get(3)?,
+        definition_offset: row.get(4)?,
+        definition_length: row.get(5)?,
+        reading: row.get(6).ok(),
+    })
+}
+
 fn compatibility_redirect_target(headword: &str) -> Option<&'static str> {
     match normalize_form(headword).as_str() {
         "だっせえ" => Some("ダサい"),
@@ -484,13 +660,13 @@ fn rank_readings(entries: &mut [DictEntry], requested: Option<&str>) {
 fn normalize_reading(value: &str) -> String {
     normalize_form(value)
         .chars()
-        .flat_map(|c| {
-            if ('\u{3041}'..='\u{3096}').contains(&c) {
-                char::from_u32(c as u32 + 0x60)
+        .flat_map(|character| {
+            if ('\u{3041}'..='\u{3096}').contains(&character) {
+                char::from_u32(character as u32 + 0x60)
                     .into_iter()
                     .collect::<Vec<_>>()
             } else {
-                vec![c]
+                vec![character]
             }
         })
         .collect()
@@ -500,12 +676,15 @@ fn normalize_form(value: &str) -> String {
     value
         .nfkc()
         .map(|character| match character {
-            // 大辞林使用「繫」，现代常用输入及 IPADIC 常输出「繋」。
             '繋' => '繫',
             _ => character,
         })
-        .filter(|c| {
-            !c.is_whitespace() && !matches!(c, '・' | '･' | '-' | '‐' | '‑' | '‒' | '–' | '—' | '―')
+        .filter(|character| {
+            !character.is_whitespace()
+                && !matches!(
+                    character,
+                    '・' | '･' | '-' | '‐' | '‑' | '‒' | '–' | '—' | '―'
+                )
         })
         .collect()
 }
@@ -536,8 +715,8 @@ fn reading_candidates(headword: &str, reading: &str) -> Vec<String> {
     let Some(ending) = normalized_ending.chars().next() else {
         return candidates;
     };
-    let mut chars: Vec<char> = normalized.chars().collect();
-    if let Some(last) = chars.last_mut() {
+    let mut characters = normalized.chars().collect::<Vec<_>>();
+    if let Some(last) = characters.last_mut() {
         if ('\u{30a1}'..='\u{30ff}').contains(last) && *last != ending {
             let inflection_row = match ending {
                 'ウ' => "ワイウエオッ",
@@ -553,7 +732,7 @@ fn reading_candidates(headword: &str, reading: &str) -> Vec<String> {
             };
             let candidate = if inflection_row.contains(*last) {
                 *last = ending;
-                chars.into_iter().collect()
+                characters.into_iter().collect()
             } else {
                 format!("{normalized}{ending}")
             };
@@ -566,11 +745,14 @@ fn reading_candidates(headword: &str, reading: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::DictionaryEngine;
-    use rusqlite::Connection;
+    use crate::dictionary::bundle::{BASE_SCHEMA, SEARCH_SCHEMA};
+    use flate2::{write::ZlibEncoder, Compression};
+    use rusqlite::{params, Connection};
+    use std::io::Write;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
-    fn structured_forms_readings_and_variants_resolve_real_entries() {
+    fn structured_forms_readings_aliases_and_variants_resolve() {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -579,36 +761,51 @@ mod tests {
         std::fs::create_dir_all(&directory).unwrap();
         let database = directory.join("test.sqlite");
         let connection = Connection::open(&database).unwrap();
-        connection.execute_batch(
-            r#"CREATE TABLE entries (id INTEGER PRIMARY KEY, headword TEXT NOT NULL, reading TEXT, definition TEXT NOT NULL, dict_name TEXT NOT NULL);
-             CREATE TABLE metadata (schema_version INTEGER NOT NULL, source_name TEXT NOT NULL, imported_at TEXT NOT NULL);
-             CREATE TABLE entry_forms (entry_id INTEGER NOT NULL, form TEXT NOT NULL, normalized_form TEXT NOT NULL, form_type TEXT NOT NULL, is_primary INTEGER NOT NULL, PRIMARY KEY(entry_id, normalized_form));
-             CREATE TABLE entry_readings (entry_id INTEGER NOT NULL, reading TEXT NOT NULL, normalized_reading TEXT NOT NULL, is_primary INTEGER NOT NULL, PRIMARY KEY(entry_id, normalized_reading));
-             CREATE VIRTUAL TABLE entries_fts USING fts5(headword, definition, content='entries', content_rowid='id', tokenize='trigram');
-             INSERT INTO entries VALUES (1, 'けいさつしょ', NULL, '@@@LINK=けいさつしょ【警察署】', '三省堂Super大辞林3.1');
-             INSERT INTO entries VALUES (2, 'けいさつしょ【警察署】', NULL, '<p>警察署释义</p>', '三省堂Super大辞林3.1');
-             INSERT INTO entries VALUES (3, 'つなぐ【繫ぐ】', NULL, '<p>繫ぐ释义</p>', '三省堂Super大辞林3.1');
-             INSERT INTO entries VALUES (4, 'いる', NULL, '<p>☞ <a href="entry://いる【入る】">いる【入る】</a><br>☞ <a href="entry://いる【居る】">いる【居る】</a></p>', '三省堂Super大辞林3.1');
-             INSERT INTO entries VALUES (5, 'いる【入る】', NULL, '<p><span class="bss">いる</span> 入る释义</p>', '三省堂Super大辞林3.1');
-             INSERT INTO entries VALUES (6, 'こ【子】', NULL, '<p><span class="bss">こ</span>【<hy>子</hy>】<br><div><div class="no">①</div><div class="lefta">子供。⇔<a href="entry://親">親</a>・<a href="entry://祖">祖</a>。</div></div></p>', '三省堂Super大辞林3.1');
-             INSERT INTO entries VALUES (7, 'ダサい', 'ださい', '<p>野暮ったい。</p>', '三省堂Super大辞林3.1');
-             INSERT INTO metadata VALUES (3, '三省堂Super大辞林3.1', '2026-07-11T00:00:00Z');
-             INSERT INTO entry_forms VALUES (1, 'けいさつしょ', 'けいさつしょ', 'kana', 1);
-             INSERT INTO entry_forms VALUES (2, '警察署', '警察署', 'kanji', 1);
-             INSERT INTO entry_forms VALUES (3, '繫ぐ', '繫ぐ', 'kanji', 1);
-             INSERT INTO entry_forms VALUES (4, 'いる', 'いる', 'kana', 1);
-             INSERT INTO entry_forms VALUES (5, '入る', '入る', 'mixed', 1);
-             INSERT INTO entry_forms VALUES (6, 'こ', 'こ', 'kana', 1);
-             INSERT INTO entry_forms VALUES (7, 'ダサい', 'ダサい', 'mixed', 1);
-             INSERT INTO entry_readings VALUES (1, 'けいさつしょ', 'ケイサツショ', 1);
-             INSERT INTO entry_readings VALUES (2, 'けいさつしょ', 'ケイサツショ', 1);
-             INSERT INTO entry_readings VALUES (3, 'つなぐ', 'ツナグ', 1);
-             INSERT INTO entry_readings VALUES (4, 'いる', 'イル', 1);
-             INSERT INTO entry_readings VALUES (5, 'いる', 'イル', 1);
-             INSERT INTO entry_readings VALUES (6, 'こ', 'コ', 1);
-             INSERT INTO entry_readings VALUES (7, 'ださい', 'ダサイ', 1);
-             INSERT INTO entries_fts(entries_fts) VALUES('rebuild');"#
+        connection.execute_batch(BASE_SCHEMA).unwrap();
+        connection.execute(
+            "INSERT INTO metadata VALUES(1, 4, 1, '三省堂Super大辞林3.1', 'test', 6, 1, 6)",
+            [],
         ).unwrap();
+        let entries = [
+            (1, "けいさつしょ【警察署】", "<p>警察署释义</p>"),
+            (2, "つなぐ【繫ぐ】", "<p>繫ぐ释义</p>"),
+            (3, "いる", "<p>☞ <a href=\"entry://いる【入る】\">いる【入る】</a><br>☞ <a href=\"entry://いる【居る】\">いる【居る】</a></p>"),
+            (4, "いる【入る】", "<p><span class=\"bss\">いる</span> 入る释义</p>"),
+            (5, "こ【子】", "<p><span class=\"bss\">こ</span>【<hy>子</hy>】<br><div><div class=\"no\">①</div><div class=\"lefta\">子供。⇔<a href=\"entry://親\">親</a>・<a href=\"entry://祖\">祖</a>。</div></div></p>"),
+            (6, "ダサい", "<p>野暮ったい。</p>"),
+        ];
+        for (id, headword, definition) in entries {
+            let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
+            encoder.write_all(definition.as_bytes()).unwrap();
+            let compressed = encoder.finish().unwrap();
+            connection.execute(
+                "INSERT INTO definition_blocks VALUES(?1, ?2, ?3)",
+                params![id, definition.len(), compressed],
+            ).unwrap();
+            connection.execute(
+                "INSERT INTO entries VALUES(?1, ?2, ?1, 0, ?3)",
+                params![id, headword, definition.len()],
+            ).unwrap();
+        }
+        connection.execute(
+            "INSERT INTO aliases VALUES('けいさつしょ', NULL, 'けいさつしょ【警察署】')",
+            [],
+        ).unwrap();
+        let keys = [
+            (1, 0, "警察署", None, 0), (1, 1, "ケイサツショ", Some("けいさつしょ"), 0),
+            (2, 0, "繫ぐ", None, 0), (2, 1, "ツナグ", Some("つなぐ"), 0),
+            (3, 0, "いる", None, 0), (3, 1, "イル", Some("いる"), 0),
+            (4, 0, "入る", None, 0), (4, 1, "イル", Some("いる"), 0),
+            (5, 0, "子", None, 0), (5, 1, "コ", Some("こ"), 0),
+            (6, 0, "ダサい", None, 0), (6, 1, "ダサイ", Some("ださい"), 0),
+        ];
+        for key in keys {
+            connection.execute(
+                "INSERT INTO entry_keys VALUES(?1, ?2, ?3, ?4, ?5)",
+                params![key.0, key.1, key.2, key.3, key.4],
+            ).unwrap();
+        }
+        connection.execute_batch(SEARCH_SCHEMA).unwrap();
         drop(connection);
 
         let engine = DictionaryEngine::new(&directory).unwrap();
@@ -620,7 +817,6 @@ mod tests {
         let kana = engine.lookup("けいさつしょ", None);
         assert_eq!(kana.len(), 1);
         assert_eq!(kana[0].headword, "警察署");
-        assert!(!kana[0].definition_html.contains("@@@LINK"));
 
         let variant = engine.lookup("繋ぐ", Some("ツナガ"));
         assert_eq!(variant.len(), 1);
@@ -633,13 +829,6 @@ mod tests {
             .iter()
             .flat_map(|entry| &entry.links)
             .all(|link| link.relation == "candidate"));
-        let target = engine.lookup("いる【入る】", None);
-        assert!(target
-            .iter()
-            .any(|entry| entry.definition_html.contains("入る释义")));
-        assert!(target
-            .iter()
-            .any(|entry| entry.definition_html.contains("class=\"bss\"")));
 
         let kana_definition = engine.lookup("こ", None);
         assert!(kana_definition

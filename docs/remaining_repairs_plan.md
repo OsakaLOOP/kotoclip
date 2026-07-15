@@ -66,23 +66,15 @@ Support exact headword lookup, reading lookup, and fuzzy fallback in that order.
 
 ### Schema
 
-```sql
-ALTER TABLE entries ADD COLUMN reading TEXT;
-CREATE INDEX IF NOT EXISTS idx_entries_reading ON entries(reading);
-```
-
-The importer must create new databases with `reading TEXT` from the start. Normalize both
-stored and queried readings to katakana and Unicode NFC. Do not mutate existing read-only
-databases at application startup.
+词典存储采用 schema v4。表记和读音统一进入 `entry_keys`，别名进入
+`aliases`，释义进入压缩 `definition_blocks`；运行时不再原地修改旧数据库。
 
 ### Import and Migration
 
-- Update `scripts/mdx_to_sqlite.py` and `scripts/txt_to_sqlite.py` to extract reading metadata
-  when the source format exposes it.
-- Add `scripts/migrate_dictionary_schema.py` for an explicit, backed-up migration.
-- When a source lacks structured reading metadata, leave `reading` null rather than guessing
-  from definition prose.
-- Version imported databases with a `metadata(schema_version, source_name, imported_at)` table.
+- `scripts/build_dictionary_bundle.py` 从 MDX、等价 TXT 或旧 SQLite 生成 `.kdict`；
+- Rust 在首次启动或 `bundle_id` 变化时原生重建 schema v4；
+- 来源没有结构化读音时，只使用词头可确定的读音，不从释义正文猜测；
+- 旧数据库只用于逐记录校验，不再作为分发资源。
 
 ### API
 
