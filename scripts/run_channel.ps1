@@ -101,8 +101,8 @@ function Create-InsiderPackage {
     if (-not $dictionarySource) {
         throw "no MDX or equivalent TXT dictionary source found"
     }
-    $dictionaryBundle = Join-Path $workspace "data\dict-sources\daijirin.kdict"
-    $bundleDirectory = Split-Path -Parent $dictionaryBundle
+    $bundleDirectory = Join-Path $workspace "data\dict-sources"
+    $dictionaryBundle = Join-Path $bundleDirectory "daijirin.kdict"
     New-Item -ItemType Directory -Force -Path $bundleDirectory | Out-Null
     $bundleOutdated = -not (Test-Path -LiteralPath $dictionaryBundle)
     if (-not $bundleOutdated) {
@@ -120,7 +120,13 @@ function Create-InsiderPackage {
     New-Item -ItemType Directory -Force -Path (Join-Path $packageDir "ipadic"), (Join-Path $packageDir "dict-sources") | Out-Null
     Copy-Item -LiteralPath "target\release\tauri-app.exe" -Destination $packagedExecutable -Force
     Copy-Item -LiteralPath "ipadic\system.dic" -Destination (Join-Path $packageDir "ipadic\system.dic") -Force
-    Copy-Item -LiteralPath $dictionaryBundle -Destination (Join-Path $packageDir "dict-sources\daijirin.kdict") -Force
+    $dictionaryBundles = Get-ChildItem -LiteralPath $bundleDirectory -File -Filter "*.kdict" | Sort-Object Name
+    if (-not $dictionaryBundles) {
+        throw "no .kdict dictionary bundles found in $bundleDirectory"
+    }
+    foreach ($bundle in $dictionaryBundles) {
+        Copy-Item -LiteralPath $bundle.FullName -Destination (Join-Path $packageDir "dict-sources\$($bundle.Name)") -Force
+    }
     Compress-Archive -Path (Join-Path $packageDir "*") -DestinationPath $archive -Force
     Write-Output "package: $archive"
 }
