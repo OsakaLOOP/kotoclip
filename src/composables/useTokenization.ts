@@ -111,7 +111,21 @@ interface CompactMorpheme {
 }
 
 interface CompactHeadWord { s: number; b: number; r: number; p: [number, number, number, number]; }
-interface CompactGrammarTag { i: number; j: number; e: number; l?: number; d: number; m: [number, number]; c: [number, number]; }
+interface CompactGrammarSenseCandidate { i: number; l: number; c: number; e?: number[]; }
+interface CompactGrammarCapture { n: number; s: number; b: number; m: [number, number]; c: [number, number]; }
+interface CompactGrammarBlock { k: number; l?: number; t: number; }
+interface CompactGrammarDictionaryTarget { l: number; b: number; r: number; c: [number, number]; }
+interface CompactGrammarExplanation {
+  s: number; o: number; c: number; t: number; m: number; f: number; n: number; a: number;
+  y?: CompactGrammarSenseCandidate; v?: CompactGrammarSenseCandidate[]; p?: CompactGrammarCapture[];
+  h?: number[]; d?: CompactGrammarBlock[]; e?: number[]; g?: number[]; j?: number[];
+  w?: CompactGrammarDictionaryTarget[]; i?: number[]; q?: number[]; vrs: number; u: number;
+}
+interface CompactGrammarTag {
+  i: number; j: number; e: number; l?: number; d: number; m: [number, number]; c: [number, number];
+  o: number; q: number; k: number; s: number; b: boolean; z?: [number, number][]; y?: number;
+  a?: CompactGrammarSenseCandidate[]; x?: CompactGrammarExplanation;
+}
 interface CompactWordFormation { i: number; k: number; s: number; b: number; r: number; o: [number, number, number, number]; m: [number, number]; c: [number, number]; h: number; p?: CompactWordFormationCapture[]; q: number; }
 interface CompactWordFormationCapture { n: number; s: number; m: [number, number]; c: [number, number]; }
 interface CompactDictionaryEntryRef { k: number; d: number; h: number; f: number; m: number; r: number[]; }
@@ -122,6 +136,29 @@ interface CompactExpression { m: number; i: number; l: number; d: number; o: num
 /** 将热路径的字符串表 IPC 模型恢复为现有组件使用的 AnnotatedToken。 */
 function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
   const stringAt = (index: number) => analysis.s[index] ?? "";
+  const grammarSense = (sense: CompactGrammarSenseCandidate) => ({
+    sense_id: stringAt(sense.i), label: stringAt(sense.l), confidence: sense.c,
+    evidence: (sense.e ?? []).map(stringAt),
+  });
+  const grammarCapture = (capture: CompactGrammarCapture) => ({
+    name: stringAt(capture.n), surface: stringAt(capture.s), base_form: stringAt(capture.b),
+    morpheme_range: capture.m, char_range: capture.c,
+  });
+  const grammarExplanation = (value: CompactGrammarExplanation) => ({
+    status: stringAt(value.s), occurrence_summary: stringAt(value.o), concept_id: stringAt(value.c),
+    title: stringAt(value.t), compact_summary: stringAt(value.m), function_summary: stringAt(value.f),
+    connection: stringAt(value.n), actual_form: stringAt(value.a),
+    selected_sense: value.y ? grammarSense(value.y) : null,
+    alternative_senses: (value.v ?? []).map(grammarSense),
+    bound_captures: (value.p ?? []).map(grammarCapture),
+    morphology_chain: (value.h ?? []).map(stringAt),
+    content_blocks: (value.d ?? []).map((block) => ({ kind: stringAt(block.k), label: block.l === undefined ? null : stringAt(block.l), text: stringAt(block.t) })),
+    evidence: (value.e ?? []).map(stringAt), related_concept_ids: (value.g ?? []).map(stringAt),
+    contrast_concept_ids: (value.j ?? []).map(stringAt),
+    dictionary_targets: (value.w ?? []).map((target) => ({ label: stringAt(target.l), base_form: stringAt(target.b), reading: stringAt(target.r), char_range: target.c })),
+    source_refs: (value.q ?? []).map(stringAt),
+    available_depths: (value.i ?? []).map(stringAt), content_version: value.vrs, audit_status: stringAt(value.u),
+  });
   const position = (indices: [number, number, number, number]) => ({
     major: stringAt(indices[0]), sub1: stringAt(indices[1]), sub2: stringAt(indices[2]), sub3: stringAt(indices[3]),
   });
@@ -139,6 +176,11 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
       grammar_tags: (token.b.g ?? []).map((tag) => ({
         pattern_id: stringAt(tag.i), name_ja: stringAt(tag.j), name_en: stringAt(tag.e), jlpt_level: tag.l ?? null,
         description: stringAt(tag.d), morpheme_range: tag.m, char_range: tag.c,
+        occurrence_id: stringAt(tag.o), concept_id: stringAt(tag.q),
+        occurrence_kind: stringAt(tag.k) as import("../types").GrammarOccurrenceKind,
+        status: stringAt(tag.s) as import("../types").GrammarOccurrenceStatus,
+        show_badge: tag.b, display_ranges: tag.z ?? [tag.c], selected_sense_id: tag.y === undefined ? null : stringAt(tag.y),
+        sense_candidates: (tag.a ?? []).map(grammarSense), explanation: tag.x ? grammarExplanation(tag.x) : null,
       })),
       word_formations: (token.b.w ?? []).map((formation) => ({
         rule_id: stringAt(formation.i), category: stringAt(formation.k), surface: stringAt(formation.s),

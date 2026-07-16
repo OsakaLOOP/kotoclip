@@ -1,6 +1,110 @@
 export interface Morpheme { surface: string; pos: PosTag; base_form: string; reading: string; conjugation_type: string; conjugation_form: string; char_range: [number, number]; }
 export interface PosTag { major: string; sub1: string; sub2: string; sub3: string; }
-export interface GrammarTag { pattern_id: string; name_ja: string; name_en: string; jlpt_level: number | null; description: string; morpheme_range: [number, number]; char_range: [number, number]; }
+export type GrammarOccurrenceKind = "morphology_feature" | "functional_morpheme" | "grammar_construction" | "bunsetsu_function" | "correlative_grammar" | "unknown";
+export type GrammarOccurrenceStatus = "accepted" | "pending" | "rejected" | "unknown";
+export interface GrammarSenseCandidate { sense_id: string; label: string; confidence: number; evidence: string[]; }
+export interface GrammarCapture { name: string; surface: string; base_form: string; morpheme_range: [number, number]; char_range: [number, number]; }
+export interface GrammarContentBlock { kind: string; label: string | null; text: string; }
+export interface GrammarDictionaryTarget { label: string; base_form: string; reading: string; char_range: [number, number]; }
+export interface ResolvedGrammarExplanation {
+  status: "resolved" | "partial" | "unavailable" | "error" | string;
+  occurrence_summary: string;
+  concept_id: string;
+  title: string;
+  compact_summary: string;
+  function_summary: string;
+  connection: string;
+  actual_form: string;
+  selected_sense: GrammarSenseCandidate | null;
+  alternative_senses: GrammarSenseCandidate[];
+  bound_captures: GrammarCapture[];
+  morphology_chain: string[];
+  content_blocks: GrammarContentBlock[];
+  evidence: string[];
+  related_concept_ids: string[];
+  contrast_concept_ids: string[];
+  dictionary_targets: GrammarDictionaryTarget[];
+  source_refs: string[];
+  available_depths: string[];
+  content_version: number;
+  audit_status: string;
+}
+export interface GrammarTag {
+  pattern_id: string;
+  name_ja: string;
+  name_en: string;
+  jlpt_level: number | null;
+  description: string;
+  morpheme_range: [number, number];
+  char_range: [number, number];
+  occurrence_id: string;
+  concept_id: string;
+  occurrence_kind: GrammarOccurrenceKind;
+  status: GrammarOccurrenceStatus;
+  show_badge: boolean;
+  display_ranges: [number, number][];
+  selected_sense_id: string | null;
+  sense_candidates: GrammarSenseCandidate[];
+  explanation: ResolvedGrammarExplanation | null;
+}
+export interface GrammarConcept {
+  concept_id: string;
+  kind: string;
+  canonical_label: string;
+  aliases: string[];
+  semantic_domains: string[];
+  function_tags: string[];
+  jlpt_level: number | null;
+  register: string[];
+  related_concept_ids: string[];
+  contrast_concept_ids: string[];
+  default_explanation_id: string;
+  source_refs: string[];
+  audit_status: string;
+  concept_version: number;
+  enabled: boolean;
+}
+export interface GrammarSense {
+  sense_id: string;
+  concept_id: string;
+  label: string;
+  function_summary: string;
+  semantic_features: Record<string, string>;
+  context_requirements: string[];
+  exclusion_conditions: string[];
+  related_sense_ids: string[];
+  contrast_sense_ids: string[];
+  explanation_id: string;
+  sense_version: number;
+  audit_status: string;
+}
+export interface GrammarExplanationSourceBlock { kind: string; label: string | null; text: string; }
+export interface GrammarExplanationDocument {
+  explanation_id: string;
+  concept_id: string;
+  sense_id: string | null;
+  language: string;
+  title: string;
+  compact_summary: string;
+  function_summary: string;
+  connection: string;
+  formation: string;
+  usage_notes: string[];
+  semantic_constraints: string[];
+  pragmatic_notes: string[];
+  examples: string[];
+  counter_examples: string[];
+  source_refs: string[];
+  authoring_status: string;
+  content_version: number;
+  body_blocks: GrammarExplanationSourceBlock[];
+}
+export interface GrammarConceptBundle {
+  concept: GrammarConcept;
+  senses: GrammarSense[];
+  explanation: GrammarExplanationDocument;
+  explanations: GrammarExplanationDocument[];
+}
 export interface WordFormationCapture { name: string; surface: string; morpheme_range: [number, number]; char_range: [number, number]; }
 export interface WordFormationAnnotation { rule_id: string; category: string; surface: string; base_form: string; reading: string; output_pos: PosTag; morpheme_range: [number, number]; char_range: [number, number]; head_morpheme: number; captures: WordFormationCapture[]; confidence: number; }
 export interface DictionaryEntryRef { entry_key: string; dict_name: string; headword: string; matched_form: string; match_type: "exact_form" | "headword"; readings: string[]; }

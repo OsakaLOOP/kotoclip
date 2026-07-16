@@ -870,6 +870,60 @@ mod progress_tests {
         engine
             .refresh_expression_annotations_in_place(&mut progressive.tokens)
             .unwrap();
+        let grammar_coordinate_signature = |tokens: &[crate::models::AnnotatedToken]| {
+            tokens
+                .iter()
+                .map(|token| {
+                    (
+                        token.bunsetsu.char_range,
+                        token
+                            .bunsetsu
+                            .grammar_occurrences
+                            .iter()
+                            .map(|occurrence| {
+                                (
+                                    occurrence.occurrence_id.clone(),
+                                    occurrence.covered_token_range,
+                                    occurrence
+                                        .captures
+                                        .iter()
+                                        .map(|capture| capture.morpheme_range)
+                                        .collect::<Vec<_>>(),
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                        token
+                            .bunsetsu
+                            .grammar_tags
+                            .iter()
+                            .map(|tag| (tag.occurrence_id.clone(), tag.morpheme_range))
+                            .collect::<Vec<_>>(),
+                        token
+                            .bunsetsu
+                            .morphology
+                            .chains
+                            .iter()
+                            .map(|chain| {
+                                (
+                                    chain.chain_id.clone(),
+                                    chain.anchor_morpheme,
+                                    chain
+                                        .operators
+                                        .iter()
+                                        .map(|operator| operator.source_morpheme_range)
+                                        .collect::<Vec<_>>(),
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            grammar_coordinate_signature(&progressive.tokens),
+            grammar_coordinate_signature(&full.tokens),
+            "渐进与全量语法坐标必须一致"
+        );
         assert_eq!(
             serde_json::to_value(&progressive.tokens).unwrap(),
             serde_json::to_value(&full.tokens).unwrap()

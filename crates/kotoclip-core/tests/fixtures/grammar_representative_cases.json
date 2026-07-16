@@ -1,0 +1,44 @@
+[
+  {
+    "id": "request_te_kudasai",
+    "text": "矢印キーを使ってください。",
+    "expected_concepts": ["grammar.request.te_kudasai", "grammar.functional.kudasaru", "grammar.particle.wo"],
+    "forbidden_concepts": ["grammar.benefactive.te_kudasaru"]
+  },
+  {
+    "id": "benefactive_kudasaru",
+    "text": "先生が本を読んでくださった。",
+    "expected_concepts": ["grammar.benefactive.te_kudasaru", "grammar.functional.kudasaru", "morphology.tense.past"],
+    "forbidden_concepts": ["grammar.request.te_kudasai"]
+  },
+  {
+    "id": "lexical_kureru",
+    "text": "弟が本をくれた。",
+    "expected_concepts": ["morphology.tense.past", "grammar.particle.ga", "grammar.particle.wo"],
+    "forbidden_concepts": ["grammar.functional.kureru", "grammar.benefactive.te_kureru"]
+  },
+  {
+    "id": "causative_passive_negative_past",
+    "text": "行かせられなかった。",
+    "expected_concepts": ["morphology.voice.causative", "morphology.voice.passive_potential", "morphology.polarity.negative", "morphology.tense.past"],
+    "forbidden_concepts": []
+  },
+  {
+    "id": "nested_benefactive_obligation",
+    "text": "読んでもらわなければならない。",
+    "expected_concepts": ["grammar.benefactive.te_morau", "grammar.obligation.nakereba_naranai", "grammar.functional.morau"],
+    "forbidden_concepts": []
+  },
+  {
+    "id": "particle_stack_and_resultative",
+    "text": "本には書いてある。",
+    "expected_concepts": ["grammar.particle.ni_wa", "grammar.aspect.te_aru", "grammar.functional.aru"],
+    "forbidden_concepts": []
+  },
+  {
+    "id": "concessive_temo",
+    "text": "読んでも意味が分からない。",
+    "expected_concepts": ["grammar.connective.te_mo", "morphology.polarity.negative"],
+    "forbidden_concepts": []
+  }
+]

@@ -132,12 +132,13 @@ fn pipeline_fingerprint(system_dictionary: &Path, dictionary_directory: &Path) -
         include_bytes!("../resources/lexical_candidate_patterns.json").as_slice(),
         include_bytes!("../resources/bunsetsu_patterns.json").as_slice(),
         include_bytes!("../resources/expression_patterns.json").as_slice(),
+        include_bytes!("../resources/grammar/compiled/grammar_catalog.json").as_slice(),
+        include_bytes!("../resources/grammar/compiled/grammar_explanations.json").as_slice(),
     ] {
         hasher.update(resource);
     }
-    if let Ok(path) = std::env::var("KOTOCLIP_GRAMMAR_PATTERNS") {
-        update_file_signature(&mut hasher, Path::new(&path));
-    }
+    hasher.update(crate::pipeline::grammar::ANALYZER_VERSION.as_bytes());
+    hasher.update(crate::pipeline::morphology::ANALYZER_VERSION.as_bytes());
     update_file_signature(&mut hasher, system_dictionary);
     let mut dictionaries: Vec<_> = std::fs::read_dir(dictionary_directory)
         .into_iter()

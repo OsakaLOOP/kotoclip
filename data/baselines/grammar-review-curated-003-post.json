@@ -1,0 +1,5833 @@
+{
+  "batch": 1,
+  "batch_size": 30,
+  "total_items": 56,
+  "total_batches": 2,
+  "items": [
+    {
+      "review_id": "residual:って:助詞:格助詞:*:*",
+      "base_form": "って",
+      "pos_major": "助詞",
+      "pos_sub1": "格助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 27,
+      "surfaces": [
+        "って"
+      ],
+      "samples": [
+        {
+          "line_number": 19,
+          "text": "「見分けなんてつかねえもんだなマガツカミってのは。ありゃどう見たって一四、一五の可愛《かわい》らしい女の子じゃねえか。あ？」",
+          "bunsetsu_surface": "見たって",
+          "residual": {
+            "surface": "って",
+            "base_form": "って",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              313,
+              315
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "見",
+              "base_form": "見る",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                311,
+                312
+              ],
+              "bunsetsu_surface": "見たって"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                312,
+                313
+              ],
+              "bunsetsu_surface": "見たって"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                313,
+                315
+              ],
+              "bunsetsu_surface": "見たって"
+            }
+          ]
+        },
+        {
+          "line_number": 327,
+          "text": "「だからって、警察署襲撃なんてする？　ふつう」",
+          "bunsetsu_surface": "だからって",
+          "residual": {
+            "surface": "って",
+            "base_form": "って",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              5537,
+              5539
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "だから",
+              "base_form": "だから",
+              "pos_major": "接続詞",
+              "pos_sub1": "*",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5534,
+                5537
+              ],
+              "bunsetsu_surface": "だからって"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5537,
+                5539
+              ],
+              "bunsetsu_surface": "だからって"
+            }
+          ]
+        },
+        {
+          "line_number": 329,
+          "text": "「別に襲撃しに来たわけじゃないって。......逮捕されるとは思わなかったけど」",
+          "bunsetsu_surface": "わけじゃないって",
+          "residual": {
+            "surface": "って",
+            "base_form": "って",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              5573,
+              5575
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "わけ",
+              "base_form": "わけ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5567,
+                5569
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5569,
+                5571
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            },
+            {
+              "surface": "ない",
+              "base_form": "ない",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ナイ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                5571,
+                5573
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5573,
+                5575
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            }
+          ]
+        },
+        {
+          "line_number": 403,
+          "text": "「人間ってさ、近いうち滅びそうだよね。でっかい天罰とか下ってさー」",
+          "bunsetsu_surface": "人間ってさ",
+          "residual": {
+            "surface": "って",
+            "base_form": "って",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              6774,
+              6776
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "人間",
+              "base_form": "人間",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                6772,
+                6774
+              ],
+              "bunsetsu_surface": "人間ってさ"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                6774,
+                6776
+              ],
+              "bunsetsu_surface": "人間ってさ"
+            },
+            {
+              "surface": "さ",
+              "base_form": "さ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                6776,
+                6777
+              ],
+              "bunsetsu_surface": "人間ってさ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ん:名詞:非自立:*:*",
+      "base_form": "ん",
+      "pos_major": "名詞",
+      "pos_sub1": "非自立",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 10,
+      "surfaces": [
+        "ん"
+      ],
+      "samples": [
+        {
+          "line_number": 5,
+          "text": "『あー......んっ』",
+          "bunsetsu_surface": "んっ",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              35,
+              36
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                35,
+                36
+              ],
+              "bunsetsu_surface": "んっ"
+            },
+            {
+              "surface": "っ",
+              "base_form": "く",
+              "pos_major": "動詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "五段・カ行促音便",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                36,
+                37
+              ],
+              "bunsetsu_surface": "んっ"
+            }
+          ]
+        },
+        {
+          "line_number": 95,
+          "text": "『あんたどっかで見てんの？　出てきなさいよ、卑《ひ》怯《きよう》ものっ！』",
+          "bunsetsu_surface": "見てんの",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              1642,
+              1643
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "見",
+              "base_form": "見る",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                1640,
+                1641
+              ],
+              "bunsetsu_surface": "見てんの"
+            },
+            {
+              "surface": "て",
+              "base_form": "て",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                1641,
+                1642
+              ],
+              "bunsetsu_surface": "見てんの"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                1642,
+                1643
+              ],
+              "bunsetsu_surface": "見てんの"
+            },
+            {
+              "surface": "の",
+              "base_form": "の",
+              "pos_major": "助詞",
+              "pos_sub1": "連体化",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                1643,
+                1644
+              ],
+              "bunsetsu_surface": "見てんの"
+            }
+          ]
+        },
+        {
+          "line_number": 159,
+          "text": "「おいおい、祈祷士たちは殺しに来てるんでしょ？　劣勢になったらやめてくれ、なんて都合よすぎでしょ。刑事さんさ、自分中心に世界が回ってると思ってんの？　地《ち》軸《じく》か、お前は」",
+          "bunsetsu_surface": "思ってんの",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              2815,
+              2816
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "思っ",
+              "base_form": "思う",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ワ行促音便",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                2812,
+                2814
+              ],
+              "bunsetsu_surface": "思ってんの"
+            },
+            {
+              "surface": "て",
+              "base_form": "て",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                2814,
+                2815
+              ],
+              "bunsetsu_surface": "思ってんの"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                2815,
+                2816
+              ],
+              "bunsetsu_surface": "思ってんの"
+            },
+            {
+              "surface": "の",
+              "base_form": "の",
+              "pos_major": "助詞",
+              "pos_sub1": "連体化",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                2816,
+                2817
+              ],
+              "bunsetsu_surface": "思ってんの"
+            }
+          ]
+        },
+        {
+          "line_number": 542,
+          "text": "「ならもう喰《く》われてるんじゃないの」",
+          "bunsetsu_surface": "喰われてるんじゃないの",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              9836,
+              9837
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "喰わ",
+              "base_form": "喰う",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ワ行促音便",
+              "conjugation_form": "未然形",
+              "char_range": [
+                9831,
+                9833
+              ],
+              "bunsetsu_surface": "喰われてるんじゃないの"
+            },
+            {
+              "surface": "れ",
+              "base_form": "れる",
+              "pos_major": "動詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                9833,
+                9834
+              ],
+              "bunsetsu_surface": "喰われてるんじゃないの"
+            },
+            {
+              "surface": "てる",
+              "base_form": "てる",
+              "pos_major": "動詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "基本形",
+              "char_range": [
+                9834,
+                9836
+              ],
+              "bunsetsu_surface": "喰われてるんじゃないの"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                9836,
+                9837
+              ],
+              "bunsetsu_surface": "喰われてるんじゃないの"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                9837,
+                9839
+              ],
+              "bunsetsu_surface": "喰われてるんじゃないの"
+            },
+            {
+              "surface": "ない",
+              "base_form": "ない",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ナイ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                9839,
+                9841
+              ],
+              "bunsetsu_surface": "喰われてるんじゃないの"
+            },
+            {
+              "surface": "の",
+              "base_form": "の",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                9841,
+                9842
+              ],
+              "bunsetsu_surface": "喰われてるんじゃないの"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:り:助動詞:*:文語・リ:基本形",
+      "base_form": "り",
+      "pos_major": "助動詞",
+      "pos_sub1": "*",
+      "conjugation_type": "文語・リ",
+      "conjugation_form": "基本形",
+      "reason": "provider_or_language_profile_review",
+      "occurrences": 6,
+      "surfaces": [
+        "り"
+      ],
+      "samples": [
+        {
+          "line_number": 614,
+          "text": "　三メートル近くあろう巨体は、脇腹からぽってりと贅《ぜい》肉《にく》がはみ出ていた。背中から見ても肥満体であることが窺《うかが》える。ずいぶんと重そうな体であるのに、その二本の足は不釣り合いに細い。一体どうやってあの体を支えているのか。",
+          "bunsetsu_surface": "脇腹からぽってりと",
+          "residual": {
+            "surface": "り",
+            "base_form": "り",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・リ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              11168,
+              11169
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "脇腹",
+              "base_form": "脇腹",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                11161,
+                11163
+              ],
+              "bunsetsu_surface": "脇腹からぽってりと"
+            },
+            {
+              "surface": "から",
+              "base_form": "から",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                11163,
+                11165
+              ],
+              "bunsetsu_surface": "脇腹からぽってりと"
+            },
+            {
+              "surface": "ぽ",
+              "base_form": "ぽい",
+              "pos_major": "形容詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "形容詞・アウオ段",
+              "conjugation_form": "ガル接続",
+              "char_range": [
+                11165,
+                11166
+              ],
+              "bunsetsu_surface": "脇腹からぽってりと"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                11166,
+                11168
+              ],
+              "bunsetsu_surface": "脇腹からぽってりと"
+            },
+            {
+              "surface": "り",
+              "base_form": "り",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・リ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                11168,
+                11169
+              ],
+              "bunsetsu_surface": "脇腹からぽってりと"
+            },
+            {
+              "surface": "と",
+              "base_form": "と",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                11169,
+                11170
+              ],
+              "bunsetsu_surface": "脇腹からぽってりと"
+            }
+          ]
+        },
+        {
+          "line_number": 616,
+          "text": "　七日は目を凝《こ》らす。その臀《でん》部《ぶ》には、ぽってりとしたウサギのようなしっぽが生えていた。",
+          "bunsetsu_surface": "ぽってりと",
+          "residual": {
+            "surface": "り",
+            "base_form": "り",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・リ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              11273,
+              11274
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "ぽ",
+              "base_form": "ぽい",
+              "pos_major": "形容詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "形容詞・アウオ段",
+              "conjugation_form": "ガル接続",
+              "char_range": [
+                11270,
+                11271
+              ],
+              "bunsetsu_surface": "ぽってりと"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                11271,
+                11273
+              ],
+              "bunsetsu_surface": "ぽってりと"
+            },
+            {
+              "surface": "り",
+              "base_form": "り",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・リ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                11273,
+                11274
+              ],
+              "bunsetsu_surface": "ぽってりと"
+            },
+            {
+              "surface": "と",
+              "base_form": "と",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                11274,
+                11275
+              ],
+              "bunsetsu_surface": "ぽってりと"
+            }
+          ]
+        },
+        {
+          "line_number": 1106,
+          "text": "　自分を捜《さが》しに来た誰かだろうか？　しかしそれはどうも違うようだと思い直す。足音はそろりそろりと焦《じ》れったく、まるで辺りを警戒しているようにも感じられる。",
+          "bunsetsu_surface": "そろり",
+          "residual": {
+            "surface": "り",
+            "base_form": "り",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・リ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              19694,
+              19695
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "そろ",
+              "base_form": "そる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ラ行",
+              "conjugation_form": "未然ウ接続",
+              "char_range": [
+                19692,
+                19694
+              ],
+              "bunsetsu_surface": "そろり"
+            },
+            {
+              "surface": "り",
+              "base_form": "り",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・リ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                19694,
+                19695
+              ],
+              "bunsetsu_surface": "そろり"
+            }
+          ]
+        },
+        {
+          "line_number": 1158,
+          "text": "　エイミは恐る恐る人差し指を伸ばし、爪の先でぽってりと垂れた鼻を持ち上げた。口は裂けるほど大きいのに、並ぶ前歯は不釣り合いに小さかった。",
+          "bunsetsu_surface": "先でぽってりと",
+          "residual": {
+            "surface": "り",
+            "base_form": "り",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・リ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              20691,
+              20692
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "先",
+              "base_form": "先",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                20686,
+                20687
+              ],
+              "bunsetsu_surface": "先でぽってりと"
+            },
+            {
+              "surface": "で",
+              "base_form": "で",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                20687,
+                20688
+              ],
+              "bunsetsu_surface": "先でぽってりと"
+            },
+            {
+              "surface": "ぽ",
+              "base_form": "ぽい",
+              "pos_major": "形容詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "形容詞・アウオ段",
+              "conjugation_form": "ガル接続",
+              "char_range": [
+                20688,
+                20689
+              ],
+              "bunsetsu_surface": "先でぽってりと"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                20689,
+                20691
+              ],
+              "bunsetsu_surface": "先でぽってりと"
+            },
+            {
+              "surface": "り",
+              "base_form": "り",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・リ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                20691,
+                20692
+              ],
+              "bunsetsu_surface": "先でぽってりと"
+            },
+            {
+              "surface": "と",
+              "base_form": "と",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                20692,
+                20693
+              ],
+              "bunsetsu_surface": "先でぽってりと"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ちゃ:助詞:接続助詞:*:*",
+      "base_form": "ちゃ",
+      "pos_major": "助詞",
+      "pos_sub1": "接続助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 5,
+      "surfaces": [
+        "ちゃ"
+      ],
+      "samples": [
+        {
+          "line_number": 562,
+          "text": "「お前が納豆嫌いなのは腐ってるからだろ。死体は凍らされてるんだから、腐っちゃいない。......ああ。そういうことか」",
+          "bunsetsu_surface": "腐っちゃいない",
+          "residual": {
+            "surface": "ちゃ",
+            "base_form": "ちゃ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              10191,
+              10193
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "腐っ",
+              "base_form": "腐る",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ラ行",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                10189,
+                10191
+              ],
+              "bunsetsu_surface": "腐っちゃいない"
+            },
+            {
+              "surface": "ちゃ",
+              "base_form": "ちゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                10191,
+                10193
+              ],
+              "bunsetsu_surface": "腐っちゃいない"
+            },
+            {
+              "surface": "い",
+              "base_form": "いる",
+              "pos_major": "動詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "未然形",
+              "char_range": [
+                10193,
+                10194
+              ],
+              "bunsetsu_surface": "腐っちゃいない"
+            },
+            {
+              "surface": "ない",
+              "base_form": "ない",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ナイ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                10194,
+                10196
+              ],
+              "bunsetsu_surface": "腐っちゃいない"
+            }
+          ]
+        },
+        {
+          "line_number": 1160,
+          "text": "　チーズをその口の中へと放った。マガツカミは細かくあごを動かし、にちゃ、にちゃとチーズを噛《か》む。",
+          "bunsetsu_surface": "にちゃ",
+          "residual": {
+            "surface": "ちゃ",
+            "base_form": "ちゃ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              20769,
+              20771
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "に",
+              "base_form": "にる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                20768,
+                20769
+              ],
+              "bunsetsu_surface": "にちゃ"
+            },
+            {
+              "surface": "ちゃ",
+              "base_form": "ちゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                20769,
+                20771
+              ],
+              "bunsetsu_surface": "にちゃ"
+            }
+          ]
+        },
+        {
+          "line_number": 1243,
+          "text": "「大淀の女子はね？　完《かん》璧《ぺき》でなくてはいけないの。粗《そ》相《そう》をしちゃダメ。ホントはこうやって地ベタに座って、お喋りなんてのもいけないの。わかって？」",
+          "bunsetsu_surface": "しちゃ",
+          "residual": {
+            "surface": "ちゃ",
+            "base_form": "ちゃ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              22429,
+              22431
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "し",
+              "base_form": "する",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "サ変・スル",
+              "conjugation_form": "連用形",
+              "char_range": [
+                22428,
+                22429
+              ],
+              "bunsetsu_surface": "しちゃ"
+            },
+            {
+              "surface": "ちゃ",
+              "base_form": "ちゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                22429,
+                22431
+              ],
+              "bunsetsu_surface": "しちゃ"
+            }
+          ]
+        },
+        {
+          "line_number": 1542,
+          "text": "「自分のことは自分で護ります。エイミだって戦えるんですから。ピアノがあるから辞めちゃったけど、小っちゃい頃は空手も少しかじっていたんです。そうだ、型を見て」",
+          "bunsetsu_surface": "小っちゃい頃は",
+          "residual": {
+            "surface": "ちゃ",
+            "base_form": "ちゃ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              28399,
+              28401
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "小",
+              "base_form": "小",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                28397,
+                28398
+              ],
+              "bunsetsu_surface": "小っちゃい頃は"
+            },
+            {
+              "surface": "っ",
+              "base_form": "く",
+              "pos_major": "動詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "五段・カ行促音便",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                28398,
+                28399
+              ],
+              "bunsetsu_surface": "小っちゃい頃は"
+            },
+            {
+              "surface": "ちゃ",
+              "base_form": "ちゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                28399,
+                28401
+              ],
+              "bunsetsu_surface": "小っちゃい頃は"
+            },
+            {
+              "surface": "い",
+              "base_form": "いる",
+              "pos_major": "動詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                28401,
+                28402
+              ],
+              "bunsetsu_surface": "小っちゃい頃は"
+            },
+            {
+              "surface": "頃",
+              "base_form": "頃",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                28402,
+                28403
+              ],
+              "bunsetsu_surface": "小っちゃい頃は"
+            },
+            {
+              "surface": "は",
+              "base_form": "は",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                28403,
+                28404
+              ],
+              "bunsetsu_surface": "小っちゃい頃は"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:つもり:名詞:非自立:*:*",
+      "base_form": "つもり",
+      "pos_major": "名詞",
+      "pos_sub1": "非自立",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 5,
+      "surfaces": [
+        "つもり"
+      ],
+      "samples": [
+        {
+          "line_number": 27,
+          "text": "「......いや、何するつもりもなかったんだけど」",
+          "bunsetsu_surface": "つもりもなかったんだけど",
+          "residual": {
+            "surface": "つもり",
+            "base_form": "つもり",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              481,
+              484
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "つもり",
+              "base_form": "つもり",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                481,
+                484
+              ],
+              "bunsetsu_surface": "つもりもなかったんだけど"
+            },
+            {
+              "surface": "も",
+              "base_form": "も",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                484,
+                485
+              ],
+              "bunsetsu_surface": "つもりもなかったんだけど"
+            },
+            {
+              "surface": "なかっ",
+              "base_form": "ない",
+              "pos_major": "形容詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "形容詞・アウオ段",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                485,
+                488
+              ],
+              "bunsetsu_surface": "つもりもなかったんだけど"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                488,
+                489
+              ],
+              "bunsetsu_surface": "つもりもなかったんだけど"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                489,
+                490
+              ],
+              "bunsetsu_surface": "つもりもなかったんだけど"
+            },
+            {
+              "surface": "だ",
+              "base_form": "だ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ダ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                490,
+                491
+              ],
+              "bunsetsu_surface": "つもりもなかったんだけど"
+            },
+            {
+              "surface": "けど",
+              "base_form": "けど",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                491,
+                493
+              ],
+              "bunsetsu_surface": "つもりもなかったんだけど"
+            }
+          ]
+        },
+        {
+          "line_number": 592,
+          "text": "　生きたまま連れて帰るつもりらしい。晩飯にするなら早く殺してやれよ、と七《なの》日《か》は言ったが、ラティメリアは新鮮な肉がいいのだと言って聞かなかった。",
+          "bunsetsu_surface": "つもりらしい",
+          "residual": {
+            "surface": "つもり",
+            "base_form": "つもり",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              10777,
+              10780
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "つもり",
+              "base_form": "つもり",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                10777,
+                10780
+              ],
+              "bunsetsu_surface": "つもりらしい"
+            },
+            {
+              "surface": "らしい",
+              "base_form": "らしい",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "形容詞・イ段",
+              "conjugation_form": "基本形",
+              "char_range": [
+                10780,
+                10783
+              ],
+              "bunsetsu_surface": "つもりらしい"
+            }
+          ]
+        },
+        {
+          "line_number": 857,
+          "text": "「......一体、何のつもりかしら？」",
+          "bunsetsu_surface": "何のつもりかしら",
+          "residual": {
+            "surface": "つもり",
+            "base_form": "つもり",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              15339,
+              15342
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "何",
+              "base_form": "何",
+              "pos_major": "名詞",
+              "pos_sub1": "代名詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15337,
+                15338
+              ],
+              "bunsetsu_surface": "何のつもりかしら"
+            },
+            {
+              "surface": "の",
+              "base_form": "の",
+              "pos_major": "助詞",
+              "pos_sub1": "連体化",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15338,
+                15339
+              ],
+              "bunsetsu_surface": "何のつもりかしら"
+            },
+            {
+              "surface": "つもり",
+              "base_form": "つもり",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15339,
+                15342
+              ],
+              "bunsetsu_surface": "何のつもりかしら"
+            },
+            {
+              "surface": "かしら",
+              "base_form": "かしら",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15342,
+                15345
+              ],
+              "bunsetsu_surface": "何のつもりかしら"
+            }
+          ]
+        },
+        {
+          "line_number": 865,
+          "text": "「助けたつもり、だったんだがな。あんた、さらわれた子供じゃないな」",
+          "bunsetsu_surface": "つもり",
+          "residual": {
+            "surface": "つもり",
+            "base_form": "つもり",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              15459,
+              15462
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "つもり",
+              "base_form": "つもり",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15459,
+                15462
+              ],
+              "bunsetsu_surface": "つもり"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:や:助動詞:*:特殊・ヤ:基本形",
+      "base_form": "や",
+      "pos_major": "助動詞",
+      "pos_sub1": "*",
+      "conjugation_type": "特殊・ヤ",
+      "conjugation_form": "基本形",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 5,
+      "surfaces": [
+        "や"
+      ],
+      "samples": [
+        {
+          "line_number": 933,
+          "text": "　英字のフィルムで包まれたキャンディーや、輸入品の色鮮やかなチョコレート。子供たちは、エイミの持ってくるお菓子を毎回楽しみにしていた。",
+          "bunsetsu_surface": "キャンディーや",
+          "residual": {
+            "surface": "や",
+            "base_form": "や",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "特殊・ヤ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              16624,
+              16625
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "キャンディー",
+              "base_form": "キャンディー",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                16618,
+                16624
+              ],
+              "bunsetsu_surface": "キャンディーや"
+            },
+            {
+              "surface": "や",
+              "base_form": "や",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ヤ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                16624,
+                16625
+              ],
+              "bunsetsu_surface": "キャンディーや"
+            }
+          ]
+        },
+        {
+          "line_number": 1050,
+          "text": "　みな、思い思いの場所に身を潜《ひそ》める。ゴミ捨て場とは、どこもかしこも格好の隠れ場所である。バスの下や、立て看板の裏、クローゼットの中に収まった子は、仲間に扉を閉めてもらう。",
+          "bunsetsu_surface": "下や",
+          "residual": {
+            "surface": "や",
+            "base_form": "や",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "特殊・ヤ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              18610,
+              18611
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "下",
+              "base_form": "下",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18609,
+                18610
+              ],
+              "bunsetsu_surface": "下や"
+            },
+            {
+              "surface": "や",
+              "base_form": "や",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ヤ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                18610,
+                18611
+              ],
+              "bunsetsu_surface": "下や"
+            }
+          ]
+        },
+        {
+          "line_number": 1610,
+          "text": "「くふっ。今日があんたの命日ね！　今度こそあんたを喰《く》ってや──」",
+          "bunsetsu_surface": "喰ってや",
+          "residual": {
+            "surface": "や",
+            "base_form": "や",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "特殊・ヤ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              29626,
+              29627
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "喰っ",
+              "base_form": "喰う",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ワ行促音便",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                29623,
+                29625
+              ],
+              "bunsetsu_surface": "喰ってや"
+            },
+            {
+              "surface": "て",
+              "base_form": "て",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                29625,
+                29626
+              ],
+              "bunsetsu_surface": "喰ってや"
+            },
+            {
+              "surface": "や",
+              "base_form": "や",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ヤ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                29626,
+                29627
+              ],
+              "bunsetsu_surface": "喰ってや"
+            }
+          ]
+        },
+        {
+          "line_number": 2002,
+          "text": "　銀色の大きな業務用冷蔵庫や、独り暮らし用の小さい冷蔵庫。色や形など様々である。ただしそのどれもが古びていて、歪《ゆが》んでいた。",
+          "bunsetsu_surface": "冷蔵庫や",
+          "residual": {
+            "surface": "や",
+            "base_form": "や",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "特殊・ヤ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              36367,
+              36368
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "冷蔵庫",
+              "base_form": "冷蔵庫",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                36364,
+                36367
+              ],
+              "bunsetsu_surface": "冷蔵庫や"
+            },
+            {
+              "surface": "や",
+              "base_form": "や",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ヤ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                36367,
+                36368
+              ],
+              "bunsetsu_surface": "冷蔵庫や"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:わけ:名詞:非自立:*:*",
+      "base_form": "わけ",
+      "pos_major": "名詞",
+      "pos_sub1": "非自立",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 5,
+      "surfaces": [
+        "わけ"
+      ],
+      "samples": [
+        {
+          "line_number": 329,
+          "text": "「別に襲撃しに来たわけじゃないって。......逮捕されるとは思わなかったけど」",
+          "bunsetsu_surface": "わけじゃないって",
+          "residual": {
+            "surface": "わけ",
+            "base_form": "わけ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              5567,
+              5569
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "わけ",
+              "base_form": "わけ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5567,
+                5569
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5569,
+                5571
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            },
+            {
+              "surface": "ない",
+              "base_form": "ない",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ナイ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                5571,
+                5573
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            },
+            {
+              "surface": "って",
+              "base_form": "って",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5573,
+                5575
+              ],
+              "bunsetsu_surface": "わけじゃないって"
+            }
+          ]
+        },
+        {
+          "line_number": 536,
+          "text": "「その消えた人間の子らってのはさ、みんな凍らされちゃったわけ？」",
+          "bunsetsu_surface": "わけ",
+          "residual": {
+            "surface": "わけ",
+            "base_form": "わけ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              9739,
+              9741
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "わけ",
+              "base_form": "わけ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                9739,
+                9741
+              ],
+              "bunsetsu_surface": "わけ"
+            }
+          ]
+        },
+        {
+          "line_number": 1036,
+          "text": "　エイミは宝《たから》ノ島を楽しい、ではなくつらくない、と言い表した。娯楽を求めて来ているわけじゃなく、逃げ場所として選んだのがここだったのだ。",
+          "bunsetsu_surface": "わけじゃなく",
+          "residual": {
+            "surface": "わけ",
+            "base_form": "わけ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              18416,
+              18418
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "わけ",
+              "base_form": "わけ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18416,
+                18418
+              ],
+              "bunsetsu_surface": "わけじゃなく"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18418,
+                18420
+              ],
+              "bunsetsu_surface": "わけじゃなく"
+            },
+            {
+              "surface": "なく",
+              "base_form": "ない",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ナイ",
+              "conjugation_form": "連用テ接続",
+              "char_range": [
+                18420,
+                18422
+              ],
+              "bunsetsu_surface": "わけじゃなく"
+            }
+          ]
+        },
+        {
+          "line_number": 2190,
+          "text": "「......あいつは別に、人間の味方をしてるわけじゃねえよ」",
+          "bunsetsu_surface": "わけじゃねえよ",
+          "residual": {
+            "surface": "わけ",
+            "base_form": "わけ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              40205,
+              40207
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "わけ",
+              "base_form": "わけ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                40205,
+                40207
+              ],
+              "bunsetsu_surface": "わけじゃねえよ"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                40207,
+                40209
+              ],
+              "bunsetsu_surface": "わけじゃねえよ"
+            },
+            {
+              "surface": "ねえ",
+              "base_form": "ない",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ナイ",
+              "conjugation_form": "音便基本形",
+              "char_range": [
+                40209,
+                40211
+              ],
+              "bunsetsu_surface": "わけじゃねえよ"
+            },
+            {
+              "surface": "よ",
+              "base_form": "よ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                40211,
+                40212
+              ],
+              "bunsetsu_surface": "わけじゃねえよ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:こそ:助詞:係助詞:*:*",
+      "base_form": "こそ",
+      "pos_major": "助詞",
+      "pos_sub1": "係助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 4,
+      "surfaces": [
+        "こそ"
+      ],
+      "samples": [
+        {
+          "line_number": 323,
+          "text": "　この涙目の女刑事こそ、七日が会いに来た相手、亥《いの》鼻《はな》ちとせだった。彼女は歴《れつき》とした警察官でありながら、情報屋でもある。",
+          "bunsetsu_surface": "女刑事こそ",
+          "residual": {
+            "surface": "こそ",
+            "base_form": "こそ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              5442,
+              5444
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "女",
+              "base_form": "女",
+              "pos_major": "接頭詞",
+              "pos_sub1": "名詞接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5439,
+                5440
+              ],
+              "bunsetsu_surface": "女刑事こそ"
+            },
+            {
+              "surface": "刑事",
+              "base_form": "刑事",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5440,
+                5442
+              ],
+              "bunsetsu_surface": "女刑事こそ"
+            },
+            {
+              "surface": "こそ",
+              "base_form": "こそ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                5442,
+                5444
+              ],
+              "bunsetsu_surface": "女刑事こそ"
+            }
+          ]
+        },
+        {
+          "line_number": 877,
+          "text": "「あなたたちこそ、何を......。ハナタレさんを退治しに来たの......？」",
+          "bunsetsu_surface": "あなたたちこそ",
+          "residual": {
+            "surface": "こそ",
+            "base_form": "こそ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              15697,
+              15699
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "あなた",
+              "base_form": "あなた",
+              "pos_major": "名詞",
+              "pos_sub1": "代名詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15692,
+                15695
+              ],
+              "bunsetsu_surface": "あなたたちこそ"
+            },
+            {
+              "surface": "たち",
+              "base_form": "たち",
+              "pos_major": "名詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15695,
+                15697
+              ],
+              "bunsetsu_surface": "あなたたちこそ"
+            },
+            {
+              "surface": "こそ",
+              "base_form": "こそ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                15697,
+                15699
+              ],
+              "bunsetsu_surface": "あなたたちこそ"
+            }
+          ]
+        },
+        {
+          "line_number": 1610,
+          "text": "「くふっ。今日があんたの命日ね！　今度こそあんたを喰《く》ってや──」",
+          "bunsetsu_surface": "今度こそ",
+          "residual": {
+            "surface": "こそ",
+            "base_form": "こそ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              29617,
+              29619
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "今度",
+              "base_form": "今度",
+              "pos_major": "名詞",
+              "pos_sub1": "副詞可能",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                29615,
+                29617
+              ],
+              "bunsetsu_surface": "今度こそ"
+            },
+            {
+              "surface": "こそ",
+              "base_form": "こそ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                29617,
+                29619
+              ],
+              "bunsetsu_surface": "今度こそ"
+            }
+          ]
+        },
+        {
+          "line_number": 2038,
+          "text": "　冷やし神は唇《くちびる》をすぼめ、大きく息を吸い込んだ。その胸部が、凍《い》てつく息吹《いぶき》を吐かんとして膨《ふく》れあがる。やっと手に入れたご馳《ち》走《そう》。エイミを今こそ、氷漬けにするべく──。",
+          "bunsetsu_surface": "今こそ",
+          "residual": {
+            "surface": "こそ",
+            "base_form": "こそ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              37438,
+              37440
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "今",
+              "base_form": "今",
+              "pos_major": "名詞",
+              "pos_sub1": "副詞可能",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                37437,
+                37438
+              ],
+              "bunsetsu_surface": "今こそ"
+            },
+            {
+              "surface": "こそ",
+              "base_form": "こそ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                37438,
+                37440
+              ],
+              "bunsetsu_surface": "今こそ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:さえ:助詞:係助詞:*:*",
+      "base_form": "さえ",
+      "pos_major": "助詞",
+      "pos_sub1": "係助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 4,
+      "surfaces": [
+        "さえ"
+      ],
+      "samples": [
+        {
+          "line_number": 795,
+          "text": "　冷やし神は、消えた少女を捜して辺りを見渡している。いかにものろまなトロールである。きょろきょろ見渡すさまには、愛《あい》敬《きよう》さえ覚えた。しかしこちらへ近づいてくる。",
+          "bunsetsu_surface": "愛敬さえ",
+          "residual": {
+            "surface": "さえ",
+            "base_form": "さえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              14259,
+              14261
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "愛敬",
+              "base_form": "愛敬",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                14257,
+                14259
+              ],
+              "bunsetsu_surface": "愛敬さえ"
+            },
+            {
+              "surface": "さえ",
+              "base_form": "さえ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                14259,
+                14261
+              ],
+              "bunsetsu_surface": "愛敬さえ"
+            }
+          ]
+        },
+        {
+          "line_number": 1215,
+          "text": "「......まあ。お名前さえないなんて。エイミはあなたをどう呼べばよくて？」",
+          "bunsetsu_surface": "お名前さえ",
+          "residual": {
+            "surface": "さえ",
+            "base_form": "さえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              21870,
+              21872
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "お",
+              "base_form": "お",
+              "pos_major": "接頭詞",
+              "pos_sub1": "名詞接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21867,
+                21868
+              ],
+              "bunsetsu_surface": "お名前さえ"
+            },
+            {
+              "surface": "名前",
+              "base_form": "名前",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21868,
+                21870
+              ],
+              "bunsetsu_surface": "お名前さえ"
+            },
+            {
+              "surface": "さえ",
+              "base_form": "さえ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21870,
+                21872
+              ],
+              "bunsetsu_surface": "お名前さえ"
+            }
+          ]
+        },
+        {
+          "line_number": 1357,
+          "text": "　その時、ふと異様な臭《にお》いが鼻先をかすめた。肉が腐ったような悪臭。こんな刺激の強い臭い、このゴミ捨て場でさえ今まで嗅《か》いだことがない。",
+          "bunsetsu_surface": "捨て場でさえ",
+          "residual": {
+            "surface": "さえ",
+            "base_form": "さえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              24761,
+              24763
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "捨て",
+              "base_form": "捨てる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                24757,
+                24759
+              ],
+              "bunsetsu_surface": "捨て場でさえ"
+            },
+            {
+              "surface": "場",
+              "base_form": "場",
+              "pos_major": "名詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                24759,
+                24760
+              ],
+              "bunsetsu_surface": "捨て場でさえ"
+            },
+            {
+              "surface": "で",
+              "base_form": "で",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                24760,
+                24761
+              ],
+              "bunsetsu_surface": "捨て場でさえ"
+            },
+            {
+              "surface": "さえ",
+              "base_form": "さえ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                24761,
+                24763
+              ],
+              "bunsetsu_surface": "捨て場でさえ"
+            }
+          ]
+        },
+        {
+          "line_number": 1433,
+          "text": "　両手で口を押さえつけたまま、エイミは固く目をつぶり、呼吸さえ止めた。",
+          "bunsetsu_surface": "呼吸さえ",
+          "residual": {
+            "surface": "さえ",
+            "base_form": "さえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "係助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              26120,
+              26122
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "呼吸",
+              "base_form": "呼吸",
+              "pos_major": "名詞",
+              "pos_sub1": "サ変接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                26118,
+                26120
+              ],
+              "bunsetsu_surface": "呼吸さえ"
+            },
+            {
+              "surface": "さえ",
+              "base_form": "さえ",
+              "pos_major": "助詞",
+              "pos_sub1": "係助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                26120,
+                26122
+              ],
+              "bunsetsu_surface": "呼吸さえ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ところ:名詞:非自立:*:*",
+      "base_form": "ところ",
+      "pos_major": "名詞",
+      "pos_sub1": "非自立",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 4,
+      "surfaces": [
+        "ところ"
+      ],
+      "samples": [
+        {
+          "line_number": 359,
+          "text": "　取り調べ室を出たところで、三人にいくつもの銃口が向けられる。「動くな！」と先頭の中年刑事が拡声器で叫んだ。いわく「お前たちは完全に包囲されている！」。",
+          "bunsetsu_surface": "ところで",
+          "residual": {
+            "surface": "ところ",
+            "base_form": "ところ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "副詞可能",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              6015,
+              6018
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ところ",
+              "base_form": "ところ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                6015,
+                6018
+              ],
+              "bunsetsu_surface": "ところで"
+            },
+            {
+              "surface": "で",
+              "base_form": "で",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                6018,
+                6019
+              ],
+              "bunsetsu_surface": "ところで"
+            }
+          ]
+        },
+        {
+          "line_number": 1193,
+          "text": "「あなたは、ずっとこんなところに住んでいるの？」",
+          "bunsetsu_surface": "こんなところに",
+          "residual": {
+            "surface": "ところ",
+            "base_form": "ところ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "副詞可能",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              21506,
+              21509
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "こんな",
+              "base_form": "こんな",
+              "pos_major": "連体詞",
+              "pos_sub1": "*",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21503,
+                21506
+              ],
+              "bunsetsu_surface": "こんなところに"
+            },
+            {
+              "surface": "ところ",
+              "base_form": "ところ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21506,
+                21509
+              ],
+              "bunsetsu_surface": "こんなところに"
+            },
+            {
+              "surface": "に",
+              "base_form": "に",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21509,
+                21510
+              ],
+              "bunsetsu_surface": "こんなところに"
+            }
+          ]
+        },
+        {
+          "line_number": 1532,
+          "text": "　どんなに危険はありませんと説明されたところで、人間は、街を歩く猛獣を放ってはおかない。共存などできない。殺すしかない。",
+          "bunsetsu_surface": "ところで",
+          "residual": {
+            "surface": "ところ",
+            "base_form": "ところ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "副詞可能",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              28205,
+              28208
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ところ",
+              "base_form": "ところ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                28205,
+                28208
+              ],
+              "bunsetsu_surface": "ところで"
+            },
+            {
+              "surface": "で",
+              "base_form": "で",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                28208,
+                28209
+              ],
+              "bunsetsu_surface": "ところで"
+            }
+          ]
+        },
+        {
+          "line_number": 1780,
+          "text": "　その姿は、満《まん》身《しん》創《そう》痍《い》だった。もはやフードもちぎれかけ、髪は激しく乱れていた。肌はすり切れ、いたるところに血が滲《にじ》んでいる。それでもラティメリアは生きていた。",
+          "bunsetsu_surface": "ところに",
+          "residual": {
+            "surface": "ところ",
+            "base_form": "ところ",
+            "pos": {
+              "major": "名詞",
+              "sub1": "非自立",
+              "sub2": "副詞可能",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              32804,
+              32807
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ところ",
+              "base_form": "ところ",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                32804,
+                32807
+              ],
+              "bunsetsu_surface": "ところに"
+            },
+            {
+              "surface": "に",
+              "base_form": "に",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                32807,
+                32808
+              ],
+              "bunsetsu_surface": "ところに"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ねえ:助詞:終助詞:*:*",
+      "base_form": "ねえ",
+      "pos_major": "助詞",
+      "pos_sub1": "終助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 4,
+      "surfaces": [
+        "ねえ"
+      ],
+      "samples": [
+        {
+          "line_number": 568,
+          "text": "「いいねえ、凍らせる系。涼しそう」",
+          "bunsetsu_surface": "いいねえ",
+          "residual": {
+            "surface": "ねえ",
+            "base_form": "ねえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              10349,
+              10351
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "いい",
+              "base_form": "いい",
+              "pos_major": "形容詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "形容詞・イイ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                10347,
+                10349
+              ],
+              "bunsetsu_surface": "いいねえ"
+            },
+            {
+              "surface": "ねえ",
+              "base_form": "ねえ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                10349,
+                10351
+              ],
+              "bunsetsu_surface": "いいねえ"
+            }
+          ]
+        },
+        {
+          "line_number": 694,
+          "text": "「隠れろ。......もっと強めに〝お願い〟しないとわかんねえかな」",
+          "bunsetsu_surface": "わかんねえかな",
+          "residual": {
+            "surface": "ねえ",
+            "base_form": "ねえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              12563,
+              12565
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "わか",
+              "base_form": "わく",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・カ行イ音便",
+              "conjugation_form": "未然形",
+              "char_range": [
+                12560,
+                12562
+              ],
+              "bunsetsu_surface": "わかんねえかな"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "不変化型",
+              "conjugation_form": "基本形",
+              "char_range": [
+                12562,
+                12563
+              ],
+              "bunsetsu_surface": "わかんねえかな"
+            },
+            {
+              "surface": "ねえ",
+              "base_form": "ねえ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                12563,
+                12565
+              ],
+              "bunsetsu_surface": "わかんねえかな"
+            },
+            {
+              "surface": "か",
+              "base_form": "か",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞／並立助詞／終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                12565,
+                12566
+              ],
+              "bunsetsu_surface": "わかんねえかな"
+            },
+            {
+              "surface": "な",
+              "base_form": "な",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                12566,
+                12567
+              ],
+              "bunsetsu_surface": "わかんねえかな"
+            }
+          ]
+        },
+        {
+          "line_number": 745,
+          "text": "「喰われるよ、あの子。けど助けたりはしないんでしょ？　尾行がバレちゃうもんねえ」",
+          "bunsetsu_surface": "バレちゃうもんねえ",
+          "residual": {
+            "surface": "ねえ",
+            "base_form": "ねえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              13437,
+              13439
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "バレ",
+              "base_form": "バレる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                13430,
+                13432
+              ],
+              "bunsetsu_surface": "バレちゃうもんねえ"
+            },
+            {
+              "surface": "ちゃう",
+              "base_form": "ちゃう",
+              "pos_major": "動詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "五段・ワ行促音便",
+              "conjugation_form": "基本形",
+              "char_range": [
+                13432,
+                13435
+              ],
+              "bunsetsu_surface": "バレちゃうもんねえ"
+            },
+            {
+              "surface": "もん",
+              "base_form": "もん",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                13435,
+                13437
+              ],
+              "bunsetsu_surface": "バレちゃうもんねえ"
+            },
+            {
+              "surface": "ねえ",
+              "base_form": "ねえ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                13437,
+                13439
+              ],
+              "bunsetsu_surface": "バレちゃうもんねえ"
+            }
+          ]
+        },
+        {
+          "line_number": 2050,
+          "text": "「......バカだよねえ、ニンゲンって」",
+          "bunsetsu_surface": "バカだよねえ",
+          "residual": {
+            "surface": "ねえ",
+            "base_form": "ねえ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              37596,
+              37598
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "バカ",
+              "base_form": "バカ",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                37592,
+                37594
+              ],
+              "bunsetsu_surface": "バカだよねえ"
+            },
+            {
+              "surface": "だ",
+              "base_form": "だ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ダ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                37594,
+                37595
+              ],
+              "bunsetsu_surface": "バカだよねえ"
+            },
+            {
+              "surface": "よ",
+              "base_form": "よ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                37595,
+                37596
+              ],
+              "bunsetsu_surface": "バカだよねえ"
+            },
+            {
+              "surface": "ねえ",
+              "base_form": "ねえ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                37596,
+                37598
+              ],
+              "bunsetsu_surface": "バカだよねえ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:かい:助詞:終助詞:*:*",
+      "base_form": "かい",
+      "pos_major": "助詞",
+      "pos_sub1": "終助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 3,
+      "surfaces": [
+        "かい"
+      ],
+      "samples": [
+        {
+          "line_number": 1062,
+          "text": "「もういいかい」と遠くから声が聞こえ、躊《ちゆう》躇《ちよ》していたエイミは慌てて「まーだだよ」と声を上げた。",
+          "bunsetsu_surface": "いいかい",
+          "residual": {
+            "surface": "かい",
+            "base_form": "かい",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              18874,
+              18876
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "いい",
+              "base_form": "いい",
+              "pos_major": "形容詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "形容詞・イイ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                18872,
+                18874
+              ],
+              "bunsetsu_surface": "いいかい"
+            },
+            {
+              "surface": "かい",
+              "base_form": "かい",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18874,
+                18876
+              ],
+              "bunsetsu_surface": "いいかい"
+            }
+          ]
+        },
+        {
+          "line_number": 1954,
+          "text": "「そうかい」七日はサーベルから手を離し、一歩下がった。",
+          "bunsetsu_surface": "そうかい",
+          "residual": {
+            "surface": "かい",
+            "base_form": "かい",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              35666,
+              35668
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "そう",
+              "base_form": "そう",
+              "pos_major": "副詞",
+              "pos_sub1": "助詞類接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                35664,
+                35666
+              ],
+              "bunsetsu_surface": "そうかい"
+            },
+            {
+              "surface": "かい",
+              "base_form": "かい",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                35666,
+                35668
+              ],
+              "bunsetsu_surface": "そうかい"
+            }
+          ]
+        },
+        {
+          "line_number": 2098,
+          "text": "「言ってわかんねえんだから、もういっかい襲わせるしかねえだろ」",
+          "bunsetsu_surface": "いっかい",
+          "residual": {
+            "surface": "かい",
+            "base_form": "かい",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              38489,
+              38491
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "いっ",
+              "base_form": "いく",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・カ行促音便",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                38487,
+                38489
+              ],
+              "bunsetsu_surface": "いっかい"
+            },
+            {
+              "surface": "かい",
+              "base_form": "かい",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                38489,
+                38491
+              ],
+              "bunsetsu_surface": "いっかい"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ぜ:助詞:終助詞:*:*",
+      "base_form": "ぜ",
+      "pos_major": "助詞",
+      "pos_sub1": "終助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 3,
+      "surfaces": [
+        "ぜ"
+      ],
+      "samples": [
+        {
+          "line_number": 1940,
+          "text": "「......いいか。マガツカミにとって人間ってのは、喰《く》いもんだ。女、子どもなんてのは飛びきりのご馳《ち》走《そう》だぜ。見ろ。あいつはお前を喰いたがってる」",
+          "bunsetsu_surface": "ご馳走だぜ",
+          "residual": {
+            "surface": "ぜ",
+            "base_form": "ぜ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              35472,
+              35473
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ご馳走",
+              "base_form": "ご馳走",
+              "pos_major": "名詞",
+              "pos_sub1": "サ変接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                35468,
+                35471
+              ],
+              "bunsetsu_surface": "ご馳走だぜ"
+            },
+            {
+              "surface": "だ",
+              "base_form": "だ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ダ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                35471,
+                35472
+              ],
+              "bunsetsu_surface": "ご馳走だぜ"
+            },
+            {
+              "surface": "ぜ",
+              "base_form": "ぜ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                35472,
+                35473
+              ],
+              "bunsetsu_surface": "ご馳走だぜ"
+            }
+          ]
+        },
+        {
+          "line_number": 2124,
+          "text": "「泣いちまえ。弱さとか痛みとか人に見せたくないもの全部、ここに捨てていけばいい。お前の涙くらい許してくれるさ。この島はこの国一の、バカでっかいゴミ捨て場だぜ」",
+          "bunsetsu_surface": "捨て場だぜ",
+          "residual": {
+            "surface": "ぜ",
+            "base_form": "ぜ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              38992,
+              38993
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "捨て",
+              "base_form": "捨てる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                38988,
+                38990
+              ],
+              "bunsetsu_surface": "捨て場だぜ"
+            },
+            {
+              "surface": "場",
+              "base_form": "場",
+              "pos_major": "名詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                38990,
+                38991
+              ],
+              "bunsetsu_surface": "捨て場だぜ"
+            },
+            {
+              "surface": "だ",
+              "base_form": "だ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ダ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                38991,
+                38992
+              ],
+              "bunsetsu_surface": "捨て場だぜ"
+            },
+            {
+              "surface": "ぜ",
+              "base_form": "ぜ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                38992,
+                38993
+              ],
+              "bunsetsu_surface": "捨て場だぜ"
+            }
+          ]
+        },
+        {
+          "line_number": 2224,
+          "text": "「お嬢さまが輝かしい未来を捨てて祈祷士になるなんて、修《しゆ》羅《ら》の道だぜそりゃあ。誰にでもなれるもんじゃない。適正があるんだ」",
+          "bunsetsu_surface": "道だぜ",
+          "residual": {
+            "surface": "ぜ",
+            "base_form": "ぜ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              40842,
+              40843
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "道",
+              "base_form": "道",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                40840,
+                40841
+              ],
+              "bunsetsu_surface": "道だぜ"
+            },
+            {
+              "surface": "だ",
+              "base_form": "だ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ダ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                40841,
+                40842
+              ],
+              "bunsetsu_surface": "道だぜ"
+            },
+            {
+              "surface": "ぜ",
+              "base_form": "ぜ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                40842,
+                40843
+              ],
+              "bunsetsu_surface": "道だぜ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:による:助詞:格助詞:*:*",
+      "base_form": "による",
+      "pos_major": "助詞",
+      "pos_sub1": "格助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 3,
+      "surfaces": [
+        "による"
+      ],
+      "samples": [
+        {
+          "line_number": 1664,
+          "text": "　体勢が崩れているため避《よ》けられない。七《なの》日《か》はエイミを胸に抱き寄せると同時に、サーベルを盾《たて》に構える。逆手に握り左腕に添えて、電信柱による打撃に備える。",
+          "bunsetsu_surface": "電信柱による",
+          "residual": {
+            "surface": "による",
+            "base_form": "による",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              30611,
+              30614
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "電信柱",
+              "base_form": "電信柱",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                30608,
+                30611
+              ],
+              "bunsetsu_surface": "電信柱による"
+            },
+            {
+              "surface": "による",
+              "base_form": "による",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                30611,
+                30614
+              ],
+              "bunsetsu_surface": "電信柱による"
+            }
+          ]
+        },
+        {
+          "line_number": 1818,
+          "text": "　辺りが、凍り始めている。しかしこれは、冷やし神によるものではなかった。",
+          "bunsetsu_surface": "冷やし神による",
+          "residual": {
+            "surface": "による",
+            "base_form": "による",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              33389,
+              33392
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "冷やし",
+              "base_form": "冷やす",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・サ行",
+              "conjugation_form": "連用形",
+              "char_range": [
+                33385,
+                33388
+              ],
+              "bunsetsu_surface": "冷やし神による"
+            },
+            {
+              "surface": "神",
+              "base_form": "神",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                33388,
+                33389
+              ],
+              "bunsetsu_surface": "冷やし神による"
+            },
+            {
+              "surface": "による",
+              "base_form": "による",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                33389,
+                33392
+              ],
+              "bunsetsu_surface": "冷やし神による"
+            }
+          ]
+        },
+        {
+          "line_number": 1852,
+          "text": "　ラティメリアによる〝凍《い》てつく息吹《いぶき》〟だ。",
+          "bunsetsu_surface": "ラティメリアによる",
+          "residual": {
+            "surface": "による",
+            "base_form": "による",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              33951,
+              33954
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ラティメリア",
+              "base_form": "ラティメリア",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                33945,
+                33951
+              ],
+              "bunsetsu_surface": "ラティメリアによる"
+            },
+            {
+              "surface": "による",
+              "base_form": "による",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                33951,
+                33954
+              ],
+              "bunsetsu_surface": "ラティメリアによる"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:べし:助動詞:*:文語・ベシ:連用形",
+      "base_form": "べし",
+      "pos_major": "助動詞",
+      "pos_sub1": "*",
+      "conjugation_type": "文語・ベシ",
+      "conjugation_form": "連用形",
+      "reason": "provider_or_language_profile_review",
+      "occurrences": 3,
+      "surfaces": [
+        "べく"
+      ],
+      "samples": [
+        {
+          "line_number": 1788,
+          "text": "　冷やし神は乗用車を振り回し、ラティメリアを押し潰《つぶ》すべく地面に叩《たた》きつける。",
+          "bunsetsu_surface": "潰すべく",
+          "residual": {
+            "surface": "べく",
+            "base_form": "べし",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ベシ",
+            "conjugation_form": "連用形",
+            "char_range": [
+              32981,
+              32983
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "潰す",
+              "base_form": "潰す",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・サ行",
+              "conjugation_form": "基本形",
+              "char_range": [
+                32979,
+                32981
+              ],
+              "bunsetsu_surface": "潰すべく"
+            },
+            {
+              "surface": "べく",
+              "base_form": "べし",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ベシ",
+              "conjugation_form": "連用形",
+              "char_range": [
+                32981,
+                32983
+              ],
+              "bunsetsu_surface": "潰すべく"
+            }
+          ]
+        },
+        {
+          "line_number": 2038,
+          "text": "　冷やし神は唇《くちびる》をすぼめ、大きく息を吸い込んだ。その胸部が、凍《い》てつく息吹《いぶき》を吐かんとして膨《ふく》れあがる。やっと手に入れたご馳《ち》走《そう》。エイミを今こそ、氷漬けにするべく──。",
+          "bunsetsu_surface": "するべく",
+          "residual": {
+            "surface": "べく",
+            "base_form": "べし",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ベシ",
+            "conjugation_form": "連用形",
+            "char_range": [
+              37447,
+              37449
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "する",
+              "base_form": "する",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "サ変・スル",
+              "conjugation_form": "基本形",
+              "char_range": [
+                37445,
+                37447
+              ],
+              "bunsetsu_surface": "するべく"
+            },
+            {
+              "surface": "べく",
+              "base_form": "べし",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ベシ",
+              "conjugation_form": "連用形",
+              "char_range": [
+                37447,
+                37449
+              ],
+              "bunsetsu_surface": "するべく"
+            }
+          ]
+        },
+        {
+          "line_number": 2202,
+          "text": "　そんな想いを打ち砕くべく、七日はポケットから山《やま》吹《ぶき》色《いろ》の巾《きん》着《ちやく》袋《ぶくろ》を取り出して、エイミの前にぶら下げた。",
+          "bunsetsu_surface": "打ち砕くべく",
+          "residual": {
+            "surface": "べく",
+            "base_form": "べし",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ベシ",
+            "conjugation_form": "連用形",
+            "char_range": [
+              40482,
+              40484
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "打ち砕く",
+              "base_form": "打ち砕く",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・カ行イ音便",
+              "conjugation_form": "基本形",
+              "char_range": [
+                40478,
+                40482
+              ],
+              "bunsetsu_surface": "打ち砕くべく"
+            },
+            {
+              "surface": "べく",
+              "base_form": "べし",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ベシ",
+              "conjugation_form": "連用形",
+              "char_range": [
+                40482,
+                40484
+              ],
+              "bunsetsu_surface": "打ち砕くべく"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ん:助詞:格助詞:*:*",
+      "base_form": "ん",
+      "pos_major": "助詞",
+      "pos_sub1": "格助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 3,
+      "surfaces": [
+        "ん"
+      ],
+      "samples": [
+        {
+          "line_number": 11,
+          "text": "『んまあいっ......！』",
+          "bunsetsu_surface": "ん",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              137,
+              138
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                137,
+                138
+              ],
+              "bunsetsu_surface": "ん"
+            }
+          ]
+        },
+        {
+          "line_number": 239,
+          "text": "「なあ鰯水......あんたが今やんないんなら、俺は逃げるぞ。いいのか？　あんたはこの先ずっと後悔するんだ。あの時止めておけば......。どうして止められなかったんだ......。俺は一体、何のために警察官になったんだ。──何のためだ？　悪を倒すためじゃないのか？」",
+          "bunsetsu_surface": "今やん",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              4023,
+              4024
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "今や",
+              "base_form": "今や",
+              "pos_major": "副詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                4021,
+                4023
+              ],
+              "bunsetsu_surface": "今やん"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                4023,
+                4024
+              ],
+              "bunsetsu_surface": "今やん"
+            }
+          ]
+        },
+        {
+          "line_number": 2120,
+          "text": "「人間ってのは間違えるんだ。見ろよ、この国を。戦争に負けてボロボロんなって、散々泣いて何もないとっから立ち上がって、こうしてでっかい街になったんだ」",
+          "bunsetsu_surface": "ボロボロん",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "一般",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              38812,
+              38813
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ボロボロ",
+              "base_form": "ボロボロ",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                38808,
+                38812
+              ],
+              "bunsetsu_surface": "ボロボロん"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                38812,
+                38813
+              ],
+              "bunsetsu_surface": "ボロボロん"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ん:助詞:終助詞:*:*",
+      "base_form": "ん",
+      "pos_major": "助詞",
+      "pos_sub1": "終助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 3,
+      "surfaces": [
+        "ん"
+      ],
+      "samples": [
+        {
+          "line_number": 1704,
+          "text": "「......ん、うう」",
+          "bunsetsu_surface": "ん",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              31408,
+              31409
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                31408,
+                31409
+              ],
+              "bunsetsu_surface": "ん"
+            }
+          ]
+        },
+        {
+          "line_number": 1796,
+          "text": "「ん？」",
+          "bunsetsu_surface": "ん",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              33078,
+              33079
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                33078,
+                33079
+              ],
+              "bunsetsu_surface": "ん"
+            }
+          ]
+        },
+        {
+          "line_number": 2132,
+          "text": "「......ぐっ、う......ん」",
+          "bunsetsu_surface": "ん",
+          "residual": {
+            "surface": "ん",
+            "base_form": "ん",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              39109,
+              39110
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                39109,
+                39110
+              ],
+              "bunsetsu_surface": "ん"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:からには:助詞:接続助詞:*:*",
+      "base_form": "からには",
+      "pos_major": "助詞",
+      "pos_sub1": "接続助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "からには"
+      ],
+      "samples": [
+        {
+          "line_number": 982,
+          "text": "「エイミは怒《ど》鳴《な》ったりなどしません。清く、正しく、美しく。由緒ある大《おお》淀《よど》家の女子として生まれたからには、その名に恥じぬよう、大和《やまと》撫《なで》子《しこ》たる振る舞いをしなくてはならないのです」",
+          "bunsetsu_surface": "生まれたからには",
+          "residual": {
+            "surface": "からには",
+            "base_form": "からには",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              17468,
+              17472
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "生まれ",
+              "base_form": "生まれる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                17464,
+                17467
+              ],
+              "bunsetsu_surface": "生まれたからには"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                17467,
+                17468
+              ],
+              "bunsetsu_surface": "生まれたからには"
+            },
+            {
+              "surface": "からには",
+              "base_form": "からには",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                17468,
+                17472
+              ],
+              "bunsetsu_surface": "生まれたからには"
+            }
+          ]
+        },
+        {
+          "line_number": 1241,
+          "text": "　大《おお》淀《よど》の女子に生まれたからには、それだけでは。",
+          "bunsetsu_surface": "生まれたからには",
+          "residual": {
+            "surface": "からには",
+            "base_form": "からには",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              22388,
+              22392
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "生まれ",
+              "base_form": "生まれる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                22384,
+                22387
+              ],
+              "bunsetsu_surface": "生まれたからには"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                22387,
+                22388
+              ],
+              "bunsetsu_surface": "生まれたからには"
+            },
+            {
+              "surface": "からには",
+              "base_form": "からには",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                22388,
+                22392
+              ],
+              "bunsetsu_surface": "生まれたからには"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:じゃ:助動詞:*:特殊・ジャ:基本形",
+      "base_form": "じゃ",
+      "pos_major": "助動詞",
+      "pos_sub1": "*",
+      "conjugation_type": "特殊・ジャ",
+      "conjugation_form": "基本形",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "じゃ"
+      ],
+      "samples": [
+        {
+          "line_number": 1598,
+          "text": "「はは。チーズだと思ったんじゃね」",
+          "bunsetsu_surface": "思ったんじゃね",
+          "residual": {
+            "surface": "じゃ",
+            "base_form": "じゃ",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "特殊・ジャ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              29357,
+              29359
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "思っ",
+              "base_form": "思う",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ワ行促音便",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                29353,
+                29355
+              ],
+              "bunsetsu_surface": "思ったんじゃね"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                29355,
+                29356
+              ],
+              "bunsetsu_surface": "思ったんじゃね"
+            },
+            {
+              "surface": "ん",
+              "base_form": "ん",
+              "pos_major": "名詞",
+              "pos_sub1": "非自立",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                29356,
+                29357
+              ],
+              "bunsetsu_surface": "思ったんじゃね"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ジャ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                29357,
+                29359
+              ],
+              "bunsetsu_surface": "思ったんじゃね"
+            },
+            {
+              "surface": "ね",
+              "base_form": "ね",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                29359,
+                29360
+              ],
+              "bunsetsu_surface": "思ったんじゃね"
+            }
+          ]
+        },
+        {
+          "line_number": 1638,
+          "text": "「ケンカじゃ──」",
+          "bunsetsu_surface": "ケンカじゃ",
+          "residual": {
+            "surface": "じゃ",
+            "base_form": "じゃ",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "特殊・ジャ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              30099,
+              30101
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "ケンカ",
+              "base_form": "ケンカ",
+              "pos_major": "名詞",
+              "pos_sub1": "サ変接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                30096,
+                30099
+              ],
+              "bunsetsu_surface": "ケンカじゃ"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ジャ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                30099,
+                30101
+              ],
+              "bunsetsu_surface": "ケンカじゃ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:じゃ:助詞:接続助詞:*:*",
+      "base_form": "じゃ",
+      "pos_major": "助詞",
+      "pos_sub1": "接続助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "じゃ"
+      ],
+      "samples": [
+        {
+          "line_number": 1177,
+          "text": "「シンエンはね、ぜんぶ呑《の》み込んじゃうの。どんなに大きな声で叫んでも、手を伸ばしても、ぜんぶぜんぶ呑み込んで、消してしまうの。......怖かったわ。そういう時ってね、誰かが側《そば》でぎゅっと手を握っててくれなきゃいけないのよ」",
+          "bunsetsu_surface": "呑み込んじゃ",
+          "residual": {
+            "surface": "じゃ",
+            "base_form": "じゃ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              21130,
+              21132
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "呑み込ん",
+              "base_form": "呑み込む",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・マ行",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                21126,
+                21130
+              ],
+              "bunsetsu_surface": "呑み込んじゃ"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21130,
+                21132
+              ],
+              "bunsetsu_surface": "呑み込んじゃ"
+            }
+          ]
+        },
+        {
+          "line_number": 1494,
+          "text": "「犬や猫だけじゃ物足りなくなって......ハナタレさんは、子供たちを襲い始めたんだと思います。体がとても、大きくなっていたから」",
+          "bunsetsu_surface": "猫だけじゃ",
+          "residual": {
+            "surface": "じゃ",
+            "base_form": "じゃ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              27334,
+              27336
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "猫",
+              "base_form": "猫",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                27331,
+                27332
+              ],
+              "bunsetsu_surface": "猫だけじゃ"
+            },
+            {
+              "surface": "だけ",
+              "base_form": "だけ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                27332,
+                27334
+              ],
+              "bunsetsu_surface": "猫だけじゃ"
+            },
+            {
+              "surface": "じゃ",
+              "base_form": "じゃ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                27334,
+                27336
+              ],
+              "bunsetsu_surface": "猫だけじゃ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:じゃあ:助詞:副助詞:*:*",
+      "base_form": "じゃあ",
+      "pos_major": "助詞",
+      "pos_sub1": "副助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "じゃあ"
+      ],
+      "samples": [
+        {
+          "line_number": 211,
+          "text": "「......戦場じゃあな、敵を撃ち殺して初めて男だって認められたもんだ」",
+          "bunsetsu_surface": "戦場じゃあな",
+          "residual": {
+            "surface": "じゃあ",
+            "base_form": "じゃあ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "副助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              3631,
+              3634
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "戦場",
+              "base_form": "戦場",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                3629,
+                3631
+              ],
+              "bunsetsu_surface": "戦場じゃあな"
+            },
+            {
+              "surface": "じゃあ",
+              "base_form": "じゃあ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                3631,
+                3634
+              ],
+              "bunsetsu_surface": "戦場じゃあな"
+            },
+            {
+              "surface": "な",
+              "base_form": "な",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                3634,
+                3635
+              ],
+              "bunsetsu_surface": "戦場じゃあな"
+            }
+          ]
+        },
+        {
+          "line_number": 2278,
+          "text": "「食べるけど......それじゃあ私は、一体何のために頑張って護《まも》っていたのか......」",
+          "bunsetsu_surface": "それじゃあ",
+          "residual": {
+            "surface": "じゃあ",
+            "base_form": "じゃあ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "副助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              41792,
+              41795
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "それ",
+              "base_form": "それ",
+              "pos_major": "名詞",
+              "pos_sub1": "代名詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                41790,
+                41792
+              ],
+              "bunsetsu_surface": "それじゃあ"
+            },
+            {
+              "surface": "じゃあ",
+              "base_form": "じゃあ",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                41792,
+                41795
+              ],
+              "bunsetsu_surface": "それじゃあ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:たり:助動詞:*:文語・ナリ:体言接続",
+      "base_form": "たり",
+      "pos_major": "助動詞",
+      "pos_sub1": "*",
+      "conjugation_type": "文語・ナリ",
+      "conjugation_form": "体言接続",
+      "reason": "provider_or_language_profile_review",
+      "occurrences": 2,
+      "surfaces": [
+        "たる"
+      ],
+      "samples": [
+        {
+          "line_number": 982,
+          "text": "「エイミは怒《ど》鳴《な》ったりなどしません。清く、正しく、美しく。由緒ある大《おお》淀《よど》家の女子として生まれたからには、その名に恥じぬよう、大和《やまと》撫《なで》子《しこ》たる振る舞いをしなくてはならないのです」",
+          "bunsetsu_surface": "大和撫子たる",
+          "residual": {
+            "surface": "たる",
+            "base_form": "たり",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ナリ",
+            "conjugation_form": "体言接続",
+            "char_range": [
+              17487,
+              17489
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "大和撫子",
+              "base_form": "大和撫子",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                17483,
+                17487
+              ],
+              "bunsetsu_surface": "大和撫子たる"
+            },
+            {
+              "surface": "たる",
+              "base_form": "たり",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ナリ",
+              "conjugation_form": "体言接続",
+              "char_range": [
+                17487,
+                17489
+              ],
+              "bunsetsu_surface": "大和撫子たる"
+            }
+          ]
+        },
+        {
+          "line_number": 1016,
+          "text": "「あの人たちは、エイミが逃げ出さないよう、見張っているのです。言うことを聞かなかったらお仕置きしたり、成績が下がったら一日中、勉強！　しかも間違えるたびに物差しで叩《たた》いたりするのです。『大淀の女子たるもの』って」",
+          "bunsetsu_surface": "女子たる",
+          "residual": {
+            "surface": "たる",
+            "base_form": "たり",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ナリ",
+            "conjugation_form": "体言接続",
+            "char_range": [
+              18121,
+              18123
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "女子",
+              "base_form": "女子",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18119,
+                18121
+              ],
+              "bunsetsu_surface": "女子たる"
+            },
+            {
+              "surface": "たる",
+              "base_form": "たり",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ナリ",
+              "conjugation_form": "体言接続",
+              "char_range": [
+                18121,
+                18123
+              ],
+              "bunsetsu_surface": "女子たる"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:たり:助動詞:*:文語・ナリ:基本形",
+      "base_form": "たり",
+      "pos_major": "助動詞",
+      "pos_sub1": "*",
+      "conjugation_type": "文語・ナリ",
+      "conjugation_form": "基本形",
+      "reason": "provider_or_language_profile_review",
+      "occurrences": 2,
+      "surfaces": [
+        "たり"
+      ],
+      "samples": [
+        {
+          "line_number": 851,
+          "text": "　気温低下の元凶である冷やし神が去ってしまえば、辺りはまた蒸し暑さを取り戻す。震《ふる》えるほど寒かったり、うだるほど暑かったり。体が混乱して、嫌な汗が出てくる。",
+          "bunsetsu_surface": "寒かったり",
+          "residual": {
+            "surface": "たり",
+            "base_form": "たり",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ナリ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              15229,
+              15231
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "寒かっ",
+              "base_form": "寒い",
+              "pos_major": "形容詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "形容詞・アウオ段",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                15226,
+                15229
+              ],
+              "bunsetsu_surface": "寒かったり"
+            },
+            {
+              "surface": "たり",
+              "base_form": "たり",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ナリ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                15229,
+                15231
+              ],
+              "bunsetsu_surface": "寒かったり"
+            }
+          ]
+        },
+        {
+          "line_number": 851,
+          "text": "　気温低下の元凶である冷やし神が去ってしまえば、辺りはまた蒸し暑さを取り戻す。震《ふる》えるほど寒かったり、うだるほど暑かったり。体が混乱して、嫌な汗が出てくる。",
+          "bunsetsu_surface": "暑かったり",
+          "residual": {
+            "surface": "たり",
+            "base_form": "たり",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ナリ",
+            "conjugation_form": "基本形",
+            "char_range": [
+              15240,
+              15242
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "暑かっ",
+              "base_form": "暑い",
+              "pos_major": "形容詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "形容詞・アウオ段",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                15237,
+                15240
+              ],
+              "bunsetsu_surface": "暑かったり"
+            },
+            {
+              "surface": "たり",
+              "base_form": "たり",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ナリ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                15240,
+                15242
+              ],
+              "bunsetsu_surface": "暑かったり"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:っけ:助詞:終助詞:*:*",
+      "base_form": "っけ",
+      "pos_major": "助詞",
+      "pos_sub1": "終助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "っけ"
+      ],
+      "samples": [
+        {
+          "line_number": 494,
+          "text": "「......したっけ？　そんな約束」",
+          "bunsetsu_surface": "したっけ",
+          "residual": {
+            "surface": "っけ",
+            "base_form": "っけ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              8829,
+              8831
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "し",
+              "base_form": "する",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "サ変・スル",
+              "conjugation_form": "連用形",
+              "char_range": [
+                8827,
+                8828
+              ],
+              "bunsetsu_surface": "したっけ"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                8828,
+                8829
+              ],
+              "bunsetsu_surface": "したっけ"
+            },
+            {
+              "surface": "っけ",
+              "base_form": "っけ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                8829,
+                8831
+              ],
+              "bunsetsu_surface": "したっけ"
+            }
+          ]
+        },
+        {
+          "line_number": 558,
+          "text": "「嫌いなものなんてあったっけ？」",
+          "bunsetsu_surface": "あったっけ",
+          "residual": {
+            "surface": "っけ",
+            "base_form": "っけ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              10140,
+              10142
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "あっ",
+              "base_form": "ある",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ラ行",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                10137,
+                10139
+              ],
+              "bunsetsu_surface": "あったっけ"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                10139,
+                10140
+              ],
+              "bunsetsu_surface": "あったっけ"
+            },
+            {
+              "surface": "っけ",
+              "base_form": "っけ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                10140,
+                10142
+              ],
+              "bunsetsu_surface": "あったっけ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:つつ:助詞:接続助詞:*:*",
+      "base_form": "つつ",
+      "pos_major": "助詞",
+      "pos_sub1": "接続助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "つつ"
+      ],
+      "samples": [
+        {
+          "line_number": 415,
+          "text": "　しかし文明の発展を遂げた今、人々はこの禍を克服しつつある。",
+          "bunsetsu_surface": "克服しつつ",
+          "residual": {
+            "surface": "つつ",
+            "base_form": "つつ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              7030,
+              7032
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "克服",
+              "base_form": "克服",
+              "pos_major": "名詞",
+              "pos_sub1": "サ変接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                7027,
+                7029
+              ],
+              "bunsetsu_surface": "克服しつつ"
+            },
+            {
+              "surface": "し",
+              "base_form": "する",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "サ変・スル",
+              "conjugation_form": "連用形",
+              "char_range": [
+                7029,
+                7030
+              ],
+              "bunsetsu_surface": "克服しつつ"
+            },
+            {
+              "surface": "つつ",
+              "base_form": "つつ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                7030,
+                7032
+              ],
+              "bunsetsu_surface": "克服しつつ"
+            }
+          ]
+        },
+        {
+          "line_number": 692,
+          "text": "　巾着の中の物への攻撃が、そのままラティメリアへと伝わる。ラティメリアはのたうち回った。その身《み》悶《もだ》える姿を眺めつつ、七日はもう一度繰り返した。",
+          "bunsetsu_surface": "眺めつつ",
+          "residual": {
+            "surface": "つつ",
+            "base_form": "つつ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "接続助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              12516,
+              12518
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "眺め",
+              "base_form": "眺める",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "連用形",
+              "char_range": [
+                12514,
+                12516
+              ],
+              "bunsetsu_surface": "眺めつつ"
+            },
+            {
+              "surface": "つつ",
+              "base_form": "つつ",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                12516,
+                12518
+              ],
+              "bunsetsu_surface": "眺めつつ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:とともに:助詞:格助詞:*:*",
+      "base_form": "とともに",
+      "pos_major": "助詞",
+      "pos_sub1": "格助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "とともに"
+      ],
+      "samples": [
+        {
+          "line_number": 779,
+          "text": "　悲鳴とともに吐き出された息吹が、そこかしこを見境いなく凍てつかせ始めた。",
+          "bunsetsu_surface": "悲鳴とともに",
+          "residual": {
+            "surface": "とともに",
+            "base_form": "とともに",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              13965,
+              13969
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "悲鳴",
+              "base_form": "悲鳴",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                13963,
+                13965
+              ],
+              "bunsetsu_surface": "悲鳴とともに"
+            },
+            {
+              "surface": "とともに",
+              "base_form": "とともに",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                13965,
+                13969
+              ],
+              "bunsetsu_surface": "悲鳴とともに"
+            }
+          ]
+        },
+        {
+          "line_number": 1874,
+          "text": "　激しい衝突音とともに赤い塊が弾け、夕焼け空に煌《きら》めいた。",
+          "bunsetsu_surface": "衝突音とともに",
+          "residual": {
+            "surface": "とともに",
+            "base_form": "とともに",
+            "pos": {
+              "major": "助詞",
+              "sub1": "格助詞",
+              "sub2": "連語",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              34375,
+              34379
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "衝突",
+              "base_form": "衝突",
+              "pos_major": "名詞",
+              "pos_sub1": "サ変接続",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                34372,
+                34374
+              ],
+              "bunsetsu_surface": "衝突音とともに"
+            },
+            {
+              "surface": "音",
+              "base_form": "音",
+              "pos_major": "名詞",
+              "pos_sub1": "接尾",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                34374,
+                34375
+              ],
+              "bunsetsu_surface": "衝突音とともに"
+            },
+            {
+              "surface": "とともに",
+              "base_form": "とともに",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                34375,
+                34379
+              ],
+              "bunsetsu_surface": "衝突音とともに"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:なあ:助詞:終助詞:*:*",
+      "base_form": "なあ",
+      "pos_major": "助詞",
+      "pos_sub1": "終助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "なあ"
+      ],
+      "samples": [
+        {
+          "line_number": 219,
+          "text": "「なあ。ここがお前の戦場だろ？　ほら、今だぞ、殺せ。男になるチャンスだ──」",
+          "bunsetsu_surface": "なあ",
+          "residual": {
+            "surface": "なあ",
+            "base_form": "なあ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              3758,
+              3760
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "なあ",
+              "base_form": "なあ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                3758,
+                3760
+              ],
+              "bunsetsu_surface": "なあ"
+            }
+          ]
+        },
+        {
+          "line_number": 239,
+          "text": "「なあ鰯水......あんたが今やんないんなら、俺は逃げるぞ。いいのか？　あんたはこの先ずっと後悔するんだ。あの時止めておけば......。どうして止められなかったんだ......。俺は一体、何のために警察官になったんだ。──何のためだ？　悪を倒すためじゃないのか？」",
+          "bunsetsu_surface": "なあ",
+          "residual": {
+            "surface": "なあ",
+            "base_form": "なあ",
+            "pos": {
+              "major": "助詞",
+              "sub1": "終助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              4007,
+              4009
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "なあ",
+              "base_form": "なあ",
+              "pos_major": "助詞",
+              "pos_sub1": "終助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                4007,
+                4009
+              ],
+              "bunsetsu_surface": "なあ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ばかり:助詞:副助詞:*:*",
+      "base_form": "ばかり",
+      "pos_major": "助詞",
+      "pos_sub1": "副助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "ばかり"
+      ],
+      "samples": [
+        {
+          "line_number": 1203,
+          "text": "　マガツカミは、待ってましたとばかりに手を伸ばす。",
+          "bunsetsu_surface": "待ってましたとばかりに",
+          "residual": {
+            "surface": "ばかり",
+            "base_form": "ばかり",
+            "pos": {
+              "major": "助詞",
+              "sub1": "副助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              21638,
+              21641
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "待っ",
+              "base_form": "待つ",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・タ行",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                21631,
+                21633
+              ],
+              "bunsetsu_surface": "待ってましたとばかりに"
+            },
+            {
+              "surface": "て",
+              "base_form": "て",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21633,
+                21634
+              ],
+              "bunsetsu_surface": "待ってましたとばかりに"
+            },
+            {
+              "surface": "まし",
+              "base_form": "ます",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・マス",
+              "conjugation_form": "連用形",
+              "char_range": [
+                21634,
+                21636
+              ],
+              "bunsetsu_surface": "待ってましたとばかりに"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                21636,
+                21637
+              ],
+              "bunsetsu_surface": "待ってましたとばかりに"
+            },
+            {
+              "surface": "と",
+              "base_form": "と",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21637,
+                21638
+              ],
+              "bunsetsu_surface": "待ってましたとばかりに"
+            },
+            {
+              "surface": "ばかり",
+              "base_form": "ばかり",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21638,
+                21641
+              ],
+              "bunsetsu_surface": "待ってましたとばかりに"
+            },
+            {
+              "surface": "に",
+              "base_form": "に",
+              "pos_major": "助詞",
+              "pos_sub1": "格助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                21641,
+                21642
+              ],
+              "bunsetsu_surface": "待ってましたとばかりに"
+            }
+          ]
+        },
+        {
+          "line_number": 2304,
+          "text": "　ぼんやり灯《とも》る月明かりの下、七日は喰い神を引き連れて、瓦《が》礫《れき》ばかりの道を行く。繋《つな》がれているのはどちらのほうか。",
+          "bunsetsu_surface": "瓦礫ばかりの",
+          "residual": {
+            "surface": "ばかり",
+            "base_form": "ばかり",
+            "pos": {
+              "major": "助詞",
+              "sub1": "副助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              42296,
+              42299
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "瓦礫",
+              "base_form": "瓦礫",
+              "pos_major": "名詞",
+              "pos_sub1": "一般",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                42294,
+                42296
+              ],
+              "bunsetsu_surface": "瓦礫ばかりの"
+            },
+            {
+              "surface": "ばかり",
+              "base_form": "ばかり",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                42296,
+                42299
+              ],
+              "bunsetsu_surface": "瓦礫ばかりの"
+            },
+            {
+              "surface": "の",
+              "base_form": "の",
+              "pos_major": "助詞",
+              "pos_sub1": "連体化",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                42299,
+                42300
+              ],
+              "bunsetsu_surface": "瓦礫ばかりの"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:ばっか:助詞:副助詞:*:*",
+      "base_form": "ばっか",
+      "pos_major": "助詞",
+      "pos_sub1": "副助詞",
+      "conjugation_type": "*",
+      "conjugation_form": "*",
+      "reason": "catalog_missing_or_unresolved",
+      "occurrences": 2,
+      "surfaces": [
+        "ばっか"
+      ],
+      "samples": [
+        {
+          "line_number": 1022,
+          "text": "「頑張ってるけど、うまくいきません。エイミは間違ってばっかで、おじいさまは怒ってばっかです。おじいさまはエイミを、どうしたいのでしょう」",
+          "bunsetsu_surface": "間違ってばっかで",
+          "residual": {
+            "surface": "ばっか",
+            "base_form": "ばっか",
+            "pos": {
+              "major": "助詞",
+              "sub1": "副助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              18185,
+              18188
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "間違っ",
+              "base_form": "間違う",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ワ行促音便",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                18181,
+                18184
+              ],
+              "bunsetsu_surface": "間違ってばっかで"
+            },
+            {
+              "surface": "て",
+              "base_form": "て",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18184,
+                18185
+              ],
+              "bunsetsu_surface": "間違ってばっかで"
+            },
+            {
+              "surface": "ばっか",
+              "base_form": "ばっか",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18185,
+                18188
+              ],
+              "bunsetsu_surface": "間違ってばっかで"
+            },
+            {
+              "surface": "で",
+              "base_form": "だ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ダ",
+              "conjugation_form": "連用形",
+              "char_range": [
+                18188,
+                18189
+              ],
+              "bunsetsu_surface": "間違ってばっかで"
+            }
+          ]
+        },
+        {
+          "line_number": 1022,
+          "text": "「頑張ってるけど、うまくいきません。エイミは間違ってばっかで、おじいさまは怒ってばっかです。おじいさまはエイミを、どうしたいのでしょう」",
+          "bunsetsu_surface": "怒ってばっかです",
+          "residual": {
+            "surface": "ばっか",
+            "base_form": "ばっか",
+            "pos": {
+              "major": "助詞",
+              "sub1": "副助詞",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "*",
+            "conjugation_form": "*",
+            "char_range": [
+              18199,
+              18202
+            ],
+            "reason": "catalog_missing_or_unresolved"
+          },
+          "morphemes": [
+            {
+              "surface": "怒っ",
+              "base_form": "怒る",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・ラ行",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                18196,
+                18198
+              ],
+              "bunsetsu_surface": "怒ってばっかです"
+            },
+            {
+              "surface": "て",
+              "base_form": "て",
+              "pos_major": "助詞",
+              "pos_sub1": "接続助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18198,
+                18199
+              ],
+              "bunsetsu_surface": "怒ってばっかです"
+            },
+            {
+              "surface": "ばっか",
+              "base_form": "ばっか",
+              "pos_major": "助詞",
+              "pos_sub1": "副助詞",
+              "conjugation_type": "*",
+              "conjugation_form": "*",
+              "char_range": [
+                18199,
+                18202
+              ],
+              "bunsetsu_surface": "怒ってばっかです"
+            },
+            {
+              "surface": "です",
+              "base_form": "です",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・デス",
+              "conjugation_form": "基本形",
+              "char_range": [
+                18202,
+                18204
+              ],
+              "bunsetsu_surface": "怒ってばっかです"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "review_id": "residual:べし:助動詞:*:文語・ベシ:体言接続",
+      "base_form": "べし",
+      "pos_major": "助動詞",
+      "pos_sub1": "*",
+      "conjugation_type": "文語・ベシ",
+      "conjugation_form": "体言接続",
+      "reason": "provider_or_language_profile_review",
+      "occurrences": 2,
+      "surfaces": [
+        "べき"
+      ],
+      "samples": [
+        {
+          "line_number": 517,
+          "text": "　立て続けに五人、六人と同じ場所で消えているのだから、警察はマガツカミ発生の可能性を考え、早いうちに祈《き》祷《とう》士《し》を呼ぶべきだった。",
+          "bunsetsu_surface": "呼ぶべきだった",
+          "residual": {
+            "surface": "べき",
+            "base_form": "べし",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ベシ",
+            "conjugation_form": "体言接続",
+            "char_range": [
+              9151,
+              9153
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "呼ぶ",
+              "base_form": "呼ぶ",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "五段・バ行",
+              "conjugation_form": "基本形",
+              "char_range": [
+                9149,
+                9151
+              ],
+              "bunsetsu_surface": "呼ぶべきだった"
+            },
+            {
+              "surface": "べき",
+              "base_form": "べし",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ベシ",
+              "conjugation_form": "体言接続",
+              "char_range": [
+                9151,
+                9153
+              ],
+              "bunsetsu_surface": "呼ぶべきだった"
+            },
+            {
+              "surface": "だっ",
+              "base_form": "だ",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・ダ",
+              "conjugation_form": "連用タ接続",
+              "char_range": [
+                9153,
+                9155
+              ],
+              "bunsetsu_surface": "呼ぶべきだった"
+            },
+            {
+              "surface": "た",
+              "base_form": "た",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "特殊・タ",
+              "conjugation_form": "基本形",
+              "char_range": [
+                9155,
+                9156
+              ],
+              "bunsetsu_surface": "呼ぶべきだった"
+            }
+          ]
+        },
+        {
+          "line_number": 1092,
+          "text": "　冷蔵庫になんて隠れるべきじゃなかった。",
+          "bunsetsu_surface": "隠れるべき",
+          "residual": {
+            "surface": "べき",
+            "base_form": "べし",
+            "pos": {
+              "major": "助動詞",
+              "sub1": "*",
+              "sub2": "*",
+              "sub3": "*"
+            },
+            "conjugation_type": "文語・ベシ",
+            "conjugation_form": "体言接続",
+            "char_range": [
+              19415,
+              19417
+            ],
+            "reason": "provider_or_language_profile_review"
+          },
+          "morphemes": [
+            {
+              "surface": "隠れる",
+              "base_form": "隠れる",
+              "pos_major": "動詞",
+              "pos_sub1": "自立",
+              "conjugation_type": "一段",
+              "conjugation_form": "基本形",
+              "char_range": [
+                19412,
+                19415
+              ],
+              "bunsetsu_surface": "隠れるべき"
+            },
+            {
+              "surface": "べき",
+              "base_form": "べし",
+              "pos_major": "助動詞",
+              "pos_sub1": "*",
+              "conjugation_type": "文語・ベシ",
+              "conjugation_form": "体言接続",
+              "char_range": [
+                19415,
+                19417
+              ],
+              "bunsetsu_surface": "隠れるべき"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

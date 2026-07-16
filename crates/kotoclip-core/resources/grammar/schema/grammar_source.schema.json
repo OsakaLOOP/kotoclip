@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kotoclip.local/schema/grammar-source-v1.json",
+  "title": "Kotoclip 语法知识源文件",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": true
+  },
+  "description": "实体级未知字段、引用、稳定 ID、正反例、来源和模板捕获由 build_grammar_catalog.py 严格校验。"
+}

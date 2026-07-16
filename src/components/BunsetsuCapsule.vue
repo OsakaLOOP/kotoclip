@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { AnnotatedToken } from "../types";
+import { grammarTagCoversRange, primaryGrammarIndex } from "../explanation/grammarView";
 
 const props = defineProps<{
   token: AnnotatedToken;
@@ -111,7 +112,12 @@ function isHeadMorpheme(index: number) {
 
 function isGrammarMorpheme(index: number) {
   const m = props.token.bunsetsu.morphemes[index];
-  return props.token.bunsetsu.grammar_tags.some((tag) => m.char_range[0] >= tag.char_range[0] && m.char_range[1] <= tag.char_range[1]);
+  return props.token.bunsetsu.grammar_tags.some((tag) => grammarTagCoversRange(tag, m.char_range));
+}
+
+function grammarIndexForMorpheme(index: number) {
+  const morpheme = props.token.bunsetsu.morphemes[index];
+  return primaryGrammarIndex(props.token.bunsetsu.grammar_tags, morpheme.char_range);
 }
 
 function isExpressionMorpheme(index: number) {
@@ -134,20 +140,23 @@ function isExpressionMorpheme(index: number) {
       v-for="(m, idx) in token.bunsetsu.morphemes"
       :key="idx"
       :data-morpheme-index="idx"
+      :data-grammar-index="grammarIndexForMorpheme(idx)"
       :class="{ 'head-word-highlight': isHeadMorpheme(idx), 'helper-word': !isHeadMorpheme(idx), 'grammar-match': isGrammarMorpheme(idx), 'expression-anchor': isExpressionMorpheme(idx) }"
     >
       {{ m.surface }}
     </span>
 
     <!-- 渲染语法 Badge 徽章 -->
-    <span
-      v-for="(tag, grammarIndex) in token.bunsetsu.grammar_tags"
-      :key="tag.pattern_id"
-      class="grammar-badge"
-      :data-grammar-index="grammarIndex"
-      :title="tag.description"
-    >
-      {{ tag.name_ja }}
-    </span>
+    <template v-for="(tag, grammarIndex) in token.bunsetsu.grammar_tags" :key="tag.occurrence_id || `${tag.pattern_id}-${grammarIndex}`">
+      <span
+        v-if="tag.show_badge"
+        class="grammar-badge"
+        :data-grammar-index="grammarIndex"
+        :data-grammar-occurrence="tag.occurrence_id"
+        :title="tag.description"
+      >
+        {{ tag.name_ja }}
+      </span>
+    </template>
   </span>
 </template>

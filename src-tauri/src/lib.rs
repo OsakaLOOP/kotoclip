@@ -39,9 +39,6 @@ pub fn run() {
                     let result = (|| -> Result<(), String> {
                         let paths = paths::AppPaths::resolve(&app_handle)
                             .map_err(|error| error.to_string())?;
-                        if let Some(patterns) = &paths.grammar_patterns {
-                            std::env::set_var("KOTOCLIP_GRAMMAR_PATTERNS", patterns);
-                        }
 
                         let engine_value = Engine::new_from_dictionary_sources(
                             &paths.system_dictionary,
@@ -102,6 +99,8 @@ pub fn run() {
             commands::choose_document_segmentation,
             commands::lookup_word,
             commands::choose_dictionary_target,
+            commands::search_grammar_catalog,
+            commands::get_grammar_concept,
             commands::mark_known,
             commands::mark_unknown,
             commands::add_merge_rule,

@@ -4,7 +4,7 @@ use kotoclip_core::document::{AnalysisStage, DocumentSession, StageInvalidation}
 use kotoclip_core::pipeline::{ruby, Pipeline};
 use kotoclip_core::transport::CompactAnalysis;
 use kotoclip_core::Engine;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
 use std::io::{self, Write};
@@ -211,6 +211,15 @@ fn run() -> Result<(), Box<dyn Error>> {
         "dict-info" => dict_info(&args),
         "lookup" => lookup(&args),
         "analyze" => analyze(&args),
+        "grammar-inspect" => grammar_inspect(&args),
+        "grammar-scan" => grammar_scan(&args),
+        "grammar-residual" => grammar_residual(&args),
+        "grammar-catalog" => grammar_catalog(&args),
+        "grammar-explain" => grammar_explain(&args),
+        "grammar-library-audit" => grammar_library_audit(&args),
+        "grammar-audit" => grammar_audit(&args),
+        "grammar-compare" => grammar_compare(&args),
+        "grammar-review" => grammar_review(&args),
         "audit" => audit(&args),
         "benchmark" => benchmark(&args),
         "reader-benchmark" => reader_benchmark(&args),
@@ -336,6 +345,595 @@ fn analyze(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let pipeline = pipeline(args)?;
     let tokens = pipeline.process_with_dictionary(&text, &[], &dictionary);
     println!("{}", serde_json::to_string_pretty(&tokens)?);
+    Ok(())
+}
+
+fn grammar_inspect(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_argument(args)?;
+    let tokens = pipeline(args)?.process(&text, &[]);
+    println!("{}", serde_json::to_string_pretty(&tokens)?);
+    Ok(())
+}
+
+fn grammar_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let tokens = pipeline(args)?.process(&text, &[]);
+    let include_pending = args.flags.contains("include-pending");
+    let include_rejected = args.flags.contains("include-rejected");
+    let occurrences = tokens
+        .iter()
+        .flat_map(|token| &token.bunsetsu.grammar_occurrences)
+        .filter(|occurrence| {
+            matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Accepted)
+                || (include_pending
+                    && matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Pending))
+                || (include_rejected
+                    && matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Rejected))
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    output_json(args, &occurrences)
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarResidualReport {
+    characters: usize,
+    non_punctuation_morphemes: usize,
+    residuals: usize,
+    functional_residual_rate: f64,
+    items: Vec<kotoclip_core::models::FunctionalResidual>,
+}
+
+fn grammar_residual(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let tokens = pipeline(args)?.process(&text, &[]);
+    let non_punctuation_morphemes = tokens
+        .iter()
+        .flat_map(|token| &token.bunsetsu.morphemes)
+        .filter(|morpheme| morpheme.pos.major != "記号" && !morpheme.surface.trim().is_empty())
+        .count();
+    let items = tokens
+        .iter()
+        .flat_map(|token| token.bunsetsu.functional_residuals.clone())
+        .collect::<Vec<_>>();
+    let report = GrammarResidualReport {
+        characters: text.chars().count(),
+        non_punctuation_morphemes,
+        residuals: items.len(),
+        functional_residual_rate: if non_punctuation_morphemes == 0 {
+            0.0
+        } else {
+            items.len() as f64 / non_punctuation_morphemes as f64
+        },
+        items,
+    };
+    output_json(args, &report)
+}
+
+fn grammar_catalog(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let catalog = kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()?;
+    let jlpt = args.options.get("jlpt").and_then(|value| value.parse::<u8>().ok());
+    let concepts = catalog.search(
+        args.options.get("query").map(String::as_str),
+        args.options.get("family").map(String::as_str),
+        jlpt,
+        args.options.get("status").map(String::as_str),
+        args.options.get("source-ref").map(String::as_str),
+    );
+    output_json(args, &concepts)
+}
+
+fn grammar_explain(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    if args.options.contains_key("text") || args.options.contains_key("source") {
+        let text = read_text_selection(args)?;
+        let tokens = pipeline(args)?.process(&text, &[]);
+        let requested = args.options.get("occurrence");
+        let explanations = tokens
+            .iter()
+            .flat_map(|token| &token.bunsetsu.grammar_tags)
+            .filter(|tag| requested.is_none_or(|value| &tag.occurrence_id == value))
+            .map(|tag| (&tag.occurrence_id, &tag.concept_id, &tag.explanation))
+            .collect::<Vec<_>>();
+        return output_json(args, &explanations);
+    }
+    let concept_id = args.required("concept").map_err(io::Error::other)?;
+    let catalog = kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()?;
+    let concept = catalog
+        .concept(concept_id)
+        .ok_or_else(|| io::Error::other(format!("未知 concept：{concept_id}")))?;
+    let explanation = catalog
+        .explanation(&concept.default_explanation_id)
+        .ok_or_else(|| io::Error::other("concept 缺少讲解"))?;
+    output_json(args, &(concept, catalog.senses_for(concept_id), explanation))
+}
+
+fn grammar_library_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let catalog = kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()?;
+    output_json(args, &catalog.audit())
+}
+
+#[derive(Debug, Deserialize)]
+struct GrammarRepresentativeCase {
+    id: String,
+    text: String,
+    expected_concepts: Vec<String>,
+    #[serde(default)]
+    forbidden_concepts: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarCaseResult {
+    id: String,
+    text: String,
+    passed: bool,
+    found_concepts: Vec<String>,
+    missing_concepts: Vec<String>,
+    forbidden_hits: Vec<String>,
+    reconstruction_ok: bool,
+    explanation_resolution_ok: bool,
+}
+
+fn grammar_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let path = args.options.get("cases").map_or(
+        "crates/kotoclip-core/tests/fixtures/grammar_representative_cases.json",
+        String::as_str,
+    );
+    let cases: Vec<GrammarRepresentativeCase> = serde_json::from_str(&std::fs::read_to_string(path)?)?;
+    let pipeline = pipeline(args)?;
+    let mut results = Vec::new();
+    for case in cases {
+        let tokens = pipeline.process(&case.text, &[]);
+        let reconstructed = tokens.iter().map(|token| token.bunsetsu.surface.as_str()).collect::<String>();
+        let found = tokens
+            .iter()
+            .flat_map(|token| &token.bunsetsu.grammar_occurrences)
+            .filter(|occurrence| matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Accepted))
+            .map(|occurrence| occurrence.concept_id.clone())
+            .collect::<HashSet<_>>();
+        let missing_concepts = case.expected_concepts.iter().filter(|item| !found.contains(*item)).cloned().collect::<Vec<_>>();
+        let forbidden_hits = case.forbidden_concepts.iter().filter(|item| found.contains(*item)).cloned().collect::<Vec<_>>();
+        let explanation_resolution_ok = tokens
+            .iter()
+            .flat_map(|token| &token.bunsetsu.grammar_tags)
+            .all(|tag| tag.explanation.is_some());
+        let reconstruction_ok = reconstructed == case.text;
+        results.push(GrammarCaseResult {
+            id: case.id,
+            text: case.text,
+            passed: missing_concepts.is_empty() && forbidden_hits.is_empty() && reconstruction_ok && explanation_resolution_ok,
+            found_concepts: found.into_iter().collect(),
+            missing_concepts,
+            forbidden_hits,
+            reconstruction_ok,
+            explanation_resolution_ok,
+        });
+    }
+    let all_passed = results.iter().all(|result| result.passed);
+    output_json(args, &results)?;
+    if !all_passed {
+        return Err("语法代表性用例未全部通过".into());
+    }
+    Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarCompareReport {
+    added: Vec<String>,
+    removed: Vec<String>,
+    unchanged: usize,
+}
+
+fn grammar_compare(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let before_path = args.required("before").map_err(io::Error::other)?;
+    let after_path = args.required("after").map_err(io::Error::other)?;
+    let before: Vec<kotoclip_core::models::GrammarOccurrence> = serde_json::from_str(&std::fs::read_to_string(before_path)?)?;
+    let after: Vec<kotoclip_core::models::GrammarOccurrence> = serde_json::from_str(&std::fs::read_to_string(after_path)?)?;
+    let before_ids = before.into_iter().map(|item| item.occurrence_id).collect::<HashSet<_>>();
+    let after_ids = after.into_iter().map(|item| item.occurrence_id).collect::<HashSet<_>>();
+    let report = GrammarCompareReport {
+        added: after_ids.difference(&before_ids).cloned().collect(),
+        removed: before_ids.difference(&after_ids).cloned().collect(),
+        unchanged: before_ids.intersection(&after_ids).count(),
+    };
+    output_json(args, &report)
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarReviewOccurrence {
+    occurrence_id: String,
+    concept_id: String,
+    rule_id: String,
+    status: String,
+    char_range: (usize, usize),
+    actual_form: String,
+    explanation_ready: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarReviewMorpheme {
+    surface: String,
+    base_form: String,
+    pos_major: String,
+    pos_sub1: String,
+    conjugation_type: String,
+    conjugation_form: String,
+    char_range: (usize, usize),
+    bunsetsu_surface: String,
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarReviewItem {
+    review_id: String,
+    line_number: usize,
+    text: String,
+    issue_score: usize,
+    accepted: Vec<GrammarReviewOccurrence>,
+    pending: Vec<GrammarReviewOccurrence>,
+    rejected: Vec<GrammarReviewOccurrence>,
+    residuals: Vec<kotoclip_core::models::FunctionalResidual>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    morphemes: Vec<GrammarReviewMorpheme>,
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarReviewBatch {
+    batch: usize,
+    batch_size: usize,
+    total_items: usize,
+    total_batches: usize,
+    family: Option<String>,
+    items: Vec<GrammarReviewItem>,
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarResidualReviewSample {
+    line_number: usize,
+    text: String,
+    bunsetsu_surface: String,
+    residual: kotoclip_core::models::FunctionalResidual,
+    morphemes: Vec<GrammarReviewMorpheme>,
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarResidualReviewCandidate {
+    review_id: String,
+    base_form: String,
+    pos_major: String,
+    pos_sub1: String,
+    conjugation_type: String,
+    conjugation_form: String,
+    reason: String,
+    occurrences: usize,
+    surfaces: Vec<String>,
+    samples: Vec<GrammarResidualReviewSample>,
+}
+
+#[derive(Debug, Serialize)]
+struct GrammarResidualReviewBatch {
+    batch: usize,
+    batch_size: usize,
+    total_items: usize,
+    total_batches: usize,
+    items: Vec<GrammarResidualReviewCandidate>,
+}
+
+#[derive(Default)]
+struct GrammarResidualReviewAggregate {
+    occurrences: usize,
+    surfaces: HashSet<String>,
+    samples: Vec<GrammarResidualReviewSample>,
+}
+
+fn grammar_review(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let text = read_text_selection(args)?;
+    let tokens = pipeline(args)?.process(&text, &[]);
+    if args.flags.contains("group-residuals") {
+        return grammar_review_residual_candidates(args, &text, &tokens);
+    }
+    let catalog = kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()?;
+    let family = args.options.get("family").cloned();
+    let mut line_ranges = Vec::new();
+    let mut offset = 0;
+    for (index, line) in text.split_inclusive('\n').enumerate() {
+        let prepared = ruby::prepare_text(line).text;
+        let length = prepared.chars().count();
+        line_ranges.push((index + 1, offset, offset + length, line.trim_end_matches(['\r', '\n']).to_string()));
+        offset += length;
+    }
+    if line_ranges.is_empty() && !text.is_empty() {
+        line_ranges.push((1, 0, text.chars().count(), text.clone()));
+    }
+
+    let mut grouped: BTreeMap<usize, GrammarReviewItem> = BTreeMap::new();
+    for token in &tokens {
+        for occurrence in &token.bunsetsu.grammar_occurrences {
+            if matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Accepted)
+                && !occurrence.show_badge
+                && !args.flags.contains("include-atoms")
+            {
+                continue;
+            }
+            let family_matches = family.as_ref().is_none_or(|requested| {
+                catalog.concept(&occurrence.concept_id).is_some_and(|concept| {
+                    concept.kind == *requested
+                        || concept.semantic_domains.iter().any(|item| item == requested)
+                        || concept.function_tags.iter().any(|item| item == requested)
+                })
+            });
+            if !family_matches {
+                continue;
+            }
+            let Some((line_number, _, _, line_text)) = line_ranges
+                .iter()
+                .find(|(_, start, end, _)| occurrence.anchor_range.0 >= *start && occurrence.anchor_range.0 < *end)
+            else {
+                continue;
+            };
+            let item = grouped.entry(*line_number).or_insert_with(|| GrammarReviewItem {
+                review_id: format!("line-{line_number}"),
+                line_number: *line_number,
+                text: line_text.clone(),
+                issue_score: 0,
+                accepted: Vec::new(),
+                pending: Vec::new(),
+                rejected: Vec::new(),
+                residuals: Vec::new(),
+                morphemes: Vec::new(),
+            });
+            let view = GrammarReviewOccurrence {
+                occurrence_id: occurrence.occurrence_id.clone(),
+                concept_id: occurrence.concept_id.clone(),
+                rule_id: occurrence.rule_id.clone(),
+                status: format!("{:?}", occurrence.status).to_ascii_lowercase(),
+                char_range: occurrence.anchor_range,
+                actual_form: occurrence.captures.iter().map(|capture| capture.surface.as_str()).collect(),
+                explanation_ready: catalog
+                    .concept(&occurrence.concept_id)
+                    .and_then(|concept| catalog.explanation(&concept.default_explanation_id))
+                    .is_some(),
+            };
+            match occurrence.status {
+                kotoclip_core::models::GrammarOccurrenceStatus::Accepted => item.accepted.push(view),
+                kotoclip_core::models::GrammarOccurrenceStatus::Pending => {
+                    item.issue_score += 3;
+                    item.pending.push(view);
+                }
+                kotoclip_core::models::GrammarOccurrenceStatus::Rejected => {
+                    item.issue_score += 1;
+                    item.rejected.push(view);
+                }
+                kotoclip_core::models::GrammarOccurrenceStatus::Unknown => {
+                    item.issue_score += 4;
+                    item.pending.push(view);
+                }
+            }
+        }
+        for residual in &token.bunsetsu.functional_residuals {
+            let Some((line_number, _, _, line_text)) = line_ranges
+                .iter()
+                .find(|(_, start, end, _)| residual.char_range.0 >= *start && residual.char_range.0 < *end)
+            else {
+                continue;
+            };
+            let item = grouped.entry(*line_number).or_insert_with(|| GrammarReviewItem {
+                review_id: format!("line-{line_number}"),
+                line_number: *line_number,
+                text: line_text.clone(),
+                issue_score: 0,
+                accepted: Vec::new(),
+                pending: Vec::new(),
+                rejected: Vec::new(),
+                residuals: Vec::new(),
+                morphemes: Vec::new(),
+            });
+            item.issue_score += 5;
+            item.residuals.push(residual.clone());
+        }
+    }
+    if args.flags.contains("include-morphemes") {
+        for token in &tokens {
+            for morpheme in &token.bunsetsu.morphemes {
+                let Some((line_number, _, _, _)) = line_ranges
+                    .iter()
+                    .find(|(_, start, end, _)| {
+                        morpheme.char_range.0 >= *start && morpheme.char_range.0 < *end
+                    })
+                else {
+                    continue;
+                };
+                let Some(item) = grouped.get_mut(line_number) else {
+                    continue;
+                };
+                item.morphemes.push(GrammarReviewMorpheme {
+                    surface: morpheme.surface.clone(),
+                    base_form: morpheme.base_form.clone(),
+                    pos_major: morpheme.pos.major.clone(),
+                    pos_sub1: morpheme.pos.sub1.clone(),
+                    conjugation_type: morpheme.conjugation_type.clone(),
+                    conjugation_form: morpheme.conjugation_form.clone(),
+                    char_range: morpheme.char_range,
+                    bunsetsu_surface: token.bunsetsu.surface.clone(),
+                });
+            }
+        }
+    }
+    let mut items = grouped.into_values().collect::<Vec<_>>();
+    if let Some(value) = args.options.get("lines") {
+        let selected = value
+            .split(',')
+            .map(|item| {
+                item.trim()
+                    .parse::<usize>()
+                    .map_err(|_| format!("--lines 含非法行号：{item}"))
+            })
+            .collect::<Result<HashSet<_>, _>>()
+            .map_err(io::Error::other)?;
+        items.retain(|item| selected.contains(&item.line_number));
+    }
+    if args.flags.contains("issues-first") {
+        items.sort_by_key(|item| (std::cmp::Reverse(item.issue_score), item.line_number));
+    }
+    let batch_size = args.usize("batch-size", 30).map_err(io::Error::other)?;
+    if !(20..=50).contains(&batch_size) {
+        return Err("--batch-size 必须在 20 到 50 之间".into());
+    }
+    let batch = args.usize("batch", 1).map_err(io::Error::other)?.max(1);
+    let total_items = items.len();
+    let total_batches = total_items.div_ceil(batch_size).max(1);
+    let start = (batch - 1).saturating_mul(batch_size).min(total_items);
+    let end = (start + batch_size).min(total_items);
+    let report = GrammarReviewBatch {
+        batch,
+        batch_size,
+        total_items,
+        total_batches,
+        family,
+        items: items.drain(start..end).collect(),
+    };
+    output_json(args, &report)
+}
+
+fn grammar_review_residual_candidates(
+    args: &CliArgs,
+    text: &str,
+    tokens: &[kotoclip_core::models::AnnotatedToken],
+) -> Result<(), Box<dyn Error>> {
+    let mut line_ranges = Vec::new();
+    let mut offset = 0;
+    for (index, line) in text.split_inclusive('\n').enumerate() {
+        let prepared = ruby::prepare_text(line).text;
+        let length = prepared.chars().count();
+        line_ranges.push((
+            index + 1,
+            offset,
+            offset + length,
+            line.trim_end_matches(['\r', '\n']).to_string(),
+        ));
+        offset += length;
+    }
+    if line_ranges.is_empty() && !text.is_empty() {
+        line_ranges.push((1, 0, text.chars().count(), text.to_string()));
+    }
+
+    let sample_count = args
+        .usize("sample-count", 4)
+        .map_err(io::Error::other)?
+        .clamp(1, 12);
+    let mut grouped: BTreeMap<
+        (String, String, String, String, String, String),
+        GrammarResidualReviewAggregate,
+    > = BTreeMap::new();
+    for token in tokens {
+        for residual in &token.bunsetsu.functional_residuals {
+            let key = (
+                residual.base_form.clone(),
+                residual.pos.major.clone(),
+                residual.pos.sub1.clone(),
+                residual.conjugation_type.clone(),
+                residual.conjugation_form.clone(),
+                residual.reason.clone(),
+            );
+            let aggregate = grouped.entry(key).or_default();
+            aggregate.occurrences += 1;
+            aggregate.surfaces.insert(residual.surface.clone());
+            if aggregate.samples.len() >= sample_count {
+                continue;
+            }
+            let Some((line_number, _, _, line_text)) = line_ranges
+                .iter()
+                .find(|(_, start, end, _)| {
+                    residual.char_range.0 >= *start && residual.char_range.0 < *end
+                })
+            else {
+                continue;
+            };
+            let morphemes = token
+                .bunsetsu
+                .morphemes
+                .iter()
+                .map(|morpheme| GrammarReviewMorpheme {
+                    surface: morpheme.surface.clone(),
+                    base_form: morpheme.base_form.clone(),
+                    pos_major: morpheme.pos.major.clone(),
+                    pos_sub1: morpheme.pos.sub1.clone(),
+                    conjugation_type: morpheme.conjugation_type.clone(),
+                    conjugation_form: morpheme.conjugation_form.clone(),
+                    char_range: morpheme.char_range,
+                    bunsetsu_surface: token.bunsetsu.surface.clone(),
+                })
+                .collect();
+            aggregate.samples.push(GrammarResidualReviewSample {
+                line_number: *line_number,
+                text: line_text.clone(),
+                bunsetsu_surface: token.bunsetsu.surface.clone(),
+                residual: residual.clone(),
+                morphemes,
+            });
+        }
+    }
+
+    let mut items = grouped
+        .into_iter()
+        .map(
+            |(
+                (base_form, pos_major, pos_sub1, conjugation_type, conjugation_form, reason),
+                aggregate,
+            )| {
+                let mut surfaces = aggregate.surfaces.into_iter().collect::<Vec<_>>();
+                surfaces.sort();
+                GrammarResidualReviewCandidate {
+                    review_id: format!(
+                        "residual:{base_form}:{pos_major}:{pos_sub1}:{conjugation_type}:{conjugation_form}"
+                    ),
+                    base_form,
+                    pos_major,
+                    pos_sub1,
+                    conjugation_type,
+                    conjugation_form,
+                    reason,
+                    occurrences: aggregate.occurrences,
+                    surfaces,
+                    samples: aggregate.samples,
+                }
+            },
+        )
+        .collect::<Vec<_>>();
+    items.sort_by(|left, right| {
+        right
+            .occurrences
+            .cmp(&left.occurrences)
+            .then_with(|| left.base_form.cmp(&right.base_form))
+            .then_with(|| left.pos_major.cmp(&right.pos_major))
+            .then_with(|| left.pos_sub1.cmp(&right.pos_sub1))
+    });
+
+    let batch_size = args.usize("batch-size", 30).map_err(io::Error::other)?;
+    if !(20..=50).contains(&batch_size) {
+        return Err("--batch-size 必须在 20 到 50 之间".into());
+    }
+    let batch = args.usize("batch", 1).map_err(io::Error::other)?.max(1);
+    let total_items = items.len();
+    let total_batches = total_items.div_ceil(batch_size).max(1);
+    let start = (batch - 1).saturating_mul(batch_size).min(total_items);
+    let end = (start + batch_size).min(total_items);
+    let report = GrammarResidualReviewBatch {
+        batch,
+        batch_size,
+        total_items,
+        total_batches,
+        items: items.drain(start..end).collect(),
+    };
+    output_json(args, &report)
+}
+
+fn output_json<T: Serialize>(args: &CliArgs, value: &T) -> Result<(), Box<dyn Error>> {
+    let json = serde_json::to_string_pretty(value)?;
+    if let Some(path) = args.options.get("json") {
+        std::fs::write(path, &json)?;
+    }
+    if !args.flags.contains("quiet") {
+        println!("{json}");
+    }
     Ok(())
 }
 
@@ -2139,11 +2737,27 @@ fn print_help() {
   --dict-dir PATH       SQLite 词典目录，默认 data/dicts
   --dict-source-dir PATH 词典源包目录，默认 data/dict-sources
   --system-dict PATH    Vibrato system.dic，默认 ipadic/system.dic
+  --quiet               与 --json 同用时不在终端重复输出 JSON
 
 命令：
   dict-info
   lookup --word WORD [--reading READING] [--full]
   analyze (--text TEXT | --source PATH)
+  grammar-inspect (--text TEXT | --source PATH)
+  grammar-scan (--text TEXT | --source PATH) [--chapter TITLE]
+        [--include-pending --include-rejected --json PATH]
+  grammar-residual (--text TEXT | --source PATH) [--chapter TITLE --json PATH]
+  grammar-catalog [--query TEXT --family NAME --jlpt N --status STATUS]
+        [--source-ref TEXT --json PATH]
+  grammar-explain (--concept ID | --text TEXT | --source PATH)
+        [--occurrence ID --json PATH]
+  grammar-library-audit [--json PATH]
+  grammar-audit [--cases PATH --json PATH]
+  grammar-compare --before PATH --after PATH [--json PATH]
+  grammar-review (--text TEXT | --source PATH) [--chapter TITLE]
+        [--family NAME --batch N --batch-size 20..50 --issues-first]
+        [--lines 12,35,81 --include-atoms --include-morphemes --group-residuals]
+        [--sample-count N --json PATH]
   audit --source PATH [--chapter TITLE] [--page-lines N --page N]
         [--start-line N --line-count N --sample-every N]
         [--json PATH --min-coverage 0.10 --max-misses N]

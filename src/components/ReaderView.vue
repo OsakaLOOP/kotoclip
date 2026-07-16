@@ -7,11 +7,12 @@ import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
 import { useDragMerge } from "../composables/useDragMerge";
 import { useScrollFocus } from "../composables/useScrollFocus";
-import { DictEntry, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, SegmentationCandidate, AnnotatedToken } from "../types";
+import { DictEntry, ExpressionBoundaryEffect, ExpressionRule, ExpressionType, SegmentationCandidate, AnnotatedToken, GrammarDictionaryTarget } from "../types";
 
 import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import ExplanationPopover from "./explanation/ExplanationPopover.vue";
 import GrammarPopover from "./explanation/GrammarPopover.vue";
+import GrammarLibraryPanel from "./GrammarLibraryPanel.vue";
 import ContextMenu from "./ContextMenu.vue";
 import ExportPanel from "./ExportPanel.vue";
 import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
@@ -79,6 +80,25 @@ const explanationInteraction = useExplanationInteraction({
   session: explanation,
 });
 
+function openGrammarDictionary(target: GrammarDictionaryTarget) {
+  for (const paragraph of paragraphs.value) {
+    for (let tokenIndex = 0; tokenIndex < paragraph.tokens.length; tokenIndex++) {
+      const token = paragraph.tokens[tokenIndex];
+      const morphemeIndex = token.bunsetsu.morphemes.findIndex((morpheme) =>
+        morpheme.char_range[0] === target.char_range[0] && morpheme.char_range[1] === target.char_range[1],
+      );
+      if (morphemeIndex < 0) continue;
+      const capsule = document.querySelector<HTMLElement>(
+        `[data-paragraph-id="${paragraph.id}"][data-token-index="${tokenIndex}"]`,
+      );
+      const morpheme = capsule?.querySelector<HTMLElement>(`[data-morpheme-index="${morphemeIndex}"]`);
+      if (!capsule || !morpheme) return;
+      explanation.focusMorpheme({ paragraphId: paragraph.id, tokenIndex, morphemeIndex }, token, capsule, morpheme);
+      return;
+    }
+  }
+}
+
 // 详细释义弹窗状态
 const showDefinitionModal = ref(false);
 const activeWordForModal = ref("");
@@ -96,6 +116,7 @@ const candidatesLoading = ref(false);
 
 // 侧边栏导出面板显示状态
 const showExportPanel = ref(false);
+const showGrammarLibrary = ref(false);
 const expressionRules = ref<ExpressionRule[]>([]);
 const expressionDraft = ref<AnnotatedToken[]>([]);
 const expressionDraftMorphemeRange = ref({ startMorphemeIdx: 0, endMorphemeIdx: 0 });
@@ -293,7 +314,7 @@ async function triggerAnalysis(recordExposure = true) {
 
 // 事件委托：段落内的点击 (切换选中/已知)
 function handleParagraphClick(e: MouseEvent, paragraphId: number) {
-  // 如果是右键/双击菜单正在显示，或者正在拖拽，不触发点击
+  // 右键菜单显示或拖拽期间，不切换导出选择。
   if (contextMenuShow.value || isDragging.value) return;
 
   const target = e.target as HTMLElement;
@@ -312,7 +333,7 @@ function handleParagraphClick(e: MouseEvent, paragraphId: number) {
   toggleSelect(paragraphId, tokenIndex);
 }
 
-// 右键保留词条操作和 N-best 分词候选；双击不再承担拆分入口。
+// 右键仅保留词条操作和 N-best 分词候选；词汇与语素解释统一由悬浮进入。
 function handleParagraphContextMenu(e: MouseEvent, paragraphId: number) {
   const target = e.target as HTMLElement;
   const capsuleEl = target.closest("[data-token-index]") as HTMLElement;
@@ -454,6 +475,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <button class="icon-btn" :class="{ active: showRuleWorkbench }" @click="openExpressionRules">
           ⛓ 规则
         </button>
+        <button class="icon-btn" :class="{ active: showGrammarLibrary }" @click="showGrammarLibrary = true">
+          文法库
+        </button>
         <button class="icon-btn" :class="{ active: einkMode }" @click="toggleEinkMode">
           🕶 墨水屏
         </button>
@@ -588,9 +612,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       :anchor="explanation.grammarAnchorRect.value"
       @enter="explanationInteraction.handlePopoverEnter"
       @leave="explanationInteraction.handlePopoverLeave"
+      @open-dictionary="openGrammarDictionary"
     />
 
-    <!-- 4. 双击上下文操作菜单 -->
+    <!-- 4. 右键上下文操作菜单 -->
     <ContextMenu
       :show="contextMenuShow"
       :x="contextMenuX"
@@ -631,6 +656,11 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       @close="showRuleWorkbench = false"
       @delete="removeExpressionRule"
       @save="saveExpressionDraft"
+    />
+
+    <GrammarLibraryPanel
+      :show="showGrammarLibrary"
+      @close="showGrammarLibrary = false"
     />
 
     <!-- 6. 详细词典释义弹窗 (Modal) -->

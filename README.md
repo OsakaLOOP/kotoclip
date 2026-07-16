@@ -60,6 +60,20 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- lookup --word 警察署 --readi
 # 分析文本
 cargo run -p kotoclip-core --bin kotoclip-cli -- analyze --text "七日は警察署へ向かった。"
 
+# 校验并重建语法知识目录、讲解库和搜索索引
+python scripts/build_grammar_catalog.py --check
+python scripts/test_grammar_catalog.py
+
+# 查看语法目录、精确解析正文 occurrence、审计知识库
+cargo run -p kotoclip-core --bin kotoclip-cli -- grammar-catalog --query "〜ている"
+cargo run -p kotoclip-core --bin kotoclip-cli -- grammar-explain --text "矢印キーを使ってください。"
+cargo run -p kotoclip-core --bin kotoclip-cli -- grammar-library-audit
+
+# 按实际语料生成 20～50 项 residual 审计批次
+cargo run -p kotoclip-core --bin kotoclip-cli -- grammar-review `
+  --source output.md --chapter "## 第一話　冷やし神" `
+  --group-residuals --sample-count 3 --batch 1 --batch-size 20
+
 # 交互研究
 cargo run -p kotoclip-core --bin kotoclip-cli -- repl
 
@@ -78,13 +92,13 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- session-benchmark `
   --source output.md --chapter "## 第一話　冷やし神" `
   --profile data/research-profile.sqlite
 
-# 以当前完整管线为动态基准，随机验证范围加载与规则增删的增量一致性
+# 仅在增量管线迁移或失效策略重构时使用的专项诊断
 cargo run -p kotoclip-core --bin kotoclip-cli -- incremental-consistency `
   --source output.md --chapter "## 第一話　冷やし神" `
   --profile data/research-profile.sqlite --seed 2026071301 `
   --load-cases 5 --rule-cases 5
 
-# 默认用三个可复现种子运行完整差分套件
+# 迁移期完整差分套件，不属于日常语法目录验收
 .\scripts\incremental_consistency.ps1 -SourcePath output.md
 ```
 
@@ -129,6 +143,8 @@ npm run build
 ```
 
 ## 悬浮交互调试
+
+阅读器中的词汇、语素与语法解释均由悬浮命中进入，不存在双击查词路径。语法浮层按正文携带的 occurrence／concept ID 精确解析；顶部“文法库”用于脱离正文的主动搜索和讲解浏览。
 
 词典／语法浮层的命中、关闭宽限、请求代次、最终渲染门和布局探针默认全部关闭。仅使用以下 Tauri dev 配置启动时显示调试浮层：
 

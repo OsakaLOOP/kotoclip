@@ -1,0 +1,1670 @@
+[
+  {
+    "concept_id": "morphology.chain",
+    "kind": "morphology",
+    "canonical_label": "活用链",
+    "aliases": [],
+    "semantic_domains": [
+      "morphology"
+    ],
+    "function_tags": [
+      "inflection"
+    ],
+    "jlpt_level": null,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.chain",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.form.te",
+    "kind": "morphology",
+    "canonical_label": "て形",
+    "aliases": [],
+    "semantic_domains": [
+      "connection"
+    ],
+    "function_tags": [
+      "te_form"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.form.te",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.form.de",
+    "kind": "morphology",
+    "canonical_label": "で形",
+    "aliases": [],
+    "semantic_domains": [
+      "connection"
+    ],
+    "function_tags": [
+      "de_form"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.form.de",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.tense.past",
+    "kind": "morphology",
+    "canonical_label": "过去",
+    "aliases": [],
+    "semantic_domains": [
+      "tense"
+    ],
+    "function_tags": [
+      "past"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.tense.past",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.polarity.negative",
+    "kind": "morphology",
+    "canonical_label": "否定",
+    "aliases": [],
+    "semantic_domains": [
+      "polarity"
+    ],
+    "function_tags": [
+      "negative"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.polarity.negative",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.voice.causative",
+    "kind": "morphology",
+    "canonical_label": "使役",
+    "aliases": [],
+    "semantic_domains": [
+      "voice"
+    ],
+    "function_tags": [
+      "causative"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.voice.causative",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.voice.passive_potential",
+    "kind": "morphology",
+    "canonical_label": "られる候选",
+    "aliases": [],
+    "semantic_domains": [
+      "voice"
+    ],
+    "function_tags": [
+      "passive",
+      "potential",
+      "honorific",
+      "spontaneous"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.voice.passive_potential",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.politeness.masu",
+    "kind": "morphology",
+    "canonical_label": "ます体",
+    "aliases": [],
+    "semantic_domains": [
+      "politeness"
+    ],
+    "function_tags": [
+      "masu"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.politeness.masu",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.modality.desire",
+    "kind": "morphology",
+    "canonical_label": "〜たい",
+    "aliases": [],
+    "semantic_domains": [
+      "modality"
+    ],
+    "function_tags": [
+      "desire"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.modality.desire",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.mood.volitional",
+    "kind": "morphology",
+    "canonical_label": "意向形",
+    "aliases": [],
+    "semantic_domains": [
+      "mood"
+    ],
+    "function_tags": [
+      "volitional"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.mood.volitional",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.mood.conditional",
+    "kind": "morphology",
+    "canonical_label": "假定形",
+    "aliases": [],
+    "semantic_domains": [
+      "condition"
+    ],
+    "function_tags": [
+      "conditional"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.mood.conditional",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.ga",
+    "kind": "particle",
+    "canonical_label": "が",
+    "aliases": [],
+    "semantic_domains": [
+      "case",
+      "discourse"
+    ],
+    "function_tags": [
+      "subject",
+      "focus"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.ga",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.wo",
+    "kind": "particle",
+    "canonical_label": "を",
+    "aliases": [],
+    "semantic_domains": [
+      "case"
+    ],
+    "function_tags": [
+      "patient",
+      "route"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.wo",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.ni",
+    "kind": "particle",
+    "canonical_label": "に",
+    "aliases": [],
+    "semantic_domains": [
+      "case"
+    ],
+    "function_tags": [
+      "goal",
+      "location",
+      "time",
+      "result"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.ni",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.e",
+    "kind": "particle",
+    "canonical_label": "へ",
+    "aliases": [],
+    "semantic_domains": [
+      "case"
+    ],
+    "function_tags": [
+      "direction"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.e",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.de",
+    "kind": "particle",
+    "canonical_label": "で",
+    "aliases": [],
+    "semantic_domains": [
+      "case"
+    ],
+    "function_tags": [
+      "location",
+      "instrument",
+      "cause"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.de",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.to",
+    "kind": "particle",
+    "canonical_label": "と",
+    "aliases": [],
+    "semantic_domains": [
+      "case",
+      "quotation"
+    ],
+    "function_tags": [
+      "quotation",
+      "comitative"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.to",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.kara",
+    "kind": "particle",
+    "canonical_label": "から",
+    "aliases": [],
+    "semantic_domains": [
+      "case"
+    ],
+    "function_tags": [
+      "source",
+      "cause"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.kara",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.made",
+    "kind": "particle",
+    "canonical_label": "まで",
+    "aliases": [],
+    "semantic_domains": [
+      "range"
+    ],
+    "function_tags": [
+      "endpoint"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.made",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.wa",
+    "kind": "particle",
+    "canonical_label": "は",
+    "aliases": [],
+    "semantic_domains": [
+      "discourse"
+    ],
+    "function_tags": [
+      "topic",
+      "contrast"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.wa",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.mo",
+    "kind": "particle",
+    "canonical_label": "も",
+    "aliases": [],
+    "semantic_domains": [
+      "discourse"
+    ],
+    "function_tags": [
+      "addition",
+      "emphasis"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.mo",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.shika",
+    "kind": "particle",
+    "canonical_label": "しか",
+    "aliases": [],
+    "semantic_domains": [
+      "restriction"
+    ],
+    "function_tags": [
+      "restriction"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.shika",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.dake",
+    "kind": "particle",
+    "canonical_label": "だけ",
+    "aliases": [],
+    "semantic_domains": [
+      "restriction"
+    ],
+    "function_tags": [
+      "limit"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.dake",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.te",
+    "kind": "connective",
+    "canonical_label": "て",
+    "aliases": [],
+    "semantic_domains": [
+      "connection"
+    ],
+    "function_tags": [
+      "connective"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.te",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.de_connective",
+    "kind": "connective",
+    "canonical_label": "で",
+    "aliases": [],
+    "semantic_domains": [
+      "connection"
+    ],
+    "function_tags": [
+      "connective"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.de_connective",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.ba",
+    "kind": "connective",
+    "canonical_label": "ば",
+    "aliases": [],
+    "semantic_domains": [
+      "condition"
+    ],
+    "function_tags": [
+      "conditional"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.ba",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.auxiliary.nai",
+    "kind": "auxiliary",
+    "canonical_label": "ない",
+    "aliases": [],
+    "semantic_domains": [
+      "polarity"
+    ],
+    "function_tags": [
+      "negative"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.auxiliary.nai",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.auxiliary.ta",
+    "kind": "auxiliary",
+    "canonical_label": "た",
+    "aliases": [],
+    "semantic_domains": [
+      "tense"
+    ],
+    "function_tags": [
+      "past",
+      "perfect"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.auxiliary.ta",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.auxiliary.masu",
+    "kind": "auxiliary",
+    "canonical_label": "ます",
+    "aliases": [],
+    "semantic_domains": [
+      "politeness"
+    ],
+    "function_tags": [
+      "polite"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.auxiliary.masu",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.auxiliary.desu",
+    "kind": "auxiliary",
+    "canonical_label": "です",
+    "aliases": [],
+    "semantic_domains": [
+      "judgement",
+      "politeness"
+    ],
+    "function_tags": [
+      "copula"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.auxiliary.desu",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.auxiliary.da",
+    "kind": "auxiliary",
+    "canonical_label": "だ",
+    "aliases": [],
+    "semantic_domains": [
+      "judgement"
+    ],
+    "function_tags": [
+      "copula"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.auxiliary.da",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.iru",
+    "kind": "functional_verb",
+    "canonical_label": "いる（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect"
+    ],
+    "function_tags": [
+      "progressive",
+      "resultative"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.iru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.aru",
+    "kind": "functional_verb",
+    "canonical_label": "ある（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect"
+    ],
+    "function_tags": [
+      "resultative"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.aru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.oku",
+    "kind": "functional_verb",
+    "canonical_label": "おく（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect"
+    ],
+    "function_tags": [
+      "preparatory"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.oku",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.miru",
+    "kind": "functional_verb",
+    "canonical_label": "みる（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "modality"
+    ],
+    "function_tags": [
+      "attempt"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.miru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.shimau",
+    "kind": "functional_verb",
+    "canonical_label": "しまう（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect",
+      "stance"
+    ],
+    "function_tags": [
+      "completion",
+      "regret"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.shimau",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.iku",
+    "kind": "functional_verb",
+    "canonical_label": "いく（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "directional_aspect"
+    ],
+    "function_tags": [
+      "away",
+      "continuation"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.iku",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.kuru",
+    "kind": "functional_verb",
+    "canonical_label": "くる（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "directional_aspect"
+    ],
+    "function_tags": [
+      "toward",
+      "emergence"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.kuru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.yaru",
+    "kind": "functional_verb",
+    "canonical_label": "やる（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "giver_viewpoint"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.yaru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.ageru",
+    "kind": "functional_verb",
+    "canonical_label": "あげる（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "giver_viewpoint"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.ageru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.kureru",
+    "kind": "functional_verb",
+    "canonical_label": "くれる（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "receiver_benefit"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.kureru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.kudasaru",
+    "kind": "functional_verb",
+    "canonical_label": "くださる（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive",
+      "honorific"
+    ],
+    "function_tags": [
+      "benefactive_respectful",
+      "subject_honorific"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.kudasaru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.morau",
+    "kind": "functional_verb",
+    "canonical_label": "もらう（补助）",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "receiver_viewpoint"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.morau",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.functional.naru",
+    "kind": "functional_verb",
+    "canonical_label": "なる（功能）",
+    "aliases": [],
+    "semantic_domains": [
+      "construction_support"
+    ],
+    "function_tags": [
+      "become"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.functional.naru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.aspect.te_iru",
+    "kind": "construction",
+    "canonical_label": "〜ている",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect"
+    ],
+    "function_tags": [
+      "progressive",
+      "resultative"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.aspect.te_iru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.aspect.te_aru",
+    "kind": "construction",
+    "canonical_label": "〜てある",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect"
+    ],
+    "function_tags": [
+      "resultative"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.aspect.te_aru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.aspect.te_oku",
+    "kind": "construction",
+    "canonical_label": "〜ておく",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect"
+    ],
+    "function_tags": [
+      "preparatory"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.aspect.te_oku",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.modality.te_miru",
+    "kind": "construction",
+    "canonical_label": "〜てみる",
+    "aliases": [],
+    "semantic_domains": [
+      "modality"
+    ],
+    "function_tags": [
+      "attempt"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.modality.te_miru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.aspect.te_shimau",
+    "kind": "construction",
+    "canonical_label": "〜てしまう",
+    "aliases": [],
+    "semantic_domains": [
+      "aspect",
+      "stance"
+    ],
+    "function_tags": [
+      "completion",
+      "regret"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.aspect.te_shimau",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.direction.te_iku",
+    "kind": "construction",
+    "canonical_label": "〜ていく",
+    "aliases": [],
+    "semantic_domains": [
+      "directional_aspect"
+    ],
+    "function_tags": [
+      "away",
+      "continuation"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.direction.te_iku",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.direction.te_kuru",
+    "kind": "construction",
+    "canonical_label": "〜てくる",
+    "aliases": [],
+    "semantic_domains": [
+      "directional_aspect"
+    ],
+    "function_tags": [
+      "toward",
+      "emergence"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.direction.te_kuru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.benefactive.te_yaru",
+    "kind": "construction",
+    "canonical_label": "〜てやる",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "giver_viewpoint"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.benefactive.te_yaru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.benefactive.te_ageru",
+    "kind": "construction",
+    "canonical_label": "〜てあげる",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "giver_viewpoint"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.benefactive.te_ageru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.benefactive.te_kureru",
+    "kind": "construction",
+    "canonical_label": "〜てくれる",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "receiver_benefit"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.benefactive.te_kureru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.benefactive.te_kudasaru",
+    "kind": "construction",
+    "canonical_label": "〜てくださる",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive",
+      "honorific"
+    ],
+    "function_tags": [
+      "benefactive_respectful",
+      "subject_honorific"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.benefactive.te_kudasaru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.benefactive.te_morau",
+    "kind": "construction",
+    "canonical_label": "〜てもらう",
+    "aliases": [],
+    "semantic_domains": [
+      "benefactive"
+    ],
+    "function_tags": [
+      "receiver_viewpoint"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.benefactive.te_morau",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.request.te_kudasai",
+    "kind": "construction",
+    "canonical_label": "〜てください",
+    "aliases": [],
+    "semantic_domains": [
+      "request"
+    ],
+    "function_tags": [
+      "polite_request"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.request.te_kudasai",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.obligation.nakereba_naranai",
+    "kind": "construction",
+    "canonical_label": "〜なければならない",
+    "aliases": [],
+    "semantic_domains": [
+      "obligation",
+      "condition"
+    ],
+    "function_tags": [
+      "obligation"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.obligation.nakereba_naranai",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.ni_wa",
+    "kind": "construction",
+    "canonical_label": "には",
+    "aliases": [],
+    "semantic_domains": [
+      "case",
+      "discourse"
+    ],
+    "function_tags": [
+      "topic",
+      "contrast"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.ni_wa",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.ni_mo",
+    "kind": "construction",
+    "canonical_label": "にも",
+    "aliases": [],
+    "semantic_domains": [
+      "case",
+      "discourse"
+    ],
+    "function_tags": [
+      "addition"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.ni_mo",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.particle.de_wa",
+    "kind": "construction",
+    "canonical_label": "では",
+    "aliases": [],
+    "semantic_domains": [
+      "case",
+      "discourse"
+    ],
+    "function_tags": [
+      "topic",
+      "contrast"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.particle.de_wa",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.connective.te_mo",
+    "kind": "construction",
+    "canonical_label": "ても",
+    "aliases": [],
+    "semantic_domains": [
+      "concession",
+      "condition"
+    ],
+    "function_tags": [
+      "concession"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.connective.te_mo",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.modality.volitional_to_suru",
+    "kind": "construction",
+    "canonical_label": "〜ようとする",
+    "aliases": [],
+    "semantic_domains": [
+      "modality"
+    ],
+    "function_tags": [
+      "attempt",
+      "imminence"
+    ],
+    "jlpt_level": 3,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.modality.volitional_to_suru",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.formal.tsumori_da",
+    "kind": "formal_noun",
+    "canonical_label": "〜つもりだ",
+    "aliases": [],
+    "semantic_domains": [
+      "intention"
+    ],
+    "function_tags": [
+      "intention",
+      "belief"
+    ],
+    "jlpt_level": 4,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.formal.tsumori_da",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "grammar.connective.nagara_mo",
+    "kind": "construction",
+    "canonical_label": "〜ながら（も）",
+    "aliases": [],
+    "semantic_domains": [
+      "connection",
+      "concession"
+    ],
+    "function_tags": [
+      "simultaneous",
+      "concession"
+    ],
+    "jlpt_level": 3,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.grammar.connective.nagara_mo",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  }
+]

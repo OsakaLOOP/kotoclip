@@ -1,0 +1,67 @@
+{
+  "bundle_id": "curated-text-batch-003",
+  "audit_status": "verified",
+  "source_refs": ["corpus:七日の喰い神/第一話:grammar-review-batch-003", "ipadic:provider-decomposition"],
+  "review": {"item_count": 30, "baseline": "data/baselines/grammar-review-curated-002-post.json"},
+  "items": [
+    {
+      "concept_id": "grammar.quotation.to_iu",
+      "kind": "construction",
+      "canonical_label": "〜という",
+      "aliases": ["引用という", "名称という"],
+      "semantic_domains": ["quotation", "naming", "content"],
+      "function_tags": ["quotation", "naming", "attributive_content"],
+      "jlpt_level": 4,
+      "register": ["modern_standard"],
+      "explanation": {
+        "compact_summary": "由引用助词と与动词言う构成，用于引用、命名或把内容连到后续名词",
+        "connection": "引用内容＋と＋言う；基础形可由 IPADIC 合并输出という提供结构化分解证据。",
+        "formation": "と（引用）＋言う（基本形）",
+        "usage_notes": [
+          "运行时保留 provider 原节点，同时生成と与言う两个虚拟 capture。",
+          "といった、っていう等需要各自的活用或缩约 realization，不由本基础规则表面覆盖。"
+        ],
+        "semantic_constraints": ["前项是被引用、命名或内容化的成分。"],
+        "examples": ["宝の島という名称", "誰がいるというのか", "『ヤミー』という鳴き声"],
+        "counter_examples": ["といった不能直接按という的表面别名命中。"],
+        "body_blocks": [
+          {"kind": "paragraph", "label": "本句构成", "text": "{{actual_form}} 被分解为引用成分「と」与活用动词「言う」。"},
+          {"kind": "warning", "label": "provider 边界", "text": "分词器合并输出只是证据载体，不改变 concept，也不代替活用状态。"}
+        ]
+      },
+      "senses": [
+        {"sense_id": "grammar.quotation.to_iu.quotation", "label": "引用・内容", "function_summary": "把前项作为被说、被认为或被描述的内容", "semantic_features": {"function": "quotation"}},
+        {"sense_id": "grammar.quotation.to_iu.naming", "label": "命名・称谓", "function_summary": "把前项作为名称或称谓连接到后续名词", "semantic_features": {"function": "naming"}}
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.provider.to_iu.basic",
+          "rule_id": "provider.to_iu.basic",
+          "possible_sense_ids": ["grammar.quotation.to_iu.quotation", "grammar.quotation.to_iu.naming"],
+          "connection_signature": "と＋言う（基本形；IPADIC 合并节点）",
+          "functional_requirements": ["IPADIC: という／助詞-格助詞-連語"],
+          "context_requirements": ["具体为引用或命名需结合后续成分"],
+          "examples": ["宝の島という名称", "誰がいるというのか"],
+          "counter_examples": ["といった", "っていう"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 78,
+            "show_badge": true,
+            "captures": ["quotative", "predicate"],
+            "atoms": [
+              {
+                "base_forms": ["という"],
+                "pos_major": ["助詞"],
+                "pos_sub1": ["格助詞"],
+                "provider_components": [
+                  {"role": "quotative", "surface": "と", "base_form": "と"},
+                  {"role": "predicate", "surface": "いう", "base_form": "言う"}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

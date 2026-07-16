@@ -208,6 +208,13 @@
   opacity: 1 !important;
 }
 
+/* 语法入口与词汇掌握状态正交；已知词上的语法范围仍保持蓝色。 */
+.bunsetsu-capsule.is-known:not(.is-selected) .grammar-match {
+  color: #1769aa !important;
+  text-decoration: underline !important;
+  text-decoration-color: #1769aa !important;
+}
+
 /* 标点符号/符号胶囊 (标点两侧不额外插入间隙，永远不可选、不可拖拽) */
 .bunsetsu-capsule.punctuation {
   cursor: default;

@@ -3,6 +3,7 @@ pub mod candidates;
 pub mod expressions;
 pub mod grammar;
 pub mod lexical;
+pub mod morphology;
 pub mod morpheme;
 pub mod restore;
 pub mod ruby;
@@ -196,6 +197,9 @@ fn literal_token(chars: &[char], segment: TextSegment) -> AnnotatedToken {
                 pos,
             },
             grammar_tags: Vec::new(),
+            morphology: Default::default(),
+            grammar_occurrences: Vec::new(),
+            functional_residuals: Vec::new(),
             word_formations: Vec::new(),
             lexical_units: Vec::new(),
             function: None,
@@ -701,6 +705,7 @@ impl Pipeline {
 
         let sorting_started = Instant::now();
         all_tokens.sort_by_key(|t| t.bunsetsu.char_range.0);
+        grammar::canonicalize_document_coordinates(&mut all_tokens);
         if let Some(timings) = timings.as_deref_mut() {
             timings.add("Token 排序", sorting_started.elapsed());
         }
@@ -771,20 +776,17 @@ mod tests {
             "辞书形还原不正确"
         );
 
-        // 断言其匹配到了 [使役受身] 和 [过去否定] 两个语法标签
-        let has_causative_passive = token
+        // 断言新活用层保留使役、られる候选、否定和过去四个可追溯事实。
+        let concepts = token
             .bunsetsu
-            .grammar_tags
+            .grammar_occurrences
             .iter()
-            .any(|t| t.pattern_id == "causative_passive");
-        let has_past_negative = token
-            .bunsetsu
-            .grammar_tags
-            .iter()
-            .any(|t| t.pattern_id == "past_negative");
-
-        assert!(has_causative_passive, "未识别出 [使役受身] 语法结构");
-        assert!(has_past_negative, "未识别出 [過去否定] 语法结构");
+            .map(|occurrence| occurrence.concept_id.as_str())
+            .collect::<std::collections::HashSet<_>>();
+        assert!(concepts.contains("morphology.voice.causative"), "未识别出使役");
+        assert!(concepts.contains("morphology.voice.passive_potential"), "未保留られる候选");
+        assert!(concepts.contains("morphology.polarity.negative"), "未识别出否定");
+        assert!(concepts.contains("morphology.tense.past"), "未识别出过去");
     }
 
     #[test]

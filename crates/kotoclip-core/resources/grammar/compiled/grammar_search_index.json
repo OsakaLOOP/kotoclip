@@ -1,0 +1,2658 @@
+{
+  "entries": [
+    {
+      "concept_id": "morphology.chain",
+      "label": "活用链",
+      "aliases": [],
+      "semantic_domains": [
+        "morphology"
+      ],
+      "function_tags": [
+        "inflection"
+      ],
+      "jlpt_level": null,
+      "surface_hints": [],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "活用链",
+        "词形变化"
+      ]
+    },
+    {
+      "concept_id": "morphology.form.te",
+      "label": "て形",
+      "aliases": [],
+      "semantic_domains": [
+        "connection"
+      ],
+      "function_tags": [
+        "te_form"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "te positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "て形",
+        "连接后续成分"
+      ]
+    },
+    {
+      "concept_id": "morphology.form.de",
+      "label": "で形",
+      "aliases": [],
+      "semantic_domains": [
+        "connection"
+      ],
+      "function_tags": [
+        "de_form"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "de positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "で形",
+        "连接后续成分"
+      ]
+    },
+    {
+      "concept_id": "morphology.tense.past",
+      "label": "过去",
+      "aliases": [],
+      "semantic_domains": [
+        "tense"
+      ],
+      "function_tags": [
+        "past"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "past positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "过去",
+        "表示过去或完成"
+      ]
+    },
+    {
+      "concept_id": "morphology.polarity.negative",
+      "label": "否定",
+      "aliases": [],
+      "semantic_domains": [
+        "polarity"
+      ],
+      "function_tags": [
+        "negative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "negative positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "否定",
+        "否定动作或状态"
+      ]
+    },
+    {
+      "concept_id": "morphology.voice.causative",
+      "label": "使役",
+      "aliases": [],
+      "semantic_domains": [
+        "voice"
+      ],
+      "function_tags": [
+        "causative"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "causative positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "使役",
+        "表示使令或许可"
+      ]
+    },
+    {
+      "concept_id": "morphology.voice.passive_potential",
+      "label": "られる候选",
+      "aliases": [],
+      "semantic_domains": [
+        "voice"
+      ],
+      "function_tags": [
+        "passive",
+        "potential",
+        "honorific",
+        "spontaneous"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "passive_potential positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "られる候选",
+        "表示受身、可能、尊敬或自发候选",
+        "られる候选：potential",
+        "表示受身、可能、尊敬或自发候选",
+        "られる候选：honorific",
+        "表示受身、可能、尊敬或自发候选",
+        "られる候选：spontaneous",
+        "表示受身、可能、尊敬或自发候选"
+      ]
+    },
+    {
+      "concept_id": "morphology.politeness.masu",
+      "label": "ます体",
+      "aliases": [],
+      "semantic_domains": [
+        "politeness"
+      ],
+      "function_tags": [
+        "masu"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "masu positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "ます体",
+        "礼貌陈述形式"
+      ]
+    },
+    {
+      "concept_id": "morphology.modality.desire",
+      "label": "〜たい",
+      "aliases": [],
+      "semantic_domains": [
+        "modality"
+      ],
+      "function_tags": [
+        "desire"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "desire positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜たい",
+        "表示愿望"
+      ]
+    },
+    {
+      "concept_id": "morphology.mood.volitional",
+      "label": "意向形",
+      "aliases": [],
+      "semantic_domains": [
+        "mood"
+      ],
+      "function_tags": [
+        "volitional"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "volitional positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "意向形",
+        "表示意志或提议"
+      ]
+    },
+    {
+      "concept_id": "morphology.mood.conditional",
+      "label": "假定形",
+      "aliases": [],
+      "semantic_domains": [
+        "condition"
+      ],
+      "function_tags": [
+        "conditional"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "conditional positive"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "假定形",
+        "形成条件连接"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ga",
+      "label": "が",
+      "aliases": [],
+      "semantic_domains": [
+        "case",
+        "discourse"
+      ],
+      "function_tags": [
+        "subject",
+        "focus"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本が",
+        "分句＋が＋分句"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "が",
+        "格关系或焦点提示",
+        "が：focus",
+        "格关系或焦点提示",
+        "が：转折连接",
+        "连接前后分句，表达转折、保留或话语推进"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.wo",
+      "label": "を",
+      "aliases": [],
+      "semantic_domains": [
+        "case"
+      ],
+      "function_tags": [
+        "patient",
+        "route"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本を"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "を",
+        "标记动作对象或经过点",
+        "を：route",
+        "标记动作对象或经过点"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ni",
+      "label": "に",
+      "aliases": [],
+      "semantic_domains": [
+        "case"
+      ],
+      "function_tags": [
+        "goal",
+        "location",
+        "time",
+        "result"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本に",
+        "形容动词语干・名词性成分＋に"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "に",
+        "标记目标、位置、时间或结果",
+        "に：location",
+        "标记目标、位置、时间或结果",
+        "に：time",
+        "标记目标、位置、时间或结果",
+        "に：result",
+        "标记目标、位置、时间或结果",
+        "に：副词化",
+        "把形容动词语干、名词性成分或派生成分转为方式或状态修饰语"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.e",
+      "label": "へ",
+      "aliases": [],
+      "semantic_domains": [
+        "case"
+      ],
+      "function_tags": [
+        "direction"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本へ"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "へ",
+        "标记方向"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.de",
+      "label": "で",
+      "aliases": [],
+      "semantic_domains": [
+        "case"
+      ],
+      "function_tags": [
+        "location",
+        "instrument",
+        "cause"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本で"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "で",
+        "标记场所、手段或原因",
+        "で：instrument",
+        "标记场所、手段或原因",
+        "で：cause",
+        "标记场所、手段或原因"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.to",
+      "label": "と",
+      "aliases": [],
+      "semantic_domains": [
+        "case",
+        "quotation"
+      ],
+      "function_tags": [
+        "quotation",
+        "comitative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本と",
+        "副词・拟声拟态词＋と",
+        "名词＋と＋名词",
+        "分句＋と"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "と",
+        "标记引用、共同者或结果",
+        "と：comitative",
+        "标记引用、共同者或结果",
+        "と：副词化",
+        "接在拟声拟态词或副词性成分后，标记动作方式",
+        "と：并列",
+        "并列名词性成分，表示穷尽式列举或共同关系",
+        "と：条件连接",
+        "连接前后分句，表示恒常、顺接、发现或必要条件",
+        "と：句末引用",
+        "在报告内容末尾标记引用，后续言说谓词可省略"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.kara",
+      "label": "から",
+      "aliases": [],
+      "semantic_domains": [
+        "case"
+      ],
+      "function_tags": [
+        "source",
+        "cause"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本から"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "から",
+        "标记起点或原因",
+        "から：cause",
+        "标记起点或原因"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.made",
+      "label": "まで",
+      "aliases": [],
+      "semantic_domains": [
+        "range"
+      ],
+      "function_tags": [
+        "endpoint"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本まで"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "まで",
+        "标记终点或范围上限"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.wa",
+      "label": "は",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "topic",
+        "contrast"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本は"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "は",
+        "标记主题或对比",
+        "は：contrast",
+        "标记主题或对比"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.mo",
+      "label": "も",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "addition",
+        "emphasis"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本も"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "も",
+        "表示追加、并列或强调",
+        "も：emphasis",
+        "表示追加、并列或强调"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.shika",
+      "label": "しか",
+      "aliases": [],
+      "semantic_domains": [
+        "restriction"
+      ],
+      "function_tags": [
+        "restriction"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "本しか"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "しか",
+        "与否定呼应表示限定"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.dake",
+      "label": "だけ",
+      "aliases": [],
+      "semantic_domains": [
+        "restriction"
+      ],
+      "function_tags": [
+        "limit"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本だけ"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "だけ",
+        "表示限定范围"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.te",
+      "label": "て",
+      "aliases": [],
+      "semantic_domains": [
+        "connection"
+      ],
+      "function_tags": [
+        "connective"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本て"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "て",
+        "连接动作、状态或后续构式"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.de_connective",
+      "label": "で",
+      "aliases": [],
+      "semantic_domains": [
+        "connection"
+      ],
+      "function_tags": [
+        "connective"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "本で"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "で",
+        "て形的浊音连接形式"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ba",
+      "label": "ば",
+      "aliases": [],
+      "semantic_domains": [
+        "condition"
+      ],
+      "function_tags": [
+        "conditional"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "本ば"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "ば",
+        "形成条件关系"
+      ]
+    },
+    {
+      "concept_id": "grammar.auxiliary.nai",
+      "label": "ない",
+      "aliases": [],
+      "semantic_domains": [
+        "polarity"
+      ],
+      "function_tags": [
+        "negative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "語幹＋ない"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "ない",
+        "否定助动词"
+      ]
+    },
+    {
+      "concept_id": "grammar.auxiliary.ta",
+      "label": "た",
+      "aliases": [],
+      "semantic_domains": [
+        "tense"
+      ],
+      "function_tags": [
+        "past",
+        "perfect"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "語幹＋た"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "た",
+        "过去或完成助动词",
+        "た：perfect",
+        "过去或完成助动词"
+      ]
+    },
+    {
+      "concept_id": "grammar.auxiliary.masu",
+      "label": "ます",
+      "aliases": [],
+      "semantic_domains": [
+        "politeness"
+      ],
+      "function_tags": [
+        "polite"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "語幹＋ます"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "ます",
+        "礼貌助动词"
+      ]
+    },
+    {
+      "concept_id": "grammar.auxiliary.desu",
+      "label": "です",
+      "aliases": [],
+      "semantic_domains": [
+        "judgement",
+        "politeness"
+      ],
+      "function_tags": [
+        "copula"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "語幹＋です"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "です",
+        "礼貌判断"
+      ]
+    },
+    {
+      "concept_id": "grammar.auxiliary.da",
+      "label": "だ",
+      "aliases": [],
+      "semantic_domains": [
+        "judgement"
+      ],
+      "function_tags": [
+        "copula"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "語幹＋だ"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "だ",
+        "判断助动词"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.iru",
+      "label": "いる（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect"
+      ],
+      "function_tags": [
+        "progressive",
+        "resultative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "読んでいる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "いる（补助）",
+        "表示进行或状态持续候选",
+        "いる（补助）：resultative",
+        "表示进行或状态持续候选"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.aru",
+      "label": "ある（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect"
+      ],
+      "function_tags": [
+        "resultative"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んである"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "ある（补助）",
+        "表示结果状态"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.oku",
+      "label": "おく（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect"
+      ],
+      "function_tags": [
+        "preparatory"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでおく"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "おく（补助）",
+        "表示预先处置或状态保留"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.miru",
+      "label": "みる（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "modality"
+      ],
+      "function_tags": [
+        "attempt"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでみる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "みる（补助）",
+        "表示尝试"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.shimau",
+      "label": "しまう（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect",
+        "stance"
+      ],
+      "function_tags": [
+        "completion",
+        "regret"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでしまう"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "しまう（补助）",
+        "表示完成或遗憾",
+        "しまう（补助）：regret",
+        "表示完成或遗憾"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.iku",
+      "label": "いく（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "directional_aspect"
+      ],
+      "function_tags": [
+        "away",
+        "continuation"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでいく"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "いく（补助）",
+        "表示变化向后发展",
+        "いく（补助）：continuation",
+        "表示变化向后发展"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.kuru",
+      "label": "くる（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "directional_aspect"
+      ],
+      "function_tags": [
+        "toward",
+        "emergence"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでくる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "くる（补助）",
+        "表示变化朝当前发展",
+        "くる（补助）：emergence",
+        "表示变化朝当前发展"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.yaru",
+      "label": "やる（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "giver_viewpoint"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでやる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "やる（补助）",
+        "表示为他者实施"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.ageru",
+      "label": "あげる（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "giver_viewpoint"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んであげる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "あげる（补助）",
+        "表示为他者实施"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.kureru",
+      "label": "くれる（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "receiver_benefit"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでくれる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "くれる（补助）",
+        "表示他者为己方实施"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.kudasaru",
+      "label": "くださる（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive",
+        "honorific"
+      ],
+      "function_tags": [
+        "benefactive_respectful",
+        "subject_honorific"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでくださる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "くださる（补助）",
+        "表示尊敬的授受或恩惠",
+        "くださる（补助）：subject_honorific",
+        "表示尊敬的授受或恩惠"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.morau",
+      "label": "もらう（补助）",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "receiver_viewpoint"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでもらう"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "もらう（补助）",
+        "从接受者视角表示受益"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.naru",
+      "label": "なる（功能）",
+      "aliases": [],
+      "semantic_domains": [
+        "construction_support"
+      ],
+      "function_tags": [
+        "become"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "なる（功能）",
+        "参与必要等固定构式"
+      ]
+    },
+    {
+      "concept_id": "grammar.aspect.te_iru",
+      "label": "〜ている",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect"
+      ],
+      "function_tags": [
+        "progressive",
+        "resultative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "読んでいる",
+        "动词连用形＋てる（〜ている的口语缩约）"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜ている",
+        "表示进行或结果状态",
+        "〜ている：resultative",
+        "表示进行或结果状态"
+      ]
+    },
+    {
+      "concept_id": "grammar.aspect.te_aru",
+      "label": "〜てある",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect"
+      ],
+      "function_tags": [
+        "resultative"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んである"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てある",
+        "表示人为动作留下的结果状态"
+      ]
+    },
+    {
+      "concept_id": "grammar.aspect.te_oku",
+      "label": "〜ておく",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect"
+      ],
+      "function_tags": [
+        "preparatory"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでおく"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜ておく",
+        "表示预先处置或保持状态"
+      ]
+    },
+    {
+      "concept_id": "grammar.modality.te_miru",
+      "label": "〜てみる",
+      "aliases": [],
+      "semantic_domains": [
+        "modality"
+      ],
+      "function_tags": [
+        "attempt"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでみる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てみる",
+        "表示尝试做某事"
+      ]
+    },
+    {
+      "concept_id": "grammar.aspect.te_shimau",
+      "label": "〜てしまう",
+      "aliases": [],
+      "semantic_domains": [
+        "aspect",
+        "stance"
+      ],
+      "function_tags": [
+        "completion",
+        "regret"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでしまう"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てしまう",
+        "表示彻底完成或遗憾",
+        "〜てしまう：regret",
+        "表示彻底完成或遗憾"
+      ]
+    },
+    {
+      "concept_id": "grammar.direction.te_iku",
+      "label": "〜ていく",
+      "aliases": [],
+      "semantic_domains": [
+        "directional_aspect"
+      ],
+      "function_tags": [
+        "away",
+        "continuation"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでいく"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜ていく",
+        "表示变化远离当前或继续发展",
+        "〜ていく：continuation",
+        "表示变化远离当前或继续发展"
+      ]
+    },
+    {
+      "concept_id": "grammar.direction.te_kuru",
+      "label": "〜てくる",
+      "aliases": [],
+      "semantic_domains": [
+        "directional_aspect"
+      ],
+      "function_tags": [
+        "toward",
+        "emergence"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでくる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てくる",
+        "表示变化接近当前或逐渐出现",
+        "〜てくる：emergence",
+        "表示变化接近当前或逐渐出现"
+      ]
+    },
+    {
+      "concept_id": "grammar.benefactive.te_yaru",
+      "label": "〜てやる",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "giver_viewpoint"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでやる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てやる",
+        "表示说话者为他者做某事"
+      ]
+    },
+    {
+      "concept_id": "grammar.benefactive.te_ageru",
+      "label": "〜てあげる",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "giver_viewpoint"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んであげる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てあげる",
+        "表示为他者做某事"
+      ]
+    },
+    {
+      "concept_id": "grammar.benefactive.te_kureru",
+      "label": "〜てくれる",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "receiver_benefit"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでくれる"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てくれる",
+        "表示他者为说话者一方做某事"
+      ]
+    },
+    {
+      "concept_id": "grammar.benefactive.te_kudasaru",
+      "label": "〜てくださる",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive",
+        "honorific"
+      ],
+      "function_tags": [
+        "benefactive_respectful",
+        "subject_honorific"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "先生が読んでくださった。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てくださる",
+        "表示尊敬对象为己方做某事",
+        "〜てくださる：subject_honorific",
+        "表示尊敬对象为己方做某事"
+      ]
+    },
+    {
+      "concept_id": "grammar.benefactive.te_morau",
+      "label": "〜てもらう",
+      "aliases": [],
+      "semantic_domains": [
+        "benefactive"
+      ],
+      "function_tags": [
+        "receiver_viewpoint"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでもらう"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てもらう",
+        "从接受者视角表示请人或承受恩惠"
+      ]
+    },
+    {
+      "concept_id": "grammar.request.te_kudasai",
+      "label": "〜てください",
+      "aliases": [],
+      "semantic_domains": [
+        "request"
+      ],
+      "function_tags": [
+        "polite_request"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "矢印キーを使ってください。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜てください",
+        "礼貌请求对方实施动作"
+      ]
+    },
+    {
+      "concept_id": "grammar.obligation.nakereba_naranai",
+      "label": "〜なければならない",
+      "aliases": [],
+      "semantic_domains": [
+        "obligation",
+        "condition"
+      ],
+      "function_tags": [
+        "obligation"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読まなければならない。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜なければならない",
+        "表示必须做某事"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ni_wa",
+      "label": "には",
+      "aliases": [],
+      "semantic_domains": [
+        "case",
+        "discourse"
+      ],
+      "function_tags": [
+        "topic",
+        "contrast"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "本には書いてある。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "には",
+        "叠加格关系与主题或对比",
+        "には：contrast",
+        "叠加格关系与主题或对比"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ni_mo",
+      "label": "にも",
+      "aliases": [],
+      "semantic_domains": [
+        "case",
+        "discourse"
+      ],
+      "function_tags": [
+        "addition"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "本にも書いてある。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "にも",
+        "叠加格关系与追加或强调"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.de_wa",
+      "label": "では",
+      "aliases": [],
+      "semantic_domains": [
+        "case",
+        "discourse"
+      ],
+      "function_tags": [
+        "topic",
+        "contrast"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "ここでは話さない。",
+        "では→じゃ（口语缩约）"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "では",
+        "叠加场所等关系与主题或对比",
+        "では：contrast",
+        "叠加场所等关系与主题或对比",
+        "じゃ：话语转换",
+        "口语中由では缩约而来，用于条件背景、对比或话语转换"
+      ]
+    },
+    {
+      "concept_id": "grammar.connective.te_mo",
+      "label": "ても",
+      "aliases": [],
+      "semantic_domains": [
+        "concession",
+        "condition"
+      ],
+      "function_tags": [
+        "concession"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "読んでも分からない。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "ても",
+        "表示让步条件或并列追加"
+      ]
+    },
+    {
+      "concept_id": "grammar.modality.volitional_to_suru",
+      "label": "〜ようとする",
+      "aliases": [],
+      "semantic_domains": [
+        "modality"
+      ],
+      "function_tags": [
+        "attempt",
+        "imminence"
+      ],
+      "jlpt_level": 3,
+      "surface_hints": [
+        "出かけようとする。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜ようとする",
+        "表示尝试或即将发生",
+        "〜ようとする：imminence",
+        "表示尝试或即将发生"
+      ]
+    },
+    {
+      "concept_id": "grammar.formal.tsumori_da",
+      "label": "〜つもりだ",
+      "aliases": [],
+      "semantic_domains": [
+        "intention"
+      ],
+      "function_tags": [
+        "intention",
+        "belief"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "行くつもりだ。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜つもりだ",
+        "表示意图或认定",
+        "〜つもりだ：belief",
+        "表示意图或认定"
+      ]
+    },
+    {
+      "concept_id": "grammar.connective.nagara_mo",
+      "label": "〜ながら（も）",
+      "aliases": [],
+      "semantic_domains": [
+        "connection",
+        "concession"
+      ],
+      "function_tags": [
+        "simultaneous",
+        "concession"
+      ],
+      "jlpt_level": 3,
+      "surface_hints": [
+        "知りながらも黙った。"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "〜ながら（も）",
+        "表示同时或让步",
+        "〜ながら（も）：concession",
+        "表示同时或让步"
+      ]
+    },
+    {
+      "concept_id": "grammar.functional.no",
+      "label": "の",
+      "aliases": [
+        "格助词の",
+        "形式名词の",
+        "终助词の"
+      ],
+      "semantic_domains": [
+        "relation",
+        "nominalization",
+        "discourse"
+      ],
+      "function_tags": [
+        "attributive",
+        "nominalizer",
+        "sentence_final",
+        "subject"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "名词性成分＋の＋名词",
+        "用言连体形＋の",
+        "句末＋の",
+        "受限从句成分＋の"
+      ],
+      "register": [
+        "modern_standard",
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "の：连体关系",
+        "连接名词性成分，表示所属、属性或同位",
+        "の：名词化",
+        "把前接内容名词化，使其充当主题、论元或判断对象",
+        "の：句末语气",
+        "在句末表达说明、确认、疑问或情感语气",
+        "の：受限格关系",
+        "在连体从句等受限环境中标记主语或所属关系"
+      ]
+    },
+    {
+      "concept_id": "grammar.copula.de_aru",
+      "label": "〜である",
+      "aliases": [
+        "书面判断である"
+      ],
+      "semantic_domains": [
+        "copula",
+        "register"
+      ],
+      "function_tags": [
+        "assertion",
+        "written_style"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "体言＋である"
+      ],
+      "register": [
+        "written",
+        "formal"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "书面判断",
+        "以书面或正式语体断定前项身份或性质"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ka",
+      "label": "か",
+      "aliases": [],
+      "semantic_domains": [
+        "question",
+        "modality",
+        "coordination"
+      ],
+      "function_tags": [
+        "question",
+        "rhetorical",
+        "alternative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "句・候选项＋か"
+      ],
+      "register": [
+        "modern_standard",
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "か：疑问",
+        "标记一般疑问或疑问成分的开放取值",
+        "か：反问或确认",
+        "形式为疑问，实际用于反问、确认或强化判断",
+        "か：选择或不确定",
+        "连接候选项或把疑问内容嵌入更大句子"
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.yo",
+      "label": "よ",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "assertion",
+        "notification"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "句末＋よ"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "よ：提示或断言",
+        "把说话人认为应告知的信息推向听话人"
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.na",
+      "label": "な（终助词）",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse",
+        "modality"
+      ],
+      "function_tags": [
+        "reflection",
+        "emotion",
+        "prohibition"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "句末＋な"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "な：感叹、确认或禁止",
+        "表达独语式感叹、确认或命令环境中的禁止"
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.ne",
+      "label": "ね",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "confirmation",
+        "alignment"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "句末＋ね"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "ね：确认与共识",
+        "向听话人确认信息或寻求认同"
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.wa",
+      "label": "わ（终助词）",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "stance",
+        "emotion"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "句末＋わ"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "わ：说话人态度",
+        "在句末附加说话人的断言或感情"
+      ]
+    },
+    {
+      "concept_id": "grammar.formal.koto",
+      "label": "〜こと",
+      "aliases": [],
+      "semantic_domains": [
+        "nominalization",
+        "content",
+        "event"
+      ],
+      "function_tags": [
+        "nominalizer",
+        "fact",
+        "event"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "连体修饰＋こと"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "こと：内容或事件",
+        "把前接命题、动作或状态作为内容、事实或事件"
+      ]
+    },
+    {
+      "concept_id": "grammar.formal.mono",
+      "label": "〜もの",
+      "aliases": [],
+      "semantic_domains": [
+        "nominalization",
+        "explanation",
+        "category"
+      ],
+      "function_tags": [
+        "entity",
+        "situation",
+        "explanation"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "连体修饰＋もの"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "もの：对象或情形",
+        "把前接性质或命题实体化为对象、类别或通常情形"
+      ]
+    },
+    {
+      "concept_id": "grammar.formal.mama",
+      "label": "〜まま",
+      "aliases": [],
+      "semantic_domains": [
+        "state",
+        "continuity"
+      ],
+      "function_tags": [
+        "unchanged_state"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "连体修饰＋まま"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "まま：状态保持",
+        "表示前项状态未改变而持续"
+      ]
+    },
+    {
+      "concept_id": "grammar.explanatory.no_da",
+      "label": "〜のだ／〜んだ",
+      "aliases": [
+        "说明のだ",
+        "口语んだ"
+      ],
+      "semantic_domains": [
+        "explanation",
+        "discourse"
+      ],
+      "function_tags": [
+        "explanatory",
+        "backgrounding"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "分句＋ん＋だ／です"
+      ],
+      "register": [
+        "modern_standard",
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "说明・背景",
+        "把命题作为说明、理由或背景提出"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.tte",
+      "label": "って",
+      "aliases": [],
+      "semantic_domains": [
+        "quotation",
+        "topic",
+        "discourse"
+      ],
+      "function_tags": [
+        "quotation",
+        "topic",
+        "colloquial"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "前项＋って",
+        "名词性成分＋って＋の＋は",
+        "引用内容＋って＋こと"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "口语引用",
+        "在口语中标记引用内容",
+        "口语话题提示",
+        "把前项提为后续说明或评价的话题"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ya",
+      "label": "や",
+      "aliases": [],
+      "semantic_domains": [
+        "coordination",
+        "example"
+      ],
+      "function_tags": [
+        "non_exhaustive_listing"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "名词＋や＋名词"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "非穷尽列举",
+        "列举代表项并暗示其他同类"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.nante",
+      "label": "なんて",
+      "aliases": [],
+      "semantic_domains": [
+        "example",
+        "evaluation",
+        "quotation"
+      ],
+      "function_tags": [
+        "exemplification",
+        "devaluation",
+        "surprise"
+      ],
+      "jlpt_level": 3,
+      "surface_hints": [
+        "前项＋なんて"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "例示・评价",
+        "把前项作为例项或评价焦点"
+      ]
+    },
+    {
+      "concept_id": "grammar.connective.kedo",
+      "label": "〜けど",
+      "aliases": [],
+      "semantic_domains": [
+        "connection",
+        "contrast",
+        "discourse"
+      ],
+      "function_tags": [
+        "adversative",
+        "softening",
+        "backgrounding"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "分句＋けど"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "转折・铺垫",
+        "连接前后分句或柔化话语"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.datte",
+      "label": "だって",
+      "aliases": [],
+      "semantic_domains": [
+        "addition",
+        "quotation",
+        "concession"
+      ],
+      "function_tags": [
+        "even",
+        "also",
+        "quotation"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "前项＋だって"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "追加・极端例",
+        "表示连前项也包含在内",
+        "口语引用",
+        "在口语中标记被认定或被说出的内容"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.demo",
+      "label": "でも",
+      "aliases": [],
+      "semantic_domains": [
+        "example",
+        "indefinite",
+        "concession"
+      ],
+      "function_tags": [
+        "illustrative",
+        "free_choice",
+        "even"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "名词・疑问词＋でも"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "例示",
+        "提出一个非限定例项",
+        "疑问词＋でも",
+        "表示无论哪个或任何一个"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.nado",
+      "label": "など",
+      "aliases": [],
+      "semantic_domains": [
+        "example",
+        "listing",
+        "evaluation"
+      ],
+      "function_tags": [
+        "exemplification",
+        "non_exhaustive"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "前项＋など"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "例示・非穷尽",
+        "把前项作为代表例并暗示其他同类"
+      ]
+    },
+    {
+      "concept_id": "grammar.formal.tame",
+      "label": "〜ため",
+      "aliases": [],
+      "semantic_domains": [
+        "purpose",
+        "cause"
+      ],
+      "function_tags": [
+        "purpose",
+        "cause"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "连体修饰＋ため"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "目的",
+        "表示后项行为的目标",
+        "原因",
+        "表示后项结果的原因"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.hodo",
+      "label": "ほど",
+      "aliases": [],
+      "semantic_domains": [
+        "degree",
+        "comparison"
+      ],
+      "function_tags": [
+        "extent",
+        "approximation"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "前项＋ほど"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "程度・范围",
+        "把前项设为程度、范围或比较基准"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.yori",
+      "label": "より",
+      "aliases": [],
+      "semantic_domains": [
+        "comparison",
+        "source"
+      ],
+      "function_tags": [
+        "comparison",
+        "starting_point"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "前项＋より"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "比较基准",
+        "标记比较对象",
+        "起点・来源",
+        "标记时间、空间或来源起点"
+      ]
+    },
+    {
+      "concept_id": "grammar.connective.shi",
+      "label": "〜し",
+      "aliases": [],
+      "semantic_domains": [
+        "connection",
+        "reason",
+        "listing"
+      ],
+      "function_tags": [
+        "additive_reason",
+        "listing"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "分句＋し"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "并列・理由追加",
+        "列举事实或理由"
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.zo",
+      "label": "ぞ",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "assertion",
+        "warning"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "句末＋ぞ"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "强断言・警告",
+        "强化断言、提醒或意志"
+      ]
+    },
+    {
+      "concept_id": "grammar.modality.kamo",
+      "label": "かも（しれない）",
+      "aliases": [],
+      "semantic_domains": [
+        "modality",
+        "epistemic"
+      ],
+      "function_tags": [
+        "possibility"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "分句＋かも"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "可能性",
+        "表示不确定但可能成立"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.tari",
+      "label": "〜たり",
+      "aliases": [],
+      "semantic_domains": [
+        "listing",
+        "aspect"
+      ],
+      "function_tags": [
+        "non_exhaustive_actions"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "Vた＋り"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "动作列举",
+        "非穷尽列举动作或状态"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.toshite",
+      "label": "として",
+      "aliases": [],
+      "semantic_domains": [
+        "role",
+        "qualification"
+      ],
+      "function_tags": [
+        "role",
+        "capacity"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "名词＋として"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "身份・角色",
+        "标记行为或判断中的身份、角色或立场"
+      ]
+    },
+    {
+      "concept_id": "grammar.connective.noni",
+      "label": "〜のに",
+      "aliases": [],
+      "semantic_domains": [
+        "connection",
+        "concession"
+      ],
+      "function_tags": [
+        "concession",
+        "unexpected_result"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "分句＋のに"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "逆接・意外",
+        "表示与前件预期相反的后件"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.kurai",
+      "label": "くらい／ぐらい",
+      "aliases": [],
+      "semantic_domains": [
+        "degree",
+        "approximation"
+      ],
+      "function_tags": [
+        "extent",
+        "approximation",
+        "minimum"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "前项＋くらい"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "近似・程度",
+        "表示近似数量、程度或最低标准"
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.sa",
+      "label": "さ（终助词）",
+      "aliases": [],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "assertion",
+        "casual_stance"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "句末＋さ"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "随意断言",
+        "以随意或强调语气确认判断"
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.kashira",
+      "label": "かしら",
+      "aliases": [],
+      "semantic_domains": [
+        "question",
+        "modality"
+      ],
+      "function_tags": [
+        "self_question",
+        "uncertainty"
+      ],
+      "jlpt_level": 3,
+      "surface_hints": [
+        "句末＋かしら"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "自问・不确定",
+        "表达自问或柔和疑问"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.niyotte",
+      "label": "によって",
+      "aliases": [],
+      "semantic_domains": [
+        "agent",
+        "means",
+        "cause",
+        "basis"
+      ],
+      "function_tags": [
+        "agent",
+        "means",
+        "cause",
+        "variation"
+      ],
+      "jlpt_level": 3,
+      "surface_hints": [
+        "名词＋によって"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "施事",
+        "标记被动句中的行为主体",
+        "手段・原因・依据",
+        "标记手段、原因、依据或条件差异"
+      ]
+    },
+    {
+      "concept_id": "grammar.formal.hazu",
+      "label": "〜はず",
+      "aliases": [],
+      "semantic_domains": [
+        "expectation",
+        "inference"
+      ],
+      "function_tags": [
+        "expectation",
+        "logical_conclusion"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "连体修饰＋はず"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "预期・应然",
+        "表示按计划、知识或逻辑应当成立"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.toka",
+      "label": "とか",
+      "aliases": [],
+      "semantic_domains": [
+        "listing",
+        "quotation"
+      ],
+      "function_tags": [
+        "non_exhaustive_listing",
+        "hearsay"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "前项＋とか"
+      ],
+      "register": [
+        "spoken"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "非穷尽列举",
+        "列举代表项或不确定引用"
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.nitotte",
+      "label": "にとって",
+      "aliases": [],
+      "semantic_domains": [
+        "perspective",
+        "evaluation"
+      ],
+      "function_tags": [
+        "perspective_holder"
+      ],
+      "jlpt_level": 3,
+      "surface_hints": [
+        "名词＋にとって"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "立场・视角",
+        "标记评价或意义的立场主体"
+      ]
+    },
+    {
+      "concept_id": "grammar.quotation.to_iu",
+      "label": "〜という",
+      "aliases": [
+        "引用という",
+        "名称という"
+      ],
+      "semantic_domains": [
+        "quotation",
+        "naming",
+        "content"
+      ],
+      "function_tags": [
+        "quotation",
+        "naming",
+        "attributive_content"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "と＋言う（基本形；IPADIC 合并节点）"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "引用・内容",
+        "把前项作为被说、被认为或被描述的内容",
+        "命名・称谓",
+        "把前项作为名称或称谓连接到后续名词"
+      ]
+    }
+  ]
+}

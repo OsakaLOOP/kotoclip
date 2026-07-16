@@ -32,6 +32,70 @@ pub struct BackendStatus {
     pub ready: bool,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GrammarConceptBundle {
+    pub concept: kotoclip_core::pipeline::grammar::catalog::GrammarConcept,
+    pub senses: Vec<kotoclip_core::pipeline::grammar::catalog::GrammarSense>,
+    pub explanation: kotoclip_core::pipeline::grammar::catalog::GrammarExplanationDocument,
+    pub explanations: Vec<kotoclip_core::pipeline::grammar::catalog::GrammarExplanationDocument>,
+}
+
+#[tauri::command]
+pub fn search_grammar_catalog(
+    query: Option<String>,
+    family: Option<String>,
+    jlpt_level: Option<u8>,
+    audit_status: Option<String>,
+    source_ref: Option<String>,
+) -> Result<Vec<kotoclip_core::pipeline::grammar::catalog::GrammarConcept>, String> {
+    let catalog =
+        kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()
+            .map_err(|error| error.to_string())?;
+    Ok(catalog
+        .search(
+            query.as_deref(),
+            family.as_deref(),
+            jlpt_level,
+            audit_status.as_deref(),
+            source_ref.as_deref(),
+        )
+        .into_iter()
+        .cloned()
+        .collect())
+}
+
+#[tauri::command]
+pub fn get_grammar_concept(concept_id: String) -> Result<GrammarConceptBundle, String> {
+    let catalog =
+        kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()
+            .map_err(|error| error.to_string())?;
+    let concept = catalog
+        .concept(&concept_id)
+        .cloned()
+        .ok_or_else(|| format!("未知语法 concept：{concept_id}"))?;
+    let explanation = catalog
+        .explanation(&concept.default_explanation_id)
+        .cloned()
+        .ok_or_else(|| format!("语法 concept 缺少讲解：{}", concept.concept_id))?;
+    let senses = catalog
+        .senses_for(&concept.concept_id)
+        .into_iter()
+        .cloned()
+        .collect();
+    let explanations = catalog
+        .explanations_for(&concept.concept_id)
+        .into_iter()
+        .cloned()
+        .collect();
+    Ok(GrammarConceptBundle {
+        concept,
+        senses,
+        explanation,
+        explanations,
+    })
+}
+
 #[tauri::command]
 pub async fn backend_status(state: State<'_, AppState>) -> Result<BackendStatus, String> {
     Ok(BackendStatus {

@@ -5,7 +5,7 @@ use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 
 pub const DOCUMENT_SESSION_SCHEMA_VERSION: u32 = 1;
-pub const PIPELINE_ARTIFACT_VERSION: u32 = 1;
+pub const PIPELINE_ARTIFACT_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -328,13 +328,23 @@ impl DocumentSession {
         let token_ids = stable_token_ids(&tokens);
         self.tokens.extend(tokens.iter().cloned());
         self.tokens.sort_by_key(|token| token.bunsetsu.char_range.0);
+        crate::pipeline::grammar::canonicalize_document_coordinates(&mut self.tokens);
         reindex_expression_token_ranges(&mut self.tokens);
         self.token_ids = stable_token_ids(&self.tokens);
         self.analyzed_chunks[batch.chunk_start..batch.chunk_end].fill(true);
         let (patch_tokens, patch_token_ids) = if out_of_order {
             (self.tokens.clone(), self.token_ids.clone())
         } else {
-            (tokens, token_ids)
+            let added_ids = token_ids.iter().cloned().collect::<HashSet<_>>();
+            let mut patch_tokens = Vec::new();
+            let mut patch_token_ids = Vec::new();
+            for (token_id, token) in self.token_ids.iter().zip(&self.tokens) {
+                if added_ids.contains(token_id) {
+                    patch_token_ids.push(token_id.clone());
+                    patch_tokens.push(token.clone());
+                }
+            }
+            (patch_tokens, patch_token_ids)
         };
         self.revision += 1;
         Ok(AnalysisPatch {
@@ -625,6 +635,40 @@ fn offset_tokens(tokens: &mut [AnnotatedToken], char_offset: usize, token_offset
         }
         for tag in &mut token.bunsetsu.grammar_tags {
             offset_range(&mut tag.char_range);
+            for range in &mut tag.display_ranges {
+                offset_range(range);
+            }
+            if let Some(explanation) = &mut tag.explanation {
+                for capture in &mut explanation.bound_captures {
+                    offset_range(&mut capture.char_range);
+                }
+                for target in &mut explanation.dictionary_targets {
+                    offset_range(&mut target.char_range);
+                }
+            }
+        }
+        for chain in &mut token.bunsetsu.morphology.chains {
+            for range in &mut chain.source_ranges {
+                offset_range(range);
+            }
+            for operator in &mut chain.operators {
+                offset_range(&mut operator.char_range);
+            }
+        }
+        for occurrence in &mut token.bunsetsu.grammar_occurrences {
+            for range in &mut occurrence.matched_ranges {
+                offset_range(range);
+            }
+            for range in &mut occurrence.display_ranges {
+                offset_range(range);
+            }
+            offset_range(&mut occurrence.anchor_range);
+            for capture in &mut occurrence.captures {
+                offset_range(&mut capture.char_range);
+            }
+        }
+        for residual in &mut token.bunsetsu.functional_residuals {
+            offset_range(&mut residual.char_range);
         }
         for formation in &mut token.bunsetsu.word_formations {
             offset_range(&mut formation.char_range);
@@ -658,6 +702,40 @@ fn localize_tokens(tokens: &mut [AnnotatedToken], char_offset: usize) {
         }
         for tag in &mut token.bunsetsu.grammar_tags {
             localize_range(&mut tag.char_range);
+            for range in &mut tag.display_ranges {
+                localize_range(range);
+            }
+            if let Some(explanation) = &mut tag.explanation {
+                for capture in &mut explanation.bound_captures {
+                    localize_range(&mut capture.char_range);
+                }
+                for target in &mut explanation.dictionary_targets {
+                    localize_range(&mut target.char_range);
+                }
+            }
+        }
+        for chain in &mut token.bunsetsu.morphology.chains {
+            for range in &mut chain.source_ranges {
+                localize_range(range);
+            }
+            for operator in &mut chain.operators {
+                localize_range(&mut operator.char_range);
+            }
+        }
+        for occurrence in &mut token.bunsetsu.grammar_occurrences {
+            for range in &mut occurrence.matched_ranges {
+                localize_range(range);
+            }
+            for range in &mut occurrence.display_ranges {
+                localize_range(range);
+            }
+            localize_range(&mut occurrence.anchor_range);
+            for capture in &mut occurrence.captures {
+                localize_range(&mut capture.char_range);
+            }
+        }
+        for residual in &mut token.bunsetsu.functional_residuals {
+            localize_range(&mut residual.char_range);
         }
         for formation in &mut token.bunsetsu.word_formations {
             localize_range(&mut formation.char_range);
@@ -747,6 +825,9 @@ mod tests {
                     pos,
                 },
                 grammar_tags: Vec::new(),
+                morphology: Default::default(),
+                grammar_occurrences: Vec::new(),
+                functional_residuals: Vec::new(),
                 word_formations: Vec::new(),
                 lexical_units: Vec::new(),
                 function: None,

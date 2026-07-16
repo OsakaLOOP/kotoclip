@@ -31,6 +31,12 @@ pub struct Bunsetsu {
     pub surface: String,
     pub head_word: HeadWord,
     pub grammar_tags: Vec<GrammarTag>,
+    #[serde(default, skip_serializing_if = "MorphologyArtifact::is_empty")]
+    pub morphology: MorphologyArtifact,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub grammar_occurrences: Vec<GrammarOccurrence>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub functional_residuals: Vec<FunctionalResidual>,
     #[serde(default)]
     pub word_formations: Vec<WordFormationAnnotation>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -158,6 +164,195 @@ pub struct GrammarTag {
     pub description: String,
     pub morpheme_range: (usize, usize),
     pub char_range: (usize, usize),
+    #[serde(default)]
+    pub occurrence_id: String,
+    #[serde(default)]
+    pub concept_id: String,
+    #[serde(default)]
+    pub occurrence_kind: GrammarOccurrenceKind,
+    #[serde(default)]
+    pub status: GrammarOccurrenceStatus,
+    #[serde(default = "default_true")]
+    pub show_badge: bool,
+    #[serde(default)]
+    pub display_ranges: Vec<(usize, usize)>,
+    #[serde(default)]
+    pub selected_sense_id: Option<String>,
+    #[serde(default)]
+    pub sense_candidates: Vec<GrammarSenseCandidate>,
+    #[serde(default)]
+    pub explanation: Option<ResolvedGrammarExplanation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct MorphologyArtifact {
+    #[serde(default)]
+    pub chains: Vec<MorphologyChain>,
+    #[serde(default)]
+    pub unclassified: Vec<(usize, usize)>,
+}
+
+impl MorphologyArtifact {
+    pub fn is_empty(&self) -> bool {
+        self.chains.is_empty() && self.unclassified.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MorphologyChain {
+    pub chain_id: String,
+    pub anchor_morpheme: usize,
+    pub base_lexeme: String,
+    pub source_ranges: Vec<(usize, usize)>,
+    pub operators: Vec<MorphologyOperator>,
+    pub connection_forms: Vec<String>,
+    pub feature_candidates: Vec<String>,
+    pub evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MorphologyOperator {
+    pub operator_id: String,
+    pub kind: String,
+    pub source_morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+    pub input_requirement: Option<String>,
+    pub output_state: String,
+    pub concept_id: String,
+    pub confidence: u8,
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub candidates: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum GrammarOccurrenceKind {
+    MorphologyFeature,
+    FunctionalMorpheme,
+    GrammarConstruction,
+    BunsetsuFunction,
+    CorrelativeGrammar,
+    #[default]
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum GrammarOccurrenceStatus {
+    Accepted,
+    Pending,
+    Rejected,
+    #[default]
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GrammarCapture {
+    pub name: String,
+    pub surface: String,
+    pub base_form: String,
+    pub morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GrammarSenseCandidate {
+    pub sense_id: String,
+    pub label: String,
+    pub confidence: u8,
+    pub evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GrammarOccurrence {
+    pub occurrence_id: String,
+    pub concept_id: String,
+    pub rule_id: String,
+    pub kind: GrammarOccurrenceKind,
+    pub status: GrammarOccurrenceStatus,
+    pub matched_ranges: Vec<(usize, usize)>,
+    pub covered_token_range: (usize, usize),
+    pub display_ranges: Vec<(usize, usize)>,
+    pub anchor_range: (usize, usize),
+    #[serde(default)]
+    pub component_occurrence_ids: Vec<String>,
+    #[serde(default)]
+    pub captures: Vec<GrammarCapture>,
+    pub selected_sense_id: Option<String>,
+    #[serde(default)]
+    pub sense_candidates: Vec<GrammarSenseCandidate>,
+    pub confidence: u8,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub counter_evidence: Vec<String>,
+    pub explanation_ref: String,
+    pub analyzer_version: String,
+    pub catalog_version: String,
+    pub knowledge_item_id: String,
+    #[serde(default)]
+    pub show_badge: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct FunctionalResidual {
+    pub surface: String,
+    pub base_form: String,
+    pub pos: PosTag,
+    pub conjugation_type: String,
+    pub conjugation_form: String,
+    pub char_range: (usize, usize),
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GrammarContentBlock {
+    pub kind: String,
+    pub label: Option<String>,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GrammarDictionaryTarget {
+    pub label: String,
+    pub base_form: String,
+    pub reading: String,
+    pub char_range: (usize, usize),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ResolvedGrammarExplanation {
+    pub status: String,
+    pub occurrence_summary: String,
+    pub concept_id: String,
+    pub title: String,
+    pub compact_summary: String,
+    pub function_summary: String,
+    pub connection: String,
+    pub actual_form: String,
+    pub selected_sense: Option<GrammarSenseCandidate>,
+    #[serde(default)]
+    pub alternative_senses: Vec<GrammarSenseCandidate>,
+    #[serde(default)]
+    pub bound_captures: Vec<GrammarCapture>,
+    #[serde(default)]
+    pub morphology_chain: Vec<String>,
+    #[serde(default)]
+    pub content_blocks: Vec<GrammarContentBlock>,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub related_concept_ids: Vec<String>,
+    #[serde(default)]
+    pub contrast_concept_ids: Vec<String>,
+    #[serde(default)]
+    pub dictionary_targets: Vec<GrammarDictionaryTarget>,
+    #[serde(default)]
+    pub source_refs: Vec<String>,
+    pub available_depths: Vec<String>,
+    pub content_version: u32,
+    pub audit_status: String,
 }
 
 /// 由构词规则确认的连续语素单位。范围相对于所属文节的 morphemes，字符范围仍相对于全文。

@@ -1,0 +1,225 @@
+{
+  "bundle_id": "curated-text-batch-001",
+  "audit_status": "verified",
+  "source_refs": [
+    "corpus:七日の喰い神/第一話:grammar-review-batch-001",
+    "ipadic:runtime-observation"
+  ],
+  "review": {
+    "item_count": 30,
+    "baseline": "data/baselines/grammar-review-batch-001.json",
+    "method": "按 base_form、词性、活用身份分组，并逐项检查实际句子与文节语素"
+  },
+  "items": [
+    {
+      "concept_id": "grammar.functional.no",
+      "kind": "functional_morpheme",
+      "canonical_label": "の",
+      "aliases": ["格助词の", "形式名词の", "终助词の"],
+      "semantic_domains": ["relation", "nominalization", "discourse"],
+      "function_tags": ["attributive", "nominalizer", "sentence_final", "subject"],
+      "jlpt_level": 5,
+      "register": ["modern_standard", "spoken"],
+      "explanation": {
+        "compact_summary": "根据词性身份区分连体、名词化、句末语气与受限格关系",
+        "function_summary": "共同知识入口由 realization 精确绑定本句的语法身份",
+        "connection": "连体用法接名词性成分；名词化接用言连体形；句末用法位于句尾。",
+        "formation": "前接成分＋の",
+        "usage_notes": [
+          "同一表面の在 IPADIC 中可能是助词或非自立名词，不能只按字符串判义。",
+          "词性身份能够选择一级义项，更细语义仍可保留上下文候选。"
+        ],
+        "semantic_constraints": ["名词化の必须让前接内容整体进入名词位置。"],
+        "pragmatic_notes": ["句末の的说明、疑问或柔化语气受句调与后续终助词影响。"],
+        "examples": ["命の恩人", "救うのは無理だ", "また命令するの？"],
+        "counter_examples": ["不能把所有の都解释为所属格。"],
+        "body_blocks": [
+          {"kind": "paragraph", "label": "本句身份", "text": "系统依据 realization 绑定的词性身份解释 {{actual_form}}。"},
+          {"kind": "paragraph", "label": "身份范围", "text": "助詞-連体化表示连体关系；名詞-非自立负责名词化；助詞-終助詞表达句末语气；助詞-格助詞用于受限格关系。"},
+          {"kind": "warning", "label": "判定边界", "text": "词性身份缩小义项，但所属、同位、说明或疑问等细义仍可能需要更大上下文。"}
+        ]
+      },
+      "senses": [
+        {"sense_id": "grammar.functional.no.attributive", "label": "の：连体关系", "function_summary": "连接名词性成分，表示所属、属性或同位", "semantic_features": {"function": "attributive"}, "context_requirements": ["IPADIC: 助詞-連体化"]},
+        {"sense_id": "grammar.functional.no.nominalizer", "label": "の：名词化", "function_summary": "把前接内容名词化，使其充当主题、论元或判断对象", "semantic_features": {"function": "nominalizer"}, "context_requirements": ["IPADIC: 名詞-非自立"]},
+        {"sense_id": "grammar.functional.no.sentence_final", "label": "の：句末语气", "function_summary": "在句末表达说明、确认、疑问或情感语气", "semantic_features": {"function": "sentence_final"}, "context_requirements": ["IPADIC: 助詞-終助詞"]},
+        {"sense_id": "grammar.functional.no.case", "label": "の：受限格关系", "function_summary": "在连体从句等受限环境中标记主语或所属关系", "semantic_features": {"function": "case"}, "context_requirements": ["IPADIC: 助詞-格助詞"]}
+      ],
+      "realizations": [
+        {"realization_id": "realization.functional.no.attributive", "rule_id": "functional.no.attributive", "possible_sense_ids": ["grammar.functional.no.attributive"], "connection_signature": "名词性成分＋の＋名词", "functional_requirements": ["IPADIC: 助詞-連体化"], "examples": ["命の恩人", "島の奥"], "counter_examples": ["食べていいのよ"], "rule": {"priority": 40, "atoms": [{"base_forms": ["の"], "pos_major": ["助詞"], "pos_sub1": ["連体化"], "capture": "functional_no"}]}},
+        {"realization_id": "realization.functional.no.nominalizer", "rule_id": "functional.no.nominalizer", "possible_sense_ids": ["grammar.functional.no.nominalizer"], "connection_signature": "用言连体形＋の", "functional_requirements": ["IPADIC: 名詞-非自立"], "examples": ["救うのは無理だ"], "counter_examples": ["命の恩人"], "rule": {"priority": 45, "atoms": [{"base_forms": ["の"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "nominalizer"}]}},
+        {"realization_id": "realization.functional.no.sentence_final", "rule_id": "functional.no.sentence_final", "possible_sense_ids": ["grammar.functional.no.sentence_final"], "connection_signature": "句末＋の", "functional_requirements": ["IPADIC: 助詞-終助詞"], "examples": ["また命令するの？"], "counter_examples": ["命の恩人"], "rule": {"priority": 45, "atoms": [{"base_forms": ["の"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "sentence_particle"}]}},
+        {"realization_id": "realization.functional.no.case", "rule_id": "functional.no.case", "possible_sense_ids": ["grammar.functional.no.case"], "connection_signature": "受限从句成分＋の", "functional_requirements": ["IPADIC: 助詞-格助詞"], "examples": ["現れたのは三人の男たち"], "counter_examples": ["食べていいのよ"], "rule": {"priority": 45, "atoms": [{"base_forms": ["の"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "case_particle"}]}}
+      ]
+    },
+    {
+      "concept_id": "grammar.copula.de_aru",
+      "kind": "construction",
+      "canonical_label": "〜である",
+      "aliases": ["书面判断である"],
+      "semantic_domains": ["copula", "register"],
+      "function_tags": ["assertion", "written_style"],
+      "jlpt_level": 4,
+      "register": ["written", "formal"],
+      "explanation": {
+        "compact_summary": "书面判断表达，由判断助动词だ的连用形で与可活用的ある构成",
+        "connection": "体言、形容动词语干等＋である。",
+        "formation": "で（だ・连用形）＋ある（助动词）",
+        "usage_notes": ["ある可继续活用为あった、あれば等；这是 realization 内活用，不是 redirect。"],
+        "pragmatic_notes": ["通常比だ／です更书面、正式。"],
+        "examples": ["祈祷士である", "嘘であった"],
+        "counter_examples": ["本に書いてある中的ある是补助动词。"],
+        "body_blocks": [{"kind": "paragraph", "label": "构成", "text": "本句的 {{actual_form}} 由判断连用形与可活用的ある组成。"}]
+      },
+      "senses": [
+        {"sense_id": "grammar.copula.de_aru.assertion", "label": "书面判断", "function_summary": "以书面或正式语体断定前项身份或性质", "semantic_features": {"function": "copula"}}
+      ],
+      "realizations": [
+        {"realization_id": "realization.construction.copula.de_aru", "rule_id": "construction.copula.de_aru", "possible_sense_ids": ["grammar.copula.de_aru.assertion"], "connection_signature": "体言＋である", "morphology_requirements": ["ある可继续活用"], "examples": ["祈祷士である", "嘘であった"], "counter_examples": ["本に書いてある"], "rule": {"kind": "grammar_construction", "priority": 82, "show_badge": true, "atoms": [{"surfaces": ["で"], "base_forms": ["だ"], "pos_major": ["助動詞"], "capture": "copula_link"}, {"base_forms": ["ある"], "pos_major": ["助動詞"], "capture": "copula"}], "refines_rule_ids": ["functional.auxiliary.da"]}}
+      ]
+    },
+    {
+      "concept_id": "grammar.particle.ka",
+      "kind": "particle",
+      "canonical_label": "か",
+      "semantic_domains": ["question", "modality", "coordination"],
+      "function_tags": ["question", "rhetorical", "alternative"],
+      "jlpt_level": 5,
+      "register": ["modern_standard", "spoken"],
+      "explanation": {
+        "compact_summary": "表示疑问、反问、选择或嵌入式不确定",
+        "function_summary": "具体义项由句法范围与句调决定",
+        "connection": "接在句、疑问词或候选项后。",
+        "formation": "句・候选项＋か",
+        "usage_notes": ["IPADIC将多类か归入同一复合子词性，不能仅凭表面唯一判义。"],
+        "pragmatic_notes": ["后续ね等终助词会改变确认或反问语气。"],
+        "examples": ["やめさせる気か？", "人間じゃないですかね"],
+        "counter_examples": ["名词「蚊」不属于本项。"],
+        "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 可标记真正疑问，也可用于反问、确认、选择或不确定。"}, {"kind": "warning", "label": "歧义", "text": "系统保留多个 sense 候选，不按表面强制唯一化。"}]
+      },
+      "senses": [
+        {"sense_id": "grammar.particle.ka.question", "label": "か：疑问", "function_summary": "标记一般疑问或疑问成分的开放取值", "semantic_features": {"function": "question"}},
+        {"sense_id": "grammar.particle.ka.rhetorical", "label": "か：反问或确认", "function_summary": "形式为疑问，实际用于反问、确认或强化判断", "semantic_features": {"function": "rhetorical"}},
+        {"sense_id": "grammar.particle.ka.alternative", "label": "か：选择或不确定", "function_summary": "连接候选项或把疑问内容嵌入更大句子", "semantic_features": {"function": "alternative"}}
+      ],
+      "realizations": [
+        {"realization_id": "realization.functional.particle.ka", "rule_id": "functional.particle.ka", "possible_sense_ids": ["grammar.particle.ka.question", "grammar.particle.ka.rhetorical", "grammar.particle.ka.alternative"], "connection_signature": "句・候选项＋か", "functional_requirements": ["IPADIC: 助詞-副助詞／並立助詞／終助詞"], "context_requirements": ["具体义项需要句调与句法范围"], "examples": ["やめさせる気か？", "人間じゃないですかね"], "counter_examples": ["蚊が飛ぶ"], "rule": {"priority": 40, "atoms": [{"base_forms": ["か"], "pos_major": ["助詞"], "pos_sub1": ["副助詞／並立助詞／終助詞"], "capture": "particle"}]}}
+      ]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.yo",
+      "kind": "particle",
+      "canonical_label": "よ",
+      "semantic_domains": ["discourse"],
+      "function_tags": ["assertion", "notification"],
+      "jlpt_level": 5,
+      "register": ["spoken"],
+      "explanation": {"compact_summary": "向听话人提示、告知或强调信息", "connection": "位于句末。", "formation": "句末＋よ", "pragmatic_notes": ["语气强度受命令、否定和人际关系影响。"], "examples": ["喰うなよ", "悪く思うなよ"], "counter_examples": ["词汇内部的よ不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "本句的 {{actual_form}} 用于提示或强化信息与态度。"}]},
+      "senses": [{"sense_id": "grammar.sentence_particle.yo.assertion", "label": "よ：提示或断言", "function_summary": "把说话人认为应告知的信息推向听话人", "semantic_features": {"function": "assertion"}}],
+      "realizations": [{"realization_id": "realization.functional.sentence_particle.yo", "rule_id": "functional.sentence_particle.yo", "possible_sense_ids": ["grammar.sentence_particle.yo.assertion"], "connection_signature": "句末＋よ", "examples": ["喰うなよ"], "counter_examples": ["世を渡る"], "rule": {"atoms": [{"base_forms": ["よ"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "particle"}]}}]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.na",
+      "kind": "particle",
+      "canonical_label": "な（终助词）",
+      "semantic_domains": ["discourse", "modality"],
+      "function_tags": ["reflection", "emotion", "prohibition"],
+      "jlpt_level": 5,
+      "register": ["spoken"],
+      "explanation": {"compact_summary": "表达感叹、确认、独语或禁止", "connection": "位于句末；禁止用法常接动词基本形。", "formation": "句末＋な", "usage_notes": ["与形容动词连体形な按词性区分。"], "examples": ["もんだな", "喰うな"], "counter_examples": ["静かな部屋中的な不是终助词。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 的具体功能由前接形态和语境确定。"}]},
+      "senses": [{"sense_id": "grammar.sentence_particle.na.stance", "label": "な：感叹、确认或禁止", "function_summary": "表达独语式感叹、确认或命令环境中的禁止", "semantic_features": {"function": "stance_or_prohibition"}}],
+      "realizations": [{"realization_id": "realization.functional.sentence_particle.na", "rule_id": "functional.sentence_particle.na", "possible_sense_ids": ["grammar.sentence_particle.na.stance"], "connection_signature": "句末＋な", "context_requirements": ["细义由前接形态区分"], "examples": ["もんだな", "喰うな"], "counter_examples": ["静かな部屋"], "rule": {"atoms": [{"base_forms": ["な"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "particle"}]}}]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.ne",
+      "kind": "particle",
+      "canonical_label": "ね",
+      "semantic_domains": ["discourse"],
+      "function_tags": ["confirmation", "alignment"],
+      "jlpt_level": 5,
+      "register": ["spoken"],
+      "explanation": {"compact_summary": "确认信息、寻求认同或维持共同注意", "connection": "位于句末。", "formation": "句末＋ね", "pragmatic_notes": ["可表示柔化、提醒或带预设的认同请求。"], "examples": ["でしょうね", "忘れないことね"], "counter_examples": ["词汇内部的ね不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "本句的 {{actual_form}} 用于确认或邀请听话人共享判断。"}]},
+      "senses": [{"sense_id": "grammar.sentence_particle.ne.alignment", "label": "ね：确认与共识", "function_summary": "向听话人确认信息或寻求认同", "semantic_features": {"function": "alignment"}}],
+      "realizations": [{"realization_id": "realization.functional.sentence_particle.ne", "rule_id": "functional.sentence_particle.ne", "possible_sense_ids": ["grammar.sentence_particle.ne.alignment"], "connection_signature": "句末＋ね", "examples": ["でしょうね"], "counter_examples": ["根を張る"], "rule": {"atoms": [{"base_forms": ["ね"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "particle"}]}}]
+    },
+    {
+      "concept_id": "grammar.sentence_particle.wa",
+      "kind": "particle",
+      "canonical_label": "わ（终助词）",
+      "semantic_domains": ["discourse"],
+      "function_tags": ["stance", "emotion"],
+      "jlpt_level": 4,
+      "register": ["spoken"],
+      "explanation": {"compact_summary": "在句末附加说话人的断言、感情或角色化语气", "connection": "位于句末。", "formation": "句末＋わ", "usage_notes": ["与主题助词は通过词性身份区分。"], "pragmatic_notes": ["人物、地域和文体会影响语气，不能简单绑定固定性别。"], "examples": ["忘れてたわ", "くれるわ"], "counter_examples": ["私は行く中的は是主题助词。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 为句末态度标记，不是主题助词は。"}]},
+      "senses": [{"sense_id": "grammar.sentence_particle.wa.stance", "label": "わ：说话人态度", "function_summary": "在句末附加说话人的断言或感情", "semantic_features": {"function": "speaker_stance"}}],
+      "realizations": [{"realization_id": "realization.functional.sentence_particle.wa", "rule_id": "functional.sentence_particle.wa", "possible_sense_ids": ["grammar.sentence_particle.wa.stance"], "connection_signature": "句末＋わ", "examples": ["忘れてたわ"], "counter_examples": ["私は行く"], "rule": {"atoms": [{"base_forms": ["わ"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "particle"}]}}]
+    },
+    {
+      "concept_id": "grammar.formal.koto",
+      "kind": "formal_noun",
+      "canonical_label": "〜こと",
+      "semantic_domains": ["nominalization", "content", "event"],
+      "function_tags": ["nominalizer", "fact", "event"],
+      "jlpt_level": 5,
+      "explanation": {"compact_summary": "把命题、动作或状态作为内容、事实或事件来指称", "connection": "接在用言连体形、名词＋の等后。", "formation": "连体修饰＋こと", "usage_notes": ["后续助词、判断或固定构式会进一步限定功能。"], "examples": ["思い当たることは多い", "引き連れていたことか"], "counter_examples": ["词汇名词琴不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 把前接内容包装为可判断、提问或指称的内容单位。"}]},
+      "senses": [{"sense_id": "grammar.formal.koto.content", "label": "こと：内容或事件", "function_summary": "把前接命题、动作或状态作为内容、事实或事件", "semantic_features": {"function": "content_or_event"}, "context_requirements": ["IPADIC: 名詞-非自立"]}],
+      "realizations": [{"realization_id": "realization.functional.formal.koto", "rule_id": "functional.formal.koto", "possible_sense_ids": ["grammar.formal.koto.content"], "connection_signature": "连体修饰＋こと", "examples": ["思い当たることは多い"], "counter_examples": ["琴を弾く"], "rule": {"priority": 45, "atoms": [{"base_forms": ["こと"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "formal_noun"}]}}]
+    },
+    {
+      "concept_id": "grammar.formal.mono",
+      "kind": "formal_noun",
+      "canonical_label": "〜もの",
+      "semantic_domains": ["nominalization", "explanation", "category"],
+      "function_tags": ["entity", "situation", "explanation"],
+      "jlpt_level": 5,
+      "explanation": {"compact_summary": "把性质或命题实体化为对象、类别、通常情形或说明依据", "connection": "接在连体修饰成分后。", "formation": "连体修饰＋もの", "usage_notes": ["口语もん需作为独立 realization 验证后加入。"], "examples": ["中年のものである", "美味しいものなのよ"], "counter_examples": ["自立名词物不属于本规则。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "本句的 {{actual_form}} 将前接内容作为对象、类别或情形来指称。"}]},
+      "senses": [{"sense_id": "grammar.formal.mono.entity", "label": "もの：对象或情形", "function_summary": "把前接性质或命题实体化为对象、类别或通常情形", "semantic_features": {"function": "entity_or_situation"}, "context_requirements": ["IPADIC: 名詞-非自立"]}],
+      "realizations": [{"realization_id": "realization.functional.formal.mono", "rule_id": "functional.formal.mono", "possible_sense_ids": ["grammar.formal.mono.entity"], "connection_signature": "连体修饰＋もの", "examples": ["美味しいものなのよ"], "counter_examples": ["物を運ぶ"], "rule": {"priority": 45, "atoms": [{"base_forms": ["もの"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "formal_noun"}]}}]
+    },
+    {
+      "concept_id": "grammar.formal.mama",
+      "kind": "formal_noun",
+      "canonical_label": "〜まま",
+      "semantic_domains": ["state", "continuity"],
+      "function_tags": ["unchanged_state"],
+      "jlpt_level": 4,
+      "explanation": {"compact_summary": "表示状态保持不变，或在该状态下发生后项", "connection": "动词た形、ない形、名词＋の等＋まま。", "formation": "连体修饰＋まま", "semantic_constraints": ["前项状态在相关时间范围内被视为未改变。"], "examples": ["手錠で繋がれたまま", "頬を膨らませたまま"], "counter_examples": ["称呼语ママ不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 表示前项状态保持，并作为后项发生的背景。"}]},
+      "senses": [{"sense_id": "grammar.formal.mama.unchanged_state", "label": "まま：状态保持", "function_summary": "表示前项状态未改变而持续", "semantic_features": {"function": "unchanged_state"}, "context_requirements": ["IPADIC: 名詞-非自立"]}],
+      "realizations": [{"realization_id": "realization.functional.formal.mama", "rule_id": "functional.formal.mama", "possible_sense_ids": ["grammar.formal.mama.unchanged_state"], "connection_signature": "连体修饰＋まま", "examples": ["手錠で繋がれたまま"], "counter_examples": ["ママに会う"], "rule": {"priority": 45, "atoms": [{"base_forms": ["まま"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "formal_noun"}]}}]
+    },
+    {
+      "concept_id": "grammar.particle.ni",
+      "extend_existing": true,
+      "senses": [{"sense_id": "grammar.particle.ni.adverbial", "label": "に：副词化", "function_summary": "把形容动词语干、名词性成分或派生成分转为方式或状态修饰语", "semantic_features": {"function": "adverbial"}, "context_requirements": ["IPADIC: 助詞-副詞化"], "contrast_sense_ids": ["grammar.particle.ni.goal", "grammar.particle.ni.location"]}],
+      "realizations": [{"realization_id": "realization.functional.particle.ni.adverbial", "rule_id": "functional.particle.ni.adverbial", "possible_sense_ids": ["grammar.particle.ni.adverbial"], "connection_signature": "形容动词语干・名词性成分＋に", "examples": ["不機嫌に口を結んだ", "強制的に上を向かされた"], "counter_examples": ["学校に行く"], "rule": {"atoms": [{"base_forms": ["に"], "pos_major": ["助詞"], "pos_sub1": ["副詞化"], "capture": "particle"}]}}]
+    },
+    {
+      "concept_id": "grammar.particle.ga",
+      "extend_existing": true,
+      "senses": [{"sense_id": "grammar.particle.ga.connective", "label": "が：转折连接", "function_summary": "连接前后分句，表达转折、保留或话语推进", "semantic_features": {"function": "connective_contrast"}, "context_requirements": ["IPADIC: 助詞-接続助詞"], "contrast_sense_ids": ["grammar.particle.ga.subject"]}],
+      "realizations": [{"realization_id": "realization.functional.particle.ga.connective", "rule_id": "functional.particle.ga.connective", "possible_sense_ids": ["grammar.particle.ga.connective"], "connection_signature": "分句＋が＋分句", "examples": ["拘束されたが、思い当たることは多い"], "counter_examples": ["ビンタが飛ぶ"], "rule": {"atoms": [{"base_forms": ["が"], "pos_major": ["助詞"], "pos_sub1": ["接続助詞"], "capture": "particle"}]}}]
+    },
+    {
+      "concept_id": "grammar.particle.to",
+      "extend_existing": true,
+      "senses": [
+        {"sense_id": "grammar.particle.to.adverbial", "label": "と：副词化", "function_summary": "接在拟声拟态词或副词性成分后，标记动作方式", "semantic_features": {"function": "adverbial"}, "context_requirements": ["IPADIC: 助詞-副詞化"]},
+        {"sense_id": "grammar.particle.to.coordination", "label": "と：并列", "function_summary": "并列名词性成分，表示穷尽式列举或共同关系", "semantic_features": {"function": "coordination"}, "context_requirements": ["IPADIC: 助詞-並立助詞"]},
+        {"sense_id": "grammar.particle.to.conditional", "label": "と：条件连接", "function_summary": "连接前后分句，表示恒常、顺接、发现或必要条件", "semantic_features": {"function": "conditional"}, "context_requirements": ["IPADIC: 助詞-接続助詞"]},
+        {"sense_id": "grammar.particle.to.connective_quotation", "label": "と：句末引用", "function_summary": "在报告内容末尾标记引用，后续言说谓词可省略", "semantic_features": {"function": "quotation"}, "context_requirements": ["IPADIC: 助詞-接続助詞"]}
+      ],
+      "realizations": [
+        {"realization_id": "realization.functional.particle.to.adverbial", "rule_id": "functional.particle.to.adverbial", "possible_sense_ids": ["grammar.particle.to.adverbial"], "connection_signature": "副词・拟声拟态词＋と", "examples": ["堂々と乗り込む", "カタカタと震える"], "counter_examples": ["友人と話す"], "rule": {"atoms": [{"base_forms": ["と"], "pos_major": ["助詞"], "pos_sub1": ["副詞化"], "capture": "particle"}]}},
+        {"realization_id": "realization.functional.particle.to.coordination", "rule_id": "functional.particle.to.coordination", "possible_sense_ids": ["grammar.particle.to.coordination"], "connection_signature": "名词＋と＋名词", "examples": ["名词と名词"], "counter_examples": ["言ったと聞いた"], "rule": {"atoms": [{"base_forms": ["と"], "pos_major": ["助詞"], "pos_sub1": ["並立助詞"], "capture": "particle"}]}},
+        {"realization_id": "realization.functional.particle.to.connective", "rule_id": "functional.particle.to.connective", "possible_sense_ids": ["grammar.particle.to.conditional", "grammar.particle.to.connective_quotation"], "connection_signature": "分句＋と", "context_requirements": ["条件与句末引用在局部范围内可能同形"], "examples": ["火をつけると、声を上げる", "聞こえてきたのだと"], "counter_examples": ["友人と話す"], "rule": {"atoms": [{"base_forms": ["と"], "pos_major": ["助詞"], "pos_sub1": ["接続助詞"], "capture": "particle"}]}}
+      ]
+    },
+    {
+      "concept_id": "grammar.aspect.te_iru",
+      "extend_existing": true,
+      "realizations": [
+        {"realization_id": "realization.construction.te_iru.contracted", "rule_id": "construction.te_iru.contracted", "possible_sense_ids": ["grammar.aspect.te_iru.progressive", "grammar.aspect.te_iru.resultative"], "connection_signature": "动词连用形＋てる（〜ている的口语缩约）", "morphology_requirements": ["contraction:te_iru"], "functional_requirements": ["IPADIC: 動詞-非自立, base_form=てる"], "context_requirements": ["口语"], "examples": ["知ってるでしょ", "世界が回ってる"], "counter_examples": ["日が照る"], "rule": {"kind": "grammar_construction", "priority": 86, "show_badge": true, "atoms": [{"base_forms": ["てる"], "pos_major": ["動詞"], "pos_sub1": ["非自立"], "capture": "contracted_auxiliary"}]}}
+      ]
+    }
+  ]
+}

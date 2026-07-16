@@ -867,6 +867,9 @@ pub(crate) fn build_bunsetsu_with_annotations(
         surface,
         head_word,
         grammar_tags: Vec::new(), // 在后续的语法匹配阶段填充
+        morphology: Default::default(),
+        grammar_occurrences: Vec::new(),
+        functional_residuals: Vec::new(),
         word_formations,
         lexical_units,
         function: None,

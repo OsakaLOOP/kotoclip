@@ -1,0 +1,1522 @@
+[
+  {
+    "sense_id": "morphology.chain.inflection",
+    "concept_id": "morphology.chain",
+    "label": "活用链",
+    "function_summary": "词形变化",
+    "semantic_features": {
+      "function": "inflection"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.chain",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.form.te.te_form",
+    "concept_id": "morphology.form.te",
+    "label": "て形",
+    "function_summary": "连接后续成分",
+    "semantic_features": {
+      "function": "te_form"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.form.te",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.form.de.de_form",
+    "concept_id": "morphology.form.de",
+    "label": "で形",
+    "function_summary": "连接后续成分",
+    "semantic_features": {
+      "function": "de_form"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.form.de",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.tense.past.past",
+    "concept_id": "morphology.tense.past",
+    "label": "过去",
+    "function_summary": "表示过去或完成",
+    "semantic_features": {
+      "function": "past"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.tense.past",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.polarity.negative.negative",
+    "concept_id": "morphology.polarity.negative",
+    "label": "否定",
+    "function_summary": "否定动作或状态",
+    "semantic_features": {
+      "function": "negative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.polarity.negative",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.voice.causative.causative",
+    "concept_id": "morphology.voice.causative",
+    "label": "使役",
+    "function_summary": "表示使令或许可",
+    "semantic_features": {
+      "function": "causative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.voice.causative",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.voice.passive_potential.passive",
+    "concept_id": "morphology.voice.passive_potential",
+    "label": "られる候选",
+    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "semantic_features": {
+      "function": "passive"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.voice.passive_potential",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.voice.passive_potential.potential",
+    "concept_id": "morphology.voice.passive_potential",
+    "label": "られる候选：potential",
+    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "semantic_features": {
+      "function": "potential"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.voice.passive_potential",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.voice.passive_potential.honorific",
+    "concept_id": "morphology.voice.passive_potential",
+    "label": "られる候选：honorific",
+    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "semantic_features": {
+      "function": "honorific"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.voice.passive_potential",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.voice.passive_potential.spontaneous",
+    "concept_id": "morphology.voice.passive_potential",
+    "label": "られる候选：spontaneous",
+    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "semantic_features": {
+      "function": "spontaneous"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.voice.passive_potential",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.politeness.masu.masu",
+    "concept_id": "morphology.politeness.masu",
+    "label": "ます体",
+    "function_summary": "礼貌陈述形式",
+    "semantic_features": {
+      "function": "masu"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.politeness.masu",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.modality.desire.desire",
+    "concept_id": "morphology.modality.desire",
+    "label": "〜たい",
+    "function_summary": "表示愿望",
+    "semantic_features": {
+      "function": "desire"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.modality.desire",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.mood.volitional.volitional",
+    "concept_id": "morphology.mood.volitional",
+    "label": "意向形",
+    "function_summary": "表示意志或提议",
+    "semantic_features": {
+      "function": "volitional"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.mood.volitional",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.mood.conditional.conditional",
+    "concept_id": "morphology.mood.conditional",
+    "label": "假定形",
+    "function_summary": "形成条件连接",
+    "semantic_features": {
+      "function": "conditional"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.mood.conditional",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ga.subject",
+    "concept_id": "grammar.particle.ga",
+    "label": "が",
+    "function_summary": "格关系或焦点提示",
+    "semantic_features": {
+      "function": "subject"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ga",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ga.focus",
+    "concept_id": "grammar.particle.ga",
+    "label": "が：focus",
+    "function_summary": "格关系或焦点提示",
+    "semantic_features": {
+      "function": "focus"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ga",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.wo.patient",
+    "concept_id": "grammar.particle.wo",
+    "label": "を",
+    "function_summary": "标记动作对象或经过点",
+    "semantic_features": {
+      "function": "patient"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.wo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.wo.route",
+    "concept_id": "grammar.particle.wo",
+    "label": "を：route",
+    "function_summary": "标记动作对象或经过点",
+    "semantic_features": {
+      "function": "route"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.wo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ni.goal",
+    "concept_id": "grammar.particle.ni",
+    "label": "に",
+    "function_summary": "标记目标、位置、时间或结果",
+    "semantic_features": {
+      "function": "goal"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ni",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ni.location",
+    "concept_id": "grammar.particle.ni",
+    "label": "に：location",
+    "function_summary": "标记目标、位置、时间或结果",
+    "semantic_features": {
+      "function": "location"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ni",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ni.time",
+    "concept_id": "grammar.particle.ni",
+    "label": "に：time",
+    "function_summary": "标记目标、位置、时间或结果",
+    "semantic_features": {
+      "function": "time"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ni",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ni.result",
+    "concept_id": "grammar.particle.ni",
+    "label": "に：result",
+    "function_summary": "标记目标、位置、时间或结果",
+    "semantic_features": {
+      "function": "result"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ni",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.e.direction",
+    "concept_id": "grammar.particle.e",
+    "label": "へ",
+    "function_summary": "标记方向",
+    "semantic_features": {
+      "function": "direction"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.e",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.de.location",
+    "concept_id": "grammar.particle.de",
+    "label": "で",
+    "function_summary": "标记场所、手段或原因",
+    "semantic_features": {
+      "function": "location"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.de",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.de.instrument",
+    "concept_id": "grammar.particle.de",
+    "label": "で：instrument",
+    "function_summary": "标记场所、手段或原因",
+    "semantic_features": {
+      "function": "instrument"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.de",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.de.cause",
+    "concept_id": "grammar.particle.de",
+    "label": "で：cause",
+    "function_summary": "标记场所、手段或原因",
+    "semantic_features": {
+      "function": "cause"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.de",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.to.quotation",
+    "concept_id": "grammar.particle.to",
+    "label": "と",
+    "function_summary": "标记引用、共同者或结果",
+    "semantic_features": {
+      "function": "quotation"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.to",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.to.comitative",
+    "concept_id": "grammar.particle.to",
+    "label": "と：comitative",
+    "function_summary": "标记引用、共同者或结果",
+    "semantic_features": {
+      "function": "comitative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.to",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.kara.source",
+    "concept_id": "grammar.particle.kara",
+    "label": "から",
+    "function_summary": "标记起点或原因",
+    "semantic_features": {
+      "function": "source"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.kara",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.kara.cause",
+    "concept_id": "grammar.particle.kara",
+    "label": "から：cause",
+    "function_summary": "标记起点或原因",
+    "semantic_features": {
+      "function": "cause"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.kara",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.made.endpoint",
+    "concept_id": "grammar.particle.made",
+    "label": "まで",
+    "function_summary": "标记终点或范围上限",
+    "semantic_features": {
+      "function": "endpoint"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.made",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.wa.topic",
+    "concept_id": "grammar.particle.wa",
+    "label": "は",
+    "function_summary": "标记主题或对比",
+    "semantic_features": {
+      "function": "topic"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.wa",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.wa.contrast",
+    "concept_id": "grammar.particle.wa",
+    "label": "は：contrast",
+    "function_summary": "标记主题或对比",
+    "semantic_features": {
+      "function": "contrast"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.wa",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.mo.addition",
+    "concept_id": "grammar.particle.mo",
+    "label": "も",
+    "function_summary": "表示追加、并列或强调",
+    "semantic_features": {
+      "function": "addition"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.mo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.mo.emphasis",
+    "concept_id": "grammar.particle.mo",
+    "label": "も：emphasis",
+    "function_summary": "表示追加、并列或强调",
+    "semantic_features": {
+      "function": "emphasis"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.mo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.shika.restriction",
+    "concept_id": "grammar.particle.shika",
+    "label": "しか",
+    "function_summary": "与否定呼应表示限定",
+    "semantic_features": {
+      "function": "restriction"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.shika",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.dake.limit",
+    "concept_id": "grammar.particle.dake",
+    "label": "だけ",
+    "function_summary": "表示限定范围",
+    "semantic_features": {
+      "function": "limit"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.dake",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.te.connective",
+    "concept_id": "grammar.particle.te",
+    "label": "て",
+    "function_summary": "连接动作、状态或后续构式",
+    "semantic_features": {
+      "function": "connective"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.te",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.de_connective.connective",
+    "concept_id": "grammar.particle.de_connective",
+    "label": "で",
+    "function_summary": "て形的浊音连接形式",
+    "semantic_features": {
+      "function": "connective"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.de_connective",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ba.conditional",
+    "concept_id": "grammar.particle.ba",
+    "label": "ば",
+    "function_summary": "形成条件关系",
+    "semantic_features": {
+      "function": "conditional"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ba",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.auxiliary.nai.negative",
+    "concept_id": "grammar.auxiliary.nai",
+    "label": "ない",
+    "function_summary": "否定助动词",
+    "semantic_features": {
+      "function": "negative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.auxiliary.nai",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.auxiliary.ta.past",
+    "concept_id": "grammar.auxiliary.ta",
+    "label": "た",
+    "function_summary": "过去或完成助动词",
+    "semantic_features": {
+      "function": "past"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.auxiliary.ta",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.auxiliary.ta.perfect",
+    "concept_id": "grammar.auxiliary.ta",
+    "label": "た：perfect",
+    "function_summary": "过去或完成助动词",
+    "semantic_features": {
+      "function": "perfect"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.auxiliary.ta",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.auxiliary.masu.polite",
+    "concept_id": "grammar.auxiliary.masu",
+    "label": "ます",
+    "function_summary": "礼貌助动词",
+    "semantic_features": {
+      "function": "polite"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.auxiliary.masu",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.auxiliary.desu.copula",
+    "concept_id": "grammar.auxiliary.desu",
+    "label": "です",
+    "function_summary": "礼貌判断",
+    "semantic_features": {
+      "function": "copula"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.auxiliary.desu",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.auxiliary.da.copula",
+    "concept_id": "grammar.auxiliary.da",
+    "label": "だ",
+    "function_summary": "判断助动词",
+    "semantic_features": {
+      "function": "copula"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.auxiliary.da",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.iru.progressive",
+    "concept_id": "grammar.functional.iru",
+    "label": "いる（补助）",
+    "function_summary": "表示进行或状态持续候选",
+    "semantic_features": {
+      "function": "progressive"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.iru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.iru.resultative",
+    "concept_id": "grammar.functional.iru",
+    "label": "いる（补助）：resultative",
+    "function_summary": "表示进行或状态持续候选",
+    "semantic_features": {
+      "function": "resultative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.iru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.aru.resultative",
+    "concept_id": "grammar.functional.aru",
+    "label": "ある（补助）",
+    "function_summary": "表示结果状态",
+    "semantic_features": {
+      "function": "resultative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.aru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.oku.preparatory",
+    "concept_id": "grammar.functional.oku",
+    "label": "おく（补助）",
+    "function_summary": "表示预先处置或状态保留",
+    "semantic_features": {
+      "function": "preparatory"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.oku",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.miru.attempt",
+    "concept_id": "grammar.functional.miru",
+    "label": "みる（补助）",
+    "function_summary": "表示尝试",
+    "semantic_features": {
+      "function": "attempt"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.miru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.shimau.completion",
+    "concept_id": "grammar.functional.shimau",
+    "label": "しまう（补助）",
+    "function_summary": "表示完成或遗憾",
+    "semantic_features": {
+      "function": "completion"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.shimau",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.shimau.regret",
+    "concept_id": "grammar.functional.shimau",
+    "label": "しまう（补助）：regret",
+    "function_summary": "表示完成或遗憾",
+    "semantic_features": {
+      "function": "regret"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.shimau",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.iku.away",
+    "concept_id": "grammar.functional.iku",
+    "label": "いく（补助）",
+    "function_summary": "表示变化向后发展",
+    "semantic_features": {
+      "function": "away"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.iku",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.iku.continuation",
+    "concept_id": "grammar.functional.iku",
+    "label": "いく（补助）：continuation",
+    "function_summary": "表示变化向后发展",
+    "semantic_features": {
+      "function": "continuation"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.iku",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.kuru.toward",
+    "concept_id": "grammar.functional.kuru",
+    "label": "くる（补助）",
+    "function_summary": "表示变化朝当前发展",
+    "semantic_features": {
+      "function": "toward"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.kuru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.kuru.emergence",
+    "concept_id": "grammar.functional.kuru",
+    "label": "くる（补助）：emergence",
+    "function_summary": "表示变化朝当前发展",
+    "semantic_features": {
+      "function": "emergence"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.kuru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.yaru.giver_viewpoint",
+    "concept_id": "grammar.functional.yaru",
+    "label": "やる（补助）",
+    "function_summary": "表示为他者实施",
+    "semantic_features": {
+      "function": "giver_viewpoint"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.yaru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.ageru.giver_viewpoint",
+    "concept_id": "grammar.functional.ageru",
+    "label": "あげる（补助）",
+    "function_summary": "表示为他者实施",
+    "semantic_features": {
+      "function": "giver_viewpoint"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.ageru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.kureru.receiver_benefit",
+    "concept_id": "grammar.functional.kureru",
+    "label": "くれる（补助）",
+    "function_summary": "表示他者为己方实施",
+    "semantic_features": {
+      "function": "receiver_benefit"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.kureru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.kudasaru.benefactive_respectful",
+    "concept_id": "grammar.functional.kudasaru",
+    "label": "くださる（补助）",
+    "function_summary": "表示尊敬的授受或恩惠",
+    "semantic_features": {
+      "function": "benefactive_respectful"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.kudasaru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.kudasaru.subject_honorific",
+    "concept_id": "grammar.functional.kudasaru",
+    "label": "くださる（补助）：subject_honorific",
+    "function_summary": "表示尊敬的授受或恩惠",
+    "semantic_features": {
+      "function": "subject_honorific"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.kudasaru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.morau.receiver_viewpoint",
+    "concept_id": "grammar.functional.morau",
+    "label": "もらう（补助）",
+    "function_summary": "从接受者视角表示受益",
+    "semantic_features": {
+      "function": "receiver_viewpoint"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.morau",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.functional.naru.become",
+    "concept_id": "grammar.functional.naru",
+    "label": "なる（功能）",
+    "function_summary": "参与必要等固定构式",
+    "semantic_features": {
+      "function": "become"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.functional.naru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.aspect.te_iru.progressive",
+    "concept_id": "grammar.aspect.te_iru",
+    "label": "〜ている",
+    "function_summary": "表示进行或结果状态",
+    "semantic_features": {
+      "function": "progressive"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.aspect.te_iru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.aspect.te_iru.resultative",
+    "concept_id": "grammar.aspect.te_iru",
+    "label": "〜ている：resultative",
+    "function_summary": "表示进行或结果状态",
+    "semantic_features": {
+      "function": "resultative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.aspect.te_iru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.aspect.te_aru.resultative",
+    "concept_id": "grammar.aspect.te_aru",
+    "label": "〜てある",
+    "function_summary": "表示人为动作留下的结果状态",
+    "semantic_features": {
+      "function": "resultative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.aspect.te_aru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.aspect.te_oku.preparatory",
+    "concept_id": "grammar.aspect.te_oku",
+    "label": "〜ておく",
+    "function_summary": "表示预先处置或保持状态",
+    "semantic_features": {
+      "function": "preparatory"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.aspect.te_oku",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.modality.te_miru.attempt",
+    "concept_id": "grammar.modality.te_miru",
+    "label": "〜てみる",
+    "function_summary": "表示尝试做某事",
+    "semantic_features": {
+      "function": "attempt"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.modality.te_miru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.aspect.te_shimau.completion",
+    "concept_id": "grammar.aspect.te_shimau",
+    "label": "〜てしまう",
+    "function_summary": "表示彻底完成或遗憾",
+    "semantic_features": {
+      "function": "completion"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.aspect.te_shimau",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.aspect.te_shimau.regret",
+    "concept_id": "grammar.aspect.te_shimau",
+    "label": "〜てしまう：regret",
+    "function_summary": "表示彻底完成或遗憾",
+    "semantic_features": {
+      "function": "regret"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.aspect.te_shimau",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.direction.te_iku.away",
+    "concept_id": "grammar.direction.te_iku",
+    "label": "〜ていく",
+    "function_summary": "表示变化远离当前或继续发展",
+    "semantic_features": {
+      "function": "away"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.direction.te_iku",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.direction.te_iku.continuation",
+    "concept_id": "grammar.direction.te_iku",
+    "label": "〜ていく：continuation",
+    "function_summary": "表示变化远离当前或继续发展",
+    "semantic_features": {
+      "function": "continuation"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.direction.te_iku",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.direction.te_kuru.toward",
+    "concept_id": "grammar.direction.te_kuru",
+    "label": "〜てくる",
+    "function_summary": "表示变化接近当前或逐渐出现",
+    "semantic_features": {
+      "function": "toward"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.direction.te_kuru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.direction.te_kuru.emergence",
+    "concept_id": "grammar.direction.te_kuru",
+    "label": "〜てくる：emergence",
+    "function_summary": "表示变化接近当前或逐渐出现",
+    "semantic_features": {
+      "function": "emergence"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.direction.te_kuru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.benefactive.te_yaru.giver_viewpoint",
+    "concept_id": "grammar.benefactive.te_yaru",
+    "label": "〜てやる",
+    "function_summary": "表示说话者为他者做某事",
+    "semantic_features": {
+      "function": "giver_viewpoint"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.benefactive.te_yaru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.benefactive.te_ageru.giver_viewpoint",
+    "concept_id": "grammar.benefactive.te_ageru",
+    "label": "〜てあげる",
+    "function_summary": "表示为他者做某事",
+    "semantic_features": {
+      "function": "giver_viewpoint"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.benefactive.te_ageru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.benefactive.te_kureru.receiver_benefit",
+    "concept_id": "grammar.benefactive.te_kureru",
+    "label": "〜てくれる",
+    "function_summary": "表示他者为说话者一方做某事",
+    "semantic_features": {
+      "function": "receiver_benefit"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.benefactive.te_kureru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.benefactive.te_kudasaru.benefactive_respectful",
+    "concept_id": "grammar.benefactive.te_kudasaru",
+    "label": "〜てくださる",
+    "function_summary": "表示尊敬对象为己方做某事",
+    "semantic_features": {
+      "function": "benefactive_respectful"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.benefactive.te_kudasaru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.benefactive.te_kudasaru.subject_honorific",
+    "concept_id": "grammar.benefactive.te_kudasaru",
+    "label": "〜てくださる：subject_honorific",
+    "function_summary": "表示尊敬对象为己方做某事",
+    "semantic_features": {
+      "function": "subject_honorific"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.benefactive.te_kudasaru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.benefactive.te_morau.receiver_viewpoint",
+    "concept_id": "grammar.benefactive.te_morau",
+    "label": "〜てもらう",
+    "function_summary": "从接受者视角表示请人或承受恩惠",
+    "semantic_features": {
+      "function": "receiver_viewpoint"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.benefactive.te_morau",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.request.te_kudasai.polite_request",
+    "concept_id": "grammar.request.te_kudasai",
+    "label": "〜てください",
+    "function_summary": "礼貌请求对方实施动作",
+    "semantic_features": {
+      "function": "polite_request"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.request.te_kudasai",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.obligation.nakereba_naranai.obligation",
+    "concept_id": "grammar.obligation.nakereba_naranai",
+    "label": "〜なければならない",
+    "function_summary": "表示必须做某事",
+    "semantic_features": {
+      "function": "obligation"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.obligation.nakereba_naranai",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ni_wa.topic",
+    "concept_id": "grammar.particle.ni_wa",
+    "label": "には",
+    "function_summary": "叠加格关系与主题或对比",
+    "semantic_features": {
+      "function": "topic"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ni_wa",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ni_wa.contrast",
+    "concept_id": "grammar.particle.ni_wa",
+    "label": "には：contrast",
+    "function_summary": "叠加格关系与主题或对比",
+    "semantic_features": {
+      "function": "contrast"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ni_wa",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.ni_mo.addition",
+    "concept_id": "grammar.particle.ni_mo",
+    "label": "にも",
+    "function_summary": "叠加格关系与追加或强调",
+    "semantic_features": {
+      "function": "addition"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.ni_mo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.de_wa.topic",
+    "concept_id": "grammar.particle.de_wa",
+    "label": "では",
+    "function_summary": "叠加场所等关系与主题或对比",
+    "semantic_features": {
+      "function": "topic"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.de_wa",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.particle.de_wa.contrast",
+    "concept_id": "grammar.particle.de_wa",
+    "label": "では：contrast",
+    "function_summary": "叠加场所等关系与主题或对比",
+    "semantic_features": {
+      "function": "contrast"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.particle.de_wa",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.connective.te_mo.concession",
+    "concept_id": "grammar.connective.te_mo",
+    "label": "ても",
+    "function_summary": "表示让步条件或并列追加",
+    "semantic_features": {
+      "function": "concession"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.connective.te_mo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.modality.volitional_to_suru.attempt",
+    "concept_id": "grammar.modality.volitional_to_suru",
+    "label": "〜ようとする",
+    "function_summary": "表示尝试或即将发生",
+    "semantic_features": {
+      "function": "attempt"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.modality.volitional_to_suru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.modality.volitional_to_suru.imminence",
+    "concept_id": "grammar.modality.volitional_to_suru",
+    "label": "〜ようとする：imminence",
+    "function_summary": "表示尝试或即将发生",
+    "semantic_features": {
+      "function": "imminence"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.modality.volitional_to_suru",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.formal.tsumori_da.intention",
+    "concept_id": "grammar.formal.tsumori_da",
+    "label": "〜つもりだ",
+    "function_summary": "表示意图或认定",
+    "semantic_features": {
+      "function": "intention"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.formal.tsumori_da",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.formal.tsumori_da.belief",
+    "concept_id": "grammar.formal.tsumori_da",
+    "label": "〜つもりだ：belief",
+    "function_summary": "表示意图或认定",
+    "semantic_features": {
+      "function": "belief"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.formal.tsumori_da",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.connective.nagara_mo.simultaneous",
+    "concept_id": "grammar.connective.nagara_mo",
+    "label": "〜ながら（も）",
+    "function_summary": "表示同时或让步",
+    "semantic_features": {
+      "function": "simultaneous"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.connective.nagara_mo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "grammar.connective.nagara_mo.concession",
+    "concept_id": "grammar.connective.nagara_mo",
+    "label": "〜ながら（も）：concession",
+    "function_summary": "表示同时或让步",
+    "semantic_features": {
+      "function": "concession"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.grammar.connective.nagara_mo",
+    "sense_version": 1,
+    "audit_status": "verified"
+  }
+]

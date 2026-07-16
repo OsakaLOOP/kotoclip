@@ -6,8 +6,9 @@
 
 use crate::models::{
     AnnotatedToken, Bunsetsu, BunsetsuFunctionAnnotation, DictionaryEntryRef,
-    DictionaryLexicalUnitAnnotation, ExpressionAnnotation, GrammarTag, HeadWord, Morpheme, PosTag,
-    WordFormationAnnotation, WordFormationCapture,
+    DictionaryLexicalUnitAnnotation, ExpressionAnnotation, GrammarCapture, GrammarContentBlock,
+    GrammarDictionaryTarget, GrammarSenseCandidate, GrammarTag, HeadWord, Morpheme, PosTag,
+    ResolvedGrammarExplanation, WordFormationAnnotation, WordFormationCapture,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -84,6 +85,89 @@ pub struct CompactGrammarTag {
     pub d: u32,
     pub m: (usize, usize),
     pub c: (usize, usize),
+    pub o: u32,
+    pub q: u32,
+    pub k: u32,
+    pub s: u32,
+    pub b: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub z: Vec<(usize, usize)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub y: Option<u32>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub a: Vec<CompactGrammarSenseCandidate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub x: Option<CompactGrammarExplanation>,
+}
+
+#[derive(Serialize)]
+pub struct CompactGrammarSenseCandidate {
+    pub i: u32,
+    pub l: u32,
+    pub c: u8,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub e: Vec<u32>,
+}
+
+#[derive(Serialize)]
+pub struct CompactGrammarCapture {
+    pub n: u32,
+    pub s: u32,
+    pub b: u32,
+    pub m: (usize, usize),
+    pub c: (usize, usize),
+}
+
+#[derive(Serialize)]
+pub struct CompactGrammarBlock {
+    pub k: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub l: Option<u32>,
+    pub t: u32,
+}
+
+#[derive(Serialize)]
+pub struct CompactGrammarDictionaryTarget {
+    pub l: u32,
+    pub b: u32,
+    pub r: u32,
+    pub c: (usize, usize),
+}
+
+#[derive(Serialize)]
+pub struct CompactGrammarExplanation {
+    pub s: u32,
+    pub o: u32,
+    pub c: u32,
+    pub t: u32,
+    pub m: u32,
+    pub f: u32,
+    pub n: u32,
+    pub a: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub y: Option<CompactGrammarSenseCandidate>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub v: Vec<CompactGrammarSenseCandidate>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub p: Vec<CompactGrammarCapture>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub h: Vec<u32>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub d: Vec<CompactGrammarBlock>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub e: Vec<u32>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub g: Vec<u32>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub j: Vec<u32>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub w: Vec<CompactGrammarDictionaryTarget>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub i: Vec<u32>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub q: Vec<u32>,
+    pub vrs: u32,
+    pub u: u32,
 }
 
 #[derive(Serialize)]
@@ -236,6 +320,96 @@ impl StringTable {
             d: self.intern(&value.description),
             m: value.morpheme_range,
             c: value.char_range,
+            o: self.intern(&value.occurrence_id),
+            q: self.intern(&value.concept_id),
+            k: self.intern(match &value.occurrence_kind {
+                crate::models::GrammarOccurrenceKind::MorphologyFeature => "morphology_feature",
+                crate::models::GrammarOccurrenceKind::FunctionalMorpheme => "functional_morpheme",
+                crate::models::GrammarOccurrenceKind::GrammarConstruction => "grammar_construction",
+                crate::models::GrammarOccurrenceKind::BunsetsuFunction => "bunsetsu_function",
+                crate::models::GrammarOccurrenceKind::CorrelativeGrammar => "correlative_grammar",
+                crate::models::GrammarOccurrenceKind::Unknown => "unknown",
+            }),
+            s: self.intern(match &value.status {
+                crate::models::GrammarOccurrenceStatus::Accepted => "accepted",
+                crate::models::GrammarOccurrenceStatus::Pending => "pending",
+                crate::models::GrammarOccurrenceStatus::Rejected => "rejected",
+                crate::models::GrammarOccurrenceStatus::Unknown => "unknown",
+            }),
+            b: value.show_badge,
+            z: value.display_ranges.clone(),
+            y: value.selected_sense_id.as_ref().map(|item| self.intern(item)),
+            a: value
+                .sense_candidates
+                .iter()
+                .map(|item| self.grammar_sense_candidate(item))
+                .collect(),
+            x: value
+                .explanation
+                .as_ref()
+                .map(|item| self.grammar_explanation(item)),
+        }
+    }
+
+    fn grammar_sense_candidate(&mut self, value: &GrammarSenseCandidate) -> CompactGrammarSenseCandidate {
+        CompactGrammarSenseCandidate {
+            i: self.intern(&value.sense_id),
+            l: self.intern(&value.label),
+            c: value.confidence,
+            e: value.evidence.iter().map(|item| self.intern(item)).collect(),
+        }
+    }
+
+    fn grammar_capture(&mut self, value: &GrammarCapture) -> CompactGrammarCapture {
+        CompactGrammarCapture {
+            n: self.intern(&value.name),
+            s: self.intern(&value.surface),
+            b: self.intern(&value.base_form),
+            m: value.morpheme_range,
+            c: value.char_range,
+        }
+    }
+
+    fn grammar_block(&mut self, value: &GrammarContentBlock) -> CompactGrammarBlock {
+        CompactGrammarBlock {
+            k: self.intern(&value.kind),
+            l: value.label.as_ref().map(|item| self.intern(item)),
+            t: self.intern(&value.text),
+        }
+    }
+
+    fn grammar_dictionary_target(&mut self, value: &GrammarDictionaryTarget) -> CompactGrammarDictionaryTarget {
+        CompactGrammarDictionaryTarget {
+            l: self.intern(&value.label),
+            b: self.intern(&value.base_form),
+            r: self.intern(&value.reading),
+            c: value.char_range,
+        }
+    }
+
+    fn grammar_explanation(&mut self, value: &ResolvedGrammarExplanation) -> CompactGrammarExplanation {
+        CompactGrammarExplanation {
+            s: self.intern(&value.status),
+            o: self.intern(&value.occurrence_summary),
+            c: self.intern(&value.concept_id),
+            t: self.intern(&value.title),
+            m: self.intern(&value.compact_summary),
+            f: self.intern(&value.function_summary),
+            n: self.intern(&value.connection),
+            a: self.intern(&value.actual_form),
+            y: value.selected_sense.as_ref().map(|item| self.grammar_sense_candidate(item)),
+            v: value.alternative_senses.iter().map(|item| self.grammar_sense_candidate(item)).collect(),
+            p: value.bound_captures.iter().map(|item| self.grammar_capture(item)).collect(),
+            h: value.morphology_chain.iter().map(|item| self.intern(item)).collect(),
+            d: value.content_blocks.iter().map(|item| self.grammar_block(item)).collect(),
+            e: value.evidence.iter().map(|item| self.intern(item)).collect(),
+            g: value.related_concept_ids.iter().map(|item| self.intern(item)).collect(),
+            j: value.contrast_concept_ids.iter().map(|item| self.intern(item)).collect(),
+            w: value.dictionary_targets.iter().map(|item| self.grammar_dictionary_target(item)).collect(),
+            i: value.available_depths.iter().map(|item| self.intern(item)).collect(),
+            q: value.source_refs.iter().map(|item| self.intern(item)).collect(),
+            vrs: value.content_version,
+            u: self.intern(&value.audit_status),
         }
     }
 
@@ -447,6 +621,9 @@ mod tests {
                     pos: position,
                 },
                 grammar_tags: Vec::new(),
+                morphology: Default::default(),
+                grammar_occurrences: Vec::new(),
+                functional_residuals: Vec::new(),
                 word_formations: Vec::new(),
                 lexical_units: Vec::new(),
                 function: None,

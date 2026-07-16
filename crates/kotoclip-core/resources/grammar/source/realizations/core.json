@@ -1,0 +1,1325 @@
+[
+  {
+    "realization_id": "realization.morphology.te.ipadic",
+    "concept_id": "morphology.form.te",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.te.ipadic",
+    "connection_signature": "te positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "te positive"
+    ],
+    "counter_examples": [
+      "te negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.de.ipadic",
+    "concept_id": "morphology.form.de",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.de.ipadic",
+    "connection_signature": "de positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "de positive"
+    ],
+    "counter_examples": [
+      "de negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.past.ipadic",
+    "concept_id": "morphology.tense.past",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.past.ipadic",
+    "connection_signature": "past positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "past positive"
+    ],
+    "counter_examples": [
+      "past negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.negative.ipadic",
+    "concept_id": "morphology.polarity.negative",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.negative.ipadic",
+    "connection_signature": "negative positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "negative positive"
+    ],
+    "counter_examples": [
+      "negative negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.causative.ipadic",
+    "concept_id": "morphology.voice.causative",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.causative.ipadic",
+    "connection_signature": "causative positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "causative positive"
+    ],
+    "counter_examples": [
+      "causative negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.passive_potential.ipadic",
+    "concept_id": "morphology.voice.passive_potential",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.passive_potential.ipadic",
+    "connection_signature": "passive_potential positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "passive_potential positive"
+    ],
+    "counter_examples": [
+      "passive_potential negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.masu.ipadic",
+    "concept_id": "morphology.politeness.masu",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.masu.ipadic",
+    "connection_signature": "masu positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "masu positive"
+    ],
+    "counter_examples": [
+      "masu negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.desire.ipadic",
+    "concept_id": "morphology.modality.desire",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.desire.ipadic",
+    "connection_signature": "desire positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "desire positive"
+    ],
+    "counter_examples": [
+      "desire negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.volitional.ipadic",
+    "concept_id": "morphology.mood.volitional",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.volitional.ipadic",
+    "connection_signature": "volitional positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "volitional positive"
+    ],
+    "counter_examples": [
+      "volitional negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.morphology.conditional.ipadic",
+    "concept_id": "morphology.mood.conditional",
+    "possible_sense_ids": [],
+    "rule_id": "morphology.conditional.ipadic",
+    "connection_signature": "conditional positive",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "conditional positive"
+    ],
+    "counter_examples": [
+      "conditional negative"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.ga",
+    "concept_id": "grammar.particle.ga",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.ga",
+    "connection_signature": "本が",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本が"
+    ],
+    "counter_examples": [
+      "「が」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.wo",
+    "concept_id": "grammar.particle.wo",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.wo",
+    "connection_signature": "本を",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本を"
+    ],
+    "counter_examples": [
+      "「を」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.ni",
+    "concept_id": "grammar.particle.ni",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.ni",
+    "connection_signature": "本に",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本に"
+    ],
+    "counter_examples": [
+      "「に」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.e",
+    "concept_id": "grammar.particle.e",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.e",
+    "connection_signature": "本へ",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本へ"
+    ],
+    "counter_examples": [
+      "「へ」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.de_case",
+    "concept_id": "grammar.particle.de",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.de_case",
+    "connection_signature": "本で",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本で"
+    ],
+    "counter_examples": [
+      "「で」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.to",
+    "concept_id": "grammar.particle.to",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.to",
+    "connection_signature": "本と",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本と"
+    ],
+    "counter_examples": [
+      "「と」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.kara",
+    "concept_id": "grammar.particle.kara",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.kara",
+    "connection_signature": "本から",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本から"
+    ],
+    "counter_examples": [
+      "「から」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.made",
+    "concept_id": "grammar.particle.made",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.made",
+    "connection_signature": "本まで",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本まで"
+    ],
+    "counter_examples": [
+      "「まで」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.wa",
+    "concept_id": "grammar.particle.wa",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.wa",
+    "connection_signature": "本は",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本は"
+    ],
+    "counter_examples": [
+      "「は」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.mo",
+    "concept_id": "grammar.particle.mo",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.mo",
+    "connection_signature": "本も",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本も"
+    ],
+    "counter_examples": [
+      "「も」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.shika",
+    "concept_id": "grammar.particle.shika",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.shika",
+    "connection_signature": "本しか",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本しか"
+    ],
+    "counter_examples": [
+      "「しか」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.dake",
+    "concept_id": "grammar.particle.dake",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.dake",
+    "connection_signature": "本だけ",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本だけ"
+    ],
+    "counter_examples": [
+      "「だけ」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.te",
+    "concept_id": "grammar.particle.te",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.te",
+    "connection_signature": "本て",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本て"
+    ],
+    "counter_examples": [
+      "「て」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.de_connective",
+    "concept_id": "grammar.particle.de_connective",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.de_connective",
+    "connection_signature": "本で",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本で"
+    ],
+    "counter_examples": [
+      "「で」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.particle.ba",
+    "concept_id": "grammar.particle.ba",
+    "possible_sense_ids": [],
+    "rule_id": "functional.particle.ba",
+    "connection_signature": "本ば",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本ば"
+    ],
+    "counter_examples": [
+      "「ば」を名詞として引用する。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.auxiliary.nai",
+    "concept_id": "grammar.auxiliary.nai",
+    "possible_sense_ids": [],
+    "rule_id": "functional.auxiliary.nai",
+    "connection_signature": "語幹＋ない",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "語幹＋ない"
+    ],
+    "counter_examples": [
+      "ない を独立語として扱う例"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.auxiliary.ta",
+    "concept_id": "grammar.auxiliary.ta",
+    "possible_sense_ids": [],
+    "rule_id": "functional.auxiliary.ta",
+    "connection_signature": "語幹＋た",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "語幹＋た"
+    ],
+    "counter_examples": [
+      "た を独立語として扱う例"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.auxiliary.masu",
+    "concept_id": "grammar.auxiliary.masu",
+    "possible_sense_ids": [],
+    "rule_id": "functional.auxiliary.masu",
+    "connection_signature": "語幹＋ます",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "語幹＋ます"
+    ],
+    "counter_examples": [
+      "ます を独立語として扱う例"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.auxiliary.desu",
+    "concept_id": "grammar.auxiliary.desu",
+    "possible_sense_ids": [],
+    "rule_id": "functional.auxiliary.desu",
+    "connection_signature": "語幹＋です",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "語幹＋です"
+    ],
+    "counter_examples": [
+      "です を独立語として扱う例"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.auxiliary.da",
+    "concept_id": "grammar.auxiliary.da",
+    "possible_sense_ids": [],
+    "rule_id": "functional.auxiliary.da",
+    "connection_signature": "語幹＋だ",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "語幹＋だ"
+    ],
+    "counter_examples": [
+      "だ を独立語として扱う例"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.iru",
+    "concept_id": "grammar.functional.iru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.iru",
+    "connection_signature": "読んでいる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでいる"
+    ],
+    "counter_examples": [
+      "いる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.aru",
+    "concept_id": "grammar.functional.aru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.aru",
+    "connection_signature": "読んである",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んである"
+    ],
+    "counter_examples": [
+      "ある を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.oku",
+    "concept_id": "grammar.functional.oku",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.oku",
+    "connection_signature": "読んでおく",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでおく"
+    ],
+    "counter_examples": [
+      "おく を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.miru",
+    "concept_id": "grammar.functional.miru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.miru",
+    "connection_signature": "読んでみる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでみる"
+    ],
+    "counter_examples": [
+      "みる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.shimau",
+    "concept_id": "grammar.functional.shimau",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.shimau",
+    "connection_signature": "読んでしまう",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでしまう"
+    ],
+    "counter_examples": [
+      "しまう を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.iku",
+    "concept_id": "grammar.functional.iku",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.iku",
+    "connection_signature": "読んでいく",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでいく"
+    ],
+    "counter_examples": [
+      "いく を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.kuru",
+    "concept_id": "grammar.functional.kuru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.kuru",
+    "connection_signature": "読んでくる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでくる"
+    ],
+    "counter_examples": [
+      "くる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.yaru",
+    "concept_id": "grammar.functional.yaru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.yaru",
+    "connection_signature": "読んでやる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでやる"
+    ],
+    "counter_examples": [
+      "やる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.ageru",
+    "concept_id": "grammar.functional.ageru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.ageru",
+    "connection_signature": "読んであげる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んであげる"
+    ],
+    "counter_examples": [
+      "あげる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.kureru",
+    "concept_id": "grammar.functional.kureru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.kureru",
+    "connection_signature": "読んでくれる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでくれる"
+    ],
+    "counter_examples": [
+      "くれる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.kudasaru",
+    "concept_id": "grammar.functional.kudasaru",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.kudasaru",
+    "connection_signature": "読んでくださる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでくださる"
+    ],
+    "counter_examples": [
+      "くださる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.functional.verb.morau",
+    "concept_id": "grammar.functional.morau",
+    "possible_sense_ids": [],
+    "rule_id": "functional.verb.morau",
+    "connection_signature": "読んでもらう",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでもらう"
+    ],
+    "counter_examples": [
+      "もらう を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_iru",
+    "concept_id": "grammar.aspect.te_iru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_iru",
+    "connection_signature": "読んでいる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでいる"
+    ],
+    "counter_examples": [
+      "いる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_aru",
+    "concept_id": "grammar.aspect.te_aru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_aru",
+    "connection_signature": "読んである",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んである"
+    ],
+    "counter_examples": [
+      "ある を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_oku",
+    "concept_id": "grammar.aspect.te_oku",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_oku",
+    "connection_signature": "読んでおく",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでおく"
+    ],
+    "counter_examples": [
+      "おく を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_miru",
+    "concept_id": "grammar.modality.te_miru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_miru",
+    "connection_signature": "読んでみる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでみる"
+    ],
+    "counter_examples": [
+      "みる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_shimau",
+    "concept_id": "grammar.aspect.te_shimau",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_shimau",
+    "connection_signature": "読んでしまう",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでしまう"
+    ],
+    "counter_examples": [
+      "しまう を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_iku",
+    "concept_id": "grammar.direction.te_iku",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_iku",
+    "connection_signature": "読んでいく",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでいく"
+    ],
+    "counter_examples": [
+      "いく を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_kuru",
+    "concept_id": "grammar.direction.te_kuru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_kuru",
+    "connection_signature": "読んでくる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでくる"
+    ],
+    "counter_examples": [
+      "くる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_yaru",
+    "concept_id": "grammar.benefactive.te_yaru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_yaru",
+    "connection_signature": "読んでやる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでやる"
+    ],
+    "counter_examples": [
+      "やる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_ageru",
+    "concept_id": "grammar.benefactive.te_ageru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_ageru",
+    "connection_signature": "読んであげる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んであげる"
+    ],
+    "counter_examples": [
+      "あげる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_kureru",
+    "concept_id": "grammar.benefactive.te_kureru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_kureru",
+    "connection_signature": "読んでくれる",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでくれる"
+    ],
+    "counter_examples": [
+      "くれる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_kudasaru",
+    "concept_id": "grammar.benefactive.te_kudasaru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_kudasaru",
+    "connection_signature": "先生が読んでくださった。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "先生が読んでくださった。"
+    ],
+    "counter_examples": [
+      "くださる を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_morau",
+    "concept_id": "grammar.benefactive.te_morau",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_morau",
+    "connection_signature": "読んでもらう",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでもらう"
+    ],
+    "counter_examples": [
+      "もらう を自立谓词として用いる。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_kudasai",
+    "concept_id": "grammar.request.te_kudasai",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_kudasai",
+    "connection_signature": "矢印キーを使ってください。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "矢印キーを使ってください。"
+    ],
+    "counter_examples": [
+      "先生が本を読んでくださった。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.nakereba_naranai",
+    "concept_id": "grammar.obligation.nakereba_naranai",
+    "possible_sense_ids": [],
+    "rule_id": "construction.nakereba_naranai",
+    "connection_signature": "読まなければならない。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読まなければならない。"
+    ],
+    "counter_examples": [
+      "読まなければ帰る。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.ni_wa",
+    "concept_id": "grammar.particle.ni_wa",
+    "possible_sense_ids": [],
+    "rule_id": "construction.ni_wa",
+    "connection_signature": "本には書いてある。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本には書いてある。"
+    ],
+    "counter_examples": [
+      "に と は が離れている。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.ni_mo",
+    "concept_id": "grammar.particle.ni_mo",
+    "possible_sense_ids": [],
+    "rule_id": "construction.ni_mo",
+    "connection_signature": "本にも書いてある。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "本にも書いてある。"
+    ],
+    "counter_examples": [
+      "に と も が離れている。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.de_wa",
+    "concept_id": "grammar.particle.de_wa",
+    "possible_sense_ids": [],
+    "rule_id": "construction.de_wa",
+    "connection_signature": "ここでは話さない。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "ここでは話さない。"
+    ],
+    "counter_examples": [
+      "で と は が離れている。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.te_mo",
+    "concept_id": "grammar.connective.te_mo",
+    "possible_sense_ids": [],
+    "rule_id": "construction.te_mo",
+    "connection_signature": "読んでも分からない。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "読んでも分からない。"
+    ],
+    "counter_examples": [
+      "て と も が離れている。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.volitional_to_suru",
+    "concept_id": "grammar.modality.volitional_to_suru",
+    "possible_sense_ids": [],
+    "rule_id": "construction.volitional_to_suru",
+    "connection_signature": "出かけようとする。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "出かけようとする。"
+    ],
+    "counter_examples": [
+      "出かけようと話す。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.tsumori_da",
+    "concept_id": "grammar.formal.tsumori_da",
+    "possible_sense_ids": [],
+    "rule_id": "construction.tsumori_da",
+    "connection_signature": "行くつもりだ。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "行くつもりだ。"
+    ],
+    "counter_examples": [
+      "荷物を積もりだ。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  },
+  {
+    "realization_id": "realization.construction.nagara_mo",
+    "concept_id": "grammar.connective.nagara_mo",
+    "possible_sense_ids": [],
+    "rule_id": "construction.nagara_mo",
+    "connection_signature": "知りながらも黙った。",
+    "morphology_requirements": [],
+    "functional_requirements": [],
+    "context_requirements": [],
+    "examples": [
+      "知りながらも黙った。"
+    ],
+    "counter_examples": [
+      "音楽を聞きながら歩く。"
+    ],
+    "realization_version": 1,
+    "audit_status": "verified",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ]
+  }
+]
