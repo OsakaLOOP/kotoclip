@@ -114,6 +114,30 @@ const dictionaryGroups = computed(() => {
   return [...groups.entries()].map(([name, entries]) => ({ name, entries }));
 });
 
+const activeDictionaryName = ref<string | null>(null);
+watch(
+  dictionaryGroups,
+  (groups) => {
+    if (!groups.some((group) => group.name === activeDictionaryName.value)) {
+      activeDictionaryName.value = groups[0]?.name ?? null;
+    }
+  },
+  { immediate: true },
+);
+
+const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
+  dictionaryGroups.value.map((group) => ({
+    key: group.name,
+    label: group.name,
+    active: activeDictionaryName.value === group.name,
+  })),
+);
+
+const visibleDictionaryGroups = computed(() => {
+  if (!activeDictionaryName.value) return [];
+  return dictionaryGroups.value.filter((group) => group.name === activeDictionaryName.value);
+});
+
 const dictionarySourceNames = ref(["三省堂Super大辞林3.1"]);
 const definitionViewportRef = ref<HTMLElement | null>(null);
 const cachedContentHeight = ref(0);
@@ -137,10 +161,13 @@ watch(
   { flush: "post" },
 );
 
-const dictionarySourceLabel = computed(() => dictionarySourceNames.value.join(" · "));
+const dictionarySourceLabel = computed(() => activeDictionaryName.value ?? dictionarySourceNames.value.join(" · "));
 const loadingContentHeight = computed(() => `${cachedContentHeight.value || 220}px`);
 
-const activeEntry = computed(() => visibleEntries.value.find((entry) => entry.is_preferred) ?? visibleEntries.value[0]);
+const activeEntry = computed(() => {
+  const entries = visibleDictionaryGroups.value.flatMap((group) => group.entries);
+  return entries.find((entry) => entry.is_preferred) ?? entries[0];
+});
 
 const isSourceQuery = computed(() =>
   !props.lookup || props.lookup.query === sourceQuery.value,
@@ -284,8 +311,14 @@ function handleDefinitionClick(event: MouseEvent) {
         >
           <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
           <div v-else-if="!dictionaryGroups.length" class="empty-state">暂无本地词典释义</div>
-          <section v-for="group in dictionaryGroups" :key="group.name" class="dictionary-group">
-          <h3 v-if="dictionaryGroups.length > 1">{{ group.name }}</h3>
+          <DictionaryChoiceBar
+            v-if="dictionaryOptions.length > 1"
+            class="dictionary-switcher"
+            label="词典"
+            :options="dictionaryOptions"
+            @select="activeDictionaryName = $event"
+          />
+          <section v-for="group in visibleDictionaryGroups" :key="group.name" class="dictionary-group">
           <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
             <div class="entry-meta">
               <strong><span v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" title="读音匹配">★</span>{{ entry.headword }}</strong>
@@ -339,7 +372,7 @@ button { border: 1px solid var(--border-color); border-radius: 999px; padding: 3
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 .dictionary-entry + .dictionary-entry { border-top: 1px dashed var(--border-color); margin-top: 12px; padding-top: 12px; }
 .dictionary-group + .dictionary-group { margin-top: 14px; }
-.dictionary-group > h3 { position: sticky; top: 49px; z-index: 2; display: flex; width: max-content; max-width: calc(100% - 12px); margin: 0 0 10px 2px; padding: 4px 10px; border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--bg-primary) 84%, transparent); box-shadow: 0 3px 10px color-mix(in srgb, var(--text-primary) 7%, transparent); backdrop-filter: blur(14px); color: var(--text-muted); font: 700 .72rem var(--font-ui); }
+.dictionary-switcher { margin-bottom: 10px; }
 .entry-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .entry-body { padding-top: 3px; }
 .entry-meta span, .empty-state { color: var(--text-muted); font: .75rem var(--font-ui); }

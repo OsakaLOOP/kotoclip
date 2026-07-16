@@ -11,7 +11,7 @@ const FloatDebugOverlay = import.meta.env.DEV && floatDebug.enabled
 
 <template>
   <aside v-if="isInsider" class="insider-notice" role="note">
-    <strong>内部预览版本</strong>，不代表最终成品。词典来源：三省堂《Super大辞林 3.1》；NLP 库来源：Vibrato 0.5.2 fork / IPADIC。
+    <strong>内部预览版本</strong>，不代表最终成品。词典来源：三省堂《Super大辞林 3.1》、小学馆《日中辞典》第 3 版、CROWN《日中辞典》；NLP 库来源：Vibrato 0.5.2 fork / IPADIC。
     不得商业利用或二次分发；如因此造成侵权，作者不负责任。
   </aside>
   <div class="reader-shell">

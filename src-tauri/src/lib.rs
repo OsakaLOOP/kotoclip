@@ -98,6 +98,8 @@ pub fn run() {
             commands::mark_document_known,
             commands::choose_document_segmentation,
             commands::lookup_word,
+            commands::get_dictionary_settings,
+            commands::set_dictionary_order,
             commands::choose_dictionary_target,
             commands::search_grammar_catalog,
             commands::get_grammar_concept,

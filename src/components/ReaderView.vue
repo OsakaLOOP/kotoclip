@@ -18,6 +18,7 @@ import ExportPanel from "./ExportPanel.vue";
 import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
 import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
+import DictionarySettingsPanel from "./dictionary/DictionarySettingsPanel.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 import { useExplanationSession } from "../composables/useExplanationSession";
 import { useExplanationInteraction } from "../composables/useExplanationInteraction";
@@ -71,7 +72,13 @@ const {
   chooseSegmentation,
 } = useTokenization();
 const { selectedKeys, toggleSelect, markAsKnown, markAsUnknown, exportSelected, updateNote } = useSelection(paragraphs, markDocumentKnown);
-const { lookupWord, chooseDictionaryTarget } = useDictionary();
+const {
+  lookupWord,
+  chooseDictionaryTarget,
+  dictionarySettings,
+  loadDictionarySettings,
+  setDictionaryOrder,
+} = useDictionary();
 const explanation = useExplanationSession(lookupWord, chooseDictionaryTarget);
 const explanationInteraction = useExplanationInteraction({
   findToken(paragraphId, tokenIndex) {
@@ -117,6 +124,7 @@ const candidatesLoading = ref(false);
 // 侧边栏导出面板显示状态
 const showExportPanel = ref(false);
 const showGrammarLibrary = ref(false);
+const showDictionarySettings = ref(false);
 const expressionRules = ref<ExpressionRule[]>([]);
 const expressionDraft = ref<AnnotatedToken[]>([]);
 const expressionDraftMorphemeRange = ref({ startMorphemeIdx: 0, endMorphemeIdx: 0 });
@@ -267,6 +275,23 @@ onMounted(() => {
   window.addEventListener("mouseup", handleMouseUp);
   window.addEventListener("resize", explanation.refreshAnchor);
 });
+
+watch(backendReady, (ready) => {
+  if (!ready) return;
+  void loadDictionarySettings().catch((error) => {
+    console.error("Dictionary settings load error:", error);
+  });
+}, { immediate: true });
+
+async function updateDictionaryOrder(order: string[]) {
+  try {
+    await setDictionaryOrder(order);
+  } catch (error) {
+    console.error("Dictionary order save error:", error);
+    alert(`保存词典排序失败：${String(error)}`);
+    await loadDictionarySettings();
+  }
+}
 
 onBeforeUnmount(() => {
   disposeBackendStatusListener();
@@ -478,6 +503,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <button class="icon-btn" :class="{ active: showGrammarLibrary }" @click="showGrammarLibrary = true">
           文法库
         </button>
+        <button class="icon-btn" :class="{ active: showDictionarySettings }" @click="showDictionarySettings = true">
+          词典
+        </button>
         <button class="icon-btn" :class="{ active: einkMode }" @click="toggleEinkMode">
           🕶 墨水屏
         </button>
@@ -661,6 +689,13 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
     <GrammarLibraryPanel
       :show="showGrammarLibrary"
       @close="showGrammarLibrary = false"
+    />
+
+    <DictionarySettingsPanel
+      :show="showDictionarySettings"
+      :settings="dictionarySettings"
+      @close="showDictionarySettings = false"
+      @reorder="updateDictionaryOrder"
     />
 
     <!-- 6. 详细词典释义弹窗 (Modal) -->

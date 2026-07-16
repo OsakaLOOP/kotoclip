@@ -169,6 +169,13 @@ impl DictionaryEngine {
             .collect()
     }
 
+    pub fn names(&self) -> Vec<String> {
+        self.databases
+            .iter()
+            .map(|database| database.name.clone())
+            .collect()
+    }
+
     pub fn match_kind(&self, headword: &str, reading: Option<&str>) -> Option<String> {
         if headword.is_empty() {
             return None;

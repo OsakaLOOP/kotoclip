@@ -26,7 +26,10 @@
     "targets": "all",
     "resources": [
       "../ipadic/system.dic",
-      "../data/dict-sources/starter.kdict"
+      "../data/dict-sources/starter.kdict",
+      "../data/dict-sources/daijirin.kdict",
+      "../data/dict-sources/shogakukan.kdict",
+      "../data/dict-sources/crown.kdict"
     ],
     "icon": [
       "icons/32x32.png",

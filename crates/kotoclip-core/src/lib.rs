@@ -14,8 +14,8 @@ pub mod transport;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryLookup, ExpressionAnnotation, ExpressionRule, ExpressionRulePreview,
-    SegmentationCandidate, SegmentationChoice,
+    AnnotatedToken, DictionaryLookup, DictionarySettings, ExpressionAnnotation, ExpressionRule,
+    ExpressionRulePreview, SegmentationCandidate, SegmentationChoice,
 };
 use performance::TimingCollector;
 use pipeline::Pipeline;
@@ -447,6 +447,48 @@ impl Engine {
             candidates,
             entries: dictionary::aggregate::sort_definitions(entries, priority_list),
         }
+    }
+
+    pub fn dictionary_settings(&self) -> DictionarySettings {
+        let available_dictionaries = self.dictionary.names();
+        let configured_order = {
+            let order = self.profile.dictionary_order();
+            if order.is_empty() {
+                self.profile.default_dictionary().into_iter().collect()
+            } else {
+                order
+            }
+        };
+        let mut dictionary_order = configured_order
+            .into_iter()
+            .filter(|name| available_dictionaries.contains(name))
+            .collect::<Vec<_>>();
+        dictionary_order.extend(
+            available_dictionaries
+                .iter()
+                .filter(|name| !dictionary_order.contains(name))
+                .cloned(),
+        );
+        DictionarySettings {
+            available_dictionaries,
+            default_dictionary: dictionary_order.first().cloned(),
+            dictionary_order,
+        }
+    }
+
+    pub fn set_dictionary_order(
+        &self,
+        order: &[String],
+    ) -> Result<DictionarySettings, Box<dyn std::error::Error>> {
+        let available = self.dictionary.names();
+        if order.len() != available.len()
+            || order.iter().any(|name| !available.contains(name))
+            || order.iter().collect::<std::collections::HashSet<_>>().len() != order.len()
+        {
+            return Err("词典排序必须包含每本已加载词典且不能重复".into());
+        }
+        self.profile.set_dictionary_order(order)?;
+        Ok(self.dictionary_settings())
     }
 
     pub fn choose_dictionary_target(

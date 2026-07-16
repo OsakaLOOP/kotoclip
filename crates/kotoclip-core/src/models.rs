@@ -677,3 +677,11 @@ pub struct DictionaryLookup {
     pub candidates: Vec<DictionaryLink>,
     pub entries: Vec<DictEntry>,
 }
+
+/// 可在界面中展示和配置的本地词典集合。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DictionarySettings {
+    pub available_dictionaries: Vec<String>,
+    pub default_dictionary: Option<String>,
+    pub dictionary_order: Vec<String>,
+}

@@ -1,20 +1,38 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { DictionaryLookup } from "../types";
+import { DictionaryLookup, DictionarySettings } from "../types";
 
 export function useDictionary() {
   const dictionaryResults = ref<DictionaryLookup | null>(null);
   const isSearching = ref(false);
-  
-  // 默认词典优先级顺序列表
-  const defaultPriority = ["大辞林", "新明解国語辞典", "三省堂国語辞典", "広辞苑"];
+  const dictionarySettings = ref<DictionarySettings>({
+    available_dictionaries: [],
+    default_dictionary: null,
+    dictionary_order: [],
+  });
+
+  function priorityList() {
+    return dictionarySettings.value.dictionary_order.length
+      ? dictionarySettings.value.dictionary_order
+      : dictionarySettings.value.available_dictionaries;
+  }
+
+  async function loadDictionarySettings() {
+    dictionarySettings.value = await invoke<DictionarySettings>("get_dictionary_settings");
+    return dictionarySettings.value;
+  }
+
+  async function setDictionaryOrder(order: string[]) {
+    dictionarySettings.value = await invoke<DictionarySettings>("set_dictionary_order", { order });
+    return dictionarySettings.value;
+  }
 
   /**
    * 根据原形与读音检索词典释义
    * @param word 辞书形原形
-   * @param priorityList 用户偏好的词典优先级列表
+   * 默认词典排在检索结果首位，其余已加载词典保持稳定顺序。
    */
-  async function lookupWord(word: string, reading?: string, priorityList: string[] = defaultPriority) {
+  async function lookupWord(word: string, reading?: string) {
     if (!word) {
       dictionaryResults.value = null;
       return null;
@@ -25,7 +43,7 @@ export function useDictionary() {
       const results = await invoke<DictionaryLookup>("lookup_word", {
         word,
         reading,
-        priorityList,
+        priorityList: priorityList(),
       });
       dictionaryResults.value = results;
       return results;
@@ -46,6 +64,9 @@ export function useDictionary() {
   return {
     dictionaryResults,
     isSearching,
+    dictionarySettings,
+    loadDictionarySettings,
+    setDictionaryOrder,
     lookupWord,
     chooseDictionaryTarget,
   };

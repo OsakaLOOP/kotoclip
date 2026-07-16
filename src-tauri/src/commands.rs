@@ -4,7 +4,8 @@ use kotoclip_core::document::{
     propagate_stage_invalidation, AnalysisPatch, AnalysisStage, DocumentSession,
 };
 use kotoclip_core::models::{
-    AnnotatedToken, DictionaryLookup, ExportEntry, ExpressionRule, SegmentationCandidate,
+    AnnotatedToken, DictionaryLookup, DictionarySettings, ExportEntry, ExpressionRule,
+    SegmentationCandidate,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
@@ -529,6 +530,25 @@ pub async fn lookup_word(
 ) -> Result<DictionaryLookup, String> {
     let engine = state.engine.lock().map_err(|e| e.to_string())?;
     Ok(engine.lookup_word(&word, reading.as_deref(), &priority_list))
+}
+
+#[tauri::command]
+pub async fn get_dictionary_settings(
+    state: State<'_, AppState>,
+) -> Result<DictionarySettings, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    Ok(engine.dictionary_settings())
+}
+
+#[tauri::command]
+pub async fn set_dictionary_order(
+    state: State<'_, AppState>,
+    order: Vec<String>,
+) -> Result<DictionarySettings, String> {
+    let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    engine
+        .set_dictionary_order(&order)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]

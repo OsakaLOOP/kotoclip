@@ -165,4 +165,5 @@ export interface DictionaryContentBlock { kind: "rich_text" | "notice" | string;
 export interface DictionaryChoiceOption { key: string; label: string; active: boolean; preferred?: boolean; title?: string; }
 export interface DictEntry { entry_key: string; dict_name: string; headword: string; reading: string | null; is_preferred: boolean; definition_html: string; style_profile: string; content_blocks: DictionaryContentBlock[]; match_type: "headword" | "reading" | "fuzzy"; links: DictionaryLink[]; }
 export interface DictionaryLookup { query: string; reading: string | null; selected_target: string | null; candidates: DictionaryLink[]; entries: DictEntry[]; }
+export interface DictionarySettings { available_dictionaries: string[]; default_dictionary: string | null; dictionary_order: string[]; }
 export interface ExportEntry { surface: string; base_form: string; reading: string; pos: string; grammar_tags: string[]; jlpt_levels: number[]; context_sentence: string; context_highlight: [number, number]; definitions: DictEntry[]; user_note: string; char_range?: [number, number]; }

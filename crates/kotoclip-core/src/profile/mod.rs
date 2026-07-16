@@ -14,6 +14,8 @@ use std::sync::Mutex;
 pub struct ProfileEngine {
     conn: Connection,
     dictionary_choice_cache: Mutex<HashMap<String, String>>,
+    default_dictionary_cache: Mutex<Option<String>>,
+    dictionary_order_cache: Mutex<Vec<String>>,
 }
 
 impl ProfileEngine {
@@ -74,6 +76,17 @@ impl ProfileEngine {
                 selected_at     TEXT NOT NULL DEFAULT (datetime('now'))
             );
 
+            CREATE TABLE IF NOT EXISTS user_dictionary_settings (
+                id                 INTEGER PRIMARY KEY CHECK (id = 1),
+                default_dictionary TEXT,
+                updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS user_dictionary_priority (
+                dictionary_name TEXT PRIMARY KEY,
+                position        INTEGER NOT NULL UNIQUE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_kanji_knowledge_char 
             ON kanji_knowledge(kanji);
         ",
@@ -100,10 +113,28 @@ impl ProfileEngine {
                 .collect();
             choices
         };
+        let default_dictionary_cache = conn
+            .query_row(
+                "SELECT default_dictionary FROM user_dictionary_settings WHERE id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .ok();
+        let dictionary_order_cache = {
+            let mut statement = conn.prepare(
+                "SELECT dictionary_name FROM user_dictionary_priority ORDER BY position ASC",
+            )?;
+            statement
+                .query_map([], |row| row.get::<_, String>(0))?
+                .flatten()
+                .collect()
+        };
 
         Ok(Self {
             conn,
             dictionary_choice_cache: Mutex::new(dictionary_choice_cache),
+            default_dictionary_cache: Mutex::new(default_dictionary_cache),
+            dictionary_order_cache: Mutex::new(dictionary_order_cache),
         })
     }
 }
