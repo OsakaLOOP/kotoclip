@@ -1,10 +1,10 @@
 import { computed, ref, watch } from "vue";
-import type { AnnotatedToken, DictionaryLookup, GrammarTag, Morpheme } from "../types";
+import type { AnnotatedToken, DictionaryLookup, GrammarTag, Morpheme, MorphologyChain } from "../types";
 import { snapshotRect, type RectSnapshot } from "../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS, scheduleCloseGrace } from "../explanation/closeGrace";
 import { floatDebug } from "../explanation/floatDebug";
 import { deriveExplanationRenderGate } from "../explanation/interactionGate";
-import { dictionaryLemma } from "../utils/dictionaryTarget";
+import { dictionaryLemma, morphemeLookupTarget } from "../utils/dictionaryTarget";
 
 type LookupWord = (word: string, reading?: string) => Promise<DictionaryLookup | null>;
 type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
@@ -221,15 +221,16 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       closeAll("focused-morpheme-missing");
       return;
     }
-    componentToken.value = tokenForMorphemeLookup(token, focused);
-    componentLabel.value = "内部";
+    const lookupTarget = morphemeLookupTarget(token, focused);
+    componentToken.value = tokenForMorphemeLookup(token, lookupTarget.morpheme, lookupTarget.chain);
+    componentLabel.value = lookupTarget.chain ? "词形" : "内部";
     componentHistory.value = [];
-    resolveComponent(focused);
+    resolveComponent(lookupTarget.morpheme);
 
     if (!sameToken) {
       wholeToken.value = token;
       wholeHistory.value = [];
-      resolveWhole(token, focused);
+      resolveWhole(token, lookupTarget.morpheme);
     }
     publishSession("focus-morpheme", sameToken ? "switch-component" : "new-token-session");
     publishScene("focus-morpheme");
@@ -620,7 +621,11 @@ function rectDebugSnapshot(rect: RectSnapshot | null) {
   };
 }
 
-function tokenForMorphemeLookup(token: AnnotatedToken, morpheme: Morpheme): AnnotatedToken {
+function tokenForMorphemeLookup(
+  token: AnnotatedToken,
+  morpheme: Morpheme,
+  chain: MorphologyChain | null,
+): AnnotatedToken {
   return {
     ...token,
     bunsetsu: {
@@ -632,6 +637,7 @@ function tokenForMorphemeLookup(token: AnnotatedToken, morpheme: Morpheme): Anno
         pos: morpheme.pos,
       },
       grammar_tags: [],
+      morphology: { chains: chain ? [chain] : [] },
       word_formations: [],
       lexical_units: [],
     },

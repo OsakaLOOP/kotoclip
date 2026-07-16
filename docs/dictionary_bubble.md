@@ -26,6 +26,7 @@
 | `crates/kotoclip-core/src/models.rs` | 查询结果、内容模块和语义链接协议 |
 | `src/composables/useDictionary.ts` | Tauri 查询与选择命令封装 |
 | `src/components/TooltipPanel.vue` | 气泡状态、动态表头、词典分组和关系模块编排 |
+| `src/utils/dictionaryTarget.ts` | 保持既有词典查询策略，并把词汇所有权活用链归一为同一悬浮目标 |
 | `src/components/dictionary/DictionaryChoiceBar.vue` | 表记/读音共用的直接选择控件 |
 | `src/components/dictionary/DictionaryContent.vue` | 通用内容模块渲染器 |
 | `src/components/common/LoadingSkeleton.vue` | 可复用加载骨架；当前提供词典内容变体 |
@@ -137,6 +138,16 @@ CREATE TABLE user_dictionary_choices (
 - 跳转到关联词后隐藏原正文词性和语法，避免上下文串用。
 - 返回按钮恢复上一词条及其选项状态。
 
+### 7.2.1 词汇活用卡片
+
+词典查询策略与本模块原有行为保持一致；本次只修正词形显示和悬浮目标：
+
+- `見え＋なかっ＋た`、`分類＋し`、`静か＋な` 等已经确认的 lexical morphology chain，在任一组成语素上悬浮时都使用同一词汇目标。
+- 词典仍查询 `見える`、`分類`、`静か`，不强制改查 `分類する` 或 `静かだ`。
+- 气泡在词典正文前显示合并后的本句形态、语言学辞书形和有序活用步骤，例如 `分類し ← 分類する`、`静かな ← 静かだ`。
+- functional morphology chain 不进入词典卡片；`くださっ＋た` 等范围由语法浮层统一解释。
+- 没有表面变化和非平凡活用时不显示卡片，避免基本形词条重复标题。
+
 ### 7.3 统一选项条
 
 表记与读音使用同一个 `DictionaryChoiceBar`：
@@ -240,4 +251,5 @@ python scripts/audit_dictionary_bubble.py `
 - 不要让结构化关系继续留在正文 HTML 中重复展示。
 - 不要加载词典自带的远程 CSS 或不受控资源。
 - 不要用同一词头构造 Vue key；必须使用稳定 entry ID。
+- 不要为展示完整辞书形而改变既有词典查询词；语言学辞书形与 lookup form 由 MorphologyChain 分开记录。
 - 修改大辞林解析规则前先阅读真实词条样本，并同步更新本文件。

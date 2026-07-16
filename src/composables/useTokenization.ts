@@ -94,6 +94,7 @@ interface CompactBunsetsu {
   s: number;
   h: CompactHeadWord;
   g?: CompactGrammarTag[];
+  y?: CompactMorphologyChain[];
   w?: CompactWordFormation[];
   v?: CompactLexicalUnit[];
   u?: CompactBunsetsuFunction;
@@ -111,6 +112,8 @@ interface CompactMorpheme {
 }
 
 interface CompactHeadWord { s: number; b: number; r: number; p: [number, number, number, number]; }
+interface CompactMorphologyOperator { i: number; k: number; m: [number, number]; c: [number, number]; o: number; q: number; n: number; e: number[]; a: number[]; l: number; d: number; }
+interface CompactMorphologyChain { i: number; a: number; b: [number, number]; m: [number, number]; c: [number, number]; r: number; l: number; s: number; d: number; q: number; x: [number, number][]; o: CompactMorphologyOperator[]; f: number[]; e: number[]; }
 interface CompactGrammarSenseCandidate { i: number; l: number; c: number; e?: number[]; }
 interface CompactGrammarCapture { n: number; s: number; b: number; m: [number, number]; c: [number, number]; }
 interface CompactGrammarBlock { k: number; l?: number; t: number; }
@@ -188,6 +191,25 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
         show_badge: tag.b, display_ranges: tag.z ?? [tag.c], selected_sense_id: tag.y === undefined ? null : stringAt(tag.y),
         sense_candidates: (tag.a ?? []).map(grammarSense), explanation: tag.x ? grammarExplanation(tag.x) : null,
       })),
+      morphology: {
+        chains: (token.b.y ?? []).map((chain) => ({
+          chain_id: stringAt(chain.i), anchor_morpheme: chain.a, anchor_range: chain.b,
+          morpheme_range: chain.m, char_range: chain.c,
+          role: stringAt(chain.r) as import("../types").MorphologyChainRole,
+          base_lexeme: stringAt(chain.l), surface_form: stringAt(chain.s),
+          dictionary_form: stringAt(chain.d), lookup_form: stringAt(chain.q),
+          source_ranges: chain.x,
+          operators: chain.o.map((operator) => ({
+            operator_id: stringAt(operator.i), kind: stringAt(operator.k),
+            source_morpheme_range: operator.m, char_range: operator.c,
+            output_state: stringAt(operator.o), concept_id: stringAt(operator.q),
+            confidence: operator.n, evidence: operator.e.map(stringAt),
+            candidates: operator.a.map(stringAt), label: stringAt(operator.l),
+            description: stringAt(operator.d),
+          })),
+          connection_forms: chain.f.map(stringAt), evidence: chain.e.map(stringAt),
+        })),
+      },
       word_formations: (token.b.w ?? []).map((formation) => ({
         rule_id: stringAt(formation.i), category: stringAt(formation.k), surface: stringAt(formation.s),
         base_form: stringAt(formation.b), reading: stringAt(formation.r), output_pos: position(formation.o), morpheme_range: formation.m,
@@ -311,7 +333,7 @@ function buildParagraphs(allTokens: AnnotatedToken[]): Paragraph[] {
         bunsetsu: {
           morphemes: [], surface: "\n",
           head_word: { surface: "\n", base_form: "\n", reading: "", pos: { major: "改行", sub1: "*", sub2: "*", sub3: "*" } },
-          grammar_tags: [], word_formations: [], lexical_units: [], char_range: [0, 0],
+          grammar_tags: [], morphology: { chains: [] }, word_formations: [], lexical_units: [], char_range: [0, 0],
         },
         novelty_score: 0, is_selected: false, is_known: true, inference_reason: null,
         expressions: [], display_class: "line_break",

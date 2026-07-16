@@ -52,6 +52,37 @@ export interface GrammarTag {
   sense_candidates: GrammarSenseCandidate[];
   explanation: ResolvedGrammarExplanation | null;
 }
+export type MorphologyChainRole = "lexical" | "functional";
+export interface MorphologyOperator {
+  operator_id: string;
+  kind: string;
+  source_morpheme_range: [number, number];
+  char_range: [number, number];
+  output_state: string;
+  concept_id: string;
+  confidence: number;
+  evidence: string[];
+  candidates: string[];
+  label: string;
+  description: string;
+}
+export interface MorphologyChain {
+  chain_id: string;
+  anchor_morpheme: number;
+  anchor_range: [number, number];
+  morpheme_range: [number, number];
+  char_range: [number, number];
+  role: MorphologyChainRole;
+  base_lexeme: string;
+  surface_form: string;
+  dictionary_form: string;
+  lookup_form: string;
+  source_ranges: [number, number][];
+  operators: MorphologyOperator[];
+  connection_forms: string[];
+  evidence: string[];
+}
+export interface MorphologyArtifact { chains: MorphologyChain[]; }
 export interface GrammarConcept {
   concept_id: string;
   kind: string;
@@ -119,7 +150,7 @@ export interface DictionaryLexicalUnitAnnotation { surface: string; base_form: s
 export type BunsetsuFunction = "predicate" | "case_phrase" | "adnominal" | "adverbial" | "conjunctive" | "nominal" | "standalone" | "unknown";
 export interface BunsetsuFunctionAnnotation { function: BunsetsuFunction; confidence: number; evidence: string[]; syntax_evidence: string[]; }
 export interface HeadWord { surface: string; base_form: string; reading: string; pos: PosTag; }
-export interface Bunsetsu { morphemes: Morpheme[]; surface: string; head_word: HeadWord; grammar_tags: GrammarTag[]; word_formations: WordFormationAnnotation[]; lexical_units: DictionaryLexicalUnitAnnotation[]; function?: BunsetsuFunctionAnnotation | null; char_range: [number, number]; }
+export interface Bunsetsu { morphemes: Morpheme[]; surface: string; head_word: HeadWord; grammar_tags: GrammarTag[]; morphology: MorphologyArtifact; word_formations: WordFormationAnnotation[]; lexical_units: DictionaryLexicalUnitAnnotation[]; function?: BunsetsuFunctionAnnotation | null; char_range: [number, number]; }
 export type ExpressionType = "lexical_unit" | "idiom" | "grammar_construction" | "correlative";
 export type ExpressionBoundaryEffect = "merge_lexical_unit" | "regroup_bunsetsu" | "annotate_only";
 export interface ExpressionPatternPart { lemmas: string[]; pos: string[]; pos_details: PosTag[]; conjugation_types: string[]; conjugation_forms: string[]; surface_hint: string; is_slot: boolean; alignment?: "full" | "suffix" | "prefix"; is_any?: boolean; }

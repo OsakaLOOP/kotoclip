@@ -33,6 +33,28 @@ const formattedPos = computed(() => {
   return [head.pos.major, head.pos.sub1].filter((part) => part && part !== "*").join(" · ");
 });
 
+const morphologyChain = computed(() => (
+  props.token?.bunsetsu.morphology.chains.find((chain) => chain.role === "lexical") ?? null
+));
+
+const morphologySteps = computed(() => {
+  const seen = new Set<string>();
+  return (morphologyChain.value?.operators ?? []).filter((operator) => {
+    const key = operator.concept_id || operator.output_state;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+});
+
+const showMorphologyCard = computed(() => {
+  const chain = morphologyChain.value;
+  return Boolean(chain && (
+    chain.surface_form !== chain.dictionary_form
+    || morphologySteps.value.length > 0
+  ));
+});
+
 function normalizeReading(value: string | null | undefined) {
   return Array.from(value ?? "").map((character) =>
     character >= "ぁ" && character <= "ゖ"
@@ -203,6 +225,25 @@ function handleDefinitionClick(event: MouseEvent) {
         <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
         </header>
 
+        <section v-if="showMorphologyCard && morphologyChain" class="morphology-card" aria-label="词形与活用">
+          <div class="morphology-form">
+            <span>本句形态</span>
+            <strong>{{ morphologyChain.surface_form }}</strong>
+          </div>
+          <div class="morphology-lemma">
+            <span>{{ morphologyChain.surface_form }}</span>
+            <b>←</b>
+            <span>{{ morphologyChain.dictionary_form }}</span>
+          </div>
+          <div v-if="morphologySteps.length" class="morphology-steps">
+            <span
+              v-for="step in morphologySteps"
+              :key="step.operator_id"
+              :title="step.description"
+            >{{ step.label || step.output_state }}</span>
+          </div>
+        </section>
+
         <DictionaryChoiceBar
         v-if="candidateOptions.length"
         label="表记"
@@ -265,6 +306,14 @@ function handleDefinitionClick(event: MouseEvent) {
 .base-form { color: var(--accent-color); font-size: 1.25rem; font-weight: 700; }
 .reading, .tooltip-pos { color: var(--text-muted); font-size: .78rem; }
 .tooltip-kind { flex: 0 0 auto; color: var(--text-muted); font: 700 .68rem var(--font-ui); }
+.morphology-card { display: grid; gap: 7px; margin: 8px 0 10px; padding: 10px 11px; border-radius: 10px; background: color-mix(in srgb, #337eb7 5%, var(--bg-secondary)); }
+.morphology-form { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.morphology-form span { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
+.morphology-form strong { color: var(--text-primary); font-size: .9rem; }
+.morphology-lemma { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; color: var(--text-secondary); font-size: .74rem; }
+.morphology-lemma b { color: #5487ae; font-weight: 500; }
+.morphology-steps { display: flex; flex-wrap: wrap; gap: 0 10px; color: #6c5ab0; font: 700 .65rem var(--font-ui); }
+.morphology-steps span + span::before { margin-right: 10px; color: var(--text-muted); content: "→"; }
 .tooltip-section { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px; }
 .section-title { margin-bottom: 7px; color: var(--text-muted); font: 700 .72rem var(--font-ui); letter-spacing: .04em; }
 .definition-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }

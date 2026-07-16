@@ -1,4 +1,34 @@
-import type { AnnotatedToken, Morpheme } from "../types";
+import type { AnnotatedToken, Morpheme, MorphologyChain } from "../types";
+
+export function morphologyChainForMorpheme(
+  token: AnnotatedToken,
+  morpheme: Morpheme,
+  role?: MorphologyChain["role"],
+) {
+  return token.bunsetsu.morphology.chains.find((chain) => (
+    (!role || chain.role === role)
+    && chain.source_ranges.some((range) => (
+      morpheme.char_range[0] >= range[0] && morpheme.char_range[1] <= range[1]
+    ))
+  ));
+}
+
+/** 合并词形只改变悬浮目标与显示，不改变现有词典查询词策略。 */
+export function morphemeLookupTarget(token: AnnotatedToken, morpheme: Morpheme) {
+  const chain = morphologyChainForMorpheme(token, morpheme, "lexical");
+  if (!chain) return { morpheme, chain: null };
+  return {
+    chain,
+    morpheme: {
+      ...morpheme,
+      surface: chain.surface_form,
+      base_form: token.bunsetsu.head_word.base_form,
+      reading: token.bunsetsu.head_word.reading,
+      pos: token.bunsetsu.head_word.pos,
+      char_range: chain.char_range,
+    } satisfies Morpheme,
+  };
+}
 
 /** 词典查询只把独立词的 base_form 当作词头；功能成分保留实际表面。 */
 export function dictionaryLemma(morpheme: Morpheme) {

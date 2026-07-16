@@ -8,7 +8,8 @@ use crate::models::{
     AnnotatedToken, Bunsetsu, BunsetsuFunctionAnnotation, DictionaryEntryRef,
     DictionaryLexicalUnitAnnotation, ExpressionAnnotation, GrammarCapture, GrammarContentBlock,
     GrammarDictionaryTarget, GrammarSenseCandidate, GrammarTag, HeadWord, Morpheme, PosTag,
-    ResolvedGrammarExplanation, WordFormationAnnotation, WordFormationCapture,
+    MorphologyChain, MorphologyOperator, ResolvedGrammarExplanation, WordFormationAnnotation,
+    WordFormationCapture,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -48,6 +49,8 @@ pub struct CompactBunsetsu {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub g: Vec<CompactGrammarTag>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub y: Vec<CompactMorphologyChain>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub w: Vec<CompactWordFormation>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub v: Vec<CompactLexicalUnit>,
@@ -73,6 +76,39 @@ pub struct CompactHeadWord {
     pub b: u32,
     pub r: u32,
     pub p: [u32; 4],
+}
+
+#[derive(Serialize)]
+pub struct CompactMorphologyChain {
+    pub i: u32,
+    pub a: usize,
+    pub b: (usize, usize),
+    pub m: (usize, usize),
+    pub c: (usize, usize),
+    pub r: u32,
+    pub l: u32,
+    pub s: u32,
+    pub d: u32,
+    pub q: u32,
+    pub x: Vec<(usize, usize)>,
+    pub o: Vec<CompactMorphologyOperator>,
+    pub f: Vec<u32>,
+    pub e: Vec<u32>,
+}
+
+#[derive(Serialize)]
+pub struct CompactMorphologyOperator {
+    pub i: u32,
+    pub k: u32,
+    pub m: (usize, usize),
+    pub c: (usize, usize),
+    pub o: u32,
+    pub q: u32,
+    pub n: u8,
+    pub e: Vec<u32>,
+    pub a: Vec<u32>,
+    pub l: u32,
+    pub d: u32,
 }
 
 #[derive(Serialize)]
@@ -316,6 +352,64 @@ impl StringTable {
         }
     }
 
+    fn morphology_chain(&mut self, value: &MorphologyChain) -> CompactMorphologyChain {
+        CompactMorphologyChain {
+            i: self.intern(&value.chain_id),
+            a: value.anchor_morpheme,
+            b: value.anchor_range,
+            m: value.morpheme_range,
+            c: value.char_range,
+            r: self.intern(match value.role {
+                crate::models::MorphologyChainRole::Lexical => "lexical",
+                crate::models::MorphologyChainRole::Functional => "functional",
+            }),
+            l: self.intern(&value.base_lexeme),
+            s: self.intern(&value.surface_form),
+            d: self.intern(&value.dictionary_form),
+            q: self.intern(&value.lookup_form),
+            x: value.source_ranges.clone(),
+            o: value
+                .operators
+                .iter()
+                .map(|item| self.morphology_operator(item))
+                .collect(),
+            f: value
+                .connection_forms
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            e: value
+                .evidence
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+        }
+    }
+
+    fn morphology_operator(&mut self, value: &MorphologyOperator) -> CompactMorphologyOperator {
+        CompactMorphologyOperator {
+            i: self.intern(&value.operator_id),
+            k: self.intern(&value.kind),
+            m: value.source_morpheme_range,
+            c: value.char_range,
+            o: self.intern(&value.output_state),
+            q: self.intern(&value.concept_id),
+            n: value.confidence,
+            e: value
+                .evidence
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            a: value
+                .candidates
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            l: self.intern(&value.label),
+            d: self.intern(&value.description),
+        }
+    }
+
     fn grammar_tag(&mut self, value: &GrammarTag) -> CompactGrammarTag {
         CompactGrammarTag {
             i: self.intern(&value.pattern_id),
@@ -533,6 +627,12 @@ impl StringTable {
                 .grammar_tags
                 .iter()
                 .map(|item| self.grammar_tag(item))
+                .collect(),
+            y: value
+                .morphology
+                .chains
+                .iter()
+                .map(|item| self.morphology_chain(item))
                 .collect(),
             w: value
                 .word_formations
