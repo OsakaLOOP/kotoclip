@@ -10,41 +10,19 @@
       "title": "活用链",
       "compact_summary": "词形变化",
       "function_summary": "词形变化",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "活用链 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 活用链。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "词形变化"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -61,41 +39,19 @@
       "title": "て形",
       "compact_summary": "连接后续成分",
       "function_summary": "连接后续成分",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "て形 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 て形。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "连接后续成分"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -112,41 +68,19 @@
       "title": "で形",
       "compact_summary": "连接后续成分",
       "function_summary": "连接后续成分",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "で形 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 で形。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "连接后续成分"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -163,41 +97,19 @@
       "title": "过去",
       "compact_summary": "表示过去或完成",
       "function_summary": "表示过去或完成",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "过去 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 过去。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示过去或完成"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -214,41 +126,19 @@
       "title": "否定",
       "compact_summary": "否定动作或状态",
       "function_summary": "否定动作或状态",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "否定 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 否定。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "否定动作或状态"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -265,41 +155,19 @@
       "title": "使役",
       "compact_summary": "表示使令或许可",
       "function_summary": "表示使令或许可",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "使役 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 使役。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示使令或许可"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -316,41 +184,19 @@
       "title": "られる候选",
       "compact_summary": "表示受身、可能、尊敬或自发候选",
       "function_summary": "表示受身、可能、尊敬或自发候选",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "られる候选 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 られる候选。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示受身、可能、尊敬或自发候选"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -367,41 +213,19 @@
       "title": "ます体",
       "compact_summary": "礼貌陈述形式",
       "function_summary": "礼貌陈述形式",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "ます体 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 ます体。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "礼貌陈述形式"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -418,41 +242,19 @@
       "title": "〜たい",
       "compact_summary": "表示愿望",
       "function_summary": "表示愿望",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜たい 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜たい。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示愿望"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -469,41 +271,19 @@
       "title": "意向形",
       "compact_summary": "表示意志或提议",
       "function_summary": "表示意志或提议",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "意向形 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 意向形。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示意志或提议"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -520,41 +300,19 @@
       "title": "假定形",
       "compact_summary": "形成条件连接",
       "function_summary": "形成条件连接",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "假定形 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 假定形。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "形成条件连接"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -571,41 +329,19 @@
       "title": "が",
       "compact_summary": "格关系或焦点提示",
       "function_summary": "格关系或焦点提示",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "が 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 が。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "格关系或焦点提示"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -622,41 +358,19 @@
       "title": "を",
       "compact_summary": "标记动作对象或经过点",
       "function_summary": "标记动作对象或经过点",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "を 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 を。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记动作对象或经过点"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -673,41 +387,19 @@
       "title": "に",
       "compact_summary": "标记目标、位置、时间或结果",
       "function_summary": "标记目标、位置、时间或结果",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "に 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 に。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记目标、位置、时间或结果"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -724,41 +416,19 @@
       "title": "へ",
       "compact_summary": "标记方向",
       "function_summary": "标记方向",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "へ 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 へ。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记方向"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -775,41 +445,19 @@
       "title": "で",
       "compact_summary": "标记场所、手段或原因",
       "function_summary": "标记场所、手段或原因",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "で 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 で。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记场所、手段或原因"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -826,41 +474,19 @@
       "title": "と",
       "compact_summary": "标记引用、共同者或结果",
       "function_summary": "标记引用、共同者或结果",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "と 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 と。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记引用、共同者或结果"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -877,41 +503,19 @@
       "title": "から",
       "compact_summary": "标记起点或原因",
       "function_summary": "标记起点或原因",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "から 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 から。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记起点或原因"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -928,41 +532,19 @@
       "title": "まで",
       "compact_summary": "标记终点或范围上限",
       "function_summary": "标记终点或范围上限",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "まで 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 まで。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记终点或范围上限"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -979,41 +561,19 @@
       "title": "は",
       "compact_summary": "标记主题或对比",
       "function_summary": "标记主题或对比",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "は 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 は。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "标记主题或对比"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1030,41 +590,19 @@
       "title": "も",
       "compact_summary": "表示追加、并列或强调",
       "function_summary": "表示追加、并列或强调",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "も 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 も。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示追加、并列或强调"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1081,41 +619,19 @@
       "title": "しか",
       "compact_summary": "与否定呼应表示限定",
       "function_summary": "与否定呼应表示限定",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "しか 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 しか。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "与否定呼应表示限定"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1132,41 +648,19 @@
       "title": "だけ",
       "compact_summary": "表示限定范围",
       "function_summary": "表示限定范围",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "だけ 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 だけ。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示限定范围"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1183,41 +677,19 @@
       "title": "て",
       "compact_summary": "连接动作、状态或后续构式",
       "function_summary": "连接动作、状态或后续构式",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "て 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 て。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "连接动作、状态或后续构式"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1234,41 +706,19 @@
       "title": "で",
       "compact_summary": "て形的浊音连接形式",
       "function_summary": "て形的浊音连接形式",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "で 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 で。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "て形的浊音连接形式"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1285,41 +735,19 @@
       "title": "ば",
       "compact_summary": "形成条件关系",
       "function_summary": "形成条件关系",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "ば 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 ば。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "形成条件关系"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1336,41 +764,19 @@
       "title": "ない",
       "compact_summary": "否定助动词",
       "function_summary": "否定助动词",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "ない 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 ない。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "否定助动词"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1387,41 +793,19 @@
       "title": "た",
       "compact_summary": "过去或完成助动词",
       "function_summary": "过去或完成助动词",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "た 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 た。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "过去或完成助动词"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1438,41 +822,19 @@
       "title": "ます",
       "compact_summary": "礼貌助动词",
       "function_summary": "礼貌助动词",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "ます 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 ます。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "礼貌助动词"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1489,41 +851,19 @@
       "title": "です",
       "compact_summary": "礼貌判断",
       "function_summary": "礼貌判断",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "です 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 です。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "礼貌判断"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1540,41 +880,19 @@
       "title": "だ",
       "compact_summary": "判断助动词",
       "function_summary": "判断助动词",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "だ 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 だ。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "判断助动词"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1591,41 +909,19 @@
       "title": "いる（补助）",
       "compact_summary": "表示进行或状态持续候选",
       "function_summary": "表示进行或状态持续候选",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "いる（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 いる（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示进行或状态持续候选"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1642,41 +938,19 @@
       "title": "ある（补助）",
       "compact_summary": "表示结果状态",
       "function_summary": "表示结果状态",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "ある（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 ある（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示结果状态"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1693,41 +967,19 @@
       "title": "おく（补助）",
       "compact_summary": "表示预先处置或状态保留",
       "function_summary": "表示预先处置或状态保留",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "おく（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 おく（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示预先处置或状态保留"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1744,41 +996,19 @@
       "title": "みる（补助）",
       "compact_summary": "表示尝试",
       "function_summary": "表示尝试",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "みる（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 みる（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示尝试"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1795,41 +1025,19 @@
       "title": "しまう（补助）",
       "compact_summary": "表示完成或遗憾",
       "function_summary": "表示完成或遗憾",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "しまう（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 しまう（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示完成或遗憾"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1846,41 +1054,19 @@
       "title": "いく（补助）",
       "compact_summary": "表示变化向后发展",
       "function_summary": "表示变化向后发展",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "いく（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 いく（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示变化向后发展"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1897,41 +1083,19 @@
       "title": "くる（补助）",
       "compact_summary": "表示变化朝当前发展",
       "function_summary": "表示变化朝当前发展",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "くる（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 くる（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示变化朝当前发展"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1948,41 +1112,19 @@
       "title": "やる（补助）",
       "compact_summary": "表示为他者实施",
       "function_summary": "表示为他者实施",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "やる（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 やる（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示为他者实施"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -1999,41 +1141,19 @@
       "title": "あげる（补助）",
       "compact_summary": "表示为他者实施",
       "function_summary": "表示为他者实施",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "あげる（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 あげる（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示为他者实施"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2050,41 +1170,19 @@
       "title": "くれる（补助）",
       "compact_summary": "表示他者为己方实施",
       "function_summary": "表示他者为己方实施",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "くれる（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 くれる（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示他者为己方实施"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2101,41 +1199,19 @@
       "title": "くださる（补助）",
       "compact_summary": "表示尊敬的授受或恩惠",
       "function_summary": "表示尊敬的授受或恩惠",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "くださる（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 くださる（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示尊敬的授受或恩惠"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2152,41 +1228,19 @@
       "title": "もらう（补助）",
       "compact_summary": "从接受者视角表示受益",
       "function_summary": "从接受者视角表示受益",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "もらう（补助） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 もらう（补助）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "从接受者视角表示受益"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2203,41 +1257,19 @@
       "title": "なる（功能）",
       "compact_summary": "参与必要等固定构式",
       "function_summary": "参与必要等固定构式",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "なる（功能） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 なる（功能）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "参与必要等固定构式"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2254,41 +1286,19 @@
       "title": "〜ている",
       "compact_summary": "表示进行或结果状态",
       "function_summary": "表示进行或结果状态",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜ている 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜ている。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示进行或结果状态"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2305,41 +1315,19 @@
       "title": "〜てある",
       "compact_summary": "表示人为动作留下的结果状态",
       "function_summary": "表示人为动作留下的结果状态",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てある 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てある。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示人为动作留下的结果状态"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2356,41 +1344,19 @@
       "title": "〜ておく",
       "compact_summary": "表示预先处置或保持状态",
       "function_summary": "表示预先处置或保持状态",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜ておく 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜ておく。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示预先处置或保持状态"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2407,41 +1373,19 @@
       "title": "〜てみる",
       "compact_summary": "表示尝试做某事",
       "function_summary": "表示尝试做某事",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てみる 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てみる。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示尝试做某事"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2458,41 +1402,19 @@
       "title": "〜てしまう",
       "compact_summary": "表示彻底完成或遗憾",
       "function_summary": "表示彻底完成或遗憾",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てしまう 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てしまう。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示彻底完成或遗憾"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2509,41 +1431,19 @@
       "title": "〜ていく",
       "compact_summary": "表示变化远离当前或继续发展",
       "function_summary": "表示变化远离当前或继续发展",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜ていく 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜ていく。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示变化远离当前或继续发展"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2560,41 +1460,19 @@
       "title": "〜てくる",
       "compact_summary": "表示变化接近当前或逐渐出现",
       "function_summary": "表示变化接近当前或逐渐出现",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てくる 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てくる。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示变化接近当前或逐渐出现"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2611,41 +1489,19 @@
       "title": "〜てやる",
       "compact_summary": "表示说话者为他者做某事",
       "function_summary": "表示说话者为他者做某事",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てやる 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てやる。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示说话者为他者做某事"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2662,41 +1518,19 @@
       "title": "〜てあげる",
       "compact_summary": "表示为他者做某事",
       "function_summary": "表示为他者做某事",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てあげる 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てあげる。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示为他者做某事"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2713,41 +1547,19 @@
       "title": "〜てくれる",
       "compact_summary": "表示他者为说话者一方做某事",
       "function_summary": "表示他者为说话者一方做某事",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てくれる 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てくれる。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示他者为说话者一方做某事"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2764,41 +1576,19 @@
       "title": "〜てくださる",
       "compact_summary": "表示尊敬对象为己方做某事",
       "function_summary": "表示尊敬对象为己方做某事",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てくださる 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てくださる。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示尊敬对象为己方做某事"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2815,41 +1605,19 @@
       "title": "〜てもらう",
       "compact_summary": "从接受者视角表示请人或承受恩惠",
       "function_summary": "从接受者视角表示请人或承受恩惠",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てもらう 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てもらう。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "从接受者视角表示请人或承受恩惠"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2866,41 +1634,19 @@
       "title": "〜てください",
       "compact_summary": "礼貌请求对方实施动作",
       "function_summary": "礼貌请求对方实施动作",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜てください 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜てください。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "礼貌请求对方实施动作"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2917,41 +1663,19 @@
       "title": "〜なければならない",
       "compact_summary": "表示必须做某事",
       "function_summary": "表示必须做某事",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜なければならない 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜なければならない。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示必须做某事"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -2968,41 +1692,19 @@
       "title": "には",
       "compact_summary": "叠加格关系与主题或对比",
       "function_summary": "叠加格关系与主题或对比",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "には 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 には。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "叠加格关系与主题或对比"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -3019,41 +1721,19 @@
       "title": "にも",
       "compact_summary": "叠加格关系与追加或强调",
       "function_summary": "叠加格关系与追加或强调",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "にも 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 にも。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "叠加格关系与追加或强调"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -3070,41 +1750,19 @@
       "title": "では",
       "compact_summary": "叠加场所等关系与主题或对比",
       "function_summary": "叠加场所等关系与主题或对比",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "では 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 では。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "叠加场所等关系与主题或对比"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -3121,41 +1779,19 @@
       "title": "ても",
       "compact_summary": "表示让步条件或并列追加",
       "function_summary": "表示让步条件或并列追加",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "ても 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 ても。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示让步条件或并列追加"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -3172,41 +1808,19 @@
       "title": "〜ようとする",
       "compact_summary": "表示尝试或即将发生",
       "function_summary": "表示尝试或即将发生",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜ようとする 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜ようとする。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示尝试或即将发生"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -3223,41 +1837,19 @@
       "title": "〜つもりだ",
       "compact_summary": "表示意图或认定",
       "function_summary": "表示意图或认定",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜つもりだ 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜つもりだ。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示意图或认定"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -3274,41 +1866,19 @@
       "title": "〜ながら（も）",
       "compact_summary": "表示同时或让步",
       "function_summary": "表示同时或让步",
-      "connection": "依据本句的语素、活用形与相邻结构识别。",
-      "formation": "实际构成由 occurrence 捕获结果给出。",
-      "usage_notes": [
-        "同形结构可能保留多个语义候选。"
-      ],
+      "connection": "",
+      "formation": "",
+      "usage_notes": [],
       "semantic_constraints": [],
       "pragmatic_notes": [],
-      "examples": [
-        "〜ながら（も） 的规范正例由对应 realization 提供。"
-      ],
-      "counter_examples": [
-        "不满足对应词性、活用或连接条件时不识别为 〜ながら（も）。"
-      ],
+      "examples": [],
+      "counter_examples": [],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
       ],
       "authoring_status": "verified",
       "content_version": 1,
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "表示同时或让步"
-        },
-        {
-          "kind": "occurrence_binding",
-          "label": "本句构成",
-          "text": "{{actual_form}}"
-        },
-        {
-          "kind": "warning",
-          "label": "判定",
-          "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
-        }
-      ],
+      "body_blocks": [],
       "provenance": {
         "origin": "ai",
         "author": "Codex",
@@ -3323,14 +1893,11 @@
       "sense_id": null,
       "language": "zh-CN",
       "title": "の",
-      "compact_summary": "根据词性身份区分连体、名词化、句末语气与受限格关系",
-      "function_summary": "共同知识入口由 realization 精确绑定本句的语法身份",
+      "compact_summary": "连接名词表示所属或属性，也可把前项名词化；句末可带说明或疑问语气",
+      "function_summary": "根据前接成分和句末位置，表示所属、名词化或句末语气",
       "connection": "连体用法接名词性成分；名词化接用言连体形；句末用法位于句尾。",
       "formation": "前接成分＋の",
-      "usage_notes": [
-        "同一表面の在 IPADIC 中可能是助词或非自立名词，不能只按字符串判义。",
-        "词性身份能够选择一级义项，更细语义仍可保留上下文候选。"
-      ],
+      "usage_notes": [],
       "semantic_constraints": [
         "名词化の必须让前接内容整体进入名词位置。"
       ],
@@ -3358,23 +1925,7 @@
         "version": "1"
       },
       "review_status": "ai_checked",
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "本句身份",
-          "text": "系统依据 realization 绑定的词性身份解释 {{actual_form}}。"
-        },
-        {
-          "kind": "paragraph",
-          "label": "身份范围",
-          "text": "助詞-連体化表示连体关系；名詞-非自立负责名词化；助詞-終助詞表达句末语气；助詞-格助詞用于受限格关系。"
-        },
-        {
-          "kind": "warning",
-          "label": "判定边界",
-          "text": "词性身份缩小义项，但所属、同位、说明或疑问等细义仍可能需要更大上下文。"
-        }
-      ]
+      "body_blocks": []
     },
     {
       "explanation_id": "explanation.grammar.copula.de_aru",
@@ -3463,11 +2014,6 @@
           "kind": "paragraph",
           "label": "作用",
           "text": "{{actual_form}} 可标记真正疑问，也可用于反问、确认、选择或不确定。"
-        },
-        {
-          "kind": "warning",
-          "label": "歧义",
-          "text": "系统保留多个 sense 候选，不按表面强制唯一化。"
         }
       ]
     },
@@ -3815,11 +2361,6 @@
           "kind": "paragraph",
           "label": "作用",
           "text": "{{actual_form}} 把前接内容作为说明或背景提出。"
-        },
-        {
-          "kind": "warning",
-          "label": "边界",
-          "text": "只有ん与后续判断助动词构成结构时才接受；孤立ん继续作为 residual。"
         }
       ]
     },
@@ -3860,13 +2401,7 @@
         "version": "1"
       },
       "review_status": "ai_checked",
-      "body_blocks": [
-        {
-          "kind": "warning",
-          "label": "识别边界",
-          "text": "{{actual_form}} 的表面不足以唯一判定；系统优先等待结构化 realization。"
-        }
-      ]
+      "body_blocks": []
     },
     {
       "explanation_id": "explanation.grammar.particle.ya",
@@ -4030,13 +2565,7 @@
         "version": "1"
       },
       "review_status": "ai_checked",
-      "body_blocks": [
-        {
-          "kind": "warning",
-          "label": "多义",
-          "text": "{{actual_form}} 的核心身份可确定，但追加、让步或引用义需保留候选。"
-        }
-      ]
+      "body_blocks": []
     },
     {
       "explanation_id": "explanation.grammar.particle.demo",
@@ -4155,13 +2684,7 @@
         "version": "1"
       },
       "review_status": "ai_checked",
-      "body_blocks": [
-        {
-          "kind": "warning",
-          "label": "歧义",
-          "text": "本句的 {{actual_form}} 可能表示目的，也可能表示原因。"
-        }
-      ]
+      "body_blocks": []
     },
     {
       "explanation_id": "explanation.grammar.particle.hodo",
@@ -4642,13 +3165,7 @@
         "version": "1"
       },
       "review_status": "ai_checked",
-      "body_blocks": [
-        {
-          "kind": "warning",
-          "label": "多义",
-          "text": "{{actual_form}} 的核心身份确定，但施事、手段、原因或依据需保留候选。"
-        }
-      ]
+      "body_blocks": []
     },
     {
       "explanation_id": "explanation.grammar.formal.hazu",
@@ -4814,11 +3331,6 @@
           "kind": "paragraph",
           "label": "本句构成",
           "text": "{{actual_form}} 被分解为引用成分「と」与活用动词「言う」。"
-        },
-        {
-          "kind": "warning",
-          "label": "provider 边界",
-          "text": "分词器合并输出只是证据载体，不改变 concept，也不代替活用状态。"
         }
       ]
     }

@@ -98,8 +98,8 @@
   {
     "sense_id": "morphology.voice.passive_potential.passive",
     "concept_id": "morphology.voice.passive_potential",
-    "label": "られる候选",
-    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "label": "られる候选：受身",
+    "function_summary": "表示受身关系",
     "semantic_features": {
       "function": "passive"
     },
@@ -114,8 +114,8 @@
   {
     "sense_id": "morphology.voice.passive_potential.potential",
     "concept_id": "morphology.voice.passive_potential",
-    "label": "られる候选：potential",
-    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "label": "られる候选：可能",
+    "function_summary": "表示能力或可能",
     "semantic_features": {
       "function": "potential"
     },
@@ -130,8 +130,8 @@
   {
     "sense_id": "morphology.voice.passive_potential.honorific",
     "concept_id": "morphology.voice.passive_potential",
-    "label": "られる候选：honorific",
-    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "label": "られる候选：尊敬",
+    "function_summary": "表示尊敬语气",
     "semantic_features": {
       "function": "honorific"
     },
@@ -146,8 +146,8 @@
   {
     "sense_id": "morphology.voice.passive_potential.spontaneous",
     "concept_id": "morphology.voice.passive_potential",
-    "label": "られる候选：spontaneous",
-    "function_summary": "表示受身、可能、尊敬或自发候选",
+    "label": "られる候选：自发",
+    "function_summary": "表示自然发生或不由自主",
     "semantic_features": {
       "function": "spontaneous"
     },
@@ -226,8 +226,8 @@
   {
     "sense_id": "grammar.particle.ga.subject",
     "concept_id": "grammar.particle.ga",
-    "label": "が",
-    "function_summary": "格关系或焦点提示",
+    "label": "が：主体",
+    "function_summary": "标记主语或主体",
     "semantic_features": {
       "function": "subject"
     },
@@ -242,8 +242,8 @@
   {
     "sense_id": "grammar.particle.ga.focus",
     "concept_id": "grammar.particle.ga",
-    "label": "が：focus",
-    "function_summary": "格关系或焦点提示",
+    "label": "が：焦点",
+    "function_summary": "突出对比或焦点",
     "semantic_features": {
       "function": "focus"
     },
@@ -258,8 +258,8 @@
   {
     "sense_id": "grammar.particle.wo.patient",
     "concept_id": "grammar.particle.wo",
-    "label": "を",
-    "function_summary": "标记动作对象或经过点",
+    "label": "を：动作对象",
+    "function_summary": "标记动作的直接对象",
     "semantic_features": {
       "function": "patient"
     },
@@ -274,8 +274,8 @@
   {
     "sense_id": "grammar.particle.wo.route",
     "concept_id": "grammar.particle.wo",
-    "label": "を：route",
-    "function_summary": "标记动作对象或经过点",
+    "label": "を：经过点",
+    "function_summary": "标记移动经过的路径",
     "semantic_features": {
       "function": "route"
     },
@@ -290,8 +290,8 @@
   {
     "sense_id": "grammar.particle.ni.goal",
     "concept_id": "grammar.particle.ni",
-    "label": "に",
-    "function_summary": "标记目标、位置、时间或结果",
+    "label": "に：目标",
+    "function_summary": "标记到达目标",
     "semantic_features": {
       "function": "goal"
     },
@@ -306,8 +306,8 @@
   {
     "sense_id": "grammar.particle.ni.location",
     "concept_id": "grammar.particle.ni",
-    "label": "に：location",
-    "function_summary": "标记目标、位置、时间或结果",
+    "label": "に：位置",
+    "function_summary": "标记存在位置",
     "semantic_features": {
       "function": "location"
     },
@@ -322,8 +322,8 @@
   {
     "sense_id": "grammar.particle.ni.time",
     "concept_id": "grammar.particle.ni",
-    "label": "に：time",
-    "function_summary": "标记目标、位置、时间或结果",
+    "label": "に：时间",
+    "function_summary": "标记时间点",
     "semantic_features": {
       "function": "time"
     },
@@ -338,8 +338,8 @@
   {
     "sense_id": "grammar.particle.ni.result",
     "concept_id": "grammar.particle.ni",
-    "label": "に：result",
-    "function_summary": "标记目标、位置、时间或结果",
+    "label": "に：结果",
+    "function_summary": "标记变化后的结果",
     "semantic_features": {
       "function": "result"
     },
@@ -370,8 +370,8 @@
   {
     "sense_id": "grammar.particle.de.location",
     "concept_id": "grammar.particle.de",
-    "label": "で",
-    "function_summary": "标记场所、手段或原因",
+    "label": "で：位置",
+    "function_summary": "标记存在位置",
     "semantic_features": {
       "function": "location"
     },
@@ -386,8 +386,8 @@
   {
     "sense_id": "grammar.particle.de.instrument",
     "concept_id": "grammar.particle.de",
-    "label": "で：instrument",
-    "function_summary": "标记场所、手段或原因",
+    "label": "で：手段",
+    "function_summary": "标记动作手段",
     "semantic_features": {
       "function": "instrument"
     },
@@ -402,8 +402,8 @@
   {
     "sense_id": "grammar.particle.de.cause",
     "concept_id": "grammar.particle.de",
-    "label": "で：cause",
-    "function_summary": "标记场所、手段或原因",
+    "label": "で：原因",
+    "function_summary": "标记原因",
     "semantic_features": {
       "function": "cause"
     },
@@ -418,8 +418,8 @@
   {
     "sense_id": "grammar.particle.to.quotation",
     "concept_id": "grammar.particle.to",
-    "label": "と",
-    "function_summary": "标记引用、共同者或结果",
+    "label": "と：引用",
+    "function_summary": "标记引用内容",
     "semantic_features": {
       "function": "quotation"
     },
@@ -434,8 +434,8 @@
   {
     "sense_id": "grammar.particle.to.comitative",
     "concept_id": "grammar.particle.to",
-    "label": "と：comitative",
-    "function_summary": "标记引用、共同者或结果",
+    "label": "と：共同",
+    "function_summary": "表示与某人共同",
     "semantic_features": {
       "function": "comitative"
     },
@@ -450,8 +450,8 @@
   {
     "sense_id": "grammar.particle.kara.source",
     "concept_id": "grammar.particle.kara",
-    "label": "から",
-    "function_summary": "标记起点或原因",
+    "label": "から：起点",
+    "function_summary": "标记出发点或来源",
     "semantic_features": {
       "function": "source"
     },
@@ -466,8 +466,8 @@
   {
     "sense_id": "grammar.particle.kara.cause",
     "concept_id": "grammar.particle.kara",
-    "label": "から：cause",
-    "function_summary": "标记起点或原因",
+    "label": "から：原因",
+    "function_summary": "标记原因",
     "semantic_features": {
       "function": "cause"
     },
@@ -498,8 +498,8 @@
   {
     "sense_id": "grammar.particle.wa.topic",
     "concept_id": "grammar.particle.wa",
-    "label": "は",
-    "function_summary": "标记主题或对比",
+    "label": "は：主题",
+    "function_summary": "提示主题",
     "semantic_features": {
       "function": "topic"
     },
@@ -514,8 +514,8 @@
   {
     "sense_id": "grammar.particle.wa.contrast",
     "concept_id": "grammar.particle.wa",
-    "label": "は：contrast",
-    "function_summary": "标记主题或对比",
+    "label": "は：对比",
+    "function_summary": "突出对比",
     "semantic_features": {
       "function": "contrast"
     },
@@ -530,8 +530,8 @@
   {
     "sense_id": "grammar.particle.mo.addition",
     "concept_id": "grammar.particle.mo",
-    "label": "も",
-    "function_summary": "表示追加、并列或强调",
+    "label": "も：追加",
+    "function_summary": "表示追加",
     "semantic_features": {
       "function": "addition"
     },
@@ -546,8 +546,8 @@
   {
     "sense_id": "grammar.particle.mo.emphasis",
     "concept_id": "grammar.particle.mo",
-    "label": "も：emphasis",
-    "function_summary": "表示追加、并列或强调",
+    "label": "も：强调",
+    "function_summary": "表示也或甚至",
     "semantic_features": {
       "function": "emphasis"
     },
@@ -658,8 +658,8 @@
   {
     "sense_id": "grammar.auxiliary.ta.past",
     "concept_id": "grammar.auxiliary.ta",
-    "label": "た",
-    "function_summary": "过去或完成助动词",
+    "label": "た：过去",
+    "function_summary": "表示过去事实",
     "semantic_features": {
       "function": "past"
     },
@@ -674,8 +674,8 @@
   {
     "sense_id": "grammar.auxiliary.ta.perfect",
     "concept_id": "grammar.auxiliary.ta",
-    "label": "た：perfect",
-    "function_summary": "过去或完成助动词",
+    "label": "た：完成",
+    "function_summary": "表示动作完成或结果",
     "semantic_features": {
       "function": "perfect"
     },
@@ -738,8 +738,8 @@
   {
     "sense_id": "grammar.functional.iru.progressive",
     "concept_id": "grammar.functional.iru",
-    "label": "いる（补助）",
-    "function_summary": "表示进行或状态持续候选",
+    "label": "いる（补助）：进行",
+    "function_summary": "表示进行中的动作",
     "semantic_features": {
       "function": "progressive"
     },
@@ -754,8 +754,8 @@
   {
     "sense_id": "grammar.functional.iru.resultative",
     "concept_id": "grammar.functional.iru",
-    "label": "いる（补助）：resultative",
-    "function_summary": "表示进行或状态持续候选",
+    "label": "いる（补助）：结果状态",
+    "function_summary": "表示动作后的状态",
     "semantic_features": {
       "function": "resultative"
     },
@@ -818,8 +818,8 @@
   {
     "sense_id": "grammar.functional.shimau.completion",
     "concept_id": "grammar.functional.shimau",
-    "label": "しまう（补助）",
-    "function_summary": "表示完成或遗憾",
+    "label": "しまう（补助）：完成",
+    "function_summary": "表示彻底完成",
     "semantic_features": {
       "function": "completion"
     },
@@ -834,8 +834,8 @@
   {
     "sense_id": "grammar.functional.shimau.regret",
     "concept_id": "grammar.functional.shimau",
-    "label": "しまう（补助）：regret",
-    "function_summary": "表示完成或遗憾",
+    "label": "しまう（补助）：遗憾",
+    "function_summary": "表示遗憾或事与愿违",
     "semantic_features": {
       "function": "regret"
     },
@@ -850,8 +850,8 @@
   {
     "sense_id": "grammar.functional.iku.away",
     "concept_id": "grammar.functional.iku",
-    "label": "いく（补助）",
-    "function_summary": "表示变化向后发展",
+    "label": "いく（补助）：远离",
+    "function_summary": "表示动作远离当前",
     "semantic_features": {
       "function": "away"
     },
@@ -866,8 +866,8 @@
   {
     "sense_id": "grammar.functional.iku.continuation",
     "concept_id": "grammar.functional.iku",
-    "label": "いく（补助）：continuation",
-    "function_summary": "表示变化向后发展",
+    "label": "いく（补助）：继续",
+    "function_summary": "表示动作继续发展",
     "semantic_features": {
       "function": "continuation"
     },
@@ -882,8 +882,8 @@
   {
     "sense_id": "grammar.functional.kuru.toward",
     "concept_id": "grammar.functional.kuru",
-    "label": "くる（补助）",
-    "function_summary": "表示变化朝当前发展",
+    "label": "くる（补助）：接近",
+    "function_summary": "表示动作接近当前",
     "semantic_features": {
       "function": "toward"
     },
@@ -898,8 +898,8 @@
   {
     "sense_id": "grammar.functional.kuru.emergence",
     "concept_id": "grammar.functional.kuru",
-    "label": "くる（补助）：emergence",
-    "function_summary": "表示变化朝当前发展",
+    "label": "くる（补助）：出现",
+    "function_summary": "表示状态逐渐出现",
     "semantic_features": {
       "function": "emergence"
     },
@@ -962,8 +962,8 @@
   {
     "sense_id": "grammar.functional.kudasaru.benefactive_respectful",
     "concept_id": "grammar.functional.kudasaru",
-    "label": "くださる（补助）",
-    "function_summary": "表示尊敬的授受或恩惠",
+    "label": "くださる（补助）：受益授受",
+    "function_summary": "表示为己方做某事的恩惠",
     "semantic_features": {
       "function": "benefactive_respectful"
     },
@@ -978,8 +978,8 @@
   {
     "sense_id": "grammar.functional.kudasaru.subject_honorific",
     "concept_id": "grammar.functional.kudasaru",
-    "label": "くださる（补助）：subject_honorific",
-    "function_summary": "表示尊敬的授受或恩惠",
+    "label": "くださる（补助）：主体尊敬",
+    "function_summary": "尊敬动作主体的行为",
     "semantic_features": {
       "function": "subject_honorific"
     },
@@ -1026,8 +1026,8 @@
   {
     "sense_id": "grammar.aspect.te_iru.progressive",
     "concept_id": "grammar.aspect.te_iru",
-    "label": "〜ている",
-    "function_summary": "表示进行或结果状态",
+    "label": "〜ている：进行",
+    "function_summary": "表示进行中的动作",
     "semantic_features": {
       "function": "progressive"
     },
@@ -1042,8 +1042,8 @@
   {
     "sense_id": "grammar.aspect.te_iru.resultative",
     "concept_id": "grammar.aspect.te_iru",
-    "label": "〜ている：resultative",
-    "function_summary": "表示进行或结果状态",
+    "label": "〜ている：结果状态",
+    "function_summary": "表示动作后的状态",
     "semantic_features": {
       "function": "resultative"
     },
@@ -1106,8 +1106,8 @@
   {
     "sense_id": "grammar.aspect.te_shimau.completion",
     "concept_id": "grammar.aspect.te_shimau",
-    "label": "〜てしまう",
-    "function_summary": "表示彻底完成或遗憾",
+    "label": "〜てしまう：完成",
+    "function_summary": "表示彻底完成",
     "semantic_features": {
       "function": "completion"
     },
@@ -1122,8 +1122,8 @@
   {
     "sense_id": "grammar.aspect.te_shimau.regret",
     "concept_id": "grammar.aspect.te_shimau",
-    "label": "〜てしまう：regret",
-    "function_summary": "表示彻底完成或遗憾",
+    "label": "〜てしまう：遗憾",
+    "function_summary": "表示遗憾或事与愿违",
     "semantic_features": {
       "function": "regret"
     },
@@ -1138,8 +1138,8 @@
   {
     "sense_id": "grammar.direction.te_iku.away",
     "concept_id": "grammar.direction.te_iku",
-    "label": "〜ていく",
-    "function_summary": "表示变化远离当前或继续发展",
+    "label": "〜ていく：远离",
+    "function_summary": "表示动作远离当前",
     "semantic_features": {
       "function": "away"
     },
@@ -1154,8 +1154,8 @@
   {
     "sense_id": "grammar.direction.te_iku.continuation",
     "concept_id": "grammar.direction.te_iku",
-    "label": "〜ていく：continuation",
-    "function_summary": "表示变化远离当前或继续发展",
+    "label": "〜ていく：继续",
+    "function_summary": "表示动作继续发展",
     "semantic_features": {
       "function": "continuation"
     },
@@ -1170,8 +1170,8 @@
   {
     "sense_id": "grammar.direction.te_kuru.toward",
     "concept_id": "grammar.direction.te_kuru",
-    "label": "〜てくる",
-    "function_summary": "表示变化接近当前或逐渐出现",
+    "label": "〜てくる：接近",
+    "function_summary": "表示动作接近当前",
     "semantic_features": {
       "function": "toward"
     },
@@ -1186,8 +1186,8 @@
   {
     "sense_id": "grammar.direction.te_kuru.emergence",
     "concept_id": "grammar.direction.te_kuru",
-    "label": "〜てくる：emergence",
-    "function_summary": "表示变化接近当前或逐渐出现",
+    "label": "〜てくる：出现",
+    "function_summary": "表示状态逐渐出现",
     "semantic_features": {
       "function": "emergence"
     },
@@ -1250,8 +1250,8 @@
   {
     "sense_id": "grammar.benefactive.te_kudasaru.benefactive_respectful",
     "concept_id": "grammar.benefactive.te_kudasaru",
-    "label": "〜てくださる",
-    "function_summary": "表示尊敬对象为己方做某事",
+    "label": "〜てくださる：受益授受",
+    "function_summary": "表示为己方做某事的恩惠",
     "semantic_features": {
       "function": "benefactive_respectful"
     },
@@ -1266,8 +1266,8 @@
   {
     "sense_id": "grammar.benefactive.te_kudasaru.subject_honorific",
     "concept_id": "grammar.benefactive.te_kudasaru",
-    "label": "〜てくださる：subject_honorific",
-    "function_summary": "表示尊敬对象为己方做某事",
+    "label": "〜てくださる：主体尊敬",
+    "function_summary": "尊敬动作主体的行为",
     "semantic_features": {
       "function": "subject_honorific"
     },
@@ -1330,8 +1330,8 @@
   {
     "sense_id": "grammar.particle.ni_wa.topic",
     "concept_id": "grammar.particle.ni_wa",
-    "label": "には",
-    "function_summary": "叠加格关系与主题或对比",
+    "label": "には：主题",
+    "function_summary": "提示主题",
     "semantic_features": {
       "function": "topic"
     },
@@ -1346,8 +1346,8 @@
   {
     "sense_id": "grammar.particle.ni_wa.contrast",
     "concept_id": "grammar.particle.ni_wa",
-    "label": "には：contrast",
-    "function_summary": "叠加格关系与主题或对比",
+    "label": "には：对比",
+    "function_summary": "突出对比",
     "semantic_features": {
       "function": "contrast"
     },
@@ -1378,8 +1378,8 @@
   {
     "sense_id": "grammar.particle.de_wa.topic",
     "concept_id": "grammar.particle.de_wa",
-    "label": "では",
-    "function_summary": "叠加场所等关系与主题或对比",
+    "label": "では：主题",
+    "function_summary": "提示主题",
     "semantic_features": {
       "function": "topic"
     },
@@ -1394,8 +1394,8 @@
   {
     "sense_id": "grammar.particle.de_wa.contrast",
     "concept_id": "grammar.particle.de_wa",
-    "label": "では：contrast",
-    "function_summary": "叠加场所等关系与主题或对比",
+    "label": "では：对比",
+    "function_summary": "突出对比",
     "semantic_features": {
       "function": "contrast"
     },
@@ -1426,8 +1426,8 @@
   {
     "sense_id": "grammar.modality.volitional_to_suru.attempt",
     "concept_id": "grammar.modality.volitional_to_suru",
-    "label": "〜ようとする",
-    "function_summary": "表示尝试或即将发生",
+    "label": "〜ようとする：尝试",
+    "function_summary": "表示尝试做某事",
     "semantic_features": {
       "function": "attempt"
     },
@@ -1442,8 +1442,8 @@
   {
     "sense_id": "grammar.modality.volitional_to_suru.imminence",
     "concept_id": "grammar.modality.volitional_to_suru",
-    "label": "〜ようとする：imminence",
-    "function_summary": "表示尝试或即将发生",
+    "label": "〜ようとする：即将",
+    "function_summary": "表示即将发生",
     "semantic_features": {
       "function": "imminence"
     },
@@ -1458,8 +1458,8 @@
   {
     "sense_id": "grammar.formal.tsumori_da.intention",
     "concept_id": "grammar.formal.tsumori_da",
-    "label": "〜つもりだ",
-    "function_summary": "表示意图或认定",
+    "label": "〜つもりだ：意图",
+    "function_summary": "表示计划或意图",
     "semantic_features": {
       "function": "intention"
     },
@@ -1474,8 +1474,8 @@
   {
     "sense_id": "grammar.formal.tsumori_da.belief",
     "concept_id": "grammar.formal.tsumori_da",
-    "label": "〜つもりだ：belief",
-    "function_summary": "表示意图或认定",
+    "label": "〜つもりだ：认定",
+    "function_summary": "表示对未来或判断的认定",
     "semantic_features": {
       "function": "belief"
     },
@@ -1490,8 +1490,8 @@
   {
     "sense_id": "grammar.connective.nagara_mo.simultaneous",
     "concept_id": "grammar.connective.nagara_mo",
-    "label": "〜ながら（も）",
-    "function_summary": "表示同时或让步",
+    "label": "〜ながら（も）：同时",
+    "function_summary": "表示一边…一边…",
     "semantic_features": {
       "function": "simultaneous"
     },
@@ -1506,8 +1506,8 @@
   {
     "sense_id": "grammar.connective.nagara_mo.concession",
     "concept_id": "grammar.connective.nagara_mo",
-    "label": "〜ながら（も）：concession",
-    "function_summary": "表示同时或让步",
+    "label": "〜ながら（も）：让步",
+    "function_summary": "表示即使…也…",
     "semantic_features": {
       "function": "concession"
     },

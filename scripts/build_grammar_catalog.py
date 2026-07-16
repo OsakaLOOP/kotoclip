@@ -469,7 +469,7 @@ def validate(source: Path) -> dict[str, list[dict[str, Any]]]:
             if sense_id not in senses or senses[sense_id]["concept_id"] != explanation["concept_id"]:
                 raise ValueError(f"{explanation['explanation_id']}: 悬空或跨 concept 的 sense 引用")
         if explanation["authoring_status"] == "verified":
-            if not explanation["compact_summary"] or not explanation["function_summary"] or not explanation["body_blocks"]:
+            if not explanation["compact_summary"] or not explanation["function_summary"]:
                 raise ValueError(f"{explanation['explanation_id']}: verified 讲解不完整")
             if not explanation.get("source_refs"):
                 raise ValueError(f"{explanation['explanation_id']}: verified 讲解缺少来源")

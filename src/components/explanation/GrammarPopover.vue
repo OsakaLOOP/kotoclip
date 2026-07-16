@@ -46,16 +46,6 @@ const kindLabel = computed(() => ({
 
 const summary = computed(() => selectedSense.value?.label || explanation.value?.function_summary || props.tag?.description || "");
 
-const senseOptions = computed(() => {
-  const seen = new Set<string>();
-  return (props.tag?.sense_candidates ?? []).filter((candidate) => {
-    const key = normalizeForm(candidate.label);
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-});
-
 function normalizeForm(value: string) {
   return value.replace(/[〜～○…（）()／/・\s]/g, "").toLocaleLowerCase();
 }
@@ -77,13 +67,7 @@ const roleLabels: Record<string, string> = {
 };
 
 const formParts = computed(() => {
-  const seen = new Set<string>();
-  return (explanation.value?.bound_captures ?? []).filter((capture) => {
-    const key = `${capture.name}:${capture.char_range[0]}:${capture.char_range[1]}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).map((capture) => ({
+  return (explanation.value?.bound_captures ?? []).map((capture) => ({
     ...capture,
     roleLabel: roleLabels[capture.name] ?? "成分",
   }));
@@ -95,9 +79,9 @@ const variants = computed(() => formParts.value.filter((part) => (
   && normalizeForm(part.surface) !== normalizeForm(part.base_form)
 )));
 
-const morphologyLabels = computed(() => Array.from(new Set(
-  (explanation.value?.morphology_chain ?? []).filter((item) => !["て形", "で形"].includes(item)),
-)));
+const morphologyLabels = computed(() => (
+  explanation.value?.morphology_chain?.filter((item) => !["て形", "で形"].includes(item)) ?? []
+));
 
 const showFormCard = computed(() => (
   actualFormDiffers.value
@@ -107,28 +91,11 @@ const showFormCard = computed(() => (
 ));
 
 const usefulConnection = computed(() => {
-  const connection = explanation.value?.connection.trim() ?? "";
-  if (!connection || connection.startsWith("依据本句")) return "";
-  return connection === summary.value.trim() ? "" : connection;
+  return explanation.value?.connection.trim() ?? "";
 });
 
 const displayBlocks = computed(() => {
-  const duplicateTexts = new Set([
-    normalizeForm(summary.value),
-    normalizeForm(explanation.value?.compact_summary ?? ""),
-    normalizeForm(explanation.value?.function_summary ?? ""),
-  ]);
-  const seen = new Set<string>();
-  return (explanation.value?.content_blocks ?? []).filter((block) => {
-    if (block.kind === "occurrence_binding") return false;
-    if (block.kind === "warning") return false;
-    if (/判定|边界/.test(block.label ?? "")) return false;
-    if (/(realization|系统依据|词性身份|身份范围)/i.test(block.text)) return false;
-    const text = normalizeForm(block.text);
-    if (!text || duplicateTexts.has(text) || seen.has(text)) return false;
-    seen.add(text);
-    return true;
-  });
+  return explanation.value?.content_blocks ?? [];
 });
 
 function dictionaryLabel(target: GrammarDictionaryTarget) {
@@ -205,9 +172,9 @@ watch(
 
     <p class="core-summary">{{ summary }}</p>
 
-    <div v-if="senseOptions.length > 1" class="sense-options" aria-label="语义候选">
+    <div v-if="tag.sense_candidates.length > 1" class="sense-options" aria-label="语义候选">
       <button
-        v-for="candidate in senseOptions"
+        v-for="candidate in tag.sense_candidates"
         :key="candidate.sense_id"
         type="button"
         :class="{ active: (selectedSenseId ?? tag.selected_sense_id) === candidate.sense_id }"

@@ -1,310 +1,2104 @@
 {
   "bundle_id": "curated-text-batch-002",
   "audit_status": "verified",
-  "source_refs": ["corpus:七日の喰い神/第一話:grammar-review-batch-002", "ipadic:runtime-observation"],
-  "review": {"item_count": 30, "baseline": "data/baselines/grammar-review-curated-001-post.json"},
+  "source_refs": [
+    "corpus:七日の喰い神/第一話:grammar-review-batch-002",
+    "ipadic:runtime-observation"
+  ],
+  "review": {
+    "item_count": 30,
+    "baseline": "data/baselines/grammar-review-curated-001-post.json"
+  },
   "items": [
     {
       "concept_id": "grammar.explanatory.no_da",
       "kind": "construction",
       "canonical_label": "〜のだ／〜んだ",
-      "aliases": ["说明のだ", "口语んだ"],
-      "semantic_domains": ["explanation", "discourse"],
-      "function_tags": ["explanatory", "backgrounding"],
+      "aliases": [
+        "说明のだ",
+        "口语んだ"
+      ],
+      "semantic_domains": [
+        "explanation",
+        "discourse"
+      ],
+      "function_tags": [
+        "explanatory",
+        "backgrounding"
+      ],
       "jlpt_level": 4,
-      "register": ["modern_standard", "spoken"],
-      "explanation": {"compact_summary": "把前接命题作为说明、理由、背景或需要确认的事实提出", "connection": "分句＋のだ；口语常缩约为んだ。", "formation": "名词化の／ん＋判断助动词だ・です", "usage_notes": ["本批只接受ん＋だ／です的结构证据，单独感叹声んっ不识别。", "ん是 realization 内的口语缩约，不是 concept redirect。"], "examples": ["割れてんだ", "斬りたいんだそうだ"], "counter_examples": ["『あー……んっ』中的ん是感叹声。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 把前接内容作为说明或背景提出。"}, {"kind": "warning", "label": "边界", "text": "只有ん与后续判断助动词构成结构时才接受；孤立ん继续作为 residual。"}]},
-      "senses": [{"sense_id": "grammar.explanatory.no_da.explanation", "label": "说明・背景", "function_summary": "把命题作为说明、理由或背景提出", "semantic_features": {"function": "explanatory"}}],
-      "realizations": [{"realization_id": "realization.construction.explanatory.n_da", "rule_id": "construction.explanatory.n_da", "possible_sense_ids": ["grammar.explanatory.no_da.explanation"], "connection_signature": "分句＋ん＋だ／です", "morphology_requirements": ["contraction:no_da"], "examples": ["割れてんだ", "斬りたいんだそうだ"], "counter_examples": ["あー、んっ"], "rule": {"kind": "grammar_construction", "priority": 84, "show_badge": true, "atoms": [{"base_forms": ["ん"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "contracted_nominalizer"}, {"base_forms": ["だ", "です"], "pos_major": ["助動詞"], "capture": "copula"}]}}]
+      "register": [
+        "modern_standard",
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "把前接命题作为说明、理由、背景或需要确认的事实提出",
+        "connection": "分句＋のだ；口语常缩约为んだ。",
+        "formation": "名词化の／ん＋判断助动词だ・です",
+        "usage_notes": [
+          "本批只接受ん＋だ／です的结构证据，单独感叹声んっ不识别。",
+          "ん是 realization 内的口语缩约，不是 concept redirect。"
+        ],
+        "examples": [
+          "割れてんだ",
+          "斬りたいんだそうだ"
+        ],
+        "counter_examples": [
+          "『あー……んっ』中的ん是感叹声。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 把前接内容作为说明或背景提出。"
+          }
+        ]
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.explanatory.no_da.explanation",
+          "label": "说明・背景",
+          "function_summary": "把命题作为说明、理由或背景提出",
+          "semantic_features": {
+            "function": "explanatory"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.explanatory.n_da",
+          "rule_id": "construction.explanatory.n_da",
+          "possible_sense_ids": [
+            "grammar.explanatory.no_da.explanation"
+          ],
+          "connection_signature": "分句＋ん＋だ／です",
+          "morphology_requirements": [
+            "contraction:no_da"
+          ],
+          "examples": [
+            "割れてんだ",
+            "斬りたいんだそうだ"
+          ],
+          "counter_examples": [
+            "あー、んっ"
+          ],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 84,
+            "show_badge": true,
+            "atoms": [
+              {
+                "base_forms": [
+                  "ん"
+                ],
+                "pos_major": [
+                  "名詞"
+                ],
+                "pos_sub1": [
+                  "非自立"
+                ],
+                "capture": "contracted_nominalizer"
+              },
+              {
+                "base_forms": [
+                  "だ",
+                  "です"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "capture": "copula"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.tte",
       "kind": "particle",
       "canonical_label": "って",
-      "semantic_domains": ["quotation", "topic", "discourse"],
-      "function_tags": ["quotation", "topic", "colloquial"],
+      "semantic_domains": [
+        "quotation",
+        "topic",
+        "discourse"
+      ],
+      "function_tags": [
+        "quotation",
+        "topic",
+        "colloquial"
+      ],
       "jlpt_level": 4,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "口语引用或话题提示候选，必须由构式证据进一步确认", "connection": "引用内容或话题＋って；常形成ってのは、ってこと。", "formation": "前项＋って（＋の＋は／こと）", "usage_notes": ["通用单节点规则只产生 candidate，不覆盖 residual。", "ってのは和ってこと由多原子规则选择义项。"], "examples": ["人間ってのは", "命令しないって", "いたってこと"], "counter_examples": ["どう見たって不能仅按引用或话题接受。"], "body_blocks": [{"kind": "warning", "label": "识别边界", "text": "{{actual_form}} 的表面不足以唯一判定；系统优先等待结构化 realization。"}]},
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "口语引用或话题提示候选，必须由构式证据进一步确认",
+        "connection": "引用内容或话题＋って；常形成ってのは、ってこと。",
+        "formation": "前项＋って（＋の＋は／こと）",
+        "usage_notes": [
+          "通用单节点规则只产生 candidate，不覆盖 residual。",
+          "ってのは和ってこと由多原子规则选择义项。"
+        ],
+        "examples": [
+          "人間ってのは",
+          "命令しないって",
+          "いたってこと"
+        ],
+        "counter_examples": [
+          "どう見たって不能仅按引用或话题接受。"
+        ],
+        "body_blocks": []
+      },
       "senses": [
-        {"sense_id": "grammar.particle.tte.quotation", "label": "口语引用", "function_summary": "在口语中标记引用内容", "semantic_features": {"function": "quotation"}},
-        {"sense_id": "grammar.particle.tte.topic", "label": "口语话题提示", "function_summary": "把前项提为后续说明或评价的话题", "semantic_features": {"function": "topic"}}
+        {
+          "sense_id": "grammar.particle.tte.quotation",
+          "label": "口语引用",
+          "function_summary": "在口语中标记引用内容",
+          "semantic_features": {
+            "function": "quotation"
+          }
+        },
+        {
+          "sense_id": "grammar.particle.tte.topic",
+          "label": "口语话题提示",
+          "function_summary": "把前项提为后续说明或评价的话题",
+          "semantic_features": {
+            "function": "topic"
+          }
+        }
       ],
       "realizations": [
-        {"realization_id": "realization.functional.particle.tte.candidate", "rule_id": "functional.particle.tte.candidate", "possible_sense_ids": ["grammar.particle.tte.quotation", "grammar.particle.tte.topic"], "connection_signature": "前项＋って", "audit_status": "candidate", "examples": ["命令しないって"], "counter_examples": ["どう見たって"], "rule": {"audit_status": "candidate", "priority": 20, "atoms": [{"base_forms": ["って"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "particle"}]}},
-        {"realization_id": "realization.construction.tte_no_wa.topic", "rule_id": "construction.tte_no_wa.topic", "possible_sense_ids": ["grammar.particle.tte.topic"], "connection_signature": "名词性成分＋って＋の＋は", "examples": ["人間ってのは", "マガツカミってのは"], "counter_examples": ["どう見たって"], "rule": {"kind": "grammar_construction", "priority": 82, "show_badge": true, "atoms": [{"base_forms": ["って"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "topic_marker"}, {"base_forms": ["の"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "nominalizer"}, {"base_forms": ["は"], "pos_major": ["助詞"], "pos_sub1": ["係助詞"], "capture": "topic_particle"}]}},
-        {"realization_id": "realization.construction.tte_koto.quotation", "rule_id": "construction.tte_koto.quotation", "possible_sense_ids": ["grammar.particle.tte.quotation"], "connection_signature": "引用内容＋って＋こと", "examples": ["もう一人いたってこと"], "counter_examples": ["どう見たって"], "rule": {"kind": "grammar_construction", "priority": 80, "show_badge": true, "atoms": [{"base_forms": ["って"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "quotation"}, {"base_forms": ["こと"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "formal_noun"}]}}
+        {
+          "realization_id": "realization.functional.particle.tte.candidate",
+          "rule_id": "functional.particle.tte.candidate",
+          "possible_sense_ids": [
+            "grammar.particle.tte.quotation",
+            "grammar.particle.tte.topic"
+          ],
+          "connection_signature": "前项＋って",
+          "audit_status": "candidate",
+          "examples": [
+            "命令しないって"
+          ],
+          "counter_examples": [
+            "どう見たって"
+          ],
+          "rule": {
+            "audit_status": "candidate",
+            "priority": 20,
+            "atoms": [
+              {
+                "base_forms": [
+                  "って"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "格助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        },
+        {
+          "realization_id": "realization.construction.tte_no_wa.topic",
+          "rule_id": "construction.tte_no_wa.topic",
+          "possible_sense_ids": [
+            "grammar.particle.tte.topic"
+          ],
+          "connection_signature": "名词性成分＋って＋の＋は",
+          "examples": [
+            "人間ってのは",
+            "マガツカミってのは"
+          ],
+          "counter_examples": [
+            "どう見たって"
+          ],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 82,
+            "show_badge": true,
+            "atoms": [
+              {
+                "base_forms": [
+                  "って"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "格助詞"
+                ],
+                "capture": "topic_marker"
+              },
+              {
+                "base_forms": [
+                  "の"
+                ],
+                "pos_major": [
+                  "名詞"
+                ],
+                "pos_sub1": [
+                  "非自立"
+                ],
+                "capture": "nominalizer"
+              },
+              {
+                "base_forms": [
+                  "は"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "係助詞"
+                ],
+                "capture": "topic_particle"
+              }
+            ]
+          }
+        },
+        {
+          "realization_id": "realization.construction.tte_koto.quotation",
+          "rule_id": "construction.tte_koto.quotation",
+          "possible_sense_ids": [
+            "grammar.particle.tte.quotation"
+          ],
+          "connection_signature": "引用内容＋って＋こと",
+          "examples": [
+            "もう一人いたってこと"
+          ],
+          "counter_examples": [
+            "どう見たって"
+          ],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 80,
+            "show_badge": true,
+            "atoms": [
+              {
+                "base_forms": [
+                  "って"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "格助詞"
+                ],
+                "capture": "quotation"
+              },
+              {
+                "base_forms": [
+                  "こと"
+                ],
+                "pos_major": [
+                  "名詞"
+                ],
+                "pos_sub1": [
+                  "非自立"
+                ],
+                "capture": "formal_noun"
+              }
+            ]
+          }
+        }
       ]
     },
     {
       "concept_id": "grammar.particle.de_wa",
       "extend_existing": true,
-      "senses": [{"sense_id": "grammar.particle.de_wa.discourse", "label": "じゃ：话语转换", "function_summary": "口语中由では缩约而来，用于条件背景、对比或话语转换", "semantic_features": {"function": "discourse_transition"}, "context_requirements": ["IPADIC: じゃ／助詞-副助詞"]}],
-      "realizations": [{"realization_id": "realization.functional.particle.ja", "rule_id": "functional.particle.ja", "possible_sense_ids": ["grammar.particle.de_wa.topic", "grammar.particle.de_wa.discourse"], "connection_signature": "では→じゃ（口语缩约）", "morphology_requirements": ["contraction:de_wa"], "examples": ["人間じゃない", "これじゃあまりに悲惨だ"], "counter_examples": ["じゃんけん"], "rule": {"priority": 58, "atoms": [{"base_forms": ["じゃ"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "contracted_particle"}]}}]
+      "senses": [
+        {
+          "sense_id": "grammar.particle.de_wa.discourse",
+          "label": "じゃ：话语转换",
+          "function_summary": "口语中由では缩约而来，用于条件背景、对比或话语转换",
+          "semantic_features": {
+            "function": "discourse_transition"
+          },
+          "context_requirements": [
+            "IPADIC: じゃ／助詞-副助詞"
+          ]
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.ja",
+          "rule_id": "functional.particle.ja",
+          "possible_sense_ids": [
+            "grammar.particle.de_wa.topic",
+            "grammar.particle.de_wa.discourse"
+          ],
+          "connection_signature": "では→じゃ（口语缩约）",
+          "morphology_requirements": [
+            "contraction:de_wa"
+          ],
+          "examples": [
+            "人間じゃない",
+            "これじゃあまりに悲惨だ"
+          ],
+          "counter_examples": [
+            "じゃんけん"
+          ],
+          "rule": {
+            "priority": 58,
+            "atoms": [
+              {
+                "base_forms": [
+                  "じゃ"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "contracted_particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.ya",
       "kind": "particle",
       "canonical_label": "や",
-      "semantic_domains": ["coordination", "example"],
-      "function_tags": ["non_exhaustive_listing"],
+      "semantic_domains": [
+        "coordination",
+        "example"
+      ],
+      "function_tags": [
+        "non_exhaustive_listing"
+      ],
       "jlpt_level": 5,
-      "explanation": {"compact_summary": "列举若干代表项，暗示还有同类未列出", "connection": "名词＋や＋名词（＋など）。", "formation": "A＋や＋B", "usage_notes": ["与穷尽式と并列不同。"], "examples": ["生活ゴミや産業廃棄物"], "counter_examples": ["AとB通常更趋向穷尽。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 表示非穷尽列举。"}]},
-      "senses": [{"sense_id": "grammar.particle.ya.listing", "label": "非穷尽列举", "function_summary": "列举代表项并暗示其他同类", "semantic_features": {"function": "non_exhaustive_listing"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.ya", "rule_id": "functional.particle.ya", "possible_sense_ids": ["grammar.particle.ya.listing"], "connection_signature": "名词＋や＋名词", "examples": ["木片や瓦礫"], "counter_examples": ["矢を放つ"], "rule": {"atoms": [{"base_forms": ["や"], "pos_major": ["助詞"], "pos_sub1": ["並立助詞"], "capture": "particle"}]}}]
+      "explanation": {
+        "compact_summary": "列举若干代表项，暗示还有同类未列出",
+        "connection": "名词＋や＋名词（＋など）。",
+        "formation": "A＋や＋B",
+        "usage_notes": [
+          "与穷尽式と并列不同。"
+        ],
+        "examples": [
+          "生活ゴミや産業廃棄物"
+        ],
+        "counter_examples": [
+          "AとB通常更趋向穷尽。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 表示非穷尽列举。"
+          }
+        ]
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.ya.listing",
+          "label": "非穷尽列举",
+          "function_summary": "列举代表项并暗示其他同类",
+          "semantic_features": {
+            "function": "non_exhaustive_listing"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.ya",
+          "rule_id": "functional.particle.ya",
+          "possible_sense_ids": [
+            "grammar.particle.ya.listing"
+          ],
+          "connection_signature": "名词＋や＋名词",
+          "examples": [
+            "木片や瓦礫"
+          ],
+          "counter_examples": [
+            "矢を放つ"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "や"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "並立助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.nante",
       "kind": "particle",
       "canonical_label": "なんて",
-      "semantic_domains": ["example", "evaluation", "quotation"],
-      "function_tags": ["exemplification", "devaluation", "surprise"],
+      "semantic_domains": [
+        "example",
+        "evaluation",
+        "quotation"
+      ],
+      "function_tags": [
+        "exemplification",
+        "devaluation",
+        "surprise"
+      ],
       "jlpt_level": 3,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "提出例项或引用内容，并附加轻视、惊讶或否定评价", "connection": "名词、分句或引用内容＋なんて。", "formation": "前项＋なんて", "usage_notes": ["例示、轻视或惊讶需结合谓词和语境。"], "examples": ["見分けなんてつかない", "なんて都合よすぎ"], "counter_examples": ["何て言うの若被分离分析，不套用本单节点 realization。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "本句的 {{actual_form}} 提出前项并附加例示或评价色彩。"}]},
-      "senses": [{"sense_id": "grammar.particle.nante.evaluative", "label": "例示・评价", "function_summary": "把前项作为例项或评价焦点", "semantic_features": {"function": "evaluative_example"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.nante", "rule_id": "functional.particle.nante", "possible_sense_ids": ["grammar.particle.nante.evaluative"], "connection_signature": "前项＋なんて", "examples": ["見分けなんてつかない"], "counter_examples": ["何て言うの"], "rule": {"atoms": [{"base_forms": ["なんて"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "particle"}]}}]
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "提出例项或引用内容，并附加轻视、惊讶或否定评价",
+        "connection": "名词、分句或引用内容＋なんて。",
+        "formation": "前项＋なんて",
+        "usage_notes": [
+          "例示、轻视或惊讶需结合谓词和语境。"
+        ],
+        "examples": [
+          "見分けなんてつかない",
+          "なんて都合よすぎ"
+        ],
+        "counter_examples": [
+          "何て言うの若被分离分析，不套用本单节点 realization。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "本句的 {{actual_form}} 提出前项并附加例示或评价色彩。"
+          }
+        ]
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.nante.evaluative",
+          "label": "例示・评价",
+          "function_summary": "把前项作为例项或评价焦点",
+          "semantic_features": {
+            "function": "evaluative_example"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.nante",
+          "rule_id": "functional.particle.nante",
+          "possible_sense_ids": [
+            "grammar.particle.nante.evaluative"
+          ],
+          "connection_signature": "前项＋なんて",
+          "examples": [
+            "見分けなんてつかない"
+          ],
+          "counter_examples": [
+            "何て言うの"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "なんて"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.connective.kedo",
       "kind": "particle",
       "canonical_label": "〜けど",
-      "semantic_domains": ["connection", "contrast", "discourse"],
-      "function_tags": ["adversative", "softening", "backgrounding"],
+      "semantic_domains": [
+        "connection",
+        "contrast",
+        "discourse"
+      ],
+      "function_tags": [
+        "adversative",
+        "softening",
+        "backgrounding"
+      ],
       "jlpt_level": 5,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "连接分句，表达转折、铺垫、保留或柔化", "connection": "分句＋けど（＋后件）。", "formation": "前件＋けど＋后件", "usage_notes": ["后件可省略以等待回应或柔化陈述。"], "examples": ["思わなかったけど"], "counter_examples": ["词汇内部同音部分不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 可引出转折，也可把前件作为铺垫。"}]},
-      "senses": [{"sense_id": "grammar.connective.kedo.adversative", "label": "转折・铺垫", "function_summary": "连接前后分句或柔化话语", "semantic_features": {"function": "adversative_or_softening"}}],
-      "realizations": [{"realization_id": "realization.functional.connective.kedo", "rule_id": "functional.connective.kedo", "possible_sense_ids": ["grammar.connective.kedo.adversative"], "connection_signature": "分句＋けど", "examples": ["思わなかったけど"], "counter_examples": ["けどを名词引用"], "rule": {"atoms": [{"base_forms": ["けど"], "pos_major": ["助詞"], "pos_sub1": ["接続助詞"], "capture": "connector"}]}}]
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "连接分句，表达转折、铺垫、保留或柔化",
+        "connection": "分句＋けど（＋后件）。",
+        "formation": "前件＋けど＋后件",
+        "usage_notes": [
+          "后件可省略以等待回应或柔化陈述。"
+        ],
+        "examples": [
+          "思わなかったけど"
+        ],
+        "counter_examples": [
+          "词汇内部同音部分不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 可引出转折，也可把前件作为铺垫。"
+          }
+        ]
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.connective.kedo.adversative",
+          "label": "转折・铺垫",
+          "function_summary": "连接前后分句或柔化话语",
+          "semantic_features": {
+            "function": "adversative_or_softening"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.connective.kedo",
+          "rule_id": "functional.connective.kedo",
+          "possible_sense_ids": [
+            "grammar.connective.kedo.adversative"
+          ],
+          "connection_signature": "分句＋けど",
+          "examples": [
+            "思わなかったけど"
+          ],
+          "counter_examples": [
+            "けどを名词引用"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "けど"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "接続助詞"
+                ],
+                "capture": "connector"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.datte",
       "kind": "particle",
       "canonical_label": "だって",
-      "semantic_domains": ["addition", "quotation", "concession"],
-      "function_tags": ["even", "also", "quotation"],
-      "jlpt_level": 4,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "表示追加、极端例、让步或口语引用，具体义项需看前后结构", "connection": "名词、疑问词或引用内容＋だって。", "formation": "前项＋だって", "usage_notes": ["俺だって、いつだって与男だって認められた并非同一细义。"], "examples": ["俺だって本気だ", "いつだって楽しそうだ"], "counter_examples": ["不能一律归并到ても或引用と。"], "body_blocks": [{"kind": "warning", "label": "多义", "text": "{{actual_form}} 的核心身份可确定，但追加、让步或引用义需保留候选。"}]},
-      "senses": [
-        {"sense_id": "grammar.particle.datte.additive", "label": "追加・极端例", "function_summary": "表示连前项也包含在内", "semantic_features": {"function": "additive"}},
-        {"sense_id": "grammar.particle.datte.quotation", "label": "口语引用", "function_summary": "在口语中标记被认定或被说出的内容", "semantic_features": {"function": "quotation"}}
+      "semantic_domains": [
+        "addition",
+        "quotation",
+        "concession"
       ],
-      "realizations": [{"realization_id": "realization.functional.particle.datte", "rule_id": "functional.particle.datte", "possible_sense_ids": ["grammar.particle.datte.additive", "grammar.particle.datte.quotation"], "connection_signature": "前项＋だって", "examples": ["俺だって本気だ", "男だって認められた"], "counter_examples": ["どう見たって"], "rule": {"atoms": [{"base_forms": ["だって"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "particle"}]}}]
+      "function_tags": [
+        "even",
+        "also",
+        "quotation"
+      ],
+      "jlpt_level": 4,
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "表示追加、极端例、让步或口语引用，具体义项需看前后结构",
+        "connection": "名词、疑问词或引用内容＋だって。",
+        "formation": "前项＋だって",
+        "usage_notes": [
+          "俺だって、いつだって与男だって認められた并非同一细义。"
+        ],
+        "examples": [
+          "俺だって本気だ",
+          "いつだって楽しそうだ"
+        ],
+        "counter_examples": [
+          "不能一律归并到ても或引用と。"
+        ],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.datte.additive",
+          "label": "追加・极端例",
+          "function_summary": "表示连前项也包含在内",
+          "semantic_features": {
+            "function": "additive"
+          }
+        },
+        {
+          "sense_id": "grammar.particle.datte.quotation",
+          "label": "口语引用",
+          "function_summary": "在口语中标记被认定或被说出的内容",
+          "semantic_features": {
+            "function": "quotation"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.datte",
+          "rule_id": "functional.particle.datte",
+          "possible_sense_ids": [
+            "grammar.particle.datte.additive",
+            "grammar.particle.datte.quotation"
+          ],
+          "connection_signature": "前项＋だって",
+          "examples": [
+            "俺だって本気だ",
+            "男だって認められた"
+          ],
+          "counter_examples": [
+            "どう見たって"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "だって"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.demo",
       "kind": "particle",
       "canonical_label": "でも",
-      "semantic_domains": ["example", "indefinite", "concession"],
-      "function_tags": ["illustrative", "free_choice", "even"],
-      "jlpt_level": 4,
-      "explanation": {"compact_summary": "提出例项、形成疑问词自由选择，或表示极端包含", "connection": "名词或疑问词＋でも。", "formation": "前项＋でも", "usage_notes": ["与接续结构ても在词性与构成上分开。"], "examples": ["コレクションでも眺める", "何でもできる"], "counter_examples": ["読んでも分からない属于接续ても。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 可提出一个例项，也可与疑问词形成自由选择表达。"}]},
-      "senses": [
-        {"sense_id": "grammar.particle.demo.example", "label": "例示", "function_summary": "提出一个非限定例项", "semantic_features": {"function": "illustrative"}},
-        {"sense_id": "grammar.particle.demo.free_choice", "label": "疑问词＋でも", "function_summary": "表示无论哪个或任何一个", "semantic_features": {"function": "free_choice"}}
+      "semantic_domains": [
+        "example",
+        "indefinite",
+        "concession"
       ],
-      "realizations": [{"realization_id": "realization.functional.particle.demo", "rule_id": "functional.particle.demo", "possible_sense_ids": ["grammar.particle.demo.example", "grammar.particle.demo.free_choice"], "connection_signature": "名词・疑问词＋でも", "examples": ["何でもできる", "ジェット機でも"], "counter_examples": ["読んでも分からない"], "rule": {"atoms": [{"base_forms": ["でも"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "particle"}]}}]
+      "function_tags": [
+        "illustrative",
+        "free_choice",
+        "even"
+      ],
+      "jlpt_level": 4,
+      "explanation": {
+        "compact_summary": "提出例项、形成疑问词自由选择，或表示极端包含",
+        "connection": "名词或疑问词＋でも。",
+        "formation": "前项＋でも",
+        "usage_notes": [
+          "与接续结构ても在词性与构成上分开。"
+        ],
+        "examples": [
+          "コレクションでも眺める",
+          "何でもできる"
+        ],
+        "counter_examples": [
+          "読んでも分からない属于接续ても。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 可提出一个例项，也可与疑问词形成自由选择表达。"
+          }
+        ]
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.demo.example",
+          "label": "例示",
+          "function_summary": "提出一个非限定例项",
+          "semantic_features": {
+            "function": "illustrative"
+          }
+        },
+        {
+          "sense_id": "grammar.particle.demo.free_choice",
+          "label": "疑问词＋でも",
+          "function_summary": "表示无论哪个或任何一个",
+          "semantic_features": {
+            "function": "free_choice"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.demo",
+          "rule_id": "functional.particle.demo",
+          "possible_sense_ids": [
+            "grammar.particle.demo.example",
+            "grammar.particle.demo.free_choice"
+          ],
+          "connection_signature": "名词・疑问词＋でも",
+          "examples": [
+            "何でもできる",
+            "ジェット機でも"
+          ],
+          "counter_examples": [
+            "読んでも分からない"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "でも"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.nado",
       "kind": "particle",
       "canonical_label": "など",
-      "semantic_domains": ["example", "listing", "evaluation"],
-      "function_tags": ["exemplification", "non_exhaustive"],
+      "semantic_domains": [
+        "example",
+        "listing",
+        "evaluation"
+      ],
+      "function_tags": [
+        "exemplification",
+        "non_exhaustive"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "列举代表项，表示非穷尽范围，并可附加概括或评价语气", "connection": "名词、分句或列举结构＋など。", "formation": "前项＋など", "examples": ["人間と見分けがつかない、などと"], "counter_examples": ["词汇内部同形不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 将前项作为代表例，而非封闭完整列举。"}]},
-      "senses": [{"sense_id": "grammar.particle.nado.example", "label": "例示・非穷尽", "function_summary": "把前项作为代表例并暗示其他同类", "semantic_features": {"function": "exemplification"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.nado", "rule_id": "functional.particle.nado", "possible_sense_ids": ["grammar.particle.nado.example"], "connection_signature": "前项＋など", "examples": ["生活ゴミなど"], "counter_examples": ["等を汉字词一部として用いる"], "rule": {"atoms": [{"base_forms": ["など"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "particle"}]}}]
+      "explanation": {
+        "compact_summary": "列举代表项，表示非穷尽范围，并可附加概括或评价语气",
+        "connection": "名词、分句或列举结构＋など。",
+        "formation": "前项＋など",
+        "examples": [
+          "人間と見分けがつかない、などと"
+        ],
+        "counter_examples": [
+          "词汇内部同形不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 将前项作为代表例，而非封闭完整列举。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.nado.example",
+          "label": "例示・非穷尽",
+          "function_summary": "把前项作为代表例并暗示其他同类",
+          "semantic_features": {
+            "function": "exemplification"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.nado",
+          "rule_id": "functional.particle.nado",
+          "possible_sense_ids": [
+            "grammar.particle.nado.example"
+          ],
+          "connection_signature": "前项＋など",
+          "examples": [
+            "生活ゴミなど"
+          ],
+          "counter_examples": [
+            "等を汉字词一部として用いる"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "など"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.formal.tame",
       "kind": "formal_noun",
       "canonical_label": "〜ため",
-      "semantic_domains": ["purpose", "cause"],
-      "function_tags": ["purpose", "cause"],
-      "jlpt_level": 4,
-      "explanation": {"compact_summary": "表示目的或原因，具体义项由前接形式与前后事件关系决定", "connection": "连体修饰＋ため（に）。", "formation": "前项＋ため（に）＋后项", "usage_notes": ["目的与原因共享表面，保留两个 sense 候选。"], "examples": ["悪を倒すため"], "counter_examples": ["自立名词用法不属于本规则。"], "body_blocks": [{"kind": "warning", "label": "歧义", "text": "本句的 {{actual_form}} 可能表示目的，也可能表示原因。"}]},
-      "senses": [
-        {"sense_id": "grammar.formal.tame.purpose", "label": "目的", "function_summary": "表示后项行为的目标", "semantic_features": {"function": "purpose"}},
-        {"sense_id": "grammar.formal.tame.cause", "label": "原因", "function_summary": "表示后项结果的原因", "semantic_features": {"function": "cause"}}
+      "semantic_domains": [
+        "purpose",
+        "cause"
       ],
-      "realizations": [{"realization_id": "realization.functional.formal.tame", "rule_id": "functional.formal.tame", "possible_sense_ids": ["grammar.formal.tame.purpose", "grammar.formal.tame.cause"], "connection_signature": "连体修饰＋ため", "examples": ["悪を倒すため"], "counter_examples": ["一般名词用法"], "rule": {"priority": 45, "atoms": [{"base_forms": ["ため"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "formal_noun"}]}}]
+      "function_tags": [
+        "purpose",
+        "cause"
+      ],
+      "jlpt_level": 4,
+      "explanation": {
+        "compact_summary": "表示目的或原因，具体义项由前接形式与前后事件关系决定",
+        "connection": "连体修饰＋ため（に）。",
+        "formation": "前项＋ため（に）＋后项",
+        "usage_notes": [
+          "目的与原因共享表面，保留两个 sense 候选。"
+        ],
+        "examples": [
+          "悪を倒すため"
+        ],
+        "counter_examples": [
+          "自立名词用法不属于本规则。"
+        ],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.formal.tame.purpose",
+          "label": "目的",
+          "function_summary": "表示后项行为的目标",
+          "semantic_features": {
+            "function": "purpose"
+          }
+        },
+        {
+          "sense_id": "grammar.formal.tame.cause",
+          "label": "原因",
+          "function_summary": "表示后项结果的原因",
+          "semantic_features": {
+            "function": "cause"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.formal.tame",
+          "rule_id": "functional.formal.tame",
+          "possible_sense_ids": [
+            "grammar.formal.tame.purpose",
+            "grammar.formal.tame.cause"
+          ],
+          "connection_signature": "连体修饰＋ため",
+          "examples": [
+            "悪を倒すため"
+          ],
+          "counter_examples": [
+            "一般名词用法"
+          ],
+          "rule": {
+            "priority": 45,
+            "atoms": [
+              {
+                "base_forms": [
+                  "ため"
+                ],
+                "pos_major": [
+                  "名詞"
+                ],
+                "pos_sub1": [
+                  "非自立"
+                ],
+                "capture": "formal_noun"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.hodo",
       "kind": "particle",
       "canonical_label": "ほど",
-      "semantic_domains": ["degree", "comparison"],
-      "function_tags": ["extent", "approximation"],
+      "semantic_domains": [
+        "degree",
+        "comparison"
+      ],
+      "function_tags": [
+        "extent",
+        "approximation"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "表示程度、范围、比较基准或近似数量", "connection": "数量、名词或分句＋ほど。", "formation": "前项＋ほど", "examples": ["考えられないほどの低下"], "counter_examples": ["词汇内部同形不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 把前项设为程度或范围基准。"}]},
-      "senses": [{"sense_id": "grammar.particle.hodo.extent", "label": "程度・范围", "function_summary": "把前项设为程度、范围或比较基准", "semantic_features": {"function": "extent"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.hodo", "rule_id": "functional.particle.hodo", "possible_sense_ids": ["grammar.particle.hodo.extent"], "connection_signature": "前项＋ほど", "examples": ["考えられないほど"], "counter_examples": ["歩道を歩く"], "rule": {"atoms": [{"base_forms": ["ほど"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "particle"}]}}]
+      "explanation": {
+        "compact_summary": "表示程度、范围、比较基准或近似数量",
+        "connection": "数量、名词或分句＋ほど。",
+        "formation": "前项＋ほど",
+        "examples": [
+          "考えられないほどの低下"
+        ],
+        "counter_examples": [
+          "词汇内部同形不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 把前项设为程度或范围基准。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.hodo.extent",
+          "label": "程度・范围",
+          "function_summary": "把前项设为程度、范围或比较基准",
+          "semantic_features": {
+            "function": "extent"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.hodo",
+          "rule_id": "functional.particle.hodo",
+          "possible_sense_ids": [
+            "grammar.particle.hodo.extent"
+          ],
+          "connection_signature": "前项＋ほど",
+          "examples": [
+            "考えられないほど"
+          ],
+          "counter_examples": [
+            "歩道を歩く"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "ほど"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.yori",
       "kind": "particle",
       "canonical_label": "より",
-      "semantic_domains": ["comparison", "source"],
-      "function_tags": ["comparison", "starting_point"],
-      "jlpt_level": 5,
-      "explanation": {"compact_summary": "标记比较基准、起点或较正式的来源", "connection": "名词性成分＋より。", "formation": "基准・起点＋より", "examples": ["納豆よりも嫌い", "古来より"], "counter_examples": ["动词寄る不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 标记比较或起点基准。"}]},
-      "senses": [
-        {"sense_id": "grammar.particle.yori.comparison", "label": "比较基准", "function_summary": "标记比较对象", "semantic_features": {"function": "comparison"}},
-        {"sense_id": "grammar.particle.yori.source", "label": "起点・来源", "function_summary": "标记时间、空间或来源起点", "semantic_features": {"function": "source"}}
+      "semantic_domains": [
+        "comparison",
+        "source"
       ],
-      "realizations": [{"realization_id": "realization.functional.particle.yori", "rule_id": "functional.particle.yori", "possible_sense_ids": ["grammar.particle.yori.comparison", "grammar.particle.yori.source"], "connection_signature": "前项＋より", "examples": ["納豆よりも嫌い", "古来より"], "counter_examples": ["駅に寄る"], "rule": {"atoms": [{"base_forms": ["より"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "particle"}]}}]
+      "function_tags": [
+        "comparison",
+        "starting_point"
+      ],
+      "jlpt_level": 5,
+      "explanation": {
+        "compact_summary": "标记比较基准、起点或较正式的来源",
+        "connection": "名词性成分＋より。",
+        "formation": "基准・起点＋より",
+        "examples": [
+          "納豆よりも嫌い",
+          "古来より"
+        ],
+        "counter_examples": [
+          "动词寄る不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 标记比较或起点基准。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.yori.comparison",
+          "label": "比较基准",
+          "function_summary": "标记比较对象",
+          "semantic_features": {
+            "function": "comparison"
+          }
+        },
+        {
+          "sense_id": "grammar.particle.yori.source",
+          "label": "起点・来源",
+          "function_summary": "标记时间、空间或来源起点",
+          "semantic_features": {
+            "function": "source"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.yori",
+          "rule_id": "functional.particle.yori",
+          "possible_sense_ids": [
+            "grammar.particle.yori.comparison",
+            "grammar.particle.yori.source"
+          ],
+          "connection_signature": "前项＋より",
+          "examples": [
+            "納豆よりも嫌い",
+            "古来より"
+          ],
+          "counter_examples": [
+            "駅に寄る"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "より"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "格助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.connective.shi",
       "kind": "particle",
       "canonical_label": "〜し",
-      "semantic_domains": ["connection", "reason", "listing"],
-      "function_tags": ["additive_reason", "listing"],
+      "semantic_domains": [
+        "connection",
+        "reason",
+        "listing"
+      ],
+      "function_tags": [
+        "additive_reason",
+        "listing"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "列举并列事实或理由，并常暗示还有其他依据", "connection": "分句＋し（＋分句）。", "formation": "前件＋し＋后件", "examples": ["喰うし", "挑発すれば掴もうとするし"], "counter_examples": ["诗を読む"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 追加事实或理由，并暗示列举未必穷尽。"}]},
-      "senses": [{"sense_id": "grammar.connective.shi.additive", "label": "并列・理由追加", "function_summary": "列举事实或理由", "semantic_features": {"function": "additive_reason"}}],
-      "realizations": [{"realization_id": "realization.functional.connective.shi", "rule_id": "functional.connective.shi", "possible_sense_ids": ["grammar.connective.shi.additive"], "connection_signature": "分句＋し", "examples": ["喰うし"], "counter_examples": ["诗を読む"], "rule": {"atoms": [{"base_forms": ["し"], "pos_major": ["助詞"], "pos_sub1": ["接続助詞"], "capture": "connector"}]}}]
+      "explanation": {
+        "compact_summary": "列举并列事实或理由，并常暗示还有其他依据",
+        "connection": "分句＋し（＋分句）。",
+        "formation": "前件＋し＋后件",
+        "examples": [
+          "喰うし",
+          "挑発すれば掴もうとするし"
+        ],
+        "counter_examples": [
+          "诗を読む"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 追加事实或理由，并暗示列举未必穷尽。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.connective.shi.additive",
+          "label": "并列・理由追加",
+          "function_summary": "列举事实或理由",
+          "semantic_features": {
+            "function": "additive_reason"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.connective.shi",
+          "rule_id": "functional.connective.shi",
+          "possible_sense_ids": [
+            "grammar.connective.shi.additive"
+          ],
+          "connection_signature": "分句＋し",
+          "examples": [
+            "喰うし"
+          ],
+          "counter_examples": [
+            "诗を読む"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "し"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "接続助詞"
+                ],
+                "capture": "connector"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.sentence_particle.zo",
       "kind": "particle",
       "canonical_label": "ぞ",
-      "semantic_domains": ["discourse"],
-      "function_tags": ["assertion", "warning"],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "assertion",
+        "warning"
+      ],
       "jlpt_level": 4,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "在句末强化断言、提醒、警告或说话人意志", "connection": "句末＋ぞ。", "formation": "句末＋ぞ", "examples": ["もう一度言うぞ"], "counter_examples": ["词汇内部同形不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 强化说话人的断言或警告。"}]},
-      "senses": [{"sense_id": "grammar.sentence_particle.zo.assertion", "label": "强断言・警告", "function_summary": "强化断言、提醒或意志", "semantic_features": {"function": "strong_assertion"}}],
-      "realizations": [{"realization_id": "realization.functional.sentence_particle.zo", "rule_id": "functional.sentence_particle.zo", "possible_sense_ids": ["grammar.sentence_particle.zo.assertion"], "connection_signature": "句末＋ぞ", "examples": ["もう一度言うぞ"], "counter_examples": ["像を置く"], "rule": {"atoms": [{"base_forms": ["ぞ"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "particle"}]}}]
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "在句末强化断言、提醒、警告或说话人意志",
+        "connection": "句末＋ぞ。",
+        "formation": "句末＋ぞ",
+        "examples": [
+          "もう一度言うぞ"
+        ],
+        "counter_examples": [
+          "词汇内部同形不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 强化说话人的断言或警告。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.sentence_particle.zo.assertion",
+          "label": "强断言・警告",
+          "function_summary": "强化断言、提醒或意志",
+          "semantic_features": {
+            "function": "strong_assertion"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.sentence_particle.zo",
+          "rule_id": "functional.sentence_particle.zo",
+          "possible_sense_ids": [
+            "grammar.sentence_particle.zo.assertion"
+          ],
+          "connection_signature": "句末＋ぞ",
+          "examples": [
+            "もう一度言うぞ"
+          ],
+          "counter_examples": [
+            "像を置く"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "ぞ"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "終助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.modality.kamo",
       "kind": "particle",
       "canonical_label": "かも（しれない）",
-      "semantic_domains": ["modality", "epistemic"],
-      "function_tags": ["possibility"],
+      "semantic_domains": [
+        "modality",
+        "epistemic"
+      ],
+      "function_tags": [
+        "possibility"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "表示说话人认为某命题存在可能性", "connection": "分句＋かも（しれない）。", "formation": "前项＋かも", "usage_notes": ["本项先识别 IPADIC 合并输出かも；后续しれない可由更长构式补充。"], "examples": ["かもな", "保存されているかもしれない"], "counter_examples": ["鸭もいる不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 表示对命题真实性的可能判断。"}]},
-      "senses": [{"sense_id": "grammar.modality.kamo.possibility", "label": "可能性", "function_summary": "表示不确定但可能成立", "semantic_features": {"function": "epistemic_possibility"}}],
-      "realizations": [{"realization_id": "realization.functional.modality.kamo", "rule_id": "functional.modality.kamo", "possible_sense_ids": ["grammar.modality.kamo.possibility"], "connection_signature": "分句＋かも", "examples": ["かもな"], "counter_examples": ["鸭もいる"], "rule": {"priority": 48, "atoms": [{"base_forms": ["かも"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "particle"}], "show_badge": true}}]
+      "explanation": {
+        "compact_summary": "表示说话人认为某命题存在可能性",
+        "connection": "分句＋かも（しれない）。",
+        "formation": "前项＋かも",
+        "usage_notes": [
+          "本项先识别 IPADIC 合并输出かも；后续しれない可由更长构式补充。"
+        ],
+        "examples": [
+          "かもな",
+          "保存されているかもしれない"
+        ],
+        "counter_examples": [
+          "鸭もいる不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 表示对命题真实性的可能判断。"
+          }
+        ]
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.modality.kamo.possibility",
+          "label": "可能性",
+          "function_summary": "表示不确定但可能成立",
+          "semantic_features": {
+            "function": "epistemic_possibility"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.modality.kamo",
+          "rule_id": "functional.modality.kamo",
+          "possible_sense_ids": [
+            "grammar.modality.kamo.possibility"
+          ],
+          "connection_signature": "分句＋かも",
+          "examples": [
+            "かもな"
+          ],
+          "counter_examples": [
+            "鸭もいる"
+          ],
+          "rule": {
+            "priority": 48,
+            "atoms": [
+              {
+                "base_forms": [
+                  "かも"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "particle"
+              }
+            ],
+            "show_badge": true
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.tari",
       "kind": "particle",
       "canonical_label": "〜たり",
-      "semantic_domains": ["listing", "aspect"],
-      "function_tags": ["non_exhaustive_actions"],
+      "semantic_domains": [
+        "listing",
+        "aspect"
+      ],
+      "function_tags": [
+        "non_exhaustive_actions"
+      ],
       "jlpt_level": 5,
-      "explanation": {"compact_summary": "非穷尽地列举动作、状态或交替情形", "connection": "动词た形＋り；常形成〜たり〜たりする。", "formation": "Vた＋り", "examples": ["叩き落としたり噛みついたりしていた"], "counter_examples": ["文语助动词たり需另行处理。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 列举代表性动作或状态。"}]},
-      "senses": [{"sense_id": "grammar.particle.tari.listing", "label": "动作列举", "function_summary": "非穷尽列举动作或状态", "semantic_features": {"function": "action_listing"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.tari", "rule_id": "functional.particle.tari", "possible_sense_ids": ["grammar.particle.tari.listing"], "connection_signature": "Vた＋り", "examples": ["叩き落としたり"], "counter_examples": ["堂々たり"], "rule": {"atoms": [{"base_forms": ["たり"], "pos_major": ["助詞"], "pos_sub1": ["並立助詞"], "capture": "particle"}]}}]
+      "explanation": {
+        "compact_summary": "非穷尽地列举动作、状态或交替情形",
+        "connection": "动词た形＋り；常形成〜たり〜たりする。",
+        "formation": "Vた＋り",
+        "examples": [
+          "叩き落としたり噛みついたりしていた"
+        ],
+        "counter_examples": [
+          "文语助动词たり需另行处理。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 列举代表性动作或状态。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.tari.listing",
+          "label": "动作列举",
+          "function_summary": "非穷尽列举动作或状态",
+          "semantic_features": {
+            "function": "action_listing"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.tari",
+          "rule_id": "functional.particle.tari",
+          "possible_sense_ids": [
+            "grammar.particle.tari.listing"
+          ],
+          "connection_signature": "Vた＋り",
+          "examples": [
+            "叩き落としたり"
+          ],
+          "counter_examples": [
+            "堂々たり"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "たり"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "並立助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.toshite",
       "kind": "particle",
       "canonical_label": "として",
-      "semantic_domains": ["role", "qualification"],
-      "function_tags": ["role", "capacity"],
+      "semantic_domains": [
+        "role",
+        "qualification"
+      ],
+      "function_tags": [
+        "role",
+        "capacity"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "标记身份、角色、立场或评价依据", "connection": "名词＋として。", "formation": "名词＋として", "examples": ["女子として生まれた"], "counter_examples": ["と＋して若被分离为独立构式需另行识别。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 指定前项作为身份、角色或立场。"}]},
-      "senses": [{"sense_id": "grammar.particle.toshite.role", "label": "身份・角色", "function_summary": "标记行为或判断中的身份、角色或立场", "semantic_features": {"function": "role"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.toshite", "rule_id": "functional.particle.toshite", "possible_sense_ids": ["grammar.particle.toshite.role"], "connection_signature": "名词＋として", "examples": ["女子として生まれた"], "counter_examples": ["と話して"], "rule": {"atoms": [{"base_forms": ["として"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "particle"}]}}]
+      "explanation": {
+        "compact_summary": "标记身份、角色、立场或评价依据",
+        "connection": "名词＋として。",
+        "formation": "名词＋として",
+        "examples": [
+          "女子として生まれた"
+        ],
+        "counter_examples": [
+          "と＋して若被分离为独立构式需另行识别。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 指定前项作为身份、角色或立场。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.toshite.role",
+          "label": "身份・角色",
+          "function_summary": "标记行为或判断中的身份、角色或立场",
+          "semantic_features": {
+            "function": "role"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.toshite",
+          "rule_id": "functional.particle.toshite",
+          "possible_sense_ids": [
+            "grammar.particle.toshite.role"
+          ],
+          "connection_signature": "名词＋として",
+          "examples": [
+            "女子として生まれた"
+          ],
+          "counter_examples": [
+            "と話して"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "として"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "格助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.connective.noni",
       "kind": "particle",
       "canonical_label": "〜のに",
-      "semantic_domains": ["connection", "concession"],
-      "function_tags": ["concession", "unexpected_result"],
+      "semantic_domains": [
+        "connection",
+        "concession"
+      ],
+      "function_tags": [
+        "concession",
+        "unexpected_result"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "表示前件成立但后件与预期相反，并常附加遗憾、不满等态度", "connection": "分句＋のに。", "formation": "前件＋のに＋后件", "examples": ["あるのに、その足は細い"], "counter_examples": ["学习に使う中的の＋に需按分离结构处理。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 引出与前件预期相反的结果。"}]},
-      "senses": [{"sense_id": "grammar.connective.noni.concession", "label": "逆接・意外", "function_summary": "表示与前件预期相反的后件", "semantic_features": {"function": "concession"}}],
-      "realizations": [{"realization_id": "realization.functional.connective.noni", "rule_id": "functional.connective.noni", "possible_sense_ids": ["grammar.connective.noni.concession"], "connection_signature": "分句＋のに", "examples": ["あるのに、その足は細い"], "counter_examples": ["ために"], "rule": {"atoms": [{"base_forms": ["のに"], "pos_major": ["助詞"], "pos_sub1": ["接続助詞"], "capture": "connector"}]}}]
+      "explanation": {
+        "compact_summary": "表示前件成立但后件与预期相反，并常附加遗憾、不满等态度",
+        "connection": "分句＋のに。",
+        "formation": "前件＋のに＋后件",
+        "examples": [
+          "あるのに、その足は細い"
+        ],
+        "counter_examples": [
+          "学习に使う中的の＋に需按分离结构处理。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 引出与前件预期相反的结果。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.connective.noni.concession",
+          "label": "逆接・意外",
+          "function_summary": "表示与前件预期相反的后件",
+          "semantic_features": {
+            "function": "concession"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.connective.noni",
+          "rule_id": "functional.connective.noni",
+          "possible_sense_ids": [
+            "grammar.connective.noni.concession"
+          ],
+          "connection_signature": "分句＋のに",
+          "examples": [
+            "あるのに、その足は細い"
+          ],
+          "counter_examples": [
+            "ために"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "のに"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "接続助詞"
+                ],
+                "capture": "connector"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.kurai",
       "kind": "particle",
       "canonical_label": "くらい／ぐらい",
-      "semantic_domains": ["degree", "approximation"],
-      "function_tags": ["extent", "approximation", "minimum"],
+      "semantic_domains": [
+        "degree",
+        "approximation"
+      ],
+      "function_tags": [
+        "extent",
+        "approximation",
+        "minimum"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "表示大致数量、程度范围或说话人设定的最低标准", "connection": "数量、名词或分句＋くらい。", "formation": "前项＋くらい", "examples": ["涙くらい許してくれる"], "counter_examples": ["暗い部屋不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 给出近似、程度或最低标准。"}]},
-      "senses": [{"sense_id": "grammar.particle.kurai.extent", "label": "近似・程度", "function_summary": "表示近似数量、程度或最低标准", "semantic_features": {"function": "extent"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.kurai", "rule_id": "functional.particle.kurai", "possible_sense_ids": ["grammar.particle.kurai.extent"], "connection_signature": "前项＋くらい", "examples": ["涙くらい"], "counter_examples": ["暗い部屋"], "rule": {"atoms": [{"base_forms": ["くらい", "ぐらい"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "particle"}]}}]
+      "explanation": {
+        "compact_summary": "表示大致数量、程度范围或说话人设定的最低标准",
+        "connection": "数量、名词或分句＋くらい。",
+        "formation": "前项＋くらい",
+        "examples": [
+          "涙くらい許してくれる"
+        ],
+        "counter_examples": [
+          "暗い部屋不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 给出近似、程度或最低标准。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.kurai.extent",
+          "label": "近似・程度",
+          "function_summary": "表示近似数量、程度或最低标准",
+          "semantic_features": {
+            "function": "extent"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.kurai",
+          "rule_id": "functional.particle.kurai",
+          "possible_sense_ids": [
+            "grammar.particle.kurai.extent"
+          ],
+          "connection_signature": "前项＋くらい",
+          "examples": [
+            "涙くらい"
+          ],
+          "counter_examples": [
+            "暗い部屋"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "くらい",
+                  "ぐらい"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "副助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.sentence_particle.sa",
       "kind": "particle",
       "canonical_label": "さ（终助词）",
-      "semantic_domains": ["discourse"],
-      "function_tags": ["assertion", "casual_stance"],
+      "semantic_domains": [
+        "discourse"
+      ],
+      "function_tags": [
+        "assertion",
+        "casual_stance"
+      ],
       "jlpt_level": 4,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "以随意或强调的语气确认判断、引起注意或结束话轮", "connection": "句末＋さ。", "formation": "句末＋さ", "examples": ["許してくれるさ"], "counter_examples": ["高さ中的さ是名词化接尾。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 附加随意、确认或强调语气。"}]},
-      "senses": [{"sense_id": "grammar.sentence_particle.sa.stance", "label": "随意断言", "function_summary": "以随意或强调语气确认判断", "semantic_features": {"function": "casual_assertion"}}],
-      "realizations": [{"realization_id": "realization.functional.sentence_particle.sa", "rule_id": "functional.sentence_particle.sa", "possible_sense_ids": ["grammar.sentence_particle.sa.stance"], "connection_signature": "句末＋さ", "examples": ["許してくれるさ"], "counter_examples": ["高さ"], "rule": {"atoms": [{"base_forms": ["さ"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "particle"}]}}]
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "以随意或强调的语气确认判断、引起注意或结束话轮",
+        "connection": "句末＋さ。",
+        "formation": "句末＋さ",
+        "examples": [
+          "許してくれるさ"
+        ],
+        "counter_examples": [
+          "高さ中的さ是名词化接尾。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 附加随意、确认或强调语气。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.sentence_particle.sa.stance",
+          "label": "随意断言",
+          "function_summary": "以随意或强调语气确认判断",
+          "semantic_features": {
+            "function": "casual_assertion"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.sentence_particle.sa",
+          "rule_id": "functional.sentence_particle.sa",
+          "possible_sense_ids": [
+            "grammar.sentence_particle.sa.stance"
+          ],
+          "connection_signature": "句末＋さ",
+          "examples": [
+            "許してくれるさ"
+          ],
+          "counter_examples": [
+            "高さ"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "さ"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "終助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.sentence_particle.kashira",
       "kind": "particle",
       "canonical_label": "かしら",
-      "semantic_domains": ["question", "modality"],
-      "function_tags": ["self_question", "uncertainty"],
+      "semantic_domains": [
+        "question",
+        "modality"
+      ],
+      "function_tags": [
+        "self_question",
+        "uncertainty"
+      ],
       "jlpt_level": 3,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "表达自问、不确定或较柔和地向对方提出疑问", "connection": "句末＋かしら。", "formation": "句末＋かしら", "examples": ["大丈夫かしら"], "counter_examples": ["词汇内部同形不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 表达说话人的自问或不确定。"}]},
-      "senses": [{"sense_id": "grammar.sentence_particle.kashira.uncertainty", "label": "自问・不确定", "function_summary": "表达自问或柔和疑问", "semantic_features": {"function": "self_question"}}],
-      "realizations": [{"realization_id": "realization.functional.sentence_particle.kashira", "rule_id": "functional.sentence_particle.kashira", "possible_sense_ids": ["grammar.sentence_particle.kashira.uncertainty"], "connection_signature": "句末＋かしら", "examples": ["大丈夫かしら"], "counter_examples": ["头をかしらと呼ぶ"], "rule": {"atoms": [{"base_forms": ["かしら"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "particle"}]}}]
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "表达自问、不确定或较柔和地向对方提出疑问",
+        "connection": "句末＋かしら。",
+        "formation": "句末＋かしら",
+        "examples": [
+          "大丈夫かしら"
+        ],
+        "counter_examples": [
+          "词汇内部同形不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 表达说话人的自问或不确定。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.sentence_particle.kashira.uncertainty",
+          "label": "自问・不确定",
+          "function_summary": "表达自问或柔和疑问",
+          "semantic_features": {
+            "function": "self_question"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.sentence_particle.kashira",
+          "rule_id": "functional.sentence_particle.kashira",
+          "possible_sense_ids": [
+            "grammar.sentence_particle.kashira.uncertainty"
+          ],
+          "connection_signature": "句末＋かしら",
+          "examples": [
+            "大丈夫かしら"
+          ],
+          "counter_examples": [
+            "头をかしらと呼ぶ"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "かしら"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "終助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.niyotte",
       "kind": "particle",
       "canonical_label": "によって",
-      "semantic_domains": ["agent", "means", "cause", "basis"],
-      "function_tags": ["agent", "means", "cause", "variation"],
-      "jlpt_level": 3,
-      "explanation": {"compact_summary": "标记被动句施事、手段、原因、依据或随条件变化", "connection": "名词＋によって。", "formation": "名词＋によって", "usage_notes": ["细义需结合谓词类型与句法结构。"], "examples": ["状況によって変わる"], "counter_examples": ["に＋寄って若被分离分析不属于本项。"], "body_blocks": [{"kind": "warning", "label": "多义", "text": "{{actual_form}} 的核心身份确定，但施事、手段、原因或依据需保留候选。"}]},
-      "senses": [
-        {"sense_id": "grammar.particle.niyotte.agent", "label": "施事", "function_summary": "标记被动句中的行为主体", "semantic_features": {"function": "agent"}},
-        {"sense_id": "grammar.particle.niyotte.means_or_cause", "label": "手段・原因・依据", "function_summary": "标记手段、原因、依据或条件差异", "semantic_features": {"function": "means_or_cause"}}
+      "semantic_domains": [
+        "agent",
+        "means",
+        "cause",
+        "basis"
       ],
-      "realizations": [{"realization_id": "realization.functional.particle.niyotte", "rule_id": "functional.particle.niyotte", "possible_sense_ids": ["grammar.particle.niyotte.agent", "grammar.particle.niyotte.means_or_cause"], "connection_signature": "名词＋によって", "examples": ["状況によって変わる"], "counter_examples": ["そばに寄って"], "rule": {"atoms": [{"base_forms": ["によって"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "particle"}]}}]
+      "function_tags": [
+        "agent",
+        "means",
+        "cause",
+        "variation"
+      ],
+      "jlpt_level": 3,
+      "explanation": {
+        "compact_summary": "标记被动句施事、手段、原因、依据或随条件变化",
+        "connection": "名词＋によって。",
+        "formation": "名词＋によって",
+        "usage_notes": [
+          "细义需结合谓词类型与句法结构。"
+        ],
+        "examples": [
+          "状況によって変わる"
+        ],
+        "counter_examples": [
+          "に＋寄って若被分离分析不属于本项。"
+        ],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.niyotte.agent",
+          "label": "施事",
+          "function_summary": "标记被动句中的行为主体",
+          "semantic_features": {
+            "function": "agent"
+          }
+        },
+        {
+          "sense_id": "grammar.particle.niyotte.means_or_cause",
+          "label": "手段・原因・依据",
+          "function_summary": "标记手段、原因、依据或条件差异",
+          "semantic_features": {
+            "function": "means_or_cause"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.niyotte",
+          "rule_id": "functional.particle.niyotte",
+          "possible_sense_ids": [
+            "grammar.particle.niyotte.agent",
+            "grammar.particle.niyotte.means_or_cause"
+          ],
+          "connection_signature": "名词＋によって",
+          "examples": [
+            "状況によって変わる"
+          ],
+          "counter_examples": [
+            "そばに寄って"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "によって"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "格助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.formal.hazu",
       "kind": "formal_noun",
       "canonical_label": "〜はず",
-      "semantic_domains": ["expectation", "inference"],
-      "function_tags": ["expectation", "logical_conclusion"],
+      "semantic_domains": [
+        "expectation",
+        "inference"
+      ],
+      "function_tags": [
+        "expectation",
+        "logical_conclusion"
+      ],
       "jlpt_level": 4,
-      "explanation": {"compact_summary": "基于知识、计划或逻辑推断某事按理应当成立", "connection": "连体修饰＋はず。", "formation": "前项＋はず", "examples": ["届くはずがない"], "counter_examples": ["筈を名词として引用"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 表示基于依据形成的预期或逻辑结论。"}]},
-      "senses": [{"sense_id": "grammar.formal.hazu.expectation", "label": "预期・应然", "function_summary": "表示按计划、知识或逻辑应当成立", "semantic_features": {"function": "expectation"}}],
-      "realizations": [{"realization_id": "realization.functional.formal.hazu", "rule_id": "functional.formal.hazu", "possible_sense_ids": ["grammar.formal.hazu.expectation"], "connection_signature": "连体修饰＋はず", "examples": ["届くはずがない"], "counter_examples": ["一般名词筈"], "rule": {"priority": 45, "atoms": [{"base_forms": ["はず"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "formal_noun"}]}}]
+      "explanation": {
+        "compact_summary": "基于知识、计划或逻辑推断某事按理应当成立",
+        "connection": "连体修饰＋はず。",
+        "formation": "前项＋はず",
+        "examples": [
+          "届くはずがない"
+        ],
+        "counter_examples": [
+          "筈を名词として引用"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 表示基于依据形成的预期或逻辑结论。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.formal.hazu.expectation",
+          "label": "预期・应然",
+          "function_summary": "表示按计划、知识或逻辑应当成立",
+          "semantic_features": {
+            "function": "expectation"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.formal.hazu",
+          "rule_id": "functional.formal.hazu",
+          "possible_sense_ids": [
+            "grammar.formal.hazu.expectation"
+          ],
+          "connection_signature": "连体修饰＋はず",
+          "examples": [
+            "届くはずがない"
+          ],
+          "counter_examples": [
+            "一般名词筈"
+          ],
+          "rule": {
+            "priority": 45,
+            "atoms": [
+              {
+                "base_forms": [
+                  "はず"
+                ],
+                "pos_major": [
+                  "名詞"
+                ],
+                "pos_sub1": [
+                  "非自立"
+                ],
+                "capture": "formal_noun"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.toka",
       "kind": "particle",
       "canonical_label": "とか",
-      "semantic_domains": ["listing", "quotation"],
-      "function_tags": ["non_exhaustive_listing", "hearsay"],
+      "semantic_domains": [
+        "listing",
+        "quotation"
+      ],
+      "function_tags": [
+        "non_exhaustive_listing",
+        "hearsay"
+      ],
       "jlpt_level": 4,
-      "register": ["spoken"],
-      "explanation": {"compact_summary": "非穷尽列举名词或分句，也可标记不确定引用与传闻", "connection": "名词或分句＋とか。", "formation": "前项＋とか", "examples": ["弱さとか痛みとか"], "counter_examples": ["と＋か若为分离语法需另行处理。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 提出一个或多个非穷尽例项。"}]},
-      "senses": [{"sense_id": "grammar.particle.toka.listing", "label": "非穷尽列举", "function_summary": "列举代表项或不确定引用", "semantic_features": {"function": "non_exhaustive_listing"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.toka", "rule_id": "functional.particle.toka", "possible_sense_ids": ["grammar.particle.toka.listing"], "connection_signature": "前项＋とか", "examples": ["弱さとか痛みとか"], "counter_examples": ["と聞くか"], "rule": {"atoms": [{"base_forms": ["とか"], "pos_major": ["助詞"], "pos_sub1": ["並立助詞"], "capture": "particle"}]}}]
+      "register": [
+        "spoken"
+      ],
+      "explanation": {
+        "compact_summary": "非穷尽列举名词或分句，也可标记不确定引用与传闻",
+        "connection": "名词或分句＋とか。",
+        "formation": "前项＋とか",
+        "examples": [
+          "弱さとか痛みとか"
+        ],
+        "counter_examples": [
+          "と＋か若为分离语法需另行处理。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 提出一个或多个非穷尽例项。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.toka.listing",
+          "label": "非穷尽列举",
+          "function_summary": "列举代表项或不确定引用",
+          "semantic_features": {
+            "function": "non_exhaustive_listing"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.toka",
+          "rule_id": "functional.particle.toka",
+          "possible_sense_ids": [
+            "grammar.particle.toka.listing"
+          ],
+          "connection_signature": "前项＋とか",
+          "examples": [
+            "弱さとか痛みとか"
+          ],
+          "counter_examples": [
+            "と聞くか"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "とか"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "並立助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     },
     {
       "concept_id": "grammar.particle.nitotte",
       "kind": "particle",
       "canonical_label": "にとって",
-      "semantic_domains": ["perspective", "evaluation"],
-      "function_tags": ["perspective_holder"],
+      "semantic_domains": [
+        "perspective",
+        "evaluation"
+      ],
+      "function_tags": [
+        "perspective_holder"
+      ],
       "jlpt_level": 3,
-      "explanation": {"compact_summary": "标记判断、评价或意义成立所依据的立场主体", "connection": "名词＋にとって。", "formation": "立场主体＋にとって", "examples": ["彼にとって大切だ"], "counter_examples": ["に＋取って若被分离分析不属于本项。"], "body_blocks": [{"kind": "paragraph", "label": "作用", "text": "{{actual_form}} 指定后续判断所依据的立场或视角。"}]},
-      "senses": [{"sense_id": "grammar.particle.nitotte.perspective", "label": "立场・视角", "function_summary": "标记评价或意义的立场主体", "semantic_features": {"function": "perspective"}}],
-      "realizations": [{"realization_id": "realization.functional.particle.nitotte", "rule_id": "functional.particle.nitotte", "possible_sense_ids": ["grammar.particle.nitotte.perspective"], "connection_signature": "名词＋にとって", "examples": ["彼にとって大切だ"], "counter_examples": ["手に取って"], "rule": {"atoms": [{"base_forms": ["にとって"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "particle"}]}}]
+      "explanation": {
+        "compact_summary": "标记判断、评价或意义成立所依据的立场主体",
+        "connection": "名词＋にとって。",
+        "formation": "立场主体＋にとって",
+        "examples": [
+          "彼にとって大切だ"
+        ],
+        "counter_examples": [
+          "に＋取って若被分离分析不属于本项。"
+        ],
+        "body_blocks": [
+          {
+            "kind": "paragraph",
+            "label": "作用",
+            "text": "{{actual_form}} 指定后续判断所依据的立场或视角。"
+          }
+        ],
+        "usage_notes": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.particle.nitotte.perspective",
+          "label": "立场・视角",
+          "function_summary": "标记评价或意义的立场主体",
+          "semantic_features": {
+            "function": "perspective"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.particle.nitotte",
+          "rule_id": "functional.particle.nitotte",
+          "possible_sense_ids": [
+            "grammar.particle.nitotte.perspective"
+          ],
+          "connection_signature": "名词＋にとって",
+          "examples": [
+            "彼にとって大切だ"
+          ],
+          "counter_examples": [
+            "手に取って"
+          ],
+          "rule": {
+            "atoms": [
+              {
+                "base_forms": [
+                  "にとって"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "格助詞"
+                ],
+                "capture": "particle"
+              }
+            ]
+          }
+        }
+      ]
     }
   ]
 }
