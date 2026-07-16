@@ -78,6 +78,7 @@ function place() {
     component: placementSnapshot(placement.value.component),
     whole: placementSnapshot(placement.value.whole),
   });
+  void nextTick().then(capturePanelBoxes);
 }
 
 async function connectAndPlace() {
@@ -108,6 +109,32 @@ function placementSnapshot(value: PopoverPlacement["component"] | undefined) {
     width: Math.round(value.width),
     height: Math.round(value.height),
     maxHeight: Math.round(value.maxHeight),
+  };
+}
+
+function capturePanelBoxes() {
+  const component = document.getElementById("explanation-component-panel");
+  const whole = document.getElementById("explanation-whole-panel");
+  floatDebug.snapshot("panelBoxes", {
+    component: elementRectSnapshot(component),
+    whole: elementRectSnapshot(whole),
+    plannedComponent: placementSnapshot(placement.value.component),
+    plannedWhole: placementSnapshot(placement.value.whole),
+  });
+}
+
+function elementRectSnapshot(element: HTMLElement | null) {
+  if (!element) return null;
+  const rect = element.getBoundingClientRect();
+  return {
+    id: element.id,
+    left: Math.round(rect.left),
+    top: Math.round(rect.top),
+    right: Math.round(rect.right),
+    bottom: Math.round(rect.bottom),
+    width: Math.round(rect.width),
+    height: Math.round(rect.height),
+    scrollHeight: Math.round(element.scrollHeight),
   };
 }
 

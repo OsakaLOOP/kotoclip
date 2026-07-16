@@ -39,8 +39,6 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
   let closeStartedAt: number | null = null;
   let closeDeadline: number | null = null;
   let closeReason: string | null = null;
-  let timerStep = 0;
-  const timerSequence: Array<Record<string, string | number | null>> = [];
   let componentGeneration = 0;
   let wholeGeneration = 0;
   const resultCache = new Map<string, DictionaryLookup | null>();
@@ -94,17 +92,11 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     });
   }
 
-  function publishTimer(action: string, outcome?: string) {
-    timerSequence.push({
-      step: ++timerStep,
-      at: Math.round(performance.now()),
-      action,
-      outcome: outcome ?? null,
-      timerId: closeTimer,
-      deadline: closeDeadline,
-      reason: closeReason,
-    });
-    if (timerSequence.length > 32) timerSequence.splice(0, timerSequence.length - 32);
+  function publishTimer(
+    action: string,
+    outcome?: string,
+    eventState?: { timerId: number | null; startedAt: number | null; deadline: number | null; reason: string | null },
+  ) {
     floatDebug.snapshot("timer", {
       armed: closeTimer !== null,
       timerId: closeTimer,
@@ -114,12 +106,11 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       action,
       outcome: outcome ?? null,
     });
-    floatDebug.snapshot("timerSequence", [...timerSequence]);
     floatDebug.record("timer", "close-grace", action, outcome, {
-      timerId: closeTimer,
-      startedAt: closeStartedAt,
-      deadline: closeDeadline,
-      reason: closeReason,
+      timerId: eventState?.timerId ?? closeTimer,
+      startedAt: eventState?.startedAt ?? closeStartedAt,
+      deadline: eventState?.deadline ?? closeDeadline,
+      reason: eventState?.reason ?? closeReason,
     });
   }
 
@@ -147,12 +138,18 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
 
   function cancelClose(reason = "unspecified") {
     const cancelledTimer = closeTimer;
+    const cancelledState = {
+      timerId: closeTimer,
+      startedAt: closeStartedAt,
+      deadline: closeDeadline,
+      reason: closeReason,
+    };
     if (cancelledTimer !== null) window.clearTimeout(cancelledTimer);
     closeTimer = null;
     closeStartedAt = null;
     closeDeadline = null;
     closeReason = null;
-    publishTimer("cancel", cancelledTimer === null ? `${reason}:not-armed` : reason);
+    publishTimer("cancel", cancelledTimer === null ? `${reason}:not-armed` : reason, cancelledState);
   }
 
   /** 只用于跨越正文与浮层之间的物理间隙。 */
@@ -287,7 +284,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     const source = activeSource.value;
     const token = wholeToken.value;
     const component = componentToken.value;
-    floatDebug.snapshot("scene", {
+    floatDebug.snapshot("sessionScene", {
       phase,
       source: source
         ? {
@@ -313,13 +310,10 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       visibleRequested: visible.value,
       grammarRequested: grammarVisible.value,
     });
-    floatDebug.snapshot("boxes", {
+    floatDebug.snapshot("textBoxes", {
       textCapsule: rectDebugSnapshot(anchorRect.value),
       textMorpheme: rectDebugSnapshot(componentAnchorRect.value),
       grammarBadge: rectDebugSnapshot(grammarAnchorRect.value),
-      floatingPanels: floatDebug.state.snapshots.boxes && typeof floatDebug.state.snapshots.boxes === "object"
-        ? (floatDebug.state.snapshots.boxes as Record<string, unknown>).floatingPanels ?? null
-        : null,
     });
   }
 

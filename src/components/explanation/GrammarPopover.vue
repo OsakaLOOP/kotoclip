@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { GrammarTag } from "../../types";
+import { floatDebug } from "../../explanation/floatDebug";
 import type { RectSnapshot } from "../../explanation/geometry";
 
 const props = defineProps<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   enter: [event: PointerEvent];
   leave: [event: PointerEvent];
 }>();
+const panelRef = ref<HTMLElement | null>(null);
 
 const style = computed(() => {
   const anchor = props.anchor;
@@ -27,11 +29,36 @@ const style = computed(() => {
     transform: above ? "translateY(-100%)" : undefined,
   };
 });
+
+watch(
+  () => [props.show, props.tag, props.anchor],
+  async () => {
+    if (!props.show) return;
+    await nextTick();
+    const panel = panelRef.value;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    floatDebug.snapshot("panelBoxes", {
+      whole: null,
+      component: null,
+      grammar: {
+        left: Math.round(rect.left),
+        top: Math.round(rect.top),
+        right: Math.round(rect.right),
+        bottom: Math.round(rect.bottom),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      },
+    });
+  },
+  { flush: "post" },
+);
 </script>
 
 <template>
   <aside
     v-if="show && tag"
+    ref="panelRef"
     class="grammar-popover"
     data-explanation-panel="grammar"
     :style="style"

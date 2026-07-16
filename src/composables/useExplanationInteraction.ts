@@ -67,7 +67,7 @@ export function useExplanationInteraction(options: ExplanationInteractionOptions
       return;
     }
 
-    floatDebug.snapshot("scene", {
+    floatDebug.snapshot("interactionScene", {
       phase: "pointerover",
       pointer: { x: event.clientX, y: event.clientY },
       previous: hitSnapshot(previous),
@@ -89,7 +89,7 @@ export function useExplanationInteraction(options: ExplanationInteractionOptions
           hit: hitSnapshot(sourceHit),
         });
         options.session.focusGrammar(tag, badge);
-        floatDebug.snapshot("scene", {
+        floatDebug.snapshot("interactionScene", {
           phase: "focus-grammar",
           pointer: { x: event.clientX, y: event.clientY },
           hit: hitSnapshot(sourceHit),
@@ -123,7 +123,7 @@ export function useExplanationInteraction(options: ExplanationInteractionOptions
       return;
     }
     const focusedMorpheme = token.bunsetsu.morphemes[morphemeIndex];
-    floatDebug.snapshot("scene", {
+    floatDebug.snapshot("interactionScene", {
       phase: "focus-morpheme",
       pointer: { x: event.clientX, y: event.clientY },
       previous: hitSnapshot(previous),
@@ -173,7 +173,7 @@ export function useExplanationInteraction(options: ExplanationInteractionOptions
       reason: decision.reason,
       ...detail,
     });
-    floatDebug.snapshot("scene", {
+    floatDebug.snapshot("interactionScene", {
       phase: `${origin}:pointerleave`,
       pointer: { x: event.clientX, y: event.clientY },
       current: hitSnapshot(current),
@@ -201,7 +201,7 @@ export function useExplanationInteraction(options: ExplanationInteractionOptions
       reason: "panel-entered",
       hit: hitSnapshot(hit),
     });
-    floatDebug.snapshot("scene", {
+    floatDebug.snapshot("interactionScene", {
       phase: "popover:pointerenter",
       pointer: { x: event.clientX, y: event.clientY },
       hit: hitSnapshot(hit),
