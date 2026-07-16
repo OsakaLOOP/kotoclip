@@ -3,7 +3,7 @@ use crate::models::{
     MorphologyOperator,
 };
 
-pub const ANALYZER_VERSION: &str = "morphology-2";
+pub const ANALYZER_VERSION: &str = "morphology-3";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RootKind {
@@ -21,6 +21,7 @@ struct ChainRoot {
     role: MorphologyChainRole,
     base_lexeme: String,
     dictionary_form: String,
+    lemma_form: String,
     lookup_form: String,
     evidence: Vec<String>,
 }
@@ -272,6 +273,7 @@ pub fn analyze_morphemes(morphemes: &[Morpheme], global_offset: usize) -> Morpho
             base_lexeme: root.base_lexeme,
             surface_form,
             dictionary_form: root.dictionary_form,
+            lemma_form: root.lemma_form,
             lookup_form: root.lookup_form,
             source_ranges,
             operators,
@@ -332,6 +334,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
                 end: index + 2,
                 role: MorphologyChainRole::Lexical,
                 base_lexeme: dictionary_form.clone(),
+                lemma_form: dictionary_form.clone(),
                 dictionary_form,
                 lookup_form,
                 evidence: vec![format!("sahen_anchor:{}", verb.conjugation_form)],
@@ -344,6 +347,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
             if is_na_adjective_suffix(suffix) && is_copular_auxiliary(auxiliary) {
                 let lookup_form = format!("{}{}", normalized_base(current), normalized_base(suffix));
                 let dictionary_form = format!("{lookup_form}だ");
+                let lemma_form = format!("{lookup_form}な");
                 return Some(ChainRoot {
                     kind: RootKind::NaAdjective,
                     start: index,
@@ -352,6 +356,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
                     role: MorphologyChainRole::Lexical,
                     base_lexeme: dictionary_form.clone(),
                     dictionary_form,
+                    lemma_form,
                     lookup_form,
                     evidence: vec!["na_adjective_suffix_chain".to_string()],
                 });
@@ -366,6 +371,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
                     role: MorphologyChainRole::Lexical,
                     base_lexeme: lookup_form.clone(),
                     dictionary_form: lookup_form.clone(),
+                    lemma_form: lookup_form.clone(),
                     lookup_form,
                     evidence: vec!["derived_adjective_chain".to_string()],
                 });
@@ -378,6 +384,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
             {
                 let lookup_form = normalized_base(current);
                 let dictionary_form = format!("{lookup_form}だ");
+                let lemma_form = format!("{lookup_form}な");
                 return Some(ChainRoot {
                     kind: RootKind::NaAdjective,
                     start: index,
@@ -386,6 +393,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
                     role: MorphologyChainRole::Lexical,
                     base_lexeme: dictionary_form.clone(),
                     dictionary_form,
+                    lemma_form,
                     lookup_form,
                     evidence: vec!["na_adjective_stem_chain".to_string()],
                 });
@@ -413,6 +421,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
         role,
         base_lexeme: base.clone(),
         dictionary_form: base.clone(),
+        lemma_form: base.clone(),
         lookup_form: base,
         evidence: vec!["simple_inflecting_lexeme".to_string()],
     })
@@ -707,6 +716,7 @@ mod tests {
         apply_lexical_head(&mut bunsetsu);
         let chain = &bunsetsu.morphology.chains[0];
         assert_eq!(chain.dictionary_form, "分類する");
+        assert_eq!(chain.lemma_form, "分類する");
         assert_eq!(chain.lookup_form, "分類");
         assert_eq!(bunsetsu.head_word.surface, "分類し");
         assert_eq!(bunsetsu.head_word.base_form, "分類");
@@ -723,6 +733,7 @@ mod tests {
         apply_lexical_head(&mut bunsetsu);
         assert_eq!(bunsetsu.head_word.surface, "静かな");
         assert_eq!(bunsetsu.morphology.chains[0].dictionary_form, "静かだ");
+        assert_eq!(bunsetsu.morphology.chains[0].lemma_form, "静かな");
         assert_eq!(
             bunsetsu.morphology.chains[0].operators[0].concept_id,
             "morphology.form.adjectival_attributive"

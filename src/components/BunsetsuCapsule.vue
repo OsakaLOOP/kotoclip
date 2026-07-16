@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { AnnotatedToken } from "../types";
 import { grammarTagCoversRange, primaryGrammarIndex } from "../explanation/grammarView";
+import { morphologyChainForMorpheme } from "../explanation/morphologyView";
 
 const props = defineProps<{
   token: AnnotatedToken;
@@ -83,8 +84,8 @@ const capsuleClasses = computed(() => {
   };
 });
 
-// 后端的 head_word 可能由多个形态素组成（如 警察 + 署）。
-const headMorphemeIndices = computed(() => {
+// 没有活用链的名词、复合词仍使用既有词头范围作为回退。
+const fallbackHeadMorphemeIndices = computed(() => {
   const morphemes = props.token.bunsetsu.morphemes;
   const head = props.token.bunsetsu.head_word;
 
@@ -106,13 +107,26 @@ const headMorphemeIndices = computed(() => {
   return new Set<number>();
 });
 
-function isHeadMorpheme(index: number) {
-  return headMorphemeIndices.value.has(index);
+function isLexicalMorpheme(index: number) {
+  const morpheme = props.token.bunsetsu.morphemes[index];
+  return morphologyChainForMorpheme(props.token, morpheme, "lexical") !== null
+    || fallbackHeadMorphemeIndices.value.has(index);
 }
 
 function isGrammarMorpheme(index: number) {
   const m = props.token.bunsetsu.morphemes[index];
   return props.token.bunsetsu.grammar_tags.some((tag) => grammarTagCoversRange(tag, m.char_range));
+}
+
+function isFunctionalMorphologyMorpheme(index: number) {
+  const morpheme = props.token.bunsetsu.morphemes[index];
+  return morphologyChainForMorpheme(props.token, morpheme, "functional") !== null;
+}
+
+function isHelperMorpheme(index: number) {
+  return !isLexicalMorpheme(index)
+    && !isGrammarMorpheme(index)
+    && !isFunctionalMorphologyMorpheme(index);
 }
 
 function grammarIndexForMorpheme(index: number) {
@@ -131,7 +145,7 @@ function isExpressionMorpheme(index: number) {
 
 <template>
   <span
-    :class="[capsuleClasses, { 'has-headword': headMorphemeIndices.size > 0 }]"
+    :class="[capsuleClasses, { 'has-headword': token.bunsetsu.morphemes.some((_, index) => isLexicalMorpheme(index)) }]"
     :data-paragraph-id="paragraphId"
     :data-token-index="tokenIndex"
   >
@@ -141,7 +155,12 @@ function isExpressionMorpheme(index: number) {
       :key="idx"
       :data-morpheme-index="idx"
       :data-grammar-index="grammarIndexForMorpheme(idx)"
-      :class="{ 'head-word-highlight': isHeadMorpheme(idx), 'helper-word': !isHeadMorpheme(idx), 'grammar-match': isGrammarMorpheme(idx), 'expression-anchor': isExpressionMorpheme(idx) }"
+      :class="{
+        'head-word-highlight': isLexicalMorpheme(idx),
+        'helper-word': isHelperMorpheme(idx),
+        'grammar-match': isGrammarMorpheme(idx) || isFunctionalMorphologyMorpheme(idx),
+        'expression-anchor': isExpressionMorpheme(idx),
+      }"
     >
       {{ m.surface }}
     </span>

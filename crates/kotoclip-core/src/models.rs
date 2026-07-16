@@ -209,6 +209,8 @@ pub struct MorphologyChain {
     pub base_lexeme: String,
     pub surface_form: String,
     pub dictionary_form: String,
+    #[serde(default)]
+    pub lemma_form: String,
     pub lookup_form: String,
     pub source_ranges: Vec<(usize, usize)>,
     pub operators: Vec<MorphologyOperator>,

@@ -76,6 +76,7 @@ export interface MorphologyChain {
   base_lexeme: string;
   surface_form: string;
   dictionary_form: string;
+  lemma_form: string;
   lookup_form: string;
   source_ranges: [number, number][];
   operators: MorphologyOperator[];

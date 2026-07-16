@@ -1,10 +1,10 @@
 import { computed, ref, watch } from "vue";
-import type { AnnotatedToken, DictionaryLookup, GrammarTag, Morpheme, MorphologyChain } from "../types";
+import type { AnnotatedToken, DictionaryLookup, GrammarTag } from "../types";
 import { snapshotRect, type RectSnapshot } from "../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS, scheduleCloseGrace } from "../explanation/closeGrace";
 import { floatDebug } from "../explanation/floatDebug";
 import { deriveExplanationRenderGate } from "../explanation/interactionGate";
-import { dictionaryLemma, morphemeLookupTarget } from "../utils/dictionaryTarget";
+import { morphemeLookupTarget, type MorphemeLookupTarget } from "../utils/dictionaryTarget";
 
 type LookupWord = (word: string, reading?: string) => Promise<DictionaryLookup | null>;
 type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
@@ -222,15 +222,15 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       return;
     }
     const lookupTarget = morphemeLookupTarget(token, focused);
-    componentToken.value = tokenForMorphemeLookup(token, lookupTarget.morpheme, lookupTarget.chain);
+    componentToken.value = tokenForMorphemeLookup(token, lookupTarget);
     componentLabel.value = lookupTarget.chain ? "词形" : "内部";
     componentHistory.value = [];
-    resolveComponent(lookupTarget.morpheme);
+    resolveComponent(lookupTarget);
 
     if (!sameToken) {
       wholeToken.value = token;
       wholeHistory.value = [];
-      resolveWhole(token, lookupTarget.morpheme);
+      resolveWhole(token, lookupTarget);
     }
     publishSession("focus-morpheme", sameToken ? "switch-component" : "new-token-session");
     publishScene("focus-morpheme");
@@ -319,23 +319,23 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     });
   }
 
-  async function resolveComponent(morpheme: Morpheme) {
-    const word = lemma(morpheme);
+  async function resolveComponent(target: MorphemeLookupTarget) {
+    const word = target.query;
     const generation = ++componentGeneration;
-    const requestKey = lookupKey(word, morpheme.reading);
-    const cached = cachedLookup(word, morpheme.reading);
+    const requestKey = lookupKey(word, target.lookupReading);
+    const cached = cachedLookup(word, target.lookupReading);
     floatDebug.snapshot("request.component", {
       status: cached.immediate ? "cache-hit" : "pending",
       generation,
       key: requestKey,
       word,
-      reading: morpheme.reading,
+      reading: target.lookupReading,
     });
     floatDebug.record("request", "component", "resolve", cached.immediate ? "cache-hit" : "pending", {
       generation,
       key: requestKey,
       word,
-      reading: morpheme.reading,
+      reading: target.lookupReading,
     });
     if (cached.immediate) {
       componentLookup.value = cached.value;
@@ -370,11 +370,11 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     publishSession("component-resolved", "network-or-ipc");
   }
 
-  async function resolveWhole(token: AnnotatedToken, focused: Morpheme) {
+  async function resolveWhole(token: AnnotatedToken, focused: MorphemeLookupTarget) {
     const lexical = token.bunsetsu.lexical_units[0];
     const sameAsComponent = lexical
-      && lexical.base_form === lemma(focused)
-      && lexical.reading === focused.reading;
+      && lexical.base_form === focused.query
+      && (!focused.lookupReading || lexical.reading === focused.lookupReading);
     if (!lexical || sameAsComponent) {
       ++wholeGeneration;
       wholeLookup.value = null;
@@ -436,7 +436,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     publishSession("whole-resolved", "network-or-ipc");
   }
 
-  function cachedLookup(word: string, reading: string) {
+  function cachedLookup(word: string, reading = "") {
     const key = lookupKey(word, reading);
     if (resultCache.has(key)) {
       floatDebug.record("request", "cache", "result-hit", key);
@@ -445,7 +445,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     let promise = inflightCache.get(key);
     if (!promise) {
       floatDebug.record("request", "cache", "start-inflight", key);
-      promise = lookupWord(word, reading).then((lookup) => {
+      promise = lookupWord(word, reading || undefined).then((lookup) => {
         resultCache.set(key, lookup);
         inflightCache.delete(key);
         floatDebug.record("request", "cache", "store-result", key, {
@@ -601,10 +601,6 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
   };
 }
 
-function lemma(morpheme: Morpheme) {
-  return dictionaryLemma(morpheme);
-}
-
 function lookupKey(word: string, reading: string) {
   return `${word}\u001f${reading}`;
 }
@@ -623,21 +619,20 @@ function rectDebugSnapshot(rect: RectSnapshot | null) {
 
 function tokenForMorphemeLookup(
   token: AnnotatedToken,
-  morpheme: Morpheme,
-  chain: MorphologyChain | null,
+  target: MorphemeLookupTarget,
 ): AnnotatedToken {
   return {
     ...token,
     bunsetsu: {
       ...token.bunsetsu,
       head_word: {
-        surface: morpheme.surface,
-        base_form: lemma(morpheme),
-        reading: morpheme.reading,
-        pos: morpheme.pos,
+        surface: target.surface,
+        base_form: target.query,
+        reading: target.reading,
+        pos: target.pos,
       },
       grammar_tags: [],
-      morphology: { chains: chain ? [chain] : [] },
+      morphology: { chains: target.chain ? [target.chain] : [] },
       word_formations: [],
       lexical_units: [],
     },

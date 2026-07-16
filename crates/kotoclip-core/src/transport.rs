@@ -89,6 +89,7 @@ pub struct CompactMorphologyChain {
     pub l: u32,
     pub s: u32,
     pub d: u32,
+    pub p: u32,
     pub q: u32,
     pub x: Vec<(usize, usize)>,
     pub o: Vec<CompactMorphologyOperator>,
@@ -366,6 +367,7 @@ impl StringTable {
             l: self.intern(&value.base_lexeme),
             s: self.intern(&value.surface_form),
             d: self.intern(&value.dictionary_form),
+            p: self.intern(&value.lemma_form),
             q: self.intern(&value.lookup_form),
             x: value.source_ranges.clone(),
             o: value

@@ -1,33 +1,50 @@
-import type { AnnotatedToken, Morpheme, MorphologyChain } from "../types";
+import type { AnnotatedToken, Morpheme, MorphologyChain, PosTag } from "../types";
+import {
+  morphologyChainForMorpheme,
+  morphologyDisplayReading,
+  morphologyLemma,
+  morphologyLookupReading,
+  morphologyPos,
+} from "../explanation/morphologyView.ts";
 
-export function morphologyChainForMorpheme(
-  token: AnnotatedToken,
-  morpheme: Morpheme,
-  role?: MorphologyChain["role"],
-) {
-  return token.bunsetsu.morphology.chains.find((chain) => (
-    (!role || chain.role === role)
-    && chain.source_ranges.some((range) => (
-      morpheme.char_range[0] >= range[0] && morpheme.char_range[1] <= range[1]
-    ))
-  ));
+export interface MorphemeLookupTarget {
+  chain: MorphologyChain | null;
+  surface: string;
+  lemma: string;
+  query: string;
+  reading: string;
+  lookupReading: string;
+  pos: PosTag;
+  charRange: [number, number];
 }
 
 /** 合并词形只改变悬浮目标与显示，不改变现有词典查询词策略。 */
 export function morphemeLookupTarget(token: AnnotatedToken, morpheme: Morpheme) {
-  const chain = morphologyChainForMorpheme(token, morpheme, "lexical");
-  if (!chain) return { morpheme, chain: null };
+  const chain = morphologyChainForMorpheme(token, morpheme);
+  if (!chain) {
+    const lemma = dictionaryLemma(morpheme);
+    return {
+      chain: null,
+      surface: morpheme.surface,
+      lemma,
+      query: lemma,
+      reading: morpheme.reading,
+      lookupReading: morpheme.reading,
+      pos: morpheme.pos,
+      charRange: morpheme.char_range,
+    } satisfies MorphemeLookupTarget;
+  }
+  const reading = morphologyLookupReading(token, chain);
   return {
     chain,
-    morpheme: {
-      ...morpheme,
-      surface: chain.surface_form,
-      base_form: token.bunsetsu.head_word.base_form,
-      reading: token.bunsetsu.head_word.reading,
-      pos: token.bunsetsu.head_word.pos,
-      char_range: chain.char_range,
-    } satisfies Morpheme,
-  };
+    surface: chain.surface_form,
+    lemma: morphologyLemma(chain),
+    query: chain.lookup_form || chain.dictionary_form,
+    reading: morphologyDisplayReading(token, chain),
+    lookupReading: reading,
+    pos: morphologyPos(token, chain),
+    charRange: chain.char_range,
+  } satisfies MorphemeLookupTarget;
 }
 
 /** 词典查询只把独立词的 base_form 当作词头；功能成分保留实际表面。 */

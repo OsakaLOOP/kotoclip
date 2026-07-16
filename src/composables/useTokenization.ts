@@ -113,7 +113,7 @@ interface CompactMorpheme {
 
 interface CompactHeadWord { s: number; b: number; r: number; p: [number, number, number, number]; }
 interface CompactMorphologyOperator { i: number; k: number; m: [number, number]; c: [number, number]; o: number; q: number; n: number; e: number[]; a: number[]; l: number; d: number; }
-interface CompactMorphologyChain { i: number; a: number; b: [number, number]; m: [number, number]; c: [number, number]; r: number; l: number; s: number; d: number; q: number; x: [number, number][]; o: CompactMorphologyOperator[]; f: number[]; e: number[]; }
+interface CompactMorphologyChain { i: number; a: number; b: [number, number]; m: [number, number]; c: [number, number]; r: number; l: number; s: number; d: number; p: number; q: number; x: [number, number][]; o: CompactMorphologyOperator[]; f: number[]; e: number[]; }
 interface CompactGrammarSenseCandidate { i: number; l: number; c: number; e?: number[]; }
 interface CompactGrammarCapture { n: number; s: number; b: number; m: [number, number]; c: [number, number]; }
 interface CompactGrammarBlock { k: number; l?: number; t: number; }
@@ -197,7 +197,8 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
           morpheme_range: chain.m, char_range: chain.c,
           role: stringAt(chain.r) as import("../types").MorphologyChainRole,
           base_lexeme: stringAt(chain.l), surface_form: stringAt(chain.s),
-          dictionary_form: stringAt(chain.d), lookup_form: stringAt(chain.q),
+          dictionary_form: stringAt(chain.d), lemma_form: stringAt(chain.p) || stringAt(chain.d),
+          lookup_form: stringAt(chain.q),
           source_ranges: chain.x,
           operators: chain.o.map((operator) => ({
             operator_id: stringAt(operator.i), kind: stringAt(operator.k),

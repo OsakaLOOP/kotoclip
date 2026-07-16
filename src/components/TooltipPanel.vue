@@ -4,6 +4,13 @@ import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, Dict
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionaryChoiceBar from "./dictionary/DictionaryChoiceBar.vue";
 import LoadingSkeleton from "./common/LoadingSkeleton.vue";
+import {
+  morphologyLemma,
+  morphologyPosLabel,
+  morphologySteps as buildMorphologySteps,
+  primaryMorphologyChain,
+  readingForMorphologyLemma,
+} from "../explanation/morphologyView";
 
 const props = defineProps<{
   show: boolean;
@@ -27,30 +34,33 @@ const emit = defineEmits<{
   back: [];
 }>();
 
-const formattedPos = computed(() => {
-  if (!props.token) return "";
-  const head = props.token.bunsetsu.head_word;
-  return [head.pos.major, head.pos.sub1].filter((part) => part && part !== "*").join(" · ");
-});
-
 const morphologyChain = computed(() => (
-  props.token?.bunsetsu.morphology.chains.find((chain) => chain.role === "lexical") ?? null
+  props.token ? primaryMorphologyChain(props.token) : null
 ));
 
-const morphologySteps = computed(() => {
-  const seen = new Set<string>();
-  return (morphologyChain.value?.operators ?? []).filter((operator) => {
-    const key = operator.concept_id || operator.output_state;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+const sourceLemma = computed(() => (
+  morphologyChain.value
+    ? morphologyLemma(morphologyChain.value)
+    : props.token?.bunsetsu.head_word.base_form ?? ""
+));
+
+const sourceQuery = computed(() => (
+  morphologyChain.value?.lookup_form
+  || props.token?.bunsetsu.head_word.base_form
+  || ""
+));
+
+const formattedPos = computed(() => {
+  if (!props.token) return "";
+  return morphologyPosLabel(morphologyChain.value, props.token.bunsetsu.head_word.pos);
 });
 
-const showMorphologyCard = computed(() => {
+const morphologySteps = computed(() => buildMorphologySteps(morphologyChain.value));
+
+const showMorphologySummary = computed(() => {
   const chain = morphologyChain.value;
   return Boolean(chain && (
-    chain.surface_form !== chain.dictionary_form
+    chain.surface_form !== sourceLemma.value
     || morphologySteps.value.length > 0
   ));
 });
@@ -132,22 +142,31 @@ const loadingContentHeight = computed(() => `${cachedContentHeight.value || 220}
 
 const activeEntry = computed(() => visibleEntries.value.find((entry) => entry.is_preferred) ?? visibleEntries.value[0]);
 
-const activeHeadword = computed(() =>
-  props.lookup?.selected_target
-  ?? activeEntry.value?.headword
-  ?? props.lookup?.query
-  ?? props.token?.bunsetsu.head_word.base_form
-  ?? "",
+const isSourceQuery = computed(() =>
+  !props.lookup || props.lookup.query === sourceQuery.value,
 );
 
-const isSourceQuery = computed(() =>
-  !props.lookup || props.lookup.query === props.token?.bunsetsu.head_word.base_form,
-);
+const showsSourceIdentity = computed(() => (
+  isSourceQuery.value
+  && (!props.lookup?.selected_target || props.lookup.selected_target === sourceQuery.value)
+));
+
+const activeHeadword = computed(() => {
+  if (showsSourceIdentity.value) return sourceLemma.value;
+  return props.lookup?.selected_target
+    ?? activeEntry.value?.headword
+    ?? props.lookup?.query
+    ?? sourceLemma.value;
+});
 
 const activeReading = computed(() => {
-  if (activeEntry.value?.reading) return activeEntry.value.reading;
-  if (props.lookup?.reading) return props.lookup.reading;
-  return isSourceQuery.value ? props.token?.bunsetsu.head_word.reading : null;
+  const reading = activeEntry.value?.reading
+    || (showsSourceIdentity.value
+      ? props.token?.bunsetsu.head_word.reading
+      : props.lookup?.reading);
+  return showsSourceIdentity.value
+    ? readingForMorphologyLemma(morphologyChain.value, reading)
+    : reading;
 });
 
 function relationLabel(relation: string) {
@@ -216,33 +235,27 @@ function handleDefinitionClick(event: MouseEvent) {
     >
       <div class="tooltip-content" :data-explanation-content="panelId">
         <header class="tooltip-header">
-        <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')">‹</button>
-        <div class="headword-block">
-          <span class="base-form">{{ activeHeadword }}</span>
-          <span v-if="activeReading" class="reading">【{{ activeReading }}】</span>
-        </div>
-        <span v-if="isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
-        <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
+          <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')">‹</button>
+          <div class="header-grid">
+            <div class="headword-block">
+              <div class="headword-line">
+                <span class="base-form">{{ activeHeadword }}</span>
+                <span v-if="activeReading" class="reading">【{{ activeReading }}】</span>
+              </div>
+              <div class="headword-meta">
+                <span v-if="isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
+                <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
+              </div>
+            </div>
+            <div v-if="showMorphologySummary && morphologyChain" class="header-morphology" aria-label="本句词形与活用">
+              <strong v-if="morphologyChain.surface_form !== sourceLemma" class="current-form">{{ morphologyChain.surface_form }}</strong>
+              <div v-for="step in morphologySteps" :key="step.operator_id" class="morphology-step">
+                <b>{{ step.label || step.output_state }}</b>
+                <span v-if="step.description">{{ step.description }}</span>
+              </div>
+            </div>
+          </div>
         </header>
-
-        <section v-if="showMorphologyCard && morphologyChain" class="morphology-card" aria-label="词形与活用">
-          <div class="morphology-form">
-            <span>本句形态</span>
-            <strong>{{ morphologyChain.surface_form }}</strong>
-          </div>
-          <div class="morphology-lemma">
-            <span>{{ morphologyChain.surface_form }}</span>
-            <b>←</b>
-            <span>{{ morphologyChain.dictionary_form }}</span>
-          </div>
-          <div v-if="morphologySteps.length" class="morphology-steps">
-            <span
-              v-for="step in morphologySteps"
-              :key="step.operator_id"
-              :title="step.description"
-            >{{ step.label || step.output_state }}</span>
-          </div>
-        </section>
 
         <DictionaryChoiceBar
         v-if="candidateOptions.length"
@@ -300,20 +313,20 @@ function handleDefinitionClick(event: MouseEvent) {
 
 <style scoped>
 .tooltip-panel { position: fixed; z-index: 1000; box-sizing: border-box; width: min(460px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
-.tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: baseline; margin: -14px -14px 6px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 76%, transparent 100%); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent); backdrop-filter: blur(18px); }
-.headword-block { flex: 1; min-width: 0; }
+.tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: flex-start; margin: -14px -14px 6px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 76%, transparent 100%); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent); backdrop-filter: blur(18px); }
+.header-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, .9fr) minmax(160px, 1.1fr); gap: 12px; align-items: start; }
+.headword-block { min-width: 0; }
+.headword-line { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: baseline; }
+.headword-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
 .back-button { flex: 0 0 28px; padding: 0; font-size: 1.35rem; line-height: 26px; }
 .base-form { color: var(--accent-color); font-size: 1.25rem; font-weight: 700; }
 .reading, .tooltip-pos { color: var(--text-muted); font-size: .78rem; }
-.tooltip-kind { flex: 0 0 auto; color: var(--text-muted); font: 700 .68rem var(--font-ui); }
-.morphology-card { display: grid; gap: 7px; margin: 8px 0 10px; padding: 10px 11px; border-radius: 10px; background: color-mix(in srgb, #337eb7 5%, var(--bg-secondary)); }
-.morphology-form { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.morphology-form span { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
-.morphology-form strong { color: var(--text-primary); font-size: .9rem; }
-.morphology-lemma { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; color: var(--text-secondary); font-size: .74rem; }
-.morphology-lemma b { color: #5487ae; font-weight: 500; }
-.morphology-steps { display: flex; flex-wrap: wrap; gap: 0 10px; color: #6c5ab0; font: 700 .65rem var(--font-ui); }
-.morphology-steps span + span::before { margin-right: 10px; color: var(--text-muted); content: "→"; }
+.tooltip-kind { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
+.header-morphology { min-width: 0; display: grid; gap: 4px; padding-left: 11px; border-left: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent); }
+.current-form { color: var(--text-primary); font-size: .88rem; line-height: 1.35; }
+.morphology-step { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px; align-items: baseline; font-size: .68rem; line-height: 1.35; }
+.morphology-step b { color: #6c5ab0; font: 700 .66rem var(--font-ui); }
+.morphology-step span { color: var(--text-secondary); }
 .tooltip-section { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px; }
 .section-title { margin-bottom: 7px; color: var(--text-muted); font: 700 .72rem var(--font-ui); letter-spacing: .04em; }
 .definition-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
@@ -338,4 +351,5 @@ button:hover, button.active { border-color: var(--accent-color); background: var
 .relation-list button[data-relation="parent"], .relation-list button[data-relation="child"] { color: var(--text-secondary); }
 .fade-enter-active, .fade-leave-active { transition: opacity .12s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+@media (max-width: 420px) { .header-grid { grid-template-columns: minmax(0, 1fr); } .header-morphology { padding: 7px 0 0; border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent); border-left: 0; } }
 </style>
