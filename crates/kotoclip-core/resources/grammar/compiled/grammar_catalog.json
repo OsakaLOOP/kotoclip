@@ -1796,6 +1796,37 @@
       "enabled": true
     },
     {
+      "concept_id": "grammar.functional.na",
+      "kind": "functional_morpheme",
+      "canonical_label": "な",
+      "aliases": [
+        "形容动词连体な",
+        "な＋名词"
+      ],
+      "semantic_domains": [
+        "attributive",
+        "relation"
+      ],
+      "function_tags": [
+        "attributive",
+        "functional_morpheme"
+      ],
+      "jlpt_level": 5,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.functional.na",
+      "source_refs": [
+        "corpus:七日の喰い神/第一話:grammar-review-batch-001",
+        "ipadic:runtime-observation"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
       "concept_id": "grammar.sentence_particle.na",
       "kind": "particle",
       "canonical_label": "な（终助词）",
@@ -4360,6 +4391,22 @@
       "audit_status": "verified"
     },
     {
+      "sense_id": "grammar.functional.na.attributive",
+      "concept_id": "grammar.functional.na",
+      "label": "な：连体连接",
+      "function_summary": "连接形容动词词干与后续名词",
+      "semantic_features": {
+        "function": "attributive"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.functional.na",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
       "sense_id": "grammar.sentence_particle.na.stance",
       "concept_id": "grammar.sentence_particle.na",
       "label": "な：感叹、确认或禁止",
@@ -6608,6 +6655,33 @@
       ],
       "counter_examples": [
         "世を渡る"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "corpus:七日の喰い神/第一話:grammar-review-batch-001",
+        "ipadic:runtime-observation"
+      ]
+    },
+    {
+      "realization_id": "realization.functional.na.attributive",
+      "concept_id": "grammar.functional.na",
+      "possible_sense_ids": [
+        "grammar.functional.na.attributive"
+      ],
+      "rule_id": "functional.na.attributive",
+      "connection_signature": "形容动词词干＋な＋名词",
+      "morphology_requirements": [],
+      "functional_requirements": [
+        "な：助動詞・体言接続"
+      ],
+      "context_requirements": [],
+      "examples": [
+        "さまざまなサウンド",
+        "静かな部屋"
+      ],
+      "counter_examples": [
+        "もんだな"
       ],
       "realization_version": 1,
       "audit_status": "verified",
@@ -10219,6 +10293,55 @@
       "show_badge": true
     },
     {
+      "rule_id": "functional.na.attributive",
+      "realization_id": "realization.functional.na.attributive",
+      "concept_id": "grammar.functional.na",
+      "kind": "functional_morpheme",
+      "priority": 46,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "pos_major": [
+            "名詞"
+          ],
+          "pos_sub1": [
+            "形容動詞語幹"
+          ]
+        },
+        {
+          "surfaces": [
+            "な"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "conjugation_forms": [
+            "体言接続"
+          ],
+          "capture": "functional_na"
+        }
+      ],
+      "display_from": 1,
+      "display_to": 2,
+      "captures": [],
+      "refines_rule_ids": [],
+      "conflict_group": null,
+      "examples": [
+        "さまざまなサウンド",
+        "静かな部屋"
+      ],
+      "counter_examples": [
+        "もんだな"
+      ],
+      "source_refs": [
+        "corpus:七日の喰い神/第一話:grammar-review-batch-001",
+        "ipadic:runtime-observation"
+      ],
+      "rule_version": 1,
+      "show_badge": false
+    },
+    {
       "rule_id": "functional.formal.hazu",
       "realization_id": "realization.functional.formal.hazu",
       "concept_id": "grammar.formal.hazu",
@@ -11758,6 +11881,9 @@
       "audit_status": "verified",
       "atoms": [
         {
+          "surfaces": [
+            "だ"
+          ],
           "base_forms": [
             "だ"
           ],

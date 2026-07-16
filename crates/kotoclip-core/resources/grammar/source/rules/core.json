@@ -1090,6 +1090,9 @@
     "audit_status": "verified",
     "atoms": [
       {
+        "surfaces": [
+          "だ"
+        ],
         "base_forms": [
           "だ"
         ],

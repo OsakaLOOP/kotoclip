@@ -1811,6 +1811,35 @@
       ]
     },
     {
+      "concept_id": "grammar.functional.na",
+      "label": "な",
+      "aliases": [
+        "形容动词连体な",
+        "な＋名词"
+      ],
+      "semantic_domains": [
+        "attributive",
+        "relation"
+      ],
+      "function_tags": [
+        "attributive",
+        "functional_morpheme"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [
+        "形容动词词干＋な＋名词"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "な：连体连接",
+        "连接形容动词词干与后续名词"
+      ]
+    },
+    {
       "concept_id": "grammar.sentence_particle.na",
       "label": "な（终助词）",
       "aliases": [],

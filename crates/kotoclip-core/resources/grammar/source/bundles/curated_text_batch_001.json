@@ -547,6 +547,101 @@
       ]
     },
     {
+      "concept_id": "grammar.functional.na",
+      "kind": "functional_morpheme",
+      "canonical_label": "な",
+      "aliases": [
+        "形容动词连体な",
+        "な＋名词"
+      ],
+      "semantic_domains": [
+        "attributive",
+        "relation"
+      ],
+      "function_tags": [
+        "attributive",
+        "functional_morpheme"
+      ],
+      "jlpt_level": 5,
+      "register": [
+        "modern_standard"
+      ],
+      "explanation": {
+        "compact_summary": "连接形容动词词干与名词",
+        "function_summary": "把形容动词词干接到后续名词前",
+        "connection": "形容动词词干＋な＋名词",
+        "formation": "前项词干＋な",
+        "usage_notes": [],
+        "semantic_constraints": [],
+        "pragmatic_notes": [],
+        "examples": [
+          "さまざまなサウンド",
+          "静かな部屋"
+        ],
+        "counter_examples": [
+          "もんだな"
+        ],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.functional.na.attributive",
+          "label": "な：连体连接",
+          "function_summary": "连接形容动词词干与后续名词",
+          "semantic_features": {
+            "function": "attributive"
+          }
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.functional.na.attributive",
+          "rule_id": "functional.na.attributive",
+          "possible_sense_ids": [
+            "grammar.functional.na.attributive"
+          ],
+          "connection_signature": "形容动词词干＋な＋名词",
+          "functional_requirements": [
+            "な：助動詞・体言接続"
+          ],
+          "examples": [
+            "さまざまなサウンド",
+            "静かな部屋"
+          ],
+          "counter_examples": [
+            "もんだな"
+          ],
+          "rule": {
+            "priority": 46,
+            "display_from": 1,
+            "display_to": 2,
+            "atoms": [
+              {
+                "pos_major": [
+                  "名詞"
+                ],
+                "pos_sub1": [
+                  "形容動詞語幹"
+                ]
+              },
+              {
+                "surfaces": [
+                  "な"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "conjugation_forms": [
+                  "体言接続"
+                ],
+                "capture": "functional_na"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
       "concept_id": "grammar.sentence_particle.na",
       "kind": "particle",
       "canonical_label": "な（终助词）",
@@ -568,7 +663,7 @@
         "connection": "位于句末；禁止用法常接动词基本形。",
         "formation": "句末＋な",
         "usage_notes": [
-          "与形容动词连体形な按词性区分。"
+          "修饰名词的な属于连体连接，不是终助词。"
         ],
         "examples": [
           "もんだな",
@@ -577,13 +672,7 @@
         "counter_examples": [
           "静かな部屋中的な不是终助词。"
         ],
-        "body_blocks": [
-          {
-            "kind": "paragraph",
-            "label": "作用",
-            "text": "{{actual_form}} 的具体功能由前接形态和语境确定。"
-          }
-        ]
+        "body_blocks": []
       },
       "senses": [
         {

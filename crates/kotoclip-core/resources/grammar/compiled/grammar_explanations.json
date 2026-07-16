@@ -2061,6 +2061,41 @@
       ]
     },
     {
+      "explanation_id": "explanation.grammar.functional.na",
+      "concept_id": "grammar.functional.na",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "な",
+      "compact_summary": "连接形容动词词干与名词",
+      "function_summary": "把形容动词词干接到后续名词前",
+      "connection": "形容动词词干＋な＋名词",
+      "formation": "前项词干＋な",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "さまざまなサウンド",
+        "静かな部屋"
+      ],
+      "counter_examples": [
+        "もんだな"
+      ],
+      "source_refs": [
+        "corpus:七日の喰い神/第一話:grammar-review-batch-001",
+        "ipadic:runtime-observation"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
       "explanation_id": "explanation.grammar.sentence_particle.na",
       "concept_id": "grammar.sentence_particle.na",
       "sense_id": null,
@@ -2071,7 +2106,7 @@
       "connection": "位于句末；禁止用法常接动词基本形。",
       "formation": "句末＋な",
       "usage_notes": [
-        "与形容动词连体形な按词性区分。"
+        "修饰名词的な属于连体连接，不是终助词。"
       ],
       "semantic_constraints": [],
       "pragmatic_notes": [],
@@ -2095,13 +2130,7 @@
         "version": "1"
       },
       "review_status": "ai_checked",
-      "body_blocks": [
-        {
-          "kind": "paragraph",
-          "label": "作用",
-          "text": "{{actual_form}} 的具体功能由前接形态和语境确定。"
-        }
-      ]
+      "body_blocks": []
     },
     {
       "explanation_id": "explanation.grammar.sentence_particle.ne",
