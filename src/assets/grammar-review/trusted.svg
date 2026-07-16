@@ -1,8 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 24" fill="none">
-  <g transform="translate(1 1)">
-    <path d="M8 9.1C4.1 7.4 3.8 4.4 5.6 3.35 7.05 2.5 8.5 3.7 9.15 5.1 9.25 3.05 10.6 1.4 12.15 1.75c1.9.42 2.15 3.45.15 6.35 2.65-1.5 5.45-.85 5.55 1.05.1 1.6-1.95 2.65-4.05 2.45 2.15 1.55 2.35 4.4.55 5.05-1.55.55-3.1-1.25-3.55-3.05-.8 2.15-3.35 3.35-4.45 1.95-1.2-1.55.35-4.1 2.55-5.05L8 9.1Z" fill="#F6A8C6"/>
-    <circle cx="10.65" cy="9.45" r="2.15" fill="#FFD967"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <g stroke="#FFFFFF" stroke-width=".55" stroke-linejoin="round">
+    <path d="M9.35 10.55C6.85 8.35 7.05 5.25 9.35 2.9c2.3 2.35 2.5 5.45 0 7.65Z" fill="#F39AB9"/>
+    <path d="M9.35 10.55C6.85 8.35 7.05 5.25 9.35 2.9c2.3 2.35 2.5 5.45 0 7.65Z" fill="#F5A7C2" transform="rotate(72 9.35 10.55)"/>
+    <path d="M9.35 10.55C6.85 8.35 7.05 5.25 9.35 2.9c2.3 2.35 2.5 5.45 0 7.65Z" fill="#F08FAF" transform="rotate(144 9.35 10.55)"/>
+    <path d="M9.35 10.55C6.85 8.35 7.05 5.25 9.35 2.9c2.3 2.35 2.5 5.45 0 7.65Z" fill="#F5A7C2" transform="rotate(216 9.35 10.55)"/>
+    <path d="M9.35 10.55C6.85 8.35 7.05 5.25 9.35 2.9c2.3 2.35 2.5 5.45 0 7.65Z" fill="#F39AB9" transform="rotate(288 9.35 10.55)"/>
   </g>
-  <circle cx="21.2" cy="15.3" r="6.3" fill="#F7FFFA" stroke="#42A66B" stroke-width="1.7"/>
-  <path d="m18.35 15.25 1.8 1.85 3.75-4.05" stroke="#318B58" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="9.35" cy="10.55" r="1.7" fill="#FFF8FB" stroke="#E779A1" stroke-width=".8"/>
+  <circle cx="17.1" cy="16.85" r="5.1" fill="#FAFFFC" stroke="#3E9F67" stroke-width="1.55"/>
+  <path d="m14.65 16.8 1.55 1.6 3.35-3.55" stroke="#318956" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
