@@ -68,8 +68,7 @@ const reviewTitle = computed(() => [
 .grammar-trust-badges { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .source-badge, .review-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 7px 2px 4px; border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--bg-primary) 86%, transparent); color: var(--text-muted); font: 700 .62rem/1.35 var(--font-ui); white-space: nowrap; }
 .source-badge img { width: 18px; height: 18px; margin-right: 4px; object-fit: contain; }
-.review-badge { width: 26px; justify-content: center; padding: 2px; color: var(--text-secondary); }
-.review-badge img { width: 19px; height: 19px; object-fit: contain; }
-.review-ai_checked { border-color: color-mix(in srgb, #7762c8 28%, var(--border-color)); background: color-mix(in srgb, #7762c8 6%, var(--bg-primary)); color: #6551ae; }
-.review-trusted { border-color: color-mix(in srgb, #42a66b 30%, var(--border-color)); background: color-mix(in srgb, #f6a8c6 7%, var(--bg-primary)); color: #347c52; }
+.review-badge { width: 34px; min-height: 34px; justify-content: center; padding: 0; border: 0; background: transparent; color: var(--text-secondary); }
+.review-badge img { width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--text-primary) 12%, transparent)); }
+.review-ai_checked, .review-trusted { border: 0; background: transparent; }
 </style>

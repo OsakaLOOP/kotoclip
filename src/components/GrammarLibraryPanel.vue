@@ -363,10 +363,13 @@ button { border: 1px solid var(--border-color); background: transparent; color: 
 .review-editor > div:first-child { display: grid; margin-right: auto; }
 .review-editor > div:first-child strong { font-size: .74rem; }
 .review-editor > div:first-child span { color: var(--text-muted); font-size: .64rem; }
-.review-options { display: flex; gap: 5px; }
-.review-options button { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px 3px 4px; border-radius: 999px; color: var(--text-muted); font-size: .65rem; }
-.review-options button.active { border-color: color-mix(in srgb, #1769aa 48%, var(--border-color)); background: color-mix(in srgb, #1769aa 7%, transparent); color: var(--text-primary); }
-.review-options img { width: 20px; height: 20px; object-fit: contain; }
+.review-options { display: flex; gap: 12px; align-items: flex-end; }
+.review-options button { position: relative; display: grid; justify-items: center; gap: 2px; min-width: 46px; padding: 2px; border: 0; border-radius: 0; background: transparent; color: var(--text-muted); font-size: .61rem; }
+.review-options button:hover, .review-options button.active { background: transparent; color: var(--text-primary); }
+.review-options button:focus-visible { outline: 2px solid color-mix(in srgb, #1769aa 46%, transparent); outline-offset: 3px; border-radius: 6px; }
+.review-options button.active::after { position: absolute; right: 8px; bottom: 14px; width: 5px; height: 5px; border: 2px solid var(--bg-secondary); border-radius: 50%; background: #2f83c6; content: ""; }
+.review-options img { width: 36px; height: 36px; object-fit: contain; filter: grayscale(.18) opacity(.76); transition: filter .12s ease, transform .12s ease; }
+.review-options button:hover img, .review-options button.active img { filter: none; transform: translateY(-1px); }
 .review-editor input { width: 120px; height: 31px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 7px; background: var(--bg-primary); color: var(--text-primary); font-size: .7rem; }
 .reset-review { padding: 4px 7px; border: 0; color: var(--text-muted); font-size: .64rem; }
 .concept-summary { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 16px; margin-top: 22px; padding: 16px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
