@@ -44,7 +44,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.form.te",
@@ -88,7 +95,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.form.de",
@@ -132,7 +146,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.tense.past",
@@ -176,7 +197,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.polarity.negative",
@@ -220,7 +248,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.voice.causative",
@@ -264,7 +299,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.voice.passive_potential",
@@ -308,7 +350,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.politeness.masu",
@@ -352,7 +401,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.modality.desire",
@@ -396,7 +452,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.mood.volitional",
@@ -440,7 +503,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.morphology.mood.conditional",
@@ -484,7 +554,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.ga",
@@ -528,7 +605,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.wo",
@@ -572,7 +656,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.ni",
@@ -616,7 +707,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.e",
@@ -660,7 +758,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.de",
@@ -704,7 +809,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.to",
@@ -748,7 +860,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.kara",
@@ -792,7 +911,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.made",
@@ -836,7 +962,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.wa",
@@ -880,7 +1013,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.mo",
@@ -924,7 +1064,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.shika",
@@ -968,7 +1115,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.dake",
@@ -1012,7 +1166,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.te",
@@ -1056,7 +1217,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.de_connective",
@@ -1100,7 +1268,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.ba",
@@ -1144,7 +1319,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.auxiliary.nai",
@@ -1188,7 +1370,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.auxiliary.ta",
@@ -1232,7 +1421,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.auxiliary.masu",
@@ -1276,7 +1472,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.auxiliary.desu",
@@ -1320,7 +1523,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.auxiliary.da",
@@ -1364,7 +1574,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.iru",
@@ -1408,7 +1625,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.aru",
@@ -1452,7 +1676,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.oku",
@@ -1496,7 +1727,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.miru",
@@ -1540,7 +1778,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.shimau",
@@ -1584,7 +1829,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.iku",
@@ -1628,7 +1880,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.kuru",
@@ -1672,7 +1931,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.yaru",
@@ -1716,7 +1982,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.ageru",
@@ -1760,7 +2033,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.kureru",
@@ -1804,7 +2084,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.kudasaru",
@@ -1848,7 +2135,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.morau",
@@ -1892,7 +2186,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.naru",
@@ -1936,7 +2237,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.aspect.te_iru",
@@ -1980,7 +2288,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.aspect.te_aru",
@@ -2024,7 +2339,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.aspect.te_oku",
@@ -2068,7 +2390,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.modality.te_miru",
@@ -2112,7 +2441,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.aspect.te_shimau",
@@ -2156,7 +2492,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.direction.te_iku",
@@ -2200,7 +2543,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.direction.te_kuru",
@@ -2244,7 +2594,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.benefactive.te_yaru",
@@ -2288,7 +2645,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.benefactive.te_ageru",
@@ -2332,7 +2696,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.benefactive.te_kureru",
@@ -2376,7 +2747,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.benefactive.te_kudasaru",
@@ -2420,7 +2798,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.benefactive.te_morau",
@@ -2464,7 +2849,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.request.te_kudasai",
@@ -2508,7 +2900,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.obligation.nakereba_naranai",
@@ -2552,7 +2951,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.ni_wa",
@@ -2596,7 +3002,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.ni_mo",
@@ -2640,7 +3053,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.particle.de_wa",
@@ -2684,7 +3104,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.connective.te_mo",
@@ -2728,7 +3155,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.modality.volitional_to_suru",
@@ -2772,7 +3206,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.formal.tsumori_da",
@@ -2816,7 +3257,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.connective.nagara_mo",
@@ -2860,7 +3308,14 @@
           "label": "判定",
           "text": "存在多义时保留候选，不按表面字符串强行唯一化。"
         }
-      ]
+      ],
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked"
     },
     {
       "explanation_id": "explanation.grammar.functional.no",
@@ -2896,6 +3351,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -2944,6 +3406,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -2982,6 +3451,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3023,6 +3499,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3059,6 +3542,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3095,6 +3585,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3133,6 +3630,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3169,6 +3673,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3205,6 +3716,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3241,6 +3759,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3278,6 +3803,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3321,6 +3853,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "warning",
@@ -3356,6 +3895,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3392,6 +3938,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3427,6 +3980,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3463,6 +4023,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "warning",
@@ -3499,6 +4066,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3532,6 +4106,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3567,6 +4148,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "warning",
@@ -3600,6 +4188,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3634,6 +4229,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3668,6 +4270,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3701,6 +4310,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3737,6 +4353,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3770,6 +4393,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3803,6 +4433,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3836,6 +4473,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3869,6 +4513,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3902,6 +4553,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3935,6 +4593,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -3970,6 +4635,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "warning",
@@ -4003,6 +4675,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -4036,6 +4715,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -4069,6 +4755,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",
@@ -4109,6 +4802,13 @@
       ],
       "authoring_status": "verified",
       "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
       "body_blocks": [
         {
           "kind": "paragraph",

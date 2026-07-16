@@ -24,19 +24,27 @@ ATOM_FIELDS = {
 }
 ATOM_MATCH_FIELDS = ATOM_FIELDS - {"capture", "optional"}
 
-BUNDLE_FIELDS = {"bundle_id", "audit_status", "source_refs", "review", "items"}
+BUNDLE_FIELDS = {
+    "bundle_id", "audit_status", "source_refs", "review", "provenance",
+    "review_status", "items",
+}
 BUNDLE_REVIEW_FIELDS = {"item_count", "baseline", "method"}
+BUNDLE_PROVENANCE_FIELDS = {"origin", "author", "date", "version"}
+BUNDLE_REVIEW_STATUSES = {"unverified", "ai_checked", "trusted"}
+BUNDLE_ORIGINS = {"ai", "human", "builtin"}
 BUNDLE_ITEM_FIELDS = {
     "concept_id", "kind", "canonical_label", "aliases", "semantic_domains",
     "function_tags", "jlpt_level", "register", "related_concept_ids",
     "contrast_concept_ids", "source_refs", "audit_status", "concept_version",
-    "enabled", "extend_existing", "explanation", "senses", "realizations",
+    "enabled", "extend_existing", "provenance", "review_status", "explanation",
+    "senses", "realizations",
 }
 BUNDLE_EXPLANATION_FIELDS = {
     "explanation_id", "sense_id", "language", "title", "compact_summary",
     "function_summary", "connection", "formation", "usage_notes",
     "semantic_constraints", "pragmatic_notes", "examples", "counter_examples",
-    "source_refs", "authoring_status", "content_version", "body_blocks",
+    "source_refs", "authoring_status", "content_version", "provenance",
+    "review_status", "body_blocks",
 }
 BUNDLE_SENSE_FIELDS = {
     "sense_id", "label", "function_summary", "semantic_features",
@@ -89,12 +97,29 @@ ALLOWED_FIELDS = {
         "compact_summary", "function_summary", "connection", "formation",
         "usage_notes", "semantic_constraints", "pragmatic_notes", "examples",
         "counter_examples", "source_refs", "authoring_status", "content_version",
-        "body_blocks",
+        "provenance", "review_status", "body_blocks",
     },
     "redirects": {
         "from_concept_id", "to_concept_id", "reason", "redirect_version",
     },
 }
+
+
+def load_catalog_metadata(source: Path) -> dict[str, Any]:
+    path = source / "catalog_metadata.json"
+    metadata = json.loads(path.read_text(encoding="utf-8"))
+    allowed = {"default_provenance", "default_review_status"}
+    unknown = set(metadata) - allowed
+    if unknown:
+        raise ValueError(f"{path}: catalog metadata 含未知字段 {sorted(unknown)}")
+    provenance = metadata.get("default_provenance")
+    if not isinstance(provenance, dict):
+        raise ValueError(f"{path}: default_provenance 必须是对象")
+    validate_provenance(path, provenance)
+    review_status = metadata.get("default_review_status")
+    if review_status not in BUNDLE_REVIEW_STATUSES:
+        raise ValueError(f"{path}: 非法 default_review_status {review_status!r}")
+    return metadata
 
 
 def load_items(directory: Path) -> list[dict[str, Any]]:
@@ -116,6 +141,7 @@ def load_items(directory: Path) -> list[dict[str, Any]]:
 def expand_bundles(source: Path) -> dict[str, list[dict[str, Any]]]:
     """把批次化作者输入展开为运行时使用的五层标准目录。"""
     expanded = {kind: [] for kind in ALLOWED_FIELDS}
+    metadata = load_catalog_metadata(source)
     directory = source / "bundles"
     if not directory.exists():
         return expanded
@@ -129,6 +155,12 @@ def expand_bundles(source: Path) -> dict[str, list[dict[str, Any]]]:
             if not isinstance(review, dict):
                 raise ValueError(f"{path}: bundle review 必须是对象")
             reject_unknown_fields(path, "bundle review", review, BUNDLE_REVIEW_FIELDS)
+        bundle_provenance = bundle.get("provenance", metadata["default_provenance"])
+        validate_provenance(path, bundle_provenance)
+        bundle_review_status = bundle.get(
+            "review_status", metadata["default_review_status"]
+        )
+        validate_review_status(path, bundle_review_status)
         bundle_refs = list(bundle.get("source_refs", []))
         bundle_status = bundle.get("audit_status", "reviewed")
         source_file = path.relative_to(ROOT).as_posix()
@@ -142,6 +174,10 @@ def expand_bundles(source: Path) -> dict[str, list[dict[str, Any]]]:
                 raise ValueError(f"{path}[{item_index}]: 非法 concept_id {concept_id!r}")
             item_refs = [*bundle_refs, *item.get("source_refs", [])]
             item_status = item.get("audit_status", bundle_status)
+            item_provenance = item.get("provenance", bundle_provenance)
+            validate_provenance(item_source, item_provenance)
+            item_review_status = item.get("review_status", bundle_review_status)
+            validate_review_status(item_source, item_review_status)
             if not item.get("extend_existing", False):
                 explanation = item.get("explanation")
                 if not isinstance(explanation, dict):
@@ -193,6 +229,10 @@ def expand_bundles(source: Path) -> dict[str, list[dict[str, Any]]]:
                     "source_refs": [*item_refs, *explanation.get("source_refs", [])],
                     "authoring_status": explanation.get("authoring_status", item_status),
                     "content_version": explanation.get("content_version", 1),
+                    "provenance": explanation.get("provenance", item_provenance),
+                    "review_status": explanation.get(
+                        "review_status", item_review_status
+                    ),
                     "body_blocks": explanation["body_blocks"],
                     "__source_file": source_file,
                 })
@@ -291,6 +331,22 @@ def reject_unknown_fields(
         raise ValueError(f"{source}: {label} 含未知字段 {sorted(unknown)}")
 
 
+def validate_provenance(source: Path | str, provenance: Any) -> None:
+    if not isinstance(provenance, dict):
+        raise ValueError(f"{source}: provenance 必须是对象")
+    reject_unknown_fields(source, "provenance", provenance, BUNDLE_PROVENANCE_FIELDS)
+    if provenance.get("origin") not in BUNDLE_ORIGINS:
+        raise ValueError(f"{source}: 非法 provenance origin {provenance.get('origin')!r}")
+    for field in ("author", "date", "version"):
+        if not isinstance(provenance.get(field), str) or not provenance[field].strip():
+            raise ValueError(f"{source}: provenance {field} 不能为空")
+
+
+def validate_review_status(source: Path | str, review_status: Any) -> None:
+    if review_status not in BUNDLE_REVIEW_STATUSES:
+        raise ValueError(f"{source}: 非法 review_status {review_status!r}")
+
+
 def require_fields(kind: str, item: dict[str, Any], fields: Iterable[str]) -> None:
     source = item.get("__source_file", kind)
     unknown = set(item) - ALLOWED_FIELDS[kind] - {"__source_file"}
@@ -315,15 +371,19 @@ def unique_map(items: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any
 
 def validate(source: Path) -> dict[str, list[dict[str, Any]]]:
     data = {kind: load_items(source / kind) for kind in ALLOWED_FIELDS}
+    metadata = load_catalog_metadata(source)
     bundle_data = expand_bundles(source)
     for kind, items in bundle_data.items():
         data[kind].extend(items)
+    for explanation in data["explanations"]:
+        explanation.setdefault("provenance", metadata["default_provenance"].copy())
+        explanation.setdefault("review_status", metadata["default_review_status"])
     required = {
         "concepts": ["concept_id", "kind", "canonical_label", "default_explanation_id", "source_refs", "audit_status", "concept_version"],
         "senses": ["sense_id", "concept_id", "label", "function_summary", "explanation_id", "sense_version", "audit_status"],
         "realizations": ["realization_id", "concept_id", "possible_sense_ids", "rule_id", "examples", "counter_examples", "realization_version", "audit_status"],
         "rules": ["rule_id", "realization_id", "concept_id", "kind", "priority", "enabled", "audit_status", "atoms", "examples", "counter_examples", "rule_version"],
-        "explanations": ["explanation_id", "concept_id", "language", "title", "compact_summary", "function_summary", "connection", "examples", "counter_examples", "source_refs", "authoring_status", "content_version", "body_blocks"],
+        "explanations": ["explanation_id", "concept_id", "language", "title", "compact_summary", "function_summary", "connection", "examples", "counter_examples", "source_refs", "authoring_status", "content_version", "provenance", "review_status", "body_blocks"],
         "redirects": ["from_concept_id", "to_concept_id", "reason", "redirect_version"],
     }
     for kind, items in data.items():
@@ -413,6 +473,10 @@ def validate(source: Path) -> dict[str, list[dict[str, Any]]]:
                 raise ValueError(f"{explanation['explanation_id']}: verified 讲解不完整")
             if not explanation.get("source_refs"):
                 raise ValueError(f"{explanation['explanation_id']}: verified 讲解缺少来源")
+        validate_provenance(explanation["explanation_id"], explanation["provenance"])
+        validate_review_status(
+            explanation["explanation_id"], explanation["review_status"]
+        )
         body_blocks = explanation.get("body_blocks", [])
         if not isinstance(body_blocks, list):
             raise ValueError(f"{explanation['explanation_id']}: body_blocks 必须是数组")

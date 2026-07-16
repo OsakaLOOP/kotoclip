@@ -6,6 +6,9 @@ export interface GrammarSenseCandidate { sense_id: string; label: string; confid
 export interface GrammarCapture { name: string; surface: string; base_form: string; morpheme_range: [number, number]; char_range: [number, number]; }
 export interface GrammarContentBlock { kind: string; label: string | null; text: string; }
 export interface GrammarDictionaryTarget { label: string; base_form: string; reading: string; char_range: [number, number]; }
+export type GrammarGenerationOrigin = "ai" | "human" | "builtin";
+export type GrammarReviewStatus = "unverified" | "ai_checked" | "trusted";
+export interface GrammarProvenance { origin: GrammarGenerationOrigin; author: string; date: string; version: string; }
 export interface ResolvedGrammarExplanation {
   status: "resolved" | "partial" | "unavailable" | "error" | string;
   occurrence_summary: string;
@@ -25,6 +28,8 @@ export interface ResolvedGrammarExplanation {
   contrast_concept_ids: string[];
   dictionary_targets: GrammarDictionaryTarget[];
   source_refs: string[];
+  provenance: GrammarProvenance;
+  review_status: GrammarReviewStatus;
   available_depths: string[];
   content_version: number;
   audit_status: string;
@@ -97,6 +102,8 @@ export interface GrammarExplanationDocument {
   source_refs: string[];
   authoring_status: string;
   content_version: number;
+  provenance: GrammarProvenance;
+  review_status: GrammarReviewStatus;
   body_blocks: GrammarExplanationSourceBlock[];
 }
 export interface GrammarConceptBundle {

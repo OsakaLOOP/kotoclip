@@ -119,7 +119,8 @@ interface CompactGrammarExplanation {
   s: number; o: number; c: number; t: number; m: number; f: number; n: number; a: number;
   y?: CompactGrammarSenseCandidate; v?: CompactGrammarSenseCandidate[]; p?: CompactGrammarCapture[];
   h?: number[]; d?: CompactGrammarBlock[]; e?: number[]; g?: number[]; j?: number[];
-  w?: CompactGrammarDictionaryTarget[]; i?: number[]; q?: number[]; vrs: number; u: number;
+  w?: CompactGrammarDictionaryTarget[]; i?: number[]; q?: number[];
+  po: number; pa: number; pd: number; pv: number; rv: number; vrs: number; u: number;
 }
 interface CompactGrammarTag {
   i: number; j: number; e: number; l?: number; d: number; m: [number, number]; c: [number, number];
@@ -157,6 +158,11 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
     contrast_concept_ids: (value.j ?? []).map(stringAt),
     dictionary_targets: (value.w ?? []).map((target) => ({ label: stringAt(target.l), base_form: stringAt(target.b), reading: stringAt(target.r), char_range: target.c })),
     source_refs: (value.q ?? []).map(stringAt),
+    provenance: {
+      origin: stringAt(value.po) as import("../types").GrammarGenerationOrigin,
+      author: stringAt(value.pa), date: stringAt(value.pd), version: stringAt(value.pv),
+    },
+    review_status: stringAt(value.rv) as import("../types").GrammarReviewStatus,
     available_depths: (value.i ?? []).map(stringAt), content_version: value.vrs, audit_status: stringAt(value.u),
   });
   const position = (indices: [number, number, number, number]) => ({

@@ -123,6 +123,8 @@ impl<'a> GrammarExplanationResolver<'a> {
             contrast_concept_ids: concept.contrast_concept_ids.clone(),
             dictionary_targets,
             source_refs: explanation.source_refs.clone(),
+            provenance: explanation.provenance.clone(),
+            review_status: explanation.review_status.clone(),
             available_depths: vec!["compact".to_string(), "standard".to_string(), "deep".to_string()],
             content_version: explanation.content_version,
             audit_status: concept.audit_status.clone(),
@@ -196,7 +198,11 @@ pub fn sense_candidates(
         .into_iter()
         .map(|sense| GrammarSenseCandidate {
             sense_id: sense.sense_id.clone(),
-            label: sense.label.clone(),
+            label: if sense.function_summary.trim().is_empty() {
+                sense.label.clone()
+            } else {
+                sense.function_summary.clone()
+            },
             confidence: if count == 1 { confidence } else { confidence.saturating_sub((count - 1) * 4) },
             evidence: sense.context_requirements.clone(),
         })

@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { getGrammarConcept, searchGrammarCatalog } from "../grammar/catalog";
+import {
+  clearGrammarReviewOverride,
+  grammarReviewOverrides,
+  setGrammarReviewOverride,
+} from "../grammar/review";
+import aiCheckedIcon from "../assets/grammar-review/ai-checked.svg";
+import trustedIcon from "../assets/grammar-review/trusted.svg";
+import unverifiedIcon from "../assets/grammar-review/unverified.svg";
+import GrammarTrustBadges from "./grammar/GrammarTrustBadges.vue";
 import type {
   GrammarConcept,
   GrammarConceptBundle,
   GrammarExplanationDocument,
   GrammarSense,
+  GrammarReviewStatus,
 } from "../types";
 
 const props = defineProps<{ show: boolean }>();
@@ -24,9 +34,44 @@ let detailGeneration = 0;
 let searchTimer: number | null = null;
 
 const selectedExplanation = computed(() => selected.value?.explanation ?? null);
+const selectedReviewOverride = computed(() => {
+  const conceptId = selected.value?.concept.concept_id;
+  return conceptId ? grammarReviewOverrides.value[conceptId] : undefined;
+});
+const selectedReviewStatus = computed(() => (
+  selectedReviewOverride.value?.status ?? selectedExplanation.value?.review_status ?? "unverified"
+));
+const selectedReviewer = computed(() => selectedReviewOverride.value?.reviewer ?? "");
+const selectedReviewedAt = computed(() => selectedReviewOverride.value?.reviewedAt ?? "");
+const reviewerDraft = ref("");
+const reviewOptions: { status: GrammarReviewStatus; label: string; icon: string }[] = [
+  { status: "unverified", label: "未核验", icon: unverifiedIcon },
+  { status: "ai_checked", label: "AI 批量核验", icon: aiCheckedIcon },
+  { status: "trusted", label: "成员权威核验", icon: trustedIcon },
+];
 
 function explanationForSense(sense: GrammarSense): GrammarExplanationDocument | null {
   return selected.value?.explanations.find((item) => item.explanation_id === sense.explanation_id) ?? null;
+}
+
+function updateReviewStatus(status: GrammarReviewStatus) {
+  const conceptId = selected.value?.concept.concept_id;
+  if (!conceptId) return;
+  const reviewer = status === "trusted" ? (reviewerDraft.value.trim() || "本机成员") : "";
+  setGrammarReviewOverride(conceptId, status, reviewer);
+  if (status === "trusted" && !reviewerDraft.value.trim()) reviewerDraft.value = reviewer;
+}
+
+function updateReviewer() {
+  if (selectedReviewStatus.value !== "trusted") return;
+  updateReviewStatus("trusted");
+}
+
+function resetReviewStatus() {
+  const conceptId = selected.value?.concept.concept_id;
+  if (!conceptId) return;
+  clearGrammarReviewOverride(conceptId);
+  reviewerDraft.value = "";
 }
 
 async function selectConcept(conceptId: string) {
@@ -86,6 +131,12 @@ watch(
   { immediate: true },
 );
 watch([query, family, jlptLevel], () => scheduleSearch());
+watch(
+  () => selected.value?.concept.concept_id,
+  () => {
+    reviewerDraft.value = selectedReviewOverride.value?.reviewer ?? "";
+  },
+);
 
 onBeforeUnmount(() => {
   if (searchTimer !== null) window.clearTimeout(searchTimer);
@@ -153,16 +204,51 @@ onBeforeUnmount(() => {
           <template v-else-if="selected && selectedExplanation">
             <header class="concept-heading">
               <div>
-                <span>{{ selected.concept.concept_id }}</span>
+                <span>{{ selected.concept.semantic_domains.slice(0, 3).join(" · ") || selected.concept.kind }}</span>
                 <h2>{{ selectedExplanation.title }}</h2>
                 <p>{{ selectedExplanation.compact_summary }}</p>
               </div>
-              <div class="concept-badges">
-                <span>{{ selected.concept.kind }}</span>
-                <span v-if="selected.concept.jlpt_level">JLPT N{{ selected.concept.jlpt_level }}</span>
-                <span>{{ selected.concept.audit_status }}</span>
-              </div>
+              <GrammarTrustBadges
+                :provenance="selectedExplanation.provenance"
+                :review-status="selectedReviewStatus"
+                :reviewer="selectedReviewer"
+                :reviewed-at="selectedReviewedAt"
+              />
             </header>
+
+            <section class="review-editor" aria-label="核验等级">
+              <div>
+                <strong>核验等级</strong>
+                <span>只覆盖本机显示，不改写内置目录。</span>
+              </div>
+              <div class="review-options">
+                <button
+                  v-for="option in reviewOptions"
+                  :key="option.status"
+                  type="button"
+                  :class="{ active: selectedReviewStatus === option.status }"
+                  :title="option.label"
+                  @click="updateReviewStatus(option.status)"
+                >
+                  <img :src="option.icon" alt="" />
+                  <span>{{ option.label }}</span>
+                </button>
+              </div>
+              <input
+                v-if="selectedReviewStatus === 'trusted'"
+                v-model="reviewerDraft"
+                type="text"
+                placeholder="核验成员"
+                aria-label="核验成员"
+                @change="updateReviewer"
+              />
+              <button
+                v-if="selectedReviewOverride"
+                type="button"
+                class="reset-review"
+                @click="resetReviewStatus"
+              >恢复目录值</button>
+            </section>
 
             <dl class="concept-summary">
               <template v-if="selectedExplanation.function_summary">
@@ -186,7 +272,7 @@ onBeforeUnmount(() => {
               <h3>语义分支</h3>
               <div class="sense-grid">
                 <article v-for="sense in selected.senses" :key="sense.sense_id">
-                  <header><strong>{{ sense.label }}</strong><span>{{ sense.audit_status }}</span></header>
+                  <header><strong>{{ sense.label }}</strong></header>
                   <p>{{ explanationForSense(sense)?.function_summary || sense.function_summary }}</p>
                   <small v-if="sense.context_requirements.length">条件：{{ sense.context_requirements.join("；") }}</small>
                   <small v-if="sense.exclusion_conditions.length">排除：{{ sense.exclusion_conditions.join("；") }}</small>
@@ -237,8 +323,7 @@ onBeforeUnmount(() => {
             </section>
 
             <footer class="concept-footer">
-              <span>内容 v{{ selectedExplanation.content_version }}</span>
-              <span v-if="selectedExplanation.source_refs.length">来源：{{ selectedExplanation.source_refs.join("；") }}</span>
+              <span>{{ selected.concept.concept_id }}</span>
             </footer>
           </template>
           <div v-else class="empty-state">从左侧选择一个语法概念。</div>
@@ -274,8 +359,16 @@ button { border: 1px solid var(--border-color); background: transparent; color: 
 .concept-heading { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
 .concept-heading h2 { margin-top: 4px; font-size: clamp(1.35rem, 2vw, 2rem); }
 .concept-heading p { margin-top: 5px; color: var(--text-secondary); }
-.concept-badges { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
-.concept-badges span { padding: 4px 7px; border-radius: 999px; background: color-mix(in srgb, #1769aa 8%, transparent); color: #1769aa; font-size: .65rem; white-space: nowrap; }
+.review-editor { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-top: 18px; padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent); border-radius: 11px; background: color-mix(in srgb, var(--bg-secondary) 64%, transparent); }
+.review-editor > div:first-child { display: grid; margin-right: auto; }
+.review-editor > div:first-child strong { font-size: .74rem; }
+.review-editor > div:first-child span { color: var(--text-muted); font-size: .64rem; }
+.review-options { display: flex; gap: 5px; }
+.review-options button { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px 3px 4px; border-radius: 999px; color: var(--text-muted); font-size: .65rem; }
+.review-options button.active { border-color: color-mix(in srgb, #1769aa 48%, var(--border-color)); background: color-mix(in srgb, #1769aa 7%, transparent); color: var(--text-primary); }
+.review-options img { width: 20px; height: 20px; object-fit: contain; }
+.review-editor input { width: 120px; height: 31px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 7px; background: var(--bg-primary); color: var(--text-primary); font-size: .7rem; }
+.reset-review { padding: 4px 7px; border: 0; color: var(--text-muted); font-size: .64rem; }
 .concept-summary { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 16px; margin-top: 22px; padding: 16px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
 .concept-summary dt { color: var(--text-muted); font-size: .72rem; }
 .concept-summary dd { margin: 0; color: var(--text-secondary); }
@@ -301,5 +394,5 @@ button { border: 1px solid var(--border-color); background: transparent; color: 
 .empty-state { padding: 30px 18px; color: var(--text-muted); text-align: center; }
 .grammar-library-fade-enter-active, .grammar-library-fade-leave-active { transition: opacity .14s ease, transform .14s ease; }
 .grammar-library-fade-enter-from, .grammar-library-fade-leave-to { opacity: 0; transform: translateY(4px); }
-@media (max-width: 760px) { .grammar-library { inset: 8px; }.library-filters { grid-template-columns: 1fr 1fr; }.library-filters label:first-child { grid-column: 1 / -1; }.library-body { grid-template-columns: 1fr; }.concept-list { max-height: 33vh; border-right: 0; border-bottom: 1px solid var(--border-color); }.concept-heading { display: grid; }.concept-badges { justify-content: flex-start; }.detail-columns { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .grammar-library { inset: 8px; }.library-filters { grid-template-columns: 1fr 1fr; }.library-filters label:first-child { grid-column: 1 / -1; }.library-body { grid-template-columns: 1fr; }.concept-list { max-height: 33vh; border-right: 0; border-bottom: 1px solid var(--border-color); }.concept-heading { display: grid; }.detail-columns { grid-template-columns: 1fr; }.review-editor { align-items: flex-start; }.review-options { flex-wrap: wrap; } }
 </style>

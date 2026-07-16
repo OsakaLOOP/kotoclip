@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import type { GrammarDictionaryTarget, GrammarTag } from "../../types";
+import { grammarReviewOverrides } from "../../grammar/review";
 import { floatDebug } from "../../explanation/floatDebug";
 import type { RectSnapshot } from "../../explanation/geometry";
+import GrammarTrustBadges from "../grammar/GrammarTrustBadges.vue";
 
 const props = defineProps<{
   show: boolean;
@@ -15,8 +17,8 @@ const emit = defineEmits<{
   leave: [event: PointerEvent];
   openDictionary: [target: GrammarDictionaryTarget];
 }>();
+
 const panelRef = ref<HTMLElement | null>(null);
-const expanded = ref(false);
 const selectedSenseId = ref<string | null>(null);
 const explanation = computed(() => props.tag?.explanation ?? null);
 const selectedSense = computed(() => {
@@ -25,11 +27,106 @@ const selectedSense = computed(() => {
   const id = selectedSenseId.value ?? tag.selected_sense_id;
   return tag.sense_candidates.find((candidate) => candidate.sense_id === id) ?? null;
 });
+const reviewOverride = computed(() => {
+  const conceptId = props.tag?.concept_id;
+  return conceptId ? grammarReviewOverrides.value[conceptId] : undefined;
+});
+const reviewStatus = computed(() => reviewOverride.value?.status ?? explanation.value?.review_status ?? "unverified");
+const reviewer = computed(() => reviewOverride.value?.reviewer ?? "");
+const reviewedAt = computed(() => reviewOverride.value?.reviewedAt ?? "");
+
+const kindLabel = computed(() => ({
+  morphology_feature: "活用",
+  functional_morpheme: "功能语素",
+  grammar_construction: "语法构式",
+  bunsetsu_function: "文节功能",
+  correlative_grammar: "呼应语法",
+  unknown: "语法",
+})[props.tag?.occurrence_kind ?? "unknown"]);
+
+const summary = computed(() => selectedSense.value?.label || explanation.value?.function_summary || props.tag?.description || "");
+
+function normalizeForm(value: string) {
+  return value.replace(/[〜～○…（）()／/・\s]/g, "").toLocaleLowerCase();
+}
+
+const actualFormDiffers = computed(() => {
+  const value = explanation.value;
+  if (!value?.actual_form) return false;
+  return normalizeForm(value.actual_form) !== normalizeForm(value.title);
+});
+
+const roleLabels: Record<string, string> = {
+  predicate: "核心动作",
+  connector: "接续",
+  functional_verb: "补助用言",
+  support_verb: "补助用言",
+  particle: "助词",
+  auxiliary: "助动词",
+  operator: "活用",
+};
+
+const formParts = computed(() => {
+  const seen = new Set<string>();
+  return (explanation.value?.bound_captures ?? []).filter((capture) => {
+    const key = `${capture.name}:${capture.char_range[0]}:${capture.char_range[1]}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).map((capture) => ({
+    ...capture,
+    roleLabel: roleLabels[capture.name] ?? "成分",
+  }));
+});
+
+const variants = computed(() => formParts.value.filter((part) => (
+  part.base_form
+  && part.base_form !== "*"
+  && normalizeForm(part.surface) !== normalizeForm(part.base_form)
+)));
+
+const morphologyLabels = computed(() => Array.from(new Set(
+  (explanation.value?.morphology_chain ?? []).filter((item) => !["て形", "で形"].includes(item)),
+)));
+
+const showFormCard = computed(() => (
+  actualFormDiffers.value
+  || formParts.value.length > 1
+  || variants.value.length > 0
+  || morphologyLabels.value.length > 0
+));
+
+const usefulConnection = computed(() => {
+  const connection = explanation.value?.connection.trim() ?? "";
+  if (!connection || connection.startsWith("依据本句")) return "";
+  return connection === summary.value.trim() ? "" : connection;
+});
+
+const displayBlocks = computed(() => {
+  const duplicateTexts = new Set([
+    normalizeForm(summary.value),
+    normalizeForm(explanation.value?.compact_summary ?? ""),
+    normalizeForm(explanation.value?.function_summary ?? ""),
+  ]);
+  const seen = new Set<string>();
+  return (explanation.value?.content_blocks ?? []).filter((block) => {
+    if (block.kind === "occurrence_binding") return false;
+    if (block.kind === "warning" && block.text.includes("存在多义时保留候选")) return false;
+    const text = normalizeForm(block.text);
+    if (!text || duplicateTexts.has(text) || seen.has(text)) return false;
+    seen.add(text);
+    return true;
+  });
+});
+
+function dictionaryLabel(target: GrammarDictionaryTarget) {
+  return `词典 · ${target.base_form}`;
+}
 
 const style = computed(() => {
   const anchor = props.anchor;
   if (!anchor) return { left: "-10000px", top: "-10000px" };
-  const width = Math.min(360, window.innerWidth - 24);
+  const width = Math.min(390, window.innerWidth - 24);
   const left = Math.min(window.innerWidth - 12 - width, Math.max(12, anchor.left + anchor.width / 2 - width / 2));
   const above = anchor.top > window.innerHeight / 2;
   return {
@@ -67,7 +164,6 @@ watch(
 watch(
   () => props.tag?.occurrence_id,
   () => {
-    expanded.value = false;
     selectedSenseId.value = props.tag?.selected_sense_id ?? null;
   },
   { immediate: true },
@@ -86,15 +182,19 @@ watch(
     @pointerenter="emit('enter', $event)"
     @pointerleave="emit('leave', $event)"
   >
-    <header>
-      <div>
-        <strong>{{ explanation?.title || tag.name_ja }}</strong>
-        <small v-if="explanation?.actual_form">本句：{{ explanation.actual_form }}</small>
+    <header class="popover-header">
+      <div class="heading-copy">
+        <span class="eyebrow">
+          {{ kindLabel }}<template v-if="tag.jlpt_level"> · JLPT N{{ tag.jlpt_level }}</template>
+        </span>
+        <h2>{{ explanation?.title || tag.name_ja }}</h2>
       </div>
-      <span v-if="tag.jlpt_level">JLPT N{{ tag.jlpt_level }}</span>
+      <span v-if="explanation?.status === 'partial'" class="candidate-count">
+        {{ tag.sense_candidates.length }} 个语义候选
+      </span>
     </header>
-    <p>{{ selectedSense?.label || explanation?.function_summary || tag.description }}</p>
-    <p v-if="explanation?.status === 'partial'" class="uncertainty">当前结构已识别，具体语义仍保留候选。</p>
+
+    <p class="core-summary">{{ summary }}</p>
 
     <div v-if="tag.sense_candidates.length > 1" class="sense-options" aria-label="语义候选">
       <button
@@ -108,101 +208,100 @@ watch(
         <small>{{ candidate.confidence }}%</small>
       </button>
     </div>
-    <p v-if="selectedSense?.evidence.length" class="sense-evidence">
-      依据：{{ selectedSense.evidence.join("；") }}
-    </p>
 
-    <section v-if="expanded && explanation" class="details">
-      <dl>
-        <template v-if="explanation.connection">
-          <dt>接续</dt>
-          <dd>{{ explanation.connection }}</dd>
+    <section v-if="showFormCard && explanation" class="form-card">
+      <div v-if="actualFormDiffers" class="actual-form">
+        <span>本句形态</span>
+        <strong>{{ explanation.actual_form }}</strong>
+      </div>
+      <div v-if="variants.length" class="variant-list">
+        <span v-for="part in variants" :key="`${part.name}-${part.char_range[0]}`">
+          {{ part.surface }} <b>←</b> {{ part.base_form }}
+        </span>
+      </div>
+      <div v-if="formParts.length > 1" class="formation-line" aria-label="本句构成">
+        <template v-for="(part, index) in formParts" :key="`${part.name}-${part.char_range[0]}`">
+          <span><small>{{ part.roleLabel }}</small>{{ part.surface }}</span>
+          <b v-if="index < formParts.length - 1">＋</b>
         </template>
-        <template v-if="explanation.morphology_chain.length">
-          <dt>活用链</dt>
-          <dd>{{ explanation.morphology_chain.join(" → ") }}</dd>
-        </template>
-        <template v-if="explanation.bound_captures.length">
-          <dt>本句捕获</dt>
-          <dd>{{ explanation.bound_captures.map((capture) => capture.surface).join(" · ") }}</dd>
-        </template>
-      </dl>
+      </div>
+      <div v-if="morphologyLabels.length" class="morphology-line">
+        <span v-for="item in morphologyLabels" :key="item">{{ item }}</span>
+      </div>
+    </section>
+
+    <dl v-if="usefulConnection" class="core-details">
+      <dt>接续</dt>
+      <dd>{{ usefulConnection }}</dd>
+    </dl>
+
+    <section v-if="displayBlocks.length" class="content-section">
       <div
-        v-for="(block, index) in explanation.content_blocks"
+        v-for="(block, index) in displayBlocks"
         :key="`${block.kind}-${index}`"
         :class="['content-block', `content-${block.kind}`]"
       >
-        <b v-if="block.label">{{ block.label }}</b>
+        <strong v-if="block.label">{{ block.label }}</strong>
         <p>{{ block.text }}</p>
       </div>
-      <div v-if="explanation.dictionary_targets.length" class="dictionary-actions">
-        <button
-          v-for="target in explanation.dictionary_targets"
-          :key="`${target.base_form}-${target.char_range[0]}`"
-          type="button"
-          @click="emit('openDictionary', target)"
-        >
-          {{ target.label }}
-        </button>
-      </div>
-      <details v-if="explanation.evidence.length" class="evidence">
-        <summary>识别依据</summary>
-        <ul>
-          <li v-for="item in explanation.evidence" :key="item">{{ item }}</li>
-        </ul>
-      </details>
-      <footer>
-        <span>目录状态：{{ explanation.audit_status }} · 内容 v{{ explanation.content_version }}</span>
-        <span v-if="explanation.source_refs.length">来源：{{ explanation.source_refs.join("；") }}</span>
-      </footer>
     </section>
 
-    <button v-if="explanation" type="button" class="expand-toggle" @click="expanded = !expanded">
-      {{ expanded ? "收起" : "展开讲解" }}
-    </button>
+    <div v-if="explanation?.dictionary_targets.length" class="dictionary-actions">
+      <button
+        v-for="target in explanation.dictionary_targets"
+        :key="`${target.base_form}-${target.char_range[0]}`"
+        type="button"
+        @click="emit('openDictionary', target)"
+      >
+        {{ dictionaryLabel(target) }}
+      </button>
+    </div>
+
+    <footer v-if="explanation" class="popover-footer">
+      <GrammarTrustBadges
+        :provenance="explanation.provenance"
+        :review-status="reviewStatus"
+        :reviewer="reviewer"
+        :reviewed-at="reviewedAt"
+      />
+    </footer>
   </aside>
 </template>
 
 <style scoped>
-.grammar-popover {
-  position: fixed;
-  z-index: 1010;
-  box-sizing: border-box;
-  padding: 14px 16px;
-  border: 1px solid color-mix(in srgb, #1769aa 35%, var(--border-color));
-  border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  box-shadow: var(--shadow-md);
-  backdrop-filter: var(--glass-filter);
-  color: var(--text-primary);
-  font: .88rem/1.55 var(--font-ja);
-}
-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-header > div { display: grid; min-width: 0; }
-strong { color: #1769aa; font-size: 1rem; }
-header span { color: var(--text-muted); font: 700 .7rem var(--font-ui); white-space: nowrap; }
-header small { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-p { margin: 8px 0 0; color: var(--text-secondary); }
-.uncertainty { padding: 6px 8px; border-radius: var(--radius-sm); background: color-mix(in srgb, #1769aa 8%, transparent); font-size: .78rem; }
+.grammar-popover { position: fixed; z-index: 1010; box-sizing: border-box; max-height: min(72vh, 620px); overflow: auto; overscroll-behavior: contain; padding: 17px 18px 14px; border: 1px solid color-mix(in srgb, #337eb7 28%, var(--border-color)); border-radius: 15px; background: color-mix(in srgb, var(--bg-primary) 94%, transparent); box-shadow: 0 18px 48px rgba(29, 58, 94, .14); backdrop-filter: blur(18px); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); }
+.popover-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.heading-copy { display: grid; min-width: 0; }
+.eyebrow { color: var(--text-muted); font: 750 .66rem/1.3 var(--font-ui); letter-spacing: .025em; }
+h2 { margin: 2px 0 0; color: #1769aa; font-size: 1.18rem; line-height: 1.35; }
+.candidate-count { flex: 0 0 auto; padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, #337eb7 8%, transparent); color: #3375a5; font: 700 .64rem/1.4 var(--font-ui); }
+.core-summary { margin: 9px 0 0; color: var(--text-primary); font-size: .93rem; line-height: 1.65; }
 .sense-options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 button { border: 1px solid var(--border-color); border-radius: 999px; background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; }
-.sense-options button { display: inline-flex; gap: 5px; align-items: center; padding: 4px 8px; font-size: .75rem; }
-.sense-options button.active { border-color: #1769aa; color: #1769aa; background: color-mix(in srgb, #1769aa 8%, transparent); }
-.sense-options small { color: var(--text-muted); }
-.sense-evidence { color: var(--text-muted); font-size: .75rem; }
-.details { max-height: min(48vh, 420px); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color); overflow: auto; }
-dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; margin: 0; }
-dt { color: var(--text-muted); font-size: .75rem; }
-dd { margin: 0; color: var(--text-secondary); }
-.content-block { margin-top: 10px; }
-.content-block b { color: var(--text-primary); font-size: .78rem; }
-.content-block p { margin-top: 2px; }
-.content-warning { padding: 7px 9px; border-left: 2px solid color-mix(in srgb, #1769aa 55%, var(--border-color)); background: color-mix(in srgb, #1769aa 5%, transparent); }
-.dictionary-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.dictionary-actions button, .expand-toggle { padding: 5px 9px; }
-.expand-toggle { margin-top: 10px; color: #1769aa; border-color: color-mix(in srgb, #1769aa 45%, var(--border-color)); }
-.evidence { margin-top: 12px; color: var(--text-muted); font-size: .75rem; }
-.evidence summary { cursor: pointer; }
-.evidence ul { margin: 5px 0 0; padding-left: 1.25rem; }
-footer { display: grid; gap: 2px; margin-top: 12px; color: var(--text-muted); font-size: .7rem; }
+.sense-options button { display: inline-flex; gap: 5px; align-items: center; max-width: 100%; padding: 4px 8px; font-size: .72rem; }
+.sense-options button.active { border-color: color-mix(in srgb, #1769aa 58%, var(--border-color)); color: #1769aa; background: color-mix(in srgb, #1769aa 7%, transparent); }
+.sense-options small { color: var(--text-muted); font-size: .62rem; }
+.form-card { display: grid; gap: 8px; margin-top: 13px; padding: 11px 12px; border-radius: 10px; background: color-mix(in srgb, #337eb7 5%, var(--bg-secondary)); }
+.actual-form { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.actual-form span { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
+.actual-form strong { color: var(--text-primary); font-size: .9rem; }
+.variant-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.variant-list span { padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--bg-primary) 82%, transparent); color: var(--text-secondary); font-size: .72rem; }
+.variant-list b { color: #5487ae; font-weight: 500; }
+.formation-line { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.formation-line > span { display: inline-grid; gap: 0; padding: 3px 7px 4px; border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent); border-radius: 7px; background: color-mix(in srgb, var(--bg-primary) 82%, transparent); color: var(--text-secondary); font-size: .75rem; }
+.formation-line small { color: var(--text-muted); font: 650 .56rem/1.2 var(--font-ui); }
+.formation-line > b { color: var(--text-muted); font-weight: 400; }
+.morphology-line { display: flex; flex-wrap: wrap; gap: 5px; }
+.morphology-line span { padding: 2px 6px; border-radius: 999px; background: color-mix(in srgb, #8873d6 8%, transparent); color: #6c5ab0; font: 700 .63rem var(--font-ui); }
+.core-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 11px; margin: 13px 0 0; padding-top: 11px; border-top: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent); }
+.core-details dt { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
+.core-details dd { margin: 0; color: var(--text-secondary); font-size: .78rem; }
+.content-section { display: grid; gap: 8px; margin-top: 12px; }
+.content-block strong { display: block; margin-bottom: 2px; color: var(--text-muted); font: 700 .68rem var(--font-ui); }
+.content-block p { margin: 0; color: var(--text-secondary); font-size: .8rem; }
+.content-warning { padding: 8px 9px; border-left: 2px solid #d59a4d; background: color-mix(in srgb, #d59a4d 6%, transparent); }
+.dictionary-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+.dictionary-actions button { padding: 4px 8px; color: #1769aa; border-color: color-mix(in srgb, #1769aa 28%, var(--border-color)); font-size: .7rem; }
+.popover-footer { margin-top: 13px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent); }
 </style>

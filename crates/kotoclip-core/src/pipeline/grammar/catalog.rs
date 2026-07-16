@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::models::GrammarProvenance;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GrammarConcept {
@@ -169,6 +170,10 @@ pub struct GrammarExplanationDocument {
     pub authoring_status: String,
     pub content_version: u32,
     #[serde(default)]
+    pub provenance: GrammarProvenance,
+    #[serde(default = "default_review_status")]
+    pub review_status: String,
+    #[serde(default)]
     pub body_blocks: Vec<GrammarSourceBlock>,
 }
 
@@ -247,6 +252,10 @@ pub struct GrammarCatalog {
 
 fn default_true() -> bool {
     true
+}
+
+fn default_review_status() -> String {
+    "unverified".to_string()
 }
 
 impl GrammarCatalog {

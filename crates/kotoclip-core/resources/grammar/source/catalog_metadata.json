@@ -1,0 +1,9 @@
+{
+  "default_provenance": {
+    "origin": "ai",
+    "author": "Codex",
+    "date": "2026-07-16",
+    "version": "1"
+  },
+  "default_review_status": "ai_checked"
+}

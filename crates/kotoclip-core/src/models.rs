@@ -322,6 +322,25 @@ pub struct GrammarDictionaryTarget {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GrammarProvenance {
+    pub origin: String,
+    pub author: String,
+    pub date: String,
+    pub version: String,
+}
+
+impl Default for GrammarProvenance {
+    fn default() -> Self {
+        Self {
+            origin: "builtin".to_string(),
+            author: "Kotoclip".to_string(),
+            date: "unknown".to_string(),
+            version: "1".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ResolvedGrammarExplanation {
     pub status: String,
     pub occurrence_summary: String,
@@ -350,6 +369,8 @@ pub struct ResolvedGrammarExplanation {
     pub dictionary_targets: Vec<GrammarDictionaryTarget>,
     #[serde(default)]
     pub source_refs: Vec<String>,
+    pub provenance: GrammarProvenance,
+    pub review_status: String,
     pub available_depths: Vec<String>,
     pub content_version: u32,
     pub audit_status: String,

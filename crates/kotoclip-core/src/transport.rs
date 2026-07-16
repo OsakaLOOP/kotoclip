@@ -166,6 +166,11 @@ pub struct CompactGrammarExplanation {
     pub i: Vec<u32>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub q: Vec<u32>,
+    pub po: u32,
+    pub pa: u32,
+    pub pd: u32,
+    pub pv: u32,
+    pub rv: u32,
     pub vrs: u32,
     pub u: u32,
 }
@@ -408,6 +413,11 @@ impl StringTable {
             w: value.dictionary_targets.iter().map(|item| self.grammar_dictionary_target(item)).collect(),
             i: value.available_depths.iter().map(|item| self.intern(item)).collect(),
             q: value.source_refs.iter().map(|item| self.intern(item)).collect(),
+            po: self.intern(&value.provenance.origin),
+            pa: self.intern(&value.provenance.author),
+            pd: self.intern(&value.provenance.date),
+            pv: self.intern(&value.provenance.version),
+            rv: self.intern(&value.review_status),
             vrs: value.content_version,
             u: self.intern(&value.audit_status),
         }
