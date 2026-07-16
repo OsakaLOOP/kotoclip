@@ -1,4 +1,16 @@
-import type { AnnotatedToken } from "../types";
+import type { AnnotatedToken, Morpheme } from "../types";
+
+/** 词典查询只把独立词的 base_form 当作词头；功能成分保留实际表面。 */
+export function dictionaryLemma(morpheme: Morpheme) {
+  if (
+    morpheme.pos.major === "助詞"
+    || morpheme.pos.major === "助動詞"
+    || morpheme.pos.major === "動詞" && morpheme.pos.sub1 === "接尾"
+  ) {
+    return morpheme.surface;
+  }
+  return morpheme.base_form && morpheme.base_form !== "*" ? morpheme.base_form : morpheme.surface;
+}
 
 /**
  * 选择胶囊级词典入口。精确词典整体优先；生产型构词没有整体词条时，
@@ -14,13 +26,21 @@ export function dictionaryTargetForToken(token: AnnotatedToken) {
     const morpheme = token.bunsetsu.morphemes[formation.head_morpheme];
     if (morpheme) {
       return {
-        word: morpheme.base_form && morpheme.base_form !== "*" ? morpheme.base_form : morpheme.surface,
+        word: dictionaryLemma(morpheme),
         reading: morpheme.reading,
       };
     }
   }
   return {
-    word: token.bunsetsu.head_word.base_form,
+    word: dictionaryLemma({
+      surface: token.bunsetsu.head_word.surface,
+      base_form: token.bunsetsu.head_word.base_form,
+      reading: token.bunsetsu.head_word.reading,
+      pos: token.bunsetsu.head_word.pos,
+      conjugation_type: "*",
+      conjugation_form: "*",
+      char_range: token.bunsetsu.char_range,
+    }),
     reading: token.bunsetsu.head_word.reading,
   };
 }

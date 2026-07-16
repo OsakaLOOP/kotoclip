@@ -638,6 +638,59 @@
               }
             ]
           }
+        },
+        {
+          "realization_id": "realization.functional.na.teki",
+          "rule_id": "functional.na.teki",
+          "possible_sense_ids": [
+            "grammar.functional.na.attributive"
+          ],
+          "connection_signature": "名词＋的＋な＋名词",
+          "functional_requirements": [
+            "的：形容动词性接尾语素；な：连体连接"
+          ],
+          "examples": [
+            "基本的なコード",
+            "応用的なコード"
+          ],
+          "counter_examples": [
+            "基本のコード"
+          ],
+          "rule": {
+            "priority": 47,
+            "display_from": 2,
+            "display_to": 3,
+            "atoms": [
+              {
+                "pos_major": [
+                  "名詞"
+                ]
+              },
+              {
+                "base_forms": [
+                  "的"
+                ],
+                "pos_major": [
+                  "名詞"
+                ],
+                "pos_sub1": [
+                  "接尾"
+                ]
+              },
+              {
+                "surfaces": [
+                  "な"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "conjugation_forms": [
+                  "体言接続"
+                ],
+                "capture": "functional_na"
+              }
+            ]
+          }
         }
       ]
     },

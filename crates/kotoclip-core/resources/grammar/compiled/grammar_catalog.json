@@ -6691,6 +6691,33 @@
       ]
     },
     {
+      "realization_id": "realization.functional.na.teki",
+      "concept_id": "grammar.functional.na",
+      "possible_sense_ids": [
+        "grammar.functional.na.attributive"
+      ],
+      "rule_id": "functional.na.teki",
+      "connection_signature": "名词＋的＋な＋名词",
+      "morphology_requirements": [],
+      "functional_requirements": [
+        "的：形容动词性接尾语素；な：连体连接"
+      ],
+      "context_requirements": [],
+      "examples": [
+        "基本的なコード",
+        "応用的なコード"
+      ],
+      "counter_examples": [
+        "基本のコード"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "corpus:七日の喰い神/第一話:grammar-review-batch-001",
+        "ipadic:runtime-observation"
+      ]
+    },
+    {
       "realization_id": "realization.functional.sentence_particle.na",
       "concept_id": "grammar.sentence_particle.na",
       "possible_sense_ids": [
@@ -10291,6 +10318,63 @@
       ],
       "rule_version": 1,
       "show_badge": true
+    },
+    {
+      "rule_id": "functional.na.teki",
+      "realization_id": "realization.functional.na.teki",
+      "concept_id": "grammar.functional.na",
+      "kind": "functional_morpheme",
+      "priority": 47,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "pos_major": [
+            "名詞"
+          ]
+        },
+        {
+          "base_forms": [
+            "的"
+          ],
+          "pos_major": [
+            "名詞"
+          ],
+          "pos_sub1": [
+            "接尾"
+          ]
+        },
+        {
+          "surfaces": [
+            "な"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "conjugation_forms": [
+            "体言接続"
+          ],
+          "capture": "functional_na"
+        }
+      ],
+      "display_from": 2,
+      "display_to": 3,
+      "captures": [],
+      "refines_rule_ids": [],
+      "conflict_group": null,
+      "examples": [
+        "基本的なコード",
+        "応用的なコード"
+      ],
+      "counter_examples": [
+        "基本のコード"
+      ],
+      "source_refs": [
+        "corpus:七日の喰い神/第一話:grammar-review-batch-001",
+        "ipadic:runtime-observation"
+      ],
+      "rule_version": 1,
+      "show_badge": false
     },
     {
       "rule_id": "functional.na.attributive",

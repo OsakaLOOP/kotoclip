@@ -4,6 +4,7 @@ import { snapshotRect, type RectSnapshot } from "../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS, scheduleCloseGrace } from "../explanation/closeGrace";
 import { floatDebug } from "../explanation/floatDebug";
 import { deriveExplanationRenderGate } from "../explanation/interactionGate";
+import { dictionaryLemma } from "../utils/dictionaryTarget";
 
 type LookupWord = (word: string, reading?: string) => Promise<DictionaryLookup | null>;
 type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
@@ -600,7 +601,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
 }
 
 function lemma(morpheme: Morpheme) {
-  return morpheme.base_form && morpheme.base_form !== "*" ? morpheme.base_form : morpheme.surface;
+  return dictionaryLemma(morpheme);
 }
 
 function lookupKey(word: string, reading: string) {

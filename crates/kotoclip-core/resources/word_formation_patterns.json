@@ -89,6 +89,34 @@
       "counter_examples": ["煙草が臭い"]
     },
     {
+      "id": "noun_teki_adjectival",
+      "rule_version": 1,
+      "source": "project_representative_cases",
+      "enabled": true,
+      "category": "derived_adjective",
+      "priority": 82,
+      "atoms": [
+        {
+          "pos": { "major": "名詞" },
+          "capture": "base",
+          "normalization": "surface"
+        },
+        {
+          "base_forms": ["的"],
+          "pos": { "major": "名詞", "sub1": "接尾", "sub2": "形容動詞語幹" },
+          "capture": "suffix",
+          "normalization": "base_form"
+        }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "形容動詞語幹", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 94
+      },
+      "examples": ["基本的", "応用的"],
+      "counter_examples": ["基本の", "応用する"]
+    },
+    {
       "id": "ordinal_counter",
       "rule_version": 1,
       "source": "project_representative_cases",
