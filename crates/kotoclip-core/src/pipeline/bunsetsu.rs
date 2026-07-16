@@ -444,6 +444,10 @@ fn collect_atomic_joins(
     lexical_units: &[AcceptedDictionaryLexicalUnit],
 ) -> HashSet<usize> {
     let mut joins = HashSet::new();
+    let morphology = super::morphology::analyze_morphemes(morphemes, 0);
+    for chain in morphology.chains {
+        joins.extend(chain.morpheme_range.0 + 1..chain.morpheme_range.1);
+    }
     for formation in formations {
         joins.extend(formation.morpheme_range.0 + 1..formation.morpheme_range.1);
     }

@@ -25,6 +25,111 @@
     "enabled": true
   },
   {
+    "concept_id": "morphology.form.imperfective",
+    "kind": "morphology",
+    "canonical_label": "未然形",
+    "aliases": [],
+    "semantic_domains": [
+      "morphology"
+    ],
+    "function_tags": [
+      "imperfective"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.form.imperfective",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.form.continuative",
+    "kind": "morphology",
+    "canonical_label": "连用形",
+    "aliases": [],
+    "semantic_domains": [
+      "morphology"
+    ],
+    "function_tags": [
+      "continuative"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.form.continuative",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.form.imperative",
+    "kind": "morphology",
+    "canonical_label": "命令形",
+    "aliases": [],
+    "semantic_domains": [
+      "mood"
+    ],
+    "function_tags": [
+      "imperative"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [],
+    "default_explanation_id": "explanation.morphology.form.imperative",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
+    "concept_id": "morphology.form.adjectival_attributive",
+    "kind": "morphology",
+    "canonical_label": "连体形（な）",
+    "aliases": [
+      "形容动词连体な"
+    ],
+    "semantic_domains": [
+      "morphology",
+      "attributive"
+    ],
+    "function_tags": [
+      "adjectival_attributive"
+    ],
+    "jlpt_level": 5,
+    "register": [
+      "modern_standard"
+    ],
+    "related_concept_ids": [],
+    "contrast_concept_ids": [
+      "grammar.sentence_particle.na"
+    ],
+    "default_explanation_id": "explanation.morphology.form.adjectival_attributive",
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "audit_status": "verified",
+    "concept_version": 1,
+    "enabled": true
+  },
+  {
     "concept_id": "morphology.form.te",
     "kind": "morphology",
     "canonical_label": "て形",

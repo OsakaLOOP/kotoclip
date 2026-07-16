@@ -22,6 +22,110 @@
     "body_blocks": []
   },
   {
+    "explanation_id": "explanation.morphology.form.imperfective",
+    "concept_id": "morphology.form.imperfective",
+    "sense_id": null,
+    "language": "zh-CN",
+    "title": "未然形",
+    "compact_summary": "连接否定、使役、受身等后续形式",
+    "function_summary": "连接否定、使役、受身等后续形式",
+    "connection": "位于词汇核心与后续活用成分之间。",
+    "formation": "用言词干的未然形",
+    "usage_notes": [],
+    "semantic_constraints": [],
+    "pragmatic_notes": [],
+    "examples": [
+      "見えなかった",
+      "行かせる"
+    ],
+    "counter_examples": [],
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "authoring_status": "verified",
+    "content_version": 1,
+    "body_blocks": []
+  },
+  {
+    "explanation_id": "explanation.morphology.form.continuative",
+    "concept_id": "morphology.form.continuative",
+    "sense_id": null,
+    "language": "zh-CN",
+    "title": "连用形",
+    "compact_summary": "连接助动词、接续形式或后续用言",
+    "function_summary": "连接助动词、接续形式或后续用言",
+    "connection": "由用言变为可连接后续成分的形式。",
+    "formation": "用言词干的连用形及其音便",
+    "usage_notes": [],
+    "semantic_constraints": [],
+    "pragmatic_notes": [],
+    "examples": [
+      "分類し",
+      "読んで"
+    ],
+    "counter_examples": [],
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "authoring_status": "verified",
+    "content_version": 1,
+    "body_blocks": []
+  },
+  {
+    "explanation_id": "explanation.morphology.form.imperative",
+    "concept_id": "morphology.form.imperative",
+    "sense_id": null,
+    "language": "zh-CN",
+    "title": "命令形",
+    "compact_summary": "形成命令或固定请求形式",
+    "function_summary": "形成命令或固定请求形式",
+    "connection": "由用言本身直接变形。",
+    "formation": "用言命令形",
+    "usage_notes": [],
+    "semantic_constraints": [],
+    "pragmatic_notes": [],
+    "examples": [
+      "読め",
+      "ください"
+    ],
+    "counter_examples": [],
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "authoring_status": "verified",
+    "content_version": 1,
+    "body_blocks": []
+  },
+  {
+    "explanation_id": "explanation.morphology.form.adjectival_attributive",
+    "concept_id": "morphology.form.adjectival_attributive",
+    "sense_id": null,
+    "language": "zh-CN",
+    "title": "连体形（な）",
+    "compact_summary": "以「な」连接形容动词词干与后续名词",
+    "function_summary": "以「な」连接形容动词词干与后续名词",
+    "connection": "形容动词词干＋な＋名词",
+    "formation": "词干＋助动词「だ」的体言接续形「な」",
+    "usage_notes": [
+      "该「な」属于形容动词本体的活用范围，不作为独立功能语素投影。"
+    ],
+    "semantic_constraints": [],
+    "pragmatic_notes": [],
+    "examples": [
+      "静かな部屋",
+      "応用的なコード"
+    ],
+    "counter_examples": [
+      "行くな"
+    ],
+    "source_refs": [
+      "kotoclip-editorial:2026-07-16"
+    ],
+    "authoring_status": "verified",
+    "content_version": 1,
+    "body_blocks": []
+  },
+  {
     "explanation_id": "explanation.morphology.form.te",
     "concept_id": "morphology.form.te",
     "sense_id": null,

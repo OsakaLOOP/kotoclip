@@ -202,12 +202,27 @@ impl MorphologyArtifact {
 pub struct MorphologyChain {
     pub chain_id: String,
     pub anchor_morpheme: usize,
+    pub anchor_range: (usize, usize),
+    pub morpheme_range: (usize, usize),
+    pub char_range: (usize, usize),
+    pub role: MorphologyChainRole,
     pub base_lexeme: String,
+    pub surface_form: String,
+    pub dictionary_form: String,
+    pub lookup_form: String,
     pub source_ranges: Vec<(usize, usize)>,
     pub operators: Vec<MorphologyOperator>,
     pub connection_forms: Vec<String>,
     pub feature_candidates: Vec<String>,
     pub evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum MorphologyChainRole {
+    #[default]
+    Lexical,
+    Functional,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -223,6 +238,10 @@ pub struct MorphologyOperator {
     pub evidence: Vec<String>,
     #[serde(default)]
     pub candidates: Vec<String>,
+    #[serde(default)]
+    pub label: String,
+    #[serde(default)]
+    pub description: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]

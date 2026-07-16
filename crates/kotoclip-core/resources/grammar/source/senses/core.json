@@ -16,6 +16,74 @@
     "audit_status": "verified"
   },
   {
+    "sense_id": "morphology.form.imperfective.imperfective",
+    "concept_id": "morphology.form.imperfective",
+    "label": "未然形",
+    "function_summary": "连接否定、使役、受身等后续形式",
+    "semantic_features": {
+      "function": "imperfective"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.form.imperfective",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.form.continuative.continuative",
+    "concept_id": "morphology.form.continuative",
+    "label": "连用形",
+    "function_summary": "连接助动词、接续形式或后续用言",
+    "semantic_features": {
+      "function": "continuative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.form.continuative",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.form.imperative.imperative",
+    "concept_id": "morphology.form.imperative",
+    "label": "命令形",
+    "function_summary": "形成命令或固定请求形式",
+    "semantic_features": {
+      "function": "imperative"
+    },
+    "context_requirements": [],
+    "exclusion_conditions": [],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.form.imperative",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
+    "sense_id": "morphology.form.adjectival_attributive.attributive",
+    "concept_id": "morphology.form.adjectival_attributive",
+    "label": "形容动词连体形",
+    "function_summary": "以「な」连接形容动词词干与后续名词",
+    "semantic_features": {
+      "function": "adjectival_attributive"
+    },
+    "context_requirements": [
+      "IPADIC: 助動詞・特殊ダ・体言接続"
+    ],
+    "exclusion_conditions": [
+      "句末终助词な"
+    ],
+    "related_sense_ids": [],
+    "contrast_sense_ids": [],
+    "explanation_id": "explanation.morphology.form.adjectival_attributive",
+    "sense_version": 1,
+    "audit_status": "verified"
+  },
+  {
     "sense_id": "morphology.form.te.te_form",
     "concept_id": "morphology.form.te",
     "label": "て形",

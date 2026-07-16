@@ -6,11 +6,12 @@ use self::resolve::{realization_sense_candidates, sense_candidates, GrammarExpla
 use crate::models::{
     AnnotatedToken, Bunsetsu, FunctionalResidual, GrammarCapture, GrammarOccurrence,
     GrammarOccurrenceKind, GrammarOccurrenceStatus, GrammarTag, Morpheme, MorphologyArtifact,
+    MorphologyChainRole,
 };
 use crate::pipeline::morphology;
 use std::collections::HashMap;
 
-pub const ANALYZER_VERSION: &str = "grammar-1";
+pub const ANALYZER_VERSION: &str = "grammar-2";
 
 /// 将分段分析产生的局部 Token／语素坐标重建为文档级规范坐标。
 ///
@@ -62,10 +63,9 @@ pub fn canonicalize_document_coordinates(tokens: &mut [AnnotatedToken]) {
             }
         }
         for chain in &mut token.bunsetsu.morphology.chains {
-            if let Some(anchor_range) = chain.source_ranges.first().copied() {
-                chain.anchor_morpheme = morpheme_range_for(anchor_range).0;
-                chain.chain_id = format!("morph:{}:{}", anchor_range.0, anchor_range.1);
-            }
+            chain.anchor_morpheme = morpheme_range_for(chain.anchor_range).0;
+            chain.morpheme_range = morpheme_range_for(chain.char_range);
+            chain.chain_id = format!("morph:{}:{}", chain.char_range.0, chain.char_range.1);
             for operator in &mut chain.operators {
                 operator.source_morpheme_range = morpheme_range_for(operator.char_range);
                 operator.operator_id =
@@ -150,6 +150,8 @@ impl GrammarMatcher {
         let mut global_offset = 0;
         for bunsetsu in bunsetsus.iter_mut() {
             bunsetsu.morphology = morphology::analyze_bunsetsu(bunsetsu, global_offset);
+            self.enrich_morphology(&mut bunsetsu.morphology);
+            morphology::apply_lexical_head(bunsetsu);
             global_offset += bunsetsu.morphemes.len();
         }
         let flat = flatten(bunsetsus);
@@ -163,6 +165,26 @@ impl GrammarMatcher {
             .collect::<Vec<_>>();
         self.assign_residuals(bunsetsus, &flat, &occurrences);
         self.attach_occurrences_and_tags(bunsetsus, &flat, occurrences);
+    }
+
+    fn enrich_morphology(&self, artifact: &mut MorphologyArtifact) {
+        for operator in artifact
+            .chains
+            .iter_mut()
+            .flat_map(|chain| &mut chain.operators)
+        {
+            let canonical_id = self.catalog.normalize_concept_id(&operator.concept_id);
+            let Some(concept) = self.catalog.concept(canonical_id) else {
+                continue;
+            };
+            operator.concept_id = canonical_id.to_string();
+            operator.label = concept.canonical_label.clone();
+            operator.description = self
+                .catalog
+                .explanation(&concept.default_explanation_id)
+                .map(|explanation| explanation.compact_summary.clone())
+                .unwrap_or_default();
+        }
     }
 
     fn morphology_candidates(&self, bunsetsus: &[Bunsetsu], flat: &[FlatMorpheme]) -> Vec<Candidate> {
@@ -529,8 +551,11 @@ impl GrammarMatcher {
         &self,
         bunsetsus: &mut [Bunsetsu],
         flat: &[FlatMorpheme],
-        occurrences: Vec<GrammarOccurrence>,
+        mut occurrences: Vec<GrammarOccurrence>,
     ) {
+        for occurrence in &mut occurrences {
+            expand_functional_inflection(occurrence, bunsetsus);
+        }
         let resolver = GrammarExplanationResolver::new(&self.catalog);
         let global_to_bunsetsu = flat
             .iter()
@@ -541,17 +566,13 @@ impl GrammarMatcher {
             let morphology = bunsetsus.get(anchor_bunsetsu).map(|item| &item.morphology);
             let explanation = resolver.resolve(&occurrence, morphology);
             if occurrence.status == GrammarOccurrenceStatus::Accepted
-                && (occurrence.kind != GrammarOccurrenceKind::MorphologyFeature
-                    || occurrence.concept_id == "morphology.chain")
+                && occurrence.kind != GrammarOccurrenceKind::MorphologyFeature
+                && !absorbed_by_lexical_inflection(&occurrence, bunsetsus)
             {
-                let label = if occurrence.concept_id == "morphology.chain" {
-                    morphology_label(&bunsetsus[anchor_bunsetsu].morphology, &self.catalog)
-                } else {
-                    self.catalog
-                        .concept(&occurrence.concept_id)
-                        .map(|item| item.canonical_label.clone())
-                        .unwrap_or_else(|| occurrence.concept_id.clone())
-                };
+                let label = self.catalog
+                    .concept(&occurrence.concept_id)
+                    .map(|item| item.canonical_label.clone())
+                    .unwrap_or_else(|| occurrence.concept_id.clone());
                 let description = explanation
                     .as_ref()
                     .map(|item| item.compact_summary.clone())
@@ -624,6 +645,71 @@ impl GrammarMatcher {
             bunsetsu.grammar_occurrences.sort_by_key(|item| (item.anchor_range.0, item.anchor_range.1));
         }
     }
+}
+
+fn expand_functional_inflection(
+    occurrence: &mut GrammarOccurrence,
+    bunsetsus: &[Bunsetsu],
+) {
+    if occurrence.kind == GrammarOccurrenceKind::MorphologyFeature {
+        return;
+    }
+    for chain in bunsetsus
+        .iter()
+        .flat_map(|bunsetsu| &bunsetsu.morphology.chains)
+        .filter(|chain| chain.role == MorphologyChainRole::Functional)
+    {
+        let touches_anchor = occurrence
+            .display_ranges
+            .iter()
+            .any(|range| ranges_overlap(*range, chain.anchor_range));
+        if !touches_anchor {
+            continue;
+        }
+        occurrence
+            .matched_ranges
+            .extend(chain.source_ranges.iter().copied());
+        occurrence
+            .display_ranges
+            .extend(chain.source_ranges.iter().copied());
+        for capture in &mut occurrence.captures {
+            if ranges_overlap(capture.char_range, chain.anchor_range)
+                && (matches!(
+                    capture.name.as_str(),
+                    "functional_verb" | "support_verb" | "auxiliary"
+                ) || capture.base_form == chain.base_lexeme)
+            {
+                capture.surface = chain.surface_form.clone();
+                capture.char_range = chain.char_range;
+                capture.morpheme_range = chain.morpheme_range;
+            }
+        }
+    }
+    occurrence.matched_ranges = merge_ranges(std::mem::take(&mut occurrence.matched_ranges));
+    occurrence.display_ranges = merge_ranges(std::mem::take(&mut occurrence.display_ranges));
+}
+
+fn absorbed_by_lexical_inflection(
+    occurrence: &GrammarOccurrence,
+    bunsetsus: &[Bunsetsu],
+) -> bool {
+    if occurrence.kind != GrammarOccurrenceKind::FunctionalMorpheme
+        || occurrence.display_ranges.is_empty()
+    {
+        return false;
+    }
+    bunsetsus
+        .iter()
+        .flat_map(|bunsetsu| &bunsetsu.morphology.chains)
+        .filter(|chain| chain.role == MorphologyChainRole::Lexical)
+        .flat_map(|chain| &chain.operators)
+        .filter(|operator| operator.kind != "connection_form")
+        .any(|operator| {
+            occurrence
+                .display_ranges
+                .iter()
+                .all(|range| contains_range(operator.char_range, *range))
+        })
 }
 
 fn flatten(bunsetsus: &[Bunsetsu]) -> Vec<FlatMorpheme> {
@@ -946,22 +1032,6 @@ fn contains_range(container: (usize, usize), inner: (usize, usize)) -> bool {
 
 fn ranges_overlap(left: (usize, usize), right: (usize, usize)) -> bool {
     left.0 < right.1 && right.0 < left.1
-}
-
-fn morphology_label(artifact: &MorphologyArtifact, catalog: &GrammarCatalog) -> String {
-    let mut labels = artifact
-        .chains
-        .iter()
-        .flat_map(|chain| &chain.operators)
-        .filter_map(|operator| catalog.concept(&operator.concept_id))
-        .map(|concept| concept.canonical_label.clone())
-        .collect::<Vec<_>>();
-    labels.dedup();
-    if labels.is_empty() {
-        "活用".to_string()
-    } else {
-        labels.join("・")
-    }
 }
 
 #[cfg(test)]

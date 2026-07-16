@@ -28,6 +28,111 @@
       "enabled": true
     },
     {
+      "concept_id": "morphology.form.imperfective",
+      "kind": "morphology",
+      "canonical_label": "未然形",
+      "aliases": [],
+      "semantic_domains": [
+        "morphology"
+      ],
+      "function_tags": [
+        "imperfective"
+      ],
+      "jlpt_level": 5,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.morphology.form.imperfective",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-16"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "morphology.form.continuative",
+      "kind": "morphology",
+      "canonical_label": "连用形",
+      "aliases": [],
+      "semantic_domains": [
+        "morphology"
+      ],
+      "function_tags": [
+        "continuative"
+      ],
+      "jlpt_level": 5,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.morphology.form.continuative",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-16"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "morphology.form.imperative",
+      "kind": "morphology",
+      "canonical_label": "命令形",
+      "aliases": [],
+      "semantic_domains": [
+        "mood"
+      ],
+      "function_tags": [
+        "imperative"
+      ],
+      "jlpt_level": 5,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.morphology.form.imperative",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-16"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "morphology.form.adjectival_attributive",
+      "kind": "morphology",
+      "canonical_label": "连体形（な）",
+      "aliases": [
+        "形容动词连体な"
+      ],
+      "semantic_domains": [
+        "morphology",
+        "attributive"
+      ],
+      "function_tags": [
+        "adjectival_attributive"
+      ],
+      "jlpt_level": 5,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [
+        "grammar.sentence_particle.na"
+      ],
+      "default_explanation_id": "explanation.morphology.form.adjectival_attributive",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-16"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
       "concept_id": "morphology.form.te",
       "kind": "morphology",
       "canonical_label": "て形",
@@ -2731,6 +2836,74 @@
       "related_sense_ids": [],
       "contrast_sense_ids": [],
       "explanation_id": "explanation.morphology.chain",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "morphology.form.imperfective.imperfective",
+      "concept_id": "morphology.form.imperfective",
+      "label": "未然形",
+      "function_summary": "连接否定、使役、受身等后续形式",
+      "semantic_features": {
+        "function": "imperfective"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.morphology.form.imperfective",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "morphology.form.continuative.continuative",
+      "concept_id": "morphology.form.continuative",
+      "label": "连用形",
+      "function_summary": "连接助动词、接续形式或后续用言",
+      "semantic_features": {
+        "function": "continuative"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.morphology.form.continuative",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "morphology.form.imperative.imperative",
+      "concept_id": "morphology.form.imperative",
+      "label": "命令形",
+      "function_summary": "形成命令或固定请求形式",
+      "semantic_features": {
+        "function": "imperative"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.morphology.form.imperative",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "morphology.form.adjectival_attributive.attributive",
+      "concept_id": "morphology.form.adjectival_attributive",
+      "label": "形容动词连体形",
+      "function_summary": "以「な」连接形容动词词干与后续名词",
+      "semantic_features": {
+        "function": "adjectival_attributive"
+      },
+      "context_requirements": [
+        "IPADIC: 助動詞・特殊ダ・体言接続"
+      ],
+      "exclusion_conditions": [
+        "句末终助词な"
+      ],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.morphology.form.adjectival_attributive",
       "sense_version": 1,
       "audit_status": "verified"
     },

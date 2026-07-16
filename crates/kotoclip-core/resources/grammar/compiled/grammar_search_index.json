@@ -23,6 +23,99 @@
       ]
     },
     {
+      "concept_id": "morphology.form.imperfective",
+      "label": "未然形",
+      "aliases": [],
+      "semantic_domains": [
+        "morphology"
+      ],
+      "function_tags": [
+        "imperfective"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "未然形",
+        "连接否定、使役、受身等后续形式"
+      ]
+    },
+    {
+      "concept_id": "morphology.form.continuative",
+      "label": "连用形",
+      "aliases": [],
+      "semantic_domains": [
+        "morphology"
+      ],
+      "function_tags": [
+        "continuative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "连用形",
+        "连接助动词、接续形式或后续用言"
+      ]
+    },
+    {
+      "concept_id": "morphology.form.imperative",
+      "label": "命令形",
+      "aliases": [],
+      "semantic_domains": [
+        "mood"
+      ],
+      "function_tags": [
+        "imperative"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "命令形",
+        "形成命令或固定请求形式"
+      ]
+    },
+    {
+      "concept_id": "morphology.form.adjectival_attributive",
+      "label": "连体形（な）",
+      "aliases": [
+        "形容动词连体な"
+      ],
+      "semantic_domains": [
+        "morphology",
+        "attributive"
+      ],
+      "function_tags": [
+        "adjectival_attributive"
+      ],
+      "jlpt_level": 5,
+      "surface_hints": [],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [
+        "grammar.sentence_particle.na"
+      ],
+      "sense_hints": [
+        "形容动词连体形",
+        "以「な」连接形容动词词干与后续名词"
+      ]
+    },
+    {
       "concept_id": "morphology.form.te",
       "label": "て形",
       "aliases": [],

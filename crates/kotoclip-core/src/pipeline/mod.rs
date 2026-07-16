@@ -790,6 +790,72 @@ mod tests {
     }
 
     #[test]
+    fn lexical_inflection_expands_display_head_without_changing_lookup_form() {
+        let Some(dict_path) = get_test_ipadic_path() else {
+            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+            return;
+        };
+        let pipeline = Pipeline::new(&dict_path).expect("初始化 NLP Pipeline 失败");
+        let tokens = pipeline.process(
+            "見えなかった。分類し、静かな場所で読んでくださった。行くな。",
+            &[],
+        );
+
+        let token = |surface: &str| {
+            tokens
+                .iter()
+                .find(|token| token.bunsetsu.surface == surface)
+                .unwrap_or_else(|| panic!("未找到文节：{surface}"))
+        };
+
+        let negative = token("見えなかった");
+        assert_eq!(negative.bunsetsu.head_word.surface, "見えなかった");
+        assert_eq!(negative.bunsetsu.head_word.base_form, "見える");
+        assert!(negative.bunsetsu.grammar_tags.is_empty());
+
+        let sahen = token("分類し");
+        assert_eq!(sahen.bunsetsu.head_word.surface, "分類し");
+        assert_eq!(sahen.bunsetsu.head_word.base_form, "分類");
+        assert_eq!(
+            sahen.bunsetsu.morphology.chains[0].dictionary_form,
+            "分類する"
+        );
+
+        let adjective = token("静かな");
+        assert_eq!(adjective.bunsetsu.head_word.surface, "静かな");
+        assert!(adjective
+            .bunsetsu
+            .grammar_tags
+            .iter()
+            .all(|tag| tag.concept_id != "grammar.functional.na"));
+
+        let benefactive = token("読んでくださった");
+        assert_eq!(benefactive.bunsetsu.head_word.surface, "読んで");
+        let functional_range = benefactive
+            .bunsetsu
+            .morphology
+            .chains
+            .iter()
+            .find(|chain| chain.role == crate::models::MorphologyChainRole::Functional)
+            .expect("补助用言应具有独立活用链")
+            .char_range;
+        assert!(benefactive.bunsetsu.grammar_tags.iter().any(|tag| {
+            tag.concept_id == "grammar.benefactive.te_kudasaru"
+                && tag.display_ranges.iter().any(|range| {
+                    functional_range.0 >= range.0 && functional_range.1 <= range.1
+                })
+        }));
+
+        let terminal = token("行くな");
+        assert_eq!(terminal.bunsetsu.head_word.surface, "行く");
+        assert!(terminal
+            .bunsetsu
+            .grammar_tags
+            .iter()
+            .any(|tag| tag.concept_id == "grammar.sentence_particle.na"));
+    }
+
+    #[test]
     fn test_user_example_preserves_complete_text() {
         let dict_path = match get_test_ipadic_path() {
             Some(p) => p,
