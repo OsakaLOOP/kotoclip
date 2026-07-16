@@ -2,6 +2,8 @@
 import { DictEntry } from "../../types";
 import "../../styles/dictionaries/generic.css";
 import "../../styles/dictionaries/daijirin.css";
+import "../../styles/dictionaries/shogakukan.css";
+import "../../styles/dictionaries/crown.css";
 
 defineProps<{ entry: DictEntry }>();
 </script>

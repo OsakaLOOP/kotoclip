@@ -76,15 +76,30 @@ def iter_sqlite_entries(path: Path) -> tuple[str, Iterator[tuple[str, str | None
     return source_name, rows()
 
 
-def iter_mdx_entries(path: Path) -> Iterator[tuple[str, None, str]]:
+def iter_mdx_entries(path: Path, encoding_override: str | None = None) -> Iterator[tuple[str, None, str]]:
     try:
-        from readmdict import MDX
-    except ImportError as error:
-        raise RuntimeError("读取 MDX 需要安装 readmdict：pip install readmdict") from error
+        from mdict_utils.base.readmdict import MDX
+    except ImportError:
+        try:
+            from readmdict import MDX
+        except ImportError as error:
+            raise RuntimeError("读取 MDX 需要安装 readmdict：pip install readmdict") from error
 
-    for raw_headword, raw_definition in MDX(str(path)).items():
-        headword = raw_headword.decode("utf-8", errors="ignore").strip()
-        definition = raw_definition.decode("utf-8", errors="ignore").strip()
+    kwargs = {}
+    if encoding_override:
+        kwargs["encoding"] = encoding_override
+
+    for raw_headword, raw_definition in MDX(str(path), **kwargs).items():
+        headword = (
+            raw_headword.decode("utf-8", errors="ignore").strip()
+            if isinstance(raw_headword, bytes)
+            else raw_headword.strip()
+        )
+        definition = (
+            raw_definition.decode("utf-8", errors="ignore").strip()
+            if isinstance(raw_definition, bytes)
+            else raw_definition.strip()
+        )
         if headword and definition:
             yield headword, None, definition
 

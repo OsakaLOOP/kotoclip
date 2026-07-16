@@ -1,0 +1,184 @@
+/* CrownJC CSS Style Profile */
+
+.dictionary-content--crown {
+  font-size: 0.95em;
+  line-height: 1.6;
+}
+
+/* 义项组 */
+.dictionary-content--crown .mean_gogi {
+  margin-top: 10px;
+  color: var(--text-primary);
+}
+
+.dictionary-content--crown .kg_gogi {
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--accent-color);
+  font-weight: 700;
+  font-size: 1.05em;
+}
+
+/* 语义区分 */
+.dictionary-content--crown .mean_kubun,
+.dictionary-content--crown .kg_shokubun_par {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
+/* 译语 */
+.dictionary-content--crown .mean_yakugo {
+  font-weight: 600;
+}
+
+.dictionary-content--crown .yakugo_sub_box {
+  display: inline-block;
+  margin-right: 12px;
+}
+
+/* 拼音 */
+.dictionary-content--crown .pinyin_box {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.8em;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.dictionary-content--crown .mean_pinyin {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.dictionary-content--crown .kg_wake {
+  color: var(--border-color);
+  opacity: 0.7;
+}
+
+/* 英译 */
+.dictionary-content--crown .eiyaku_box {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  font-size: 0.8em;
+}
+
+.dictionary-content--crown .kg_eiyaku_par,
+.dictionary-content--crown .kg_eiyaku {
+  color: var(--text-muted);
+}
+
+.dictionary-content--crown .mean_eiyaku {
+  font-style: italic;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* 例句组 */
+.dictionary-content--crown .group_yoreiyaku {
+  margin-top: 6px;
+  margin-left: 12px;
+}
+
+.dictionary-content--crown .mean_yoreiyaku {
+  margin-bottom: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border-color);
+  font-size: 0.92em;
+}
+
+.dictionary-content--crown .kg_yoreiyaku {
+  color: var(--accent-color);
+  margin-right: 6px;
+  font-size: 0.8em;
+  display: none; /* 已经有 border-left 标识，隐藏原生的 ▶ 符号 */
+}
+
+.dictionary-content--crown .mean_yorei {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.dictionary-content--crown .reiyaku_box {
+  display: inline;
+}
+
+.dictionary-content--crown .kg_reiyaku_box {
+  margin-inline: 6px;
+  color: var(--border-color);
+}
+
+.dictionary-content--crown .mean_reiyaku {
+  color: var(--text-muted);
+}
+
+/* 复合词 */
+.dictionary-content--crown .group_hukugo {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.dictionary-content--crown .item_sub_hukugo {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.dictionary-content--crown .midashi_sub_hukugo {
+  font-weight: 700;
+  color: var(--accent-color);
+  font-size: 0.92em;
+  margin-bottom: 2px;
+}
+
+.dictionary-content--crown .kg_hukugo {
+  margin-right: 4px;
+}
+
+.dictionary-content--crown .honbun_sub_hukugo {
+  padding-left: 12px;
+  font-size: 0.92em;
+}
+
+.dictionary-content--crown .kg_hukugo_yakugo {
+  display: none;
+}
+
+/* 词头略称 */
+.dictionary-content--crown .mj_midashi_ryaku {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+/* 日中比较 / 补充说明 */
+.dictionary-content--crown .item_sub_column {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 0.88em;
+}
+
+.dictionary-content--crown .mean_data_hikaku {
+  color: var(--text-secondary);
+}
+
+.dictionary-content--crown .kg_data_hikaku {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--accent-light);
+  color: var(--accent-color);
+  font-weight: 700;
+  font-size: 0.8em;
+}
+
+.dictionary-content--crown .mean_lang_cn {
+  font-weight: 700;
+  color: var(--text-primary);
+}

@@ -16,6 +16,10 @@ pub struct DictionaryPresentation {
 pub fn present(dict_name: &str, headword: &str, definition: &str) -> DictionaryPresentation {
     if dict_name.contains("大辞林") {
         present_daijirin(headword, definition)
+    } else if dict_name.contains("小学館") || dict_name.contains("小学馆") {
+        present_shogakukan(headword, definition)
+    } else if dict_name.contains("CROWN") || dict_name.contains("Crown") {
+        present_crown(headword, definition)
     } else {
         present_generic(definition)
     }
@@ -25,6 +29,30 @@ fn present_daijirin(headword: &str, definition: &str) -> DictionaryPresentation 
     let links = extract_daijirin_links(definition);
     let managed = clean_daijirin_markup(definition, headword, links.len());
     let mut presentation = finish("daijirin", managed, links);
+    presentation.reading = headword
+        .find(|character| matches!(character, '【' | '〖' | '（'))
+        .map(|end| headword[..end].trim().to_string())
+        .filter(|reading| is_kana(reading));
+    presentation
+}
+
+fn present_shogakukan(_headword: &str, definition: &str) -> DictionaryPresentation {
+    let links = extract_shogakukan_links(definition);
+    let managed = clean_shogakukan_markup(definition);
+    let mut presentation = finish("shogakukan", managed, links);
+
+    let reading_re = Regex::new(r#"<span\s+class="pinyin_h">([^<]+)</span>"#).unwrap();
+    presentation.reading = reading_re.captures(definition)
+        .and_then(|cap| cap.get(1))
+        .map(|m| m.as_str().trim().to_string())
+        .filter(|reading| is_kana(reading));
+    presentation
+}
+
+fn present_crown(headword: &str, definition: &str) -> DictionaryPresentation {
+    let links = extract_crown_links(definition);
+    let managed = clean_crown_markup(definition);
+    let mut presentation = finish("crown", managed, links);
     presentation.reading = headword
         .find(|character| matches!(character, '【' | '〖' | '（'))
         .map(|end| headword[..end].trim().to_string())
@@ -74,14 +102,20 @@ fn finish(profile: &str, source: String, links: Vec<DictionaryLink>) -> Dictiona
         "nh",
         "kh",
         "ku",
+        "section",
+        "jae",
+        "ja_cn",
     ]
     .into_iter()
     .collect();
     let clean = Builder::default()
         .tags(allowed)
-        .add_tag_attributes("span", &["class"])
-        .add_tag_attributes("div", &["class"])
-        .add_tag_attributes("p", &["class"])
+        .add_tag_attributes("span", &["class", "type"])
+        .add_tag_attributes("div", &["class", "id", "type", "delimiter", "data-orgtag"])
+        .add_tag_attributes("p", &["class", "level", "no", "type", "delimiter", "data-orgtag"])
+        .add_tag_attributes("section", &["class"])
+        .add_tag_attributes("jae", &["class"])
+        .add_tag_attributes("ja_cn", &["class"])
         .clean(&source)
         .to_string();
     let definition_html = truncate(clean);
@@ -237,4 +271,100 @@ fn is_kana(value: &str) -> bool {
         && value
             .chars()
             .all(|character| ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー')
+}
+
+fn extract_shogakukan_links(definition: &str) -> Vec<DictionaryLink> {
+    if let Some(target) = definition.strip_prefix("@@@LINK=") {
+        return vec![DictionaryLink {
+            target: target.trim().to_string(),
+            label: target.trim().to_string(),
+            relation: "redirect".to_string(),
+        }];
+    }
+    let link_re =
+        Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
+    let tag_re = Regex::new(r"<[^>]+>").unwrap();
+    let mut seen = HashSet::new();
+    link_re
+        .captures_iter(definition)
+        .filter_map(|captures| {
+            let target = captures.get(1)?.as_str().trim().to_string();
+            if target.is_empty() || !seen.insert(target.clone()) {
+                return None;
+            }
+            let label = tag_re
+                .replace_all(captures.get(2)?.as_str(), "")
+                .trim()
+                .to_string();
+            let before = &definition[..captures.get(0)?.start()];
+            let relation = if before.contains("参见") || before.contains("參見") {
+                "reference"
+            } else {
+                "related"
+            };
+            Some(DictionaryLink {
+                target,
+                label,
+                relation: relation.to_string(),
+            })
+        })
+        .collect()
+}
+
+fn extract_crown_links(definition: &str) -> Vec<DictionaryLink> {
+    if let Some(target) = definition.strip_prefix("@@@LINK=") {
+        return vec![DictionaryLink {
+            target: target.trim().to_string(),
+            label: target.trim().to_string(),
+            relation: "redirect".to_string(),
+        }];
+    }
+    let link_re =
+        Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
+    let tag_re = Regex::new(r"<[^>]+>").unwrap();
+    let mut seen = HashSet::new();
+    link_re
+        .captures_iter(definition)
+        .filter_map(|captures| {
+            let target = captures.get(1)?.as_str().trim().to_string();
+            if target.is_empty() || !seen.insert(target.clone()) {
+                return None;
+            }
+            let label = tag_re
+                .replace_all(captures.get(2)?.as_str(), "")
+                .trim()
+                .to_string();
+            Some(DictionaryLink {
+                target,
+                label,
+                relation: "related".to_string(),
+            })
+        })
+        .collect()
+}
+
+fn clean_shogakukan_markup(definition: &str) -> String {
+    let link_re = Regex::new(r#"(?i)<link\s+[^>]*>"#).unwrap();
+    let without_link = link_re.replace_all(definition, "");
+
+    let h3_re = Regex::new(r#"(?s)<h3>.*?</h3>"#).unwrap();
+    let without_h3 = h3_re.replace_all(&without_link, "");
+
+    let ref_re = Regex::new(r#"(?i)(?:参见：|參見：)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#).unwrap();
+    let without_ref = ref_re.replace_all(&without_h3, "");
+
+    without_ref.into_owned()
+}
+
+fn clean_crown_markup(definition: &str) -> String {
+    let link_re = Regex::new(r#"(?i)<link\s+[^>]*>"#).unwrap();
+    let without_link = link_re.replace_all(definition, "");
+
+    let anchor_re = Regex::new(r#"(?i)<a\s+name=[^>]*>\s*</a>"#).unwrap();
+    let without_anchor = anchor_re.replace_all(&without_link, "");
+
+    let midashi_re = Regex::new(r#"(?s)<div\s+class="midashi">.*?</div>"#).unwrap();
+    let without_midashi = midashi_re.replace_all(&without_anchor, "");
+
+    without_midashi.into_owned()
 }
