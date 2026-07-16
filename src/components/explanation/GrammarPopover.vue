@@ -46,6 +46,16 @@ const kindLabel = computed(() => ({
 
 const summary = computed(() => selectedSense.value?.label || explanation.value?.function_summary || props.tag?.description || "");
 
+const senseOptions = computed(() => {
+  const seen = new Set<string>();
+  return (props.tag?.sense_candidates ?? []).filter((candidate) => {
+    const key = normalizeForm(candidate.label);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+});
+
 function normalizeForm(value: string) {
   return value.replace(/[〜～○…（）()／/・\s]/g, "").toLocaleLowerCase();
 }
@@ -111,7 +121,9 @@ const displayBlocks = computed(() => {
   const seen = new Set<string>();
   return (explanation.value?.content_blocks ?? []).filter((block) => {
     if (block.kind === "occurrence_binding") return false;
-    if (block.kind === "warning" && block.text.includes("存在多义时保留候选")) return false;
+    if (block.kind === "warning") return false;
+    if (/判定|边界/.test(block.label ?? "")) return false;
+    if (/(realization|系统依据|词性身份|身份范围)/i.test(block.text)) return false;
     const text = normalizeForm(block.text);
     if (!text || duplicateTexts.has(text) || seen.has(text)) return false;
     seen.add(text);
@@ -189,23 +201,19 @@ watch(
         </span>
         <h2>{{ explanation?.title || tag.name_ja }}</h2>
       </div>
-      <span v-if="explanation?.status === 'partial'" class="candidate-count">
-        {{ tag.sense_candidates.length }} 个语义候选
-      </span>
     </header>
 
     <p class="core-summary">{{ summary }}</p>
 
-    <div v-if="tag.sense_candidates.length > 1" class="sense-options" aria-label="语义候选">
+    <div v-if="senseOptions.length > 1" class="sense-options" aria-label="语义候选">
       <button
-        v-for="candidate in tag.sense_candidates"
+        v-for="candidate in senseOptions"
         :key="candidate.sense_id"
         type="button"
         :class="{ active: (selectedSenseId ?? tag.selected_sense_id) === candidate.sense_id }"
         @click="selectedSenseId = candidate.sense_id"
       >
         {{ candidate.label }}
-        <small>{{ candidate.confidence }}%</small>
       </button>
     </div>
 
@@ -221,8 +229,8 @@ watch(
       </div>
       <div v-if="formParts.length > 1" class="formation-line" aria-label="本句构成">
         <template v-for="(part, index) in formParts" :key="`${part.name}-${part.char_range[0]}`">
-          <span><small>{{ part.roleLabel }}</small>{{ part.surface }}</span>
-          <b v-if="index < formParts.length - 1">＋</b>
+          <span><em>{{ part.roleLabel }}</em>{{ part.surface }}</span>
+          <b v-if="index < formParts.length - 1">·</b>
         </template>
       </div>
       <div v-if="morphologyLabels.length" class="morphology-line">
@@ -274,13 +282,11 @@ watch(
 .heading-copy { display: grid; min-width: 0; }
 .eyebrow { color: var(--text-muted); font: 750 .66rem/1.3 var(--font-ui); letter-spacing: .025em; }
 h2 { margin: 2px 0 0; color: #1769aa; font-size: 1.18rem; line-height: 1.35; }
-.candidate-count { flex: 0 0 auto; padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, #337eb7 8%, transparent); color: #3375a5; font: 700 .64rem/1.4 var(--font-ui); }
 .core-summary { margin: 9px 0 0; color: var(--text-primary); font-size: .93rem; line-height: 1.65; }
-.sense-options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sense-options { display: flex; flex-wrap: wrap; gap: 0 13px; margin-top: 10px; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent); }
 button { border: 1px solid var(--border-color); border-radius: 999px; background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; }
-.sense-options button { display: inline-flex; gap: 5px; align-items: center; max-width: 100%; padding: 4px 8px; font-size: .72rem; }
-.sense-options button.active { border-color: color-mix(in srgb, #1769aa 58%, var(--border-color)); color: #1769aa; background: color-mix(in srgb, #1769aa 7%, transparent); }
-.sense-options small { color: var(--text-muted); font-size: .62rem; }
+.sense-options button { padding: 2px 0 4px; border: 0; border-radius: 0; color: var(--text-muted); font-size: .74rem; }
+.sense-options button.active { color: #1769aa; box-shadow: inset 0 -2px #1769aa; }
 .form-card { display: grid; gap: 8px; margin-top: 13px; padding: 11px 12px; border-radius: 10px; background: color-mix(in srgb, #337eb7 5%, var(--bg-secondary)); }
 .actual-form { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px; align-items: baseline; }
 .actual-form span { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
@@ -288,12 +294,12 @@ button { border: 1px solid var(--border-color); border-radius: 999px; background
 .variant-list { display: flex; flex-wrap: wrap; gap: 5px; }
 .variant-list span { padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--bg-primary) 82%, transparent); color: var(--text-secondary); font-size: .72rem; }
 .variant-list b { color: #5487ae; font-weight: 500; }
-.formation-line { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
-.formation-line > span { display: inline-grid; gap: 0; padding: 3px 7px 4px; border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent); border-radius: 7px; background: color-mix(in srgb, var(--bg-primary) 82%, transparent); color: var(--text-secondary); font-size: .75rem; }
-.formation-line small { color: var(--text-muted); font: 650 .56rem/1.2 var(--font-ui); }
+.formation-line { display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; color: var(--text-secondary); font-size: .76rem; }
+.formation-line > span { display: inline; }
+.formation-line em { margin-right: 3px; color: var(--text-muted); font: 650 .62rem var(--font-ui); font-style: normal; }
 .formation-line > b { color: var(--text-muted); font-weight: 400; }
-.morphology-line { display: flex; flex-wrap: wrap; gap: 5px; }
-.morphology-line span { padding: 2px 6px; border-radius: 999px; background: color-mix(in srgb, #8873d6 8%, transparent); color: #6c5ab0; font: 700 .63rem var(--font-ui); }
+.morphology-line { display: flex; flex-wrap: wrap; gap: 0 10px; color: #6c5ab0; font: 700 .65rem var(--font-ui); }
+.morphology-line span + span::before { margin-right: 10px; color: var(--text-muted); content: "→"; }
 .core-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 11px; margin: 13px 0 0; padding-top: 11px; border-top: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent); }
 .core-details dt { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
 .core-details dd { margin: 0; color: var(--text-secondary); font-size: .78rem; }
