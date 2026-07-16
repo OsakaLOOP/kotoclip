@@ -124,6 +124,12 @@ function Create-InsiderPackage {
     if (-not $dictionaryBundles) {
         throw "no .kdict dictionary bundles found in $bundleDirectory"
     }
+    $requiredBundles = @("daijirin.kdict", "shogakukan.kdict", "crown.kdict")
+    $bundleNames = @($dictionaryBundles | ForEach-Object Name)
+    $missingBundles = @($requiredBundles | Where-Object { $_ -notin $bundleNames })
+    if ($missingBundles.Count -gt 0) {
+        throw "missing required dictionary bundles: $($missingBundles -join ', ')"
+    }
     foreach ($bundle in $dictionaryBundles) {
         Copy-Item -LiteralPath $bundle.FullName -Destination (Join-Path $packageDir "dict-sources\$($bundle.Name)") -Force
     }
