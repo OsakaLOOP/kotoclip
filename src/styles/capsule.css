@@ -97,15 +97,13 @@
 }
 
 .helper-word {
-  color: var(--text-secondary);
+  color: var(--helper-text-color, var(--text-secondary));
   font-size: 0.95em;
-  opacity: 0.85;
+  opacity: var(--helper-text-opacity, 0.85);
 }
 
 .grammar-match {
-  color: #1769aa;
-  text-decoration: underline;
-  text-decoration-color: #1769aa;
+  color: var(--grammar-text, #1769aa);
 }
 
 /* 语法标签 Badge */
@@ -117,7 +115,7 @@
   margin-left: 0.2rem;
   border-radius: 4px;
   background-color: #e5f1fb;
-  color: #1769aa;
+  color: var(--grammar-text, #1769aa);
   border: 1px solid rgba(43, 76, 126, 0.2);
   vertical-align: middle;
   font-weight: normal;
@@ -185,7 +183,7 @@
 .expression-anchor {
   text-decoration-line: underline;
   text-decoration-style: dotted;
-  text-decoration-color: #6d4aa2;
+  text-decoration-color: var(--expression-underline, #6d4aa2);
   text-underline-offset: 0.22em;
 }
 
@@ -210,9 +208,7 @@
 
 /* 语法入口与词汇掌握状态正交；已知词上的语法范围仍保持蓝色。 */
 .bunsetsu-capsule.is-known:not(.is-selected) .grammar-match {
-  color: #1769aa !important;
-  text-decoration: underline !important;
-  text-decoration-color: #1769aa !important;
+  color: var(--grammar-text, #1769aa) !important;
 }
 
 /* 标点符号/符号胶囊 (标点两侧不额外插入间隙，永远不可选、不可拖拽) */

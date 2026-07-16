@@ -31,14 +31,20 @@
   /* 生词 Novelty 着色度 */
   --novelty-high-bg: rgba(235, 94, 85, 0.12); /* 绯红 */
   --novelty-high-border: rgba(235, 94, 85, 0.4);
-  --novelty-high-text: #bd3228;
+  --novelty-high-text: #7f221b; /* 70% 深度红 */
   
   --novelty-mid-bg: rgba(224, 151, 62, 0.08); /* 琥珀色 */
   --novelty-mid-border: rgba(224, 151, 62, 0.3);
-  --novelty-mid-text: #965d09;
+  --novelty-mid-text: #915b0e; /* 70% 深度黄 */
   
   --selection-indicator: #0a84ff;
   
+  /* 语法、表达、未匹配样式定制 */
+  --grammar-text: #125284; /* 70% 深度蓝 */
+  --expression-underline: #3e2b5b; /* 70% 深度紫 */
+  --helper-text-color: #54617a; /* 60% 深度灰 */
+  --helper-text-opacity: 1; /* 不需要透明 */
+
   /* 磨砂玻璃特效 */
   --glass-bg: rgba(252, 251, 250, 0.75);
   --glass-border: rgba(28, 36, 56, 0.08);
@@ -69,6 +75,12 @@
     --novelty-mid-bg: rgba(251, 191, 36, 0.1);
     --novelty-mid-border: rgba(251, 191, 36, 0.35);
     --novelty-mid-text: #fde047;
+
+    /* 语法、表达、未匹配样式定制（暗色退化） */
+    --grammar-text: #80aaff;
+    --expression-underline: #a78bfa;
+    --helper-text-color: var(--text-secondary);
+    --helper-text-opacity: 0.85;
 
     --glass-bg: rgba(18, 20, 28, 0.75);
     --glass-border: rgba(255, 255, 255, 0.05);
