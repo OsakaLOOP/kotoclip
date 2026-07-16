@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { DictionaryChoiceOption } from "../../types";
+import { Star } from "@lucide/vue";
 
 defineProps<{
   label: string;
@@ -23,7 +24,7 @@ const emit = defineEmits<{ select: [key: string] }>();
           :title="option.title"
           @click="emit('select', option.key)"
         >
-          <span v-if="option.preferred" class="choice-star" aria-label="最佳匹配">★</span>
+          <Star v-if="option.preferred" class="choice-star" :size="12" fill="currentColor" aria-label="最佳匹配" />
           <span>{{ option.label }}</span>
         </button>
       </div>

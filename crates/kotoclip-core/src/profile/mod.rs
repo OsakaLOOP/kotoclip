@@ -124,10 +124,11 @@ impl ProfileEngine {
             let mut statement = conn.prepare(
                 "SELECT dictionary_name FROM user_dictionary_priority ORDER BY position ASC",
             )?;
-            statement
+            let order = statement
                 .query_map([], |row| row.get::<_, String>(0))?
                 .flatten()
-                .collect()
+                .collect();
+            order
         };
 
         Ok(Self {

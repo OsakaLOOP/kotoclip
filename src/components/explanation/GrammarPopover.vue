@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
+import { ArrowLeft } from "@lucide/vue";
 import type { GrammarDictionaryTarget, GrammarTag } from "../../types";
 import { grammarReviewOverrides } from "../../grammar/review";
 import { floatDebug } from "../../explanation/floatDebug";
@@ -191,7 +192,7 @@ watch(
       </div>
       <div v-if="variants.length" class="variant-list">
         <span v-for="part in variants" :key="`${part.name}-${part.char_range[0]}`">
-          {{ part.surface }} <b>←</b> {{ part.base_form }}
+          {{ part.surface }} <ArrowLeft :size="13" aria-hidden="true" /> {{ part.base_form }}
         </span>
       </div>
       <div v-if="formParts.length > 1" class="formation-line" aria-label="本句构成">
@@ -260,13 +261,13 @@ button { border: 1px solid var(--border-color); border-radius: 999px; background
 .actual-form strong { color: var(--text-primary); font-size: .9rem; }
 .variant-list { display: flex; flex-wrap: wrap; gap: 5px; }
 .variant-list span { padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--bg-primary) 82%, transparent); color: var(--text-secondary); font-size: .72rem; }
-.variant-list b { color: #5487ae; font-weight: 500; }
+.variant-list svg { display: inline-block; margin: 0 2px; vertical-align: -3px; color: #5487ae; }
 .formation-line { display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; color: var(--text-secondary); font-size: .76rem; }
 .formation-line > span { display: inline; }
 .formation-line em { margin-right: 3px; color: var(--text-muted); font: 650 .62rem var(--font-ui); font-style: normal; }
 .formation-line > b { color: var(--text-muted); font-weight: 400; }
-.morphology-line { display: flex; flex-wrap: wrap; gap: 0 10px; color: #6c5ab0; font: 700 .65rem var(--font-ui); }
-.morphology-line span + span::before { margin-right: 10px; color: var(--text-muted); content: "→"; }
+.morphology-line { display: flex; flex-wrap: wrap; gap: 0 10px; align-items: center; color: #6c5ab0; font: 700 .65rem var(--font-ui); }
+.morphology-line span + span::before { display: inline-block; width: 16px; height: 1px; margin: 0 7px 3px 0; background: var(--text-muted); content: ""; vertical-align: middle; }
 .core-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 11px; margin: 13px 0 0; padding-top: 11px; border-top: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent); }
 .core-details dt { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
 .core-details dd { margin: 0; color: var(--text-secondary); font-size: .78rem; }

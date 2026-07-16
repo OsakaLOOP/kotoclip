@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
+import { ChevronLeft, Star } from "@lucide/vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionaryChoiceBar from "./dictionary/DictionaryChoiceBar.vue";
@@ -262,7 +263,7 @@ function handleDefinitionClick(event: MouseEvent) {
     >
       <div class="tooltip-content" :data-explanation-content="panelId">
         <header class="tooltip-header">
-          <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')">‹</button>
+          <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')"><ChevronLeft :size="20" aria-hidden="true" /></button>
           <div class="header-grid">
             <div class="headword-block">
               <div class="headword-line">
@@ -321,7 +322,7 @@ function handleDefinitionClick(event: MouseEvent) {
           <section v-for="group in visibleDictionaryGroups" :key="group.name" class="dictionary-group">
           <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
             <div class="entry-meta">
-              <strong><span v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" title="读音匹配">★</span>{{ entry.headword }}</strong>
+              <strong><Star v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" :size="13" fill="currentColor" aria-label="读音匹配" />{{ entry.headword }}</strong>
               <span v-if="group.entries.length > 1">释义 {{ entryIndex + 1 }}</span>
             </div>
             <div class="entry-body">
@@ -351,7 +352,7 @@ function handleDefinitionClick(event: MouseEvent) {
 .headword-block { min-width: 0; }
 .headword-line { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: baseline; }
 .headword-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
-.back-button { flex: 0 0 28px; padding: 0; font-size: 1.35rem; line-height: 26px; }
+.back-button { display: grid; place-items: center; flex: 0 0 28px; padding: 0; line-height: 26px; }
 .base-form { color: var(--accent-color); font-size: 1.25rem; font-weight: 700; }
 .reading, .tooltip-pos { color: var(--text-muted); font-size: .78rem; }
 .tooltip-kind { color: var(--text-muted); font: 700 .68rem var(--font-ui); }

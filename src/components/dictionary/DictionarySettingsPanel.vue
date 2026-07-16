@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { GripVertical, MoveDown, MoveUp, X } from "@lucide/vue";
 import type { DictionarySettings } from "../../types";
 
 const props = defineProps<{
@@ -65,7 +66,7 @@ function handleDrop(target: string) {
             <h2>词典设置</h2>
             <p>拖动词典调整优先级。第一个词典为默认词典，查词浮层仍可切换到其他命中项。</p>
           </div>
-          <button type="button" class="close-button" aria-label="关闭词典设置" @click="emit('close')">×</button>
+          <button type="button" class="close-button" aria-label="关闭词典设置" @click="emit('close')"><X :size="19" aria-hidden="true" /></button>
         </header>
         <p v-if="!hasDictionaries" class="empty-state">尚未加载本地词典。</p>
         <ol v-else class="dictionary-list" aria-label="词典优先级">
@@ -79,13 +80,13 @@ function handleDrop(target: string) {
             @dragover.prevent="dragTarget = dictionary"
             @drop.prevent="handleDrop(dictionary)"
           >
-            <span class="drag-handle" aria-hidden="true">⠿</span>
+            <GripVertical class="drag-handle" :size="17" aria-hidden="true" />
             <span class="priority">{{ index + 1 }}</span>
             <strong>{{ dictionary }}</strong>
             <span v-if="index === 0" class="default-badge">默认</span>
             <div class="move-actions">
-              <button type="button" :disabled="index === 0" :aria-label="`上移 ${dictionary}`" @click="moveByOffset(dictionary, -1)">↑</button>
-              <button type="button" :disabled="index === orderedDictionaries.length - 1" :aria-label="`下移 ${dictionary}`" @click="moveByOffset(dictionary, 1)">↓</button>
+              <button type="button" :disabled="index === 0" :aria-label="`上移 ${dictionary}`" @click="moveByOffset(dictionary, -1)"><MoveUp :size="14" aria-hidden="true" /></button>
+              <button type="button" :disabled="index === orderedDictionaries.length - 1" :aria-label="`下移 ${dictionary}`" @click="moveByOffset(dictionary, 1)"><MoveDown :size="14" aria-hidden="true" /></button>
             </div>
           </li>
         </ol>
@@ -100,7 +101,7 @@ function handleDrop(target: string) {
 header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 h2 { color: var(--text-primary); font-size: 1.06rem; }
 p { margin-top: 4px; color: var(--text-secondary); font-size: .82rem; }
-.close-button { flex: 0 0 auto; border: 0; background: transparent; color: var(--text-muted); font-size: 1.45rem; line-height: 1; cursor: pointer; }
+.close-button { display: grid; place-items: center; flex: 0 0 auto; border: 0; background: transparent; color: var(--text-muted); line-height: 1; cursor: pointer; }
 .dictionary-list { display: grid; gap: 8px; margin-top: 10px; padding: 0; list-style: none; }
 .dictionary-list li { display: grid; grid-template-columns: auto 24px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; min-height: 44px; padding: 8px 9px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: grab; transition: border-color .12s ease, background-color .12s ease, transform .12s ease; }
 .dictionary-list li:active { cursor: grabbing; }

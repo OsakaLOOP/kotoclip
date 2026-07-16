@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { ArrowRight } from "@lucide/vue";
 import type {
   AnnotatedToken,
   ExpressionBoundaryEffect,
@@ -167,7 +168,7 @@ const validationError = computed(() => {
 const generatedLabel = computed(() => {
   const parts = props.tokens.map((_token, tokenIndex) => {
     const mode = matchModes.value[tokenIndex];
-    if (mode === "any") return "○";
+  if (mode === "any") return "任意";
     const selected = selectedMorphemes(tokenIndex);
     if (mode === "slot") return selected.map((morpheme) => `{${morpheme.pos.major}}`).join("");
     return selected.map((morpheme) => morpheme.surface).join("");
@@ -176,7 +177,7 @@ const generatedLabel = computed(() => {
   return parts.join("");
 });
 
-const signature = computed(() => {
+const signatureParts = computed(() => {
   const parts = props.tokens.map((_, tokenIndex) => {
     const mode = matchModes.value[tokenIndex];
     if (mode === "any") return "{任意文节}";
@@ -188,7 +189,7 @@ const signature = computed(() => {
     }).join(" + ");
   });
   if (gapAfter.value !== null) parts.splice(gapAfter.value + 1, 0, "{有限 gap}");
-  return parts.join("  →  ");
+  return parts;
 });
 
 const previewRanges = computed(() => props.tokens.flatMap((_, tokenIndex) => {
@@ -247,7 +248,7 @@ const filteredRules = computed(() => props.rules.filter((rule) =>
 
 function rulePreview(rule: ExpressionRule): string {
   const parts = rule.parts.map((part) => {
-    if (part.is_any) return "○";
+    if (part.is_any) return "任意";
     const body = part.surface_hint || part.lemmas.join("");
     return part.is_slot ? `{${part.pos.join("+") || body}}` : body;
   });
@@ -399,7 +400,7 @@ function save() {
           <div><span class="section-label">LIVE PREVIEW</span><h2>候选预览</h2></div>
           <div class="preview-status" :class="previewStatus"><span>{{ previewStatus }}</span><strong>{{ previewMessage }}</strong></div>
           <section><span>名称</span><strong class="preview-name">{{ label.trim() || generatedLabel || '未命名规则' }}</strong></section>
-          <section><span>匹配签名</span><code>{{ signature || '尚无有效原子' }}</code></section>
+          <section><span>匹配签名</span><code v-if="signatureParts.length"><template v-for="(part, index) in signatureParts" :key="`${part}-${index}`"><span>{{ part }}</span><ArrowRight v-if="index < signatureParts.length - 1" :size="14" aria-hidden="true" /></template></code><code v-else>尚无有效原子</code></section>
           <section><span>精确范围</span><ol><li v-for="range in effectivePreviewRanges" :key="range.join('-')">char {{ range[0] }}..{{ range[1] }}</li></ol></section>
           <section><span>证据</span><ul><li v-for="evidence in backendPreview?.evidence ?? []" :key="evidence">{{ evidence }}</li><li v-if="allowLeftContext || allowRightContext">允许文节内部锚点</li></ul></section>
           <footer><button class="quiet-button" @click="emit('close')">取消</button><button class="primary-button" :disabled="!canSave" @click="save">保存规则</button></footer>
@@ -449,7 +450,7 @@ fieldset { min-width: 0; margin: 28px 0 0; padding: 0; border: 0; } legend, .ste
 .connection-row { height: 38px; display: grid; place-items: center; }.connection-row span { height: 100%; border-left: 1px solid var(--border-color); }.connection-row button { position: absolute; padding: 5px 10px; border: 1px dashed var(--border-color); border-radius: 999px; color: var(--text-muted); background: var(--bg-primary); cursor: pointer; font-size: .66rem; }.connection-row button.active { color: var(--accent-color); border-style: solid; border-color: var(--accent-color); }
 .context-grid { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 9px; }.context-grid label, .output-card { min-width: 0; display: flex; align-items: flex-start; gap: 9px; padding: 12px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-primary); }.context-grid label span, .output-card { display: grid; gap: 3px; }.context-grid small, .output-card small { color: var(--text-muted); font-size: .68rem; line-height: 1.4; }.output-card span { color: var(--accent-color); font-size: .76rem; }
 .metadata-section { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; margin-top: 28px; }.metadata-section label { display: grid; gap: 5px; color: var(--text-secondary); font-size: .72rem; }.metadata-section input, .metadata-section textarea { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); background: var(--bg-primary); font: inherit; }.description-field { grid-column: 1 / -1; }
-.preview-panel { min-width: 0; overflow: auto; padding: 28px 24px; border-left: 1px solid var(--border-color); background: var(--bg-secondary); }.preview-panel > section { display: grid; gap: 7px; padding: 17px 0; border-bottom: 1px solid var(--border-color); }.preview-panel section > span { color: var(--text-muted); font-size: .68rem; font-weight: 700; }.preview-panel code { overflow-wrap: anywhere; color: var(--accent-color); font-size: .74rem; line-height: 1.6; }.preview-panel ol, .preview-panel ul { display: grid; gap: 5px; margin: 0; padding-left: 18px; color: var(--text-secondary); font-size: .72rem; }.preview-name { font-size: 1.05rem; }.preview-status { display: grid; gap: 4px; margin-top: 22px; padding: 12px; border-radius: 9px; background: #e7f3eb; }.preview-status.rejected { color: #8a3038; background: #f7e7e8; }.preview-status span { font-size: .64rem; font-weight: 900; text-transform: uppercase; }.preview-status strong { font-size: .75rem; line-height: 1.45; }.preview-panel footer { position: sticky; bottom: 0; justify-content: flex-end; padding-top: 22px; background: var(--bg-secondary); }
+.preview-panel code svg { display: inline-block; margin: 0 5px; vertical-align: -3px; }
 .workbench-fade-enter-active, .workbench-fade-leave-active { transition: opacity .16s ease; }.workbench-fade-enter-from, .workbench-fade-leave-to { opacity: 0; }
 @media (max-width: 900px) { .editor-layout { grid-template-columns: 1fr; overflow: auto; }.editor-main, .preview-panel { overflow: visible; }.preview-panel { border-top: 1px solid var(--border-color); border-left: 0; }.context-grid { grid-template-columns: 1fr; }.type-picker { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .workbench-header { padding: 15px; }.workbench-header p { display: none; }.library-layout { grid-template-columns: 1fr; overflow: auto; }.layer-rail { display: flex; gap: 6px; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--border-color); }.layer-rail .section-label, .layer-note { display: none; }.layer-rail > button { flex: 0 0 auto; width: auto; margin: 0; }.library-content { overflow: visible; }.atom-card header { align-items: flex-start; flex-direction: column; }.mode-switch { width: 100%; }.mode-switch button { flex: 1; }.metadata-section { grid-template-columns: 1fr; }.description-field { grid-column: auto; } }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { AlertTriangle, BookMarked, BookOpen, BriefcaseBusiness, Link2, Library, Moon, Plus, Settings2, X } from "@lucide/vue";
 import type { ComponentPublicInstance } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { useTokenization } from "../composables/useTokenization";
@@ -473,7 +474,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
     <!-- 顶部导航栏 -->
     <header class="app-header">
       <div class="logo-title">
-        <span class="logo-icon">📖</span>
+        <BookOpen class="logo-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
         <span class="logo-text">Kotoclip</span>
         <span class="logo-sub">日文生词胶囊阅读器</span>
       </div>
@@ -495,22 +496,22 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           </span>
         </div>
         <button class="icon-btn" :class="{ active: showExportPanel }" @click="showExportPanel = !showExportPanel">
-          💼 导出本 ({{ selectedKeys.length }})
+          <BriefcaseBusiness :size="16" aria-hidden="true" /> 导出本 ({{ selectedKeys.length }})
         </button>
         <button class="icon-btn" :class="{ active: showRuleWorkbench }" @click="openExpressionRules">
-          ⛓ 规则
+          <Link2 :size="16" aria-hidden="true" /> 规则
         </button>
         <button class="icon-btn" :class="{ active: showGrammarLibrary }" @click="showGrammarLibrary = true">
-          文法库
+          <Library :size="16" aria-hidden="true" /> 文法库
         </button>
         <button class="icon-btn" :class="{ active: showDictionarySettings }" @click="showDictionarySettings = true">
-          词典
+          <Settings2 :size="16" aria-hidden="true" /> 词典
         </button>
         <button class="icon-btn" :class="{ active: einkMode }" @click="toggleEinkMode">
-          🕶 墨水屏
+          <Moon :size="16" aria-hidden="true" /> 墨水屏
         </button>
         <button v-if="!showInput" class="icon-btn highlight" @click="showInput = true">
-          ＋ 输入文本
+          <Plus :size="16" aria-hidden="true" /> 输入文本
         </button>
       </div>
     </header>
@@ -527,10 +528,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           :aria-busy="isAnalyzing"
         ></textarea>
         <div v-if="errorMsg" class="error-message">
-          ⚠️ 分析出错: {{ errorMsg }}
+          <AlertTriangle :size="16" aria-hidden="true" /> 分析出错: {{ errorMsg }}
         </div>
         <div v-if="backendError" class="error-message">
-          ⚠️ 本地分析引擎启动失败: {{ backendError }}
+          <AlertTriangle :size="16" aria-hidden="true" /> 本地分析引擎启动失败: {{ backendError }}
         </div>
         <div v-else-if="!backendReady" class="backend-status" role="status">
           正在启动本地分析引擎，请稍候…
@@ -704,7 +705,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <div class="modal-card" @click.stop>
           <div class="modal-header">
             <h3>{{ activeWordForModal }} 完整词典释义</h3>
-            <button class="modal-close" @click="showDefinitionModal = false">×</button>
+            <button class="modal-close" aria-label="关闭完整释义" @click="showDefinitionModal = false"><X :size="19" aria-hidden="true" /></button>
           </div>
           <div class="modal-body no-scrollbar">
             <div v-if="modalDefinitions.length === 0" class="no-defs">
@@ -712,7 +713,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             </div>
             <div v-else class="modal-defs-container">
               <div v-for="(def, idx) in modalDefinitions" :key="idx" class="dict-section">
-                <div class="dict-name">✦ {{ def.dict_name }}</div>
+                <div class="dict-name"><BookMarked :size="15" aria-hidden="true" /> {{ def.dict_name }}</div>
                 <DictionaryContent :entry="def" />
               </div>
             </div>
@@ -751,7 +752,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 }
 
 .logo-icon {
-  font-size: 1.5rem;
+  flex: 0 0 auto;
+  color: var(--accent-color);
 }
 
 .logo-text {
@@ -909,6 +911,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 }
 
 .error-message {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   background-color: var(--novelty-high-bg);
   border: 1px solid var(--novelty-high-border);
   color: var(--novelty-high-text);
@@ -973,6 +978,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 }
 
 .modal-close {
+  display: grid;
+  place-items: center;
   background: transparent;
   border: none;
   font-size: 1.5rem;
@@ -1005,6 +1012,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 }
 
 .dict-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-weight: bold;
   color: var(--accent-color);
   margin-bottom: 10px;

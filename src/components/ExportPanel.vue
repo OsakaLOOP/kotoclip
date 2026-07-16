@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { Backpack, Download, Eraser, Trash2, X } from "@lucide/vue";
 import { Paragraph } from "../composables/useTokenization";
 
 const props = defineProps<{
@@ -58,12 +59,12 @@ const count = computed(() => selectedTokens.value.length);
           <span>待导出词汇</span>
           <span class="badge">{{ count }}</span>
         </div>
-        <button class="close-btn" @click="emit('close')">×</button>
+        <button class="close-btn" aria-label="关闭导出面板" @click="emit('close')"><X :size="19" aria-hidden="true" /></button>
       </div>
 
       <div class="panel-body no-scrollbar">
         <div v-if="count === 0" class="empty-state">
-          <span class="empty-icon">🎒</span>
+          <Backpack class="empty-icon" :size="42" stroke-width="1.5" aria-hidden="true" />
           <p>阅读时点击胶囊</p>
           <p>在此收集生词</p>
         </div>
@@ -85,20 +86,20 @@ const count = computed(() => selectedTokens.value.length);
               title="移出导出列表"
               @click="emit('remove-key', item.paragraphId, item.tokenIndex)"
             >
-              ×
+              <Trash2 :size="16" aria-hidden="true" />
             </button>
           </div>
         </div>
       </div>
 
       <div v-if="count > 0" class="panel-footer">
-        <button class="clear-btn" @click="emit('clear-all')">清空选择</button>
+        <button class="clear-btn" @click="emit('clear-all')"><Eraser :size="15" aria-hidden="true" /> 清空选择</button>
         <button
           class="export-btn"
           :disabled="isExporting"
           @click="$emit('export')"
         >
-          {{ isExporting ? '处理中...' : '生成 Anki 导出' }}
+          <Download :size="15" aria-hidden="true" /> {{ isExporting ? '处理中...' : '生成 Anki 导出' }}
         </button>
       </div>
     </div>
@@ -170,8 +171,9 @@ const count = computed(() => selectedTokens.value.length);
 }
 
 .empty-icon {
-  font-size: 3rem;
+  display: block;
   margin-bottom: 12px;
+  color: var(--accent-color);
   opacity: 0.5;
 }
 
@@ -243,6 +245,10 @@ const count = computed(() => selectedTokens.value.length);
 }
 
 .clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   flex: 1;
   background-color: transparent;
   color: var(--text-secondary);
@@ -257,6 +263,10 @@ const count = computed(() => selectedTokens.value.length);
 }
 
 .export-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   flex: 2;
   background-color: var(--accent-color);
   color: white;

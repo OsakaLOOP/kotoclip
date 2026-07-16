@@ -463,12 +463,12 @@ impl Engine {
             .into_iter()
             .filter(|name| available_dictionaries.contains(name))
             .collect::<Vec<_>>();
-        dictionary_order.extend(
-            available_dictionaries
-                .iter()
-                .filter(|name| !dictionary_order.contains(name))
-                .cloned(),
-        );
+        let unordered_dictionaries = available_dictionaries
+            .iter()
+            .filter(|name| !dictionary_order.contains(name))
+            .cloned()
+            .collect::<Vec<_>>();
+        dictionary_order.extend(unordered_dictionaries);
         DictionarySettings {
             available_dictionaries,
             default_dictionary: dictionary_order.first().cloned(),

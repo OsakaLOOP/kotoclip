@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
+import { BookOpenText, Check, ListTree, X } from "@lucide/vue";
 import { AnnotatedToken } from "../types";
 import type { SegmentationCandidate } from "../types";
 
@@ -72,7 +73,7 @@ onUnmounted(() => {
       :disabled="candidatesLoading"
       @click="emit('load-candidates')"
     >
-      <span class="icon">候</span>
+      <ListTree class="icon" :size="16" aria-hidden="true" />
       {{ candidatesLoading ? '生成中...' : 'Top-N 分词候选' }}
     </button>
 
@@ -85,14 +86,14 @@ onUnmounted(() => {
       >
         <span>{{ candidate.tokens.map((item) => item.bunsetsu.surface).join('｜') }}</span>
         <small :title="candidate.dictionary_evidence.length ? `词典：${candidate.dictionary_evidence.join('、')}` : '无多字词典证据'">
-          {{ index === 0 ? `推荐 · V${candidate.vibrato_rank}` : `V${candidate.vibrato_rank} · Δ${candidate.relative_cost}` }}
+          {{ index === 0 ? `推荐 · V${candidate.vibrato_rank}` : `V${candidate.vibrato_rank} · 成本差 ${candidate.relative_cost}` }}
         </small>
       </button>
     </div>
     <div class="menu-divider"></div>
     
     <button class="menu-item" @click="handleViewDefinition">
-      <span class="icon">📖</span> 查看完整释义
+      <BookOpenText class="icon" :size="16" aria-hidden="true" /> 查看完整释义
     </button>
     
     <button
@@ -100,7 +101,7 @@ onUnmounted(() => {
       class="menu-item"
       @click="handleMarkKnown"
     >
-      <span class="icon">✓</span> 标记为已知 (脱下胶囊)
+      <Check class="icon" :size="16" aria-hidden="true" /> 标记为已知 (脱下胶囊)
     </button>
     
     <button
@@ -108,7 +109,7 @@ onUnmounted(() => {
       class="menu-item"
       @click="handleMarkUnknown"
     >
-      <span class="icon">✗</span> 重新标为生词
+      <X class="icon" :size="16" aria-hidden="true" /> 重新标为生词
     </button>
   </div>
 </template>
