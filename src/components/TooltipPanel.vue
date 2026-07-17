@@ -97,31 +97,67 @@ watch(
   { immediate: true },
 );
 
-const visibleEntries = computed(() => {
-  if (readingChoices.value.length <= 1 || !selectedReadingKey.value) return props.lookup?.entries ?? [];
-  return (props.lookup?.entries ?? []).filter((entry) => normalizeReading(entry.reading) === selectedReadingKey.value);
+const displayableEntries = computed(() => {
+  const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
+  return (props.lookup?.entries ?? []).filter((entry) => {
+    const hasManagedRelation = entry.links.some((link) => !candidateTargets.has(link.target));
+    return entry.content_blocks.length || hasManagedRelation;
+  });
 });
 
 const dictionaryGroups = computed(() => {
-  const groups = new Map<string, NonNullable<typeof props.lookup>["entries"]>();
-  const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
-  for (const entry of visibleEntries.value) {
-    const hasManagedRelation = entry.links.some((link) => !candidateTargets.has(link.target));
-    if (!entry.content_blocks.length && !hasManagedRelation) continue;
-    const group = groups.get(entry.dict_name) ?? [];
+  const groupedEntries = new Map<string, NonNullable<typeof props.lookup>["entries"]>();
+  for (const entry of displayableEntries.value) {
+    const group = groupedEntries.get(entry.dict_name) ?? [];
     group.push(entry);
-    groups.set(entry.dict_name, group);
+    groupedEntries.set(entry.dict_name, group);
   }
-  return [...groups.entries()].map(([name, entries]) => ({ name, entries }));
+  const names = props.lookup?.dictionary_names?.length
+    ? props.lookup.dictionary_names
+    : [...groupedEntries.keys()];
+  return names.map((name) => ({ name, entries: groupedEntries.get(name) ?? [] }));
 });
 
 const activeDictionaryName = ref<string | null>(null);
+
+function dictionaryHasReading(dictionaryName: string, readingKey: string | null) {
+  if (!readingKey) return displayableEntries.value.some((entry) => entry.dict_name === dictionaryName);
+  return displayableEntries.value.some((entry) => (
+    entry.dict_name === dictionaryName && normalizeReading(entry.reading) === readingKey
+  ));
+}
+
+const selectedCandidate = computed(() => (
+  props.lookup?.candidates.find((candidate) => candidate.target === props.lookup?.selected_target) ?? null
+));
+
+function dictionarySupportsCurrentChoice(dictionaryName: string) {
+  if (selectedCandidate.value && !selectedCandidate.value.dictionary_names.includes(dictionaryName)) {
+    return false;
+  }
+  return dictionaryHasReading(dictionaryName, selectedReadingKey.value);
+}
+
+function selectDictionaryAfterChoice() {
+  const names = dictionaryGroups.value.map((group) => group.name);
+  const previous = activeDictionaryName.value;
+  const supported = names.filter(dictionarySupportsCurrentChoice);
+  const defaultDictionary = names[0] ?? null;
+  activeDictionaryName.value = (
+    (defaultDictionary && supported.includes(defaultDictionary) ? defaultDictionary : null)
+    ?? (previous && supported.includes(previous) ? previous : null)
+    ?? supported[0]
+    ?? defaultDictionary
+    ?? previous
+    ?? null
+  );
+}
+
 watch(
-  dictionaryGroups,
-  (groups) => {
-    if (!groups.some((group) => group.name === activeDictionaryName.value)) {
-      activeDictionaryName.value = groups[0]?.name ?? null;
-    }
+  () => props.lookup,
+  async () => {
+    await nextTick();
+    selectDictionaryAfterChoice();
   },
   { immediate: true },
 );
@@ -131,25 +167,24 @@ const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
     key: group.name,
     label: group.name,
     active: activeDictionaryName.value === group.name,
+    unavailable: !dictionarySupportsCurrentChoice(group.name),
+    title: dictionarySupportsCurrentChoice(group.name) ? undefined : "当前表记或读音无此词典释义",
   })),
 );
 
 const visibleDictionaryGroups = computed(() => {
   if (!activeDictionaryName.value) return [];
-  return dictionaryGroups.value.filter((group) => group.name === activeDictionaryName.value);
+  return dictionaryGroups.value
+    .filter((group) => group.name === activeDictionaryName.value)
+    .map((group) => ({
+      ...group,
+      entries: selectedReadingKey.value
+        ? group.entries.filter((entry) => normalizeReading(entry.reading) === selectedReadingKey.value)
+        : group.entries,
+    }));
 });
-
-const dictionarySourceNames = ref(["三省堂Super大辞林3.1"]);
 const definitionViewportRef = ref<HTMLElement | null>(null);
 const cachedContentHeight = ref(0);
-
-watch(
-  dictionaryGroups,
-  (groups) => {
-    if (groups.length) dictionarySourceNames.value = groups.map((group) => group.name);
-  },
-  { immediate: true },
-);
 
 watch(
   [() => props.loading, dictionaryGroups],
@@ -162,7 +197,6 @@ watch(
   { flush: "post" },
 );
 
-const dictionarySourceLabel = computed(() => activeDictionaryName.value ?? dictionarySourceNames.value.join(" · "));
 const loadingContentHeight = computed(() => `${cachedContentHeight.value || 220}px`);
 
 const activeEntry = computed(() => {
@@ -211,6 +245,10 @@ const candidateOptions = computed<DictionaryChoiceOption[]>(() =>
     key: candidate.target,
     label: candidateLabel(candidate),
     active: props.lookup?.selected_target === candidate.target,
+    unavailable: Boolean(activeDictionaryName.value && !candidate.dictionary_names.includes(activeDictionaryName.value)),
+    title: activeDictionaryName.value && !candidate.dictionary_names.includes(activeDictionaryName.value)
+      ? `当前词典未收录此表记`
+      : undefined,
   })),
 );
 
@@ -220,9 +258,21 @@ const readingOptions = computed<DictionaryChoiceOption[]>(() =>
     label: choice.label,
     active: selectedReadingKey.value === choice.key,
     preferred: choice.preferred,
-    title: choice.preferred ? "与正文读音匹配" : "其他收录读音",
+    unavailable: Boolean(activeDictionaryName.value && !dictionaryHasReading(activeDictionaryName.value, choice.key)),
+    title: activeDictionaryName.value && !dictionaryHasReading(activeDictionaryName.value, choice.key)
+      ? "当前词典未收录此读音"
+      : choice.preferred ? "与正文读音匹配" : "其他收录读音",
   })),
 );
+
+function handleCandidateSelect(target: string) {
+  emit("select", target);
+}
+
+function handleReadingSelect(readingKey: string) {
+  selectedReadingKey.value = readingKey;
+  selectDictionaryAfterChoice();
+}
 
 function managedLinkGroups(entry: DictEntry) {
   const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
@@ -289,21 +339,17 @@ function handleDefinitionClick(event: MouseEvent) {
         v-if="candidateOptions.length"
         label="表记"
         :options="candidateOptions"
-        @select="emit('select', $event)"
+        @select="handleCandidateSelect"
         />
 
         <DictionaryChoiceBar
         v-if="readingOptions.length > 1"
         label="读音"
         :options="readingOptions"
-        @select="selectedReadingKey = $event"
+        @select="handleReadingSelect"
         />
 
         <div v-if="loading || dictionaryGroups.length || !lookup?.candidates.length" class="tooltip-section definitions" @click="handleDefinitionClick">
-        <div class="definition-heading">
-          <span class="section-title">词典释义</span>
-          <span class="dictionary-sources">{{ dictionarySourceLabel }}</span>
-        </div>
         <div
           ref="definitionViewportRef"
           class="definition-viewport"
@@ -311,33 +357,35 @@ function handleDefinitionClick(event: MouseEvent) {
           :style="loading ? { height: loadingContentHeight } : undefined"
         >
           <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
-          <div v-else-if="!dictionaryGroups.length" class="empty-state">暂无本地词典释义</div>
-          <DictionaryChoiceBar
-            v-if="dictionaryOptions.length > 1"
-            class="dictionary-switcher"
-            label="词典"
-            :options="dictionaryOptions"
-            @select="activeDictionaryName = $event"
-          />
-          <section v-for="group in visibleDictionaryGroups" :key="group.name" class="dictionary-group">
-          <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
-            <div class="entry-meta">
-              <strong><Star v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" :size="13" fill="currentColor" aria-label="读音匹配" />{{ entry.headword }}</strong>
-              <span v-if="group.entries.length > 1">释义 {{ entryIndex + 1 }}</span>
-            </div>
-            <div class="entry-body">
-              <DictionaryContent :entry="entry" />
-            <div v-if="managedLinkGroups(entry).length" class="managed-relations">
-              <details v-for="relationGroup in managedLinkGroups(entry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
-                <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
-                <div class="relation-list">
-                  <button v-for="link in relationGroup.links" :key="link.target" type="button" :data-relation="link.relation" @click="emit('navigate', link.target)">{{ link.label || link.target }}</button>
-                </div>
-              </details>
-            </div>
-            </div>
-          </article>
-          </section>
+          <template v-else>
+            <DictionaryChoiceBar
+              v-if="dictionaryOptions.length"
+              class="dictionary-switcher"
+              label="词典"
+              :options="dictionaryOptions"
+              @select="activeDictionaryName = $event"
+            />
+            <div v-if="!visibleDictionaryGroups.some((group) => group.entries.length)" class="empty-state">当前组合暂无本地词典释义</div>
+            <section v-for="group in visibleDictionaryGroups" :key="group.name" class="dictionary-group">
+            <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
+              <div class="entry-meta">
+                <strong><Star v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" :size="13" fill="currentColor" aria-label="读音匹配" />{{ entry.headword }}</strong>
+                <span v-if="group.entries.length > 1">释义 {{ entryIndex + 1 }}</span>
+              </div>
+              <div class="entry-body">
+                <DictionaryContent :entry="entry" />
+              <div v-if="managedLinkGroups(entry).length" class="managed-relations">
+                <details v-for="relationGroup in managedLinkGroups(entry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
+                  <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
+                  <div class="relation-list">
+                    <button v-for="link in relationGroup.links" :key="link.target" type="button" :data-relation="link.relation" @click="emit('navigate', link.target)">{{ link.label || link.target }}</button>
+                  </div>
+                </details>
+              </div>
+              </div>
+            </article>
+            </section>
+          </template>
         </div>
         </div>
       </div>
@@ -362,10 +410,6 @@ function handleDefinitionClick(event: MouseEvent) {
 .morphology-step b { color: #6c5ab0; font: 700 .66rem var(--font-ui); }
 .morphology-step span { color: var(--text-secondary); }
 .tooltip-section { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px; }
-.section-title { margin-bottom: 7px; color: var(--text-muted); font: 700 .72rem var(--font-ui); letter-spacing: .04em; }
-.definition-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.definition-heading .section-title { margin: 0; }
-.dictionary-sources { overflow: hidden; color: var(--text-muted); font: 700 .72rem var(--font-ja); text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .definition-viewport.is-loading { overflow: hidden; }
 .definition-skeleton { height: 100%; }
 .relation-list { display: flex; flex-wrap: wrap; gap: 6px; }

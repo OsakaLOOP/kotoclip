@@ -161,9 +161,10 @@ export interface ExpressionRulePreview { status: "accepted" | "pending" | "rejec
 export interface AnnotatedToken { bunsetsu: Bunsetsu; novelty_score: number; is_selected: boolean; is_known: boolean; inference_reason: string | null; expressions: ExpressionAnnotation[]; display_class: "content" | "punctuation" | "line_break"; }
 export interface SegmentationCandidate { tokens: AnnotatedToken[]; total_cost: number; relative_cost: number; source: "vibrato_lattice"; vibrato_rank: number; rank_score: number; dictionary_evidence: string[]; }
 export interface DictionaryLink { target: string; label: string; relation: "candidate" | "redirect" | "synonym" | "antonym" | "parent" | "child" | "phrase" | "reference" | "related"; }
+export interface DictionaryCandidate extends DictionaryLink { dictionary_names: string[]; }
 export interface DictionaryContentBlock { kind: "rich_text" | "notice" | string; label: string | null; html: string; }
-export interface DictionaryChoiceOption { key: string; label: string; active: boolean; preferred?: boolean; title?: string; }
+export interface DictionaryChoiceOption { key: string; label: string; active: boolean; preferred?: boolean; unavailable?: boolean; title?: string; }
 export interface DictEntry { entry_key: string; dict_name: string; headword: string; reading: string | null; is_preferred: boolean; definition_html: string; style_profile: string; content_blocks: DictionaryContentBlock[]; match_type: "headword" | "reading" | "fuzzy"; links: DictionaryLink[]; }
-export interface DictionaryLookup { query: string; reading: string | null; selected_target: string | null; candidates: DictionaryLink[]; entries: DictEntry[]; }
+export interface DictionaryLookup { query: string; reading: string | null; selected_target: string | null; candidates: DictionaryCandidate[]; dictionary_names: string[]; entries: DictEntry[]; }
 export interface DictionarySettings { available_dictionaries: string[]; default_dictionary: string | null; dictionary_order: string[]; }
 export interface ExportEntry { surface: string; base_form: string; reading: string; pos: string; grammar_tags: string[]; jlpt_levels: number[]; context_sentence: string; context_highlight: [number, number]; definitions: DictEntry[]; user_note: string; char_range?: [number, number]; }

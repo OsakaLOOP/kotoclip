@@ -19,8 +19,9 @@ const emit = defineEmits<{ select: [key: string] }>();
           v-for="option in options"
           :key="option.key"
           type="button"
-          :class="{ active: option.active }"
+          :class="{ active: option.active, unavailable: option.unavailable }"
           :aria-pressed="option.active"
+          :aria-description="option.unavailable ? '当前选择下无词典释义' : undefined"
           :title="option.title"
           @click="emit('select', option.key)"
         >
@@ -41,5 +42,7 @@ const emit = defineEmits<{ select: [key: string] }>();
 button { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-height: 29px; max-width: 190px; border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 10px; background: color-mix(in srgb, var(--bg-card) 88%, transparent); color: var(--accent-color); white-space: nowrap; cursor: pointer; }
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 button.active { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 32%, transparent); }
+button.unavailable { border-color: color-mix(in srgb, var(--border-color) 72%, transparent); background: color-mix(in srgb, var(--bg-card) 62%, transparent); color: var(--text-muted); opacity: .52; }
+button.unavailable:hover, button.unavailable.active { border-color: color-mix(in srgb, var(--accent-color) 58%, var(--border-color)); background: color-mix(in srgb, var(--accent-light) 48%, var(--bg-card)); opacity: .76; }
 .choice-star { color: var(--accent-color); font-size: .72em; }
 </style>

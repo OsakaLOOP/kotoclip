@@ -14,7 +14,8 @@ pub mod transport;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryLookup, DictionarySettings, ExpressionAnnotation, ExpressionRule,
+    AnnotatedToken, DictionaryCandidate, DictionaryLookup, DictionarySettings, ExpressionAnnotation,
+    ExpressionRule,
     ExpressionRulePreview, SegmentationCandidate, SegmentationChoice,
 };
 use performance::TimingCollector;
@@ -412,24 +413,32 @@ impl Engine {
         priority_list: &[String],
     ) -> DictionaryLookup {
         let query_key = dictionary_query_key(word, reading);
-        let initial_entries = self.dictionary.lookup(word, reading);
-        let mut candidates = if is_kana(word) {
-            initial_entries
-                .iter()
-                .filter(|entry| entry.headword == word)
-                .flat_map(|entry| {
-                    entry
-                        .links
-                        .iter()
-                        .filter(|link| link.relation == "candidate")
-                        .cloned()
-                })
-                .collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        };
-        let mut seen_candidates = std::collections::HashSet::new();
-        candidates.retain(|candidate| seen_candidates.insert(candidate.target.clone()));
+        let initial_entries = dictionary::aggregate::sort_definitions(
+            self.dictionary.lookup(word, reading),
+            priority_list,
+        );
+        let mut candidates = Vec::<DictionaryCandidate>::new();
+        if is_kana(word) {
+            for entry in initial_entries.iter().filter(|entry| entry.headword == word) {
+                for link in entry.links.iter().filter(|link| link.relation == "candidate") {
+                    if let Some(candidate) = candidates
+                        .iter_mut()
+                        .find(|candidate| candidate.target == link.target)
+                    {
+                        if !candidate.dictionary_names.contains(&entry.dict_name) {
+                            candidate.dictionary_names.push(entry.dict_name.clone());
+                        }
+                    } else {
+                        candidates.push(DictionaryCandidate {
+                            target: link.target.clone(),
+                            label: link.label.clone(),
+                            relation: link.relation.clone(),
+                            dictionary_names: vec![entry.dict_name.clone()],
+                        });
+                    }
+                }
+            }
+        }
         let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
             candidates
                 .iter()
@@ -439,12 +448,19 @@ impl Engine {
             .as_deref()
             .map(|target| self.dictionary.lookup(target, reading))
             .filter(|entries| !entries.is_empty())
-            .unwrap_or(initial_entries);
+            .unwrap_or_else(|| initial_entries.clone());
+        let mut dictionary_names = Vec::new();
+        for entry in initial_entries.iter().chain(entries.iter()) {
+            if !dictionary_names.contains(&entry.dict_name) {
+                dictionary_names.push(entry.dict_name.clone());
+            }
+        }
         DictionaryLookup {
             query: word.to_string(),
             reading: reading.map(str::to_string),
             selected_target,
             candidates,
+            dictionary_names,
             entries: dictionary::aggregate::sort_definitions(entries, priority_list),
         }
     }

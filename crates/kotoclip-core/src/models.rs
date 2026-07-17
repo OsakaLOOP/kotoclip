@@ -669,12 +669,21 @@ pub struct DictionaryLink {
     pub relation: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryCandidate {
+    pub target: String,
+    pub label: String,
+    pub relation: String,
+    pub dictionary_names: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DictionaryLookup {
     pub query: String,
     pub reading: Option<String>,
     pub selected_target: Option<String>,
-    pub candidates: Vec<DictionaryLink>,
+    pub candidates: Vec<DictionaryCandidate>,
+    pub dictionary_names: Vec<String>,
     pub entries: Vec<DictEntry>,
 }
 
