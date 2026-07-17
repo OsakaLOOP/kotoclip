@@ -5,10 +5,10 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
-const CACHE_SCHEMA_VERSION: u32 = 1;
+const CACHE_SCHEMA_VERSION: u32 = 2;
 const MAX_CACHE_ENTRIES: usize = 16;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AnalysisCache {
     directory: PathBuf,
     pipeline_fingerprint: String,
@@ -41,7 +41,7 @@ impl AnalysisCache {
         let source_hash = source_hash(source);
         let path = self.path_for_hash(&source_hash);
         let payload = std::fs::read(&path).ok()?;
-        let envelope: CacheEnvelope = match serde_json::from_slice(&payload) {
+        let envelope: CacheEnvelope = match rmp_serde::from_slice(&payload) {
             Ok(value) => value,
             Err(_) => {
                 let _ = std::fs::remove_file(path);
@@ -66,7 +66,7 @@ impl AnalysisCache {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let source_hash = source_hash(source);
         let path = self.path_for_hash(&source_hash);
-        let temporary = path.with_extension("json.tmp");
+        let temporary = path.with_extension("bin.tmp");
         let envelope = CacheEnvelope {
             schema_version: CACHE_SCHEMA_VERSION,
             pipeline_artifact_version: PIPELINE_ARTIFACT_VERSION,
@@ -74,7 +74,10 @@ impl AnalysisCache {
             source_hash,
             tokens: tokens.to_vec(),
         };
-        std::fs::write(&temporary, serde_json::to_vec(&envelope)?)?;
+        // 现有 Token schema 含有需由字段名区分的嵌套结构，使用命名 map 保持 serde
+        // 语义，仍避免 JSON 的文本编码和转义成本。
+        let payload = rmp_serde::to_vec_named(&envelope)?;
+        std::fs::write(&temporary, payload)?;
         if path.exists() {
             std::fs::remove_file(&path)?;
         }
@@ -85,7 +88,7 @@ impl AnalysisCache {
 
     pub fn clear(&self) -> Result<(), Box<dyn std::error::Error>> {
         for entry in std::fs::read_dir(&self.directory)?.flatten() {
-            if entry.path().extension().and_then(|value| value.to_str()) == Some("json") {
+            if is_cache_file(&entry.path()) {
                 std::fs::remove_file(entry.path())?;
             }
         }
@@ -93,14 +96,14 @@ impl AnalysisCache {
     }
 
     fn path_for_hash(&self, source_hash: &str) -> PathBuf {
-        self.directory.join(format!("{source_hash}.json"))
+        self.directory.join(format!("{source_hash}.bin"))
     }
 
     fn prune(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut entries: Vec<_> = std::fs::read_dir(&self.directory)?
             .flatten()
             .filter(|entry| {
-                entry.path().extension().and_then(|value| value.to_str()) == Some("json")
+                is_cache_file(&entry.path())
             })
             .map(|entry| {
                 let modified = entry
@@ -117,6 +120,10 @@ impl AnalysisCache {
         }
         Ok(())
     }
+}
+
+fn is_cache_file(path: &Path) -> bool {
+    matches!(path.extension().and_then(|value| value.to_str()), Some("bin" | "json"))
 }
 
 fn source_hash(source: &str) -> String {

@@ -2,9 +2,41 @@ use crate::models::{DictionaryContentBlock, DictionaryLink};
 use ammonia::Builder;
 use regex::Regex;
 use std::collections::HashSet;
+use std::sync::LazyLock;
 
 const MAX_DEFINITION_BYTES: usize = 512 * 1024;
+static SHOGAKUKAN_READING_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"<span\s+class="pinyin_h">([^<]+)</span>"#).unwrap());
+static ENTRY_LINK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap()
+});
+static HTML_TAG_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]+>").unwrap());
+static DAIJIRIN_STRUCTURAL_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?s)〈(?:親項目|子項目|句項目)〉.*?(</p>|$)").unwrap());
+static DAIJIRIN_ANCHOR_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?s)(?:⇔|→|⇒|☞)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#)
+        .unwrap()
+});
+static DAIJIRIN_FIGURE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?s)<img\s+[^>]*/?>").unwrap());
+static DAIJIRIN_SEPARATOR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?:\s|&nbsp;|；|;)+(</?(?:br|p)[^>]*>)").unwrap());
+static DAIJIRIN_TRAILING_SEPARATOR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?:・|；|;)+\s*([。]|</|<br)").unwrap());
+static LINK_TAG_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?i)<link\s+[^>]*>"#).unwrap());
+static SHOGAKUKAN_HEADING_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?s)<h3>.*?</h3>"#).unwrap());
+static SHOGAKUKAN_REFERENCE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?i)(?:参见：|參見：)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#)
+        .unwrap()
+});
+static CROWN_ANCHOR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?i)<a\s+name=[^>]*>\s*</a>"#).unwrap());
+static CROWN_HEADWORD_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?s)<div\s+class="midashi">.*?</div>"#).unwrap());
 
+#[derive(Clone)]
 pub struct DictionaryPresentation {
     pub definition_html: String,
     pub style_profile: String,
@@ -41,8 +73,7 @@ fn present_shogakukan(_headword: &str, definition: &str) -> DictionaryPresentati
     let managed = clean_shogakukan_markup(definition);
     let mut presentation = finish("shogakukan", managed, links);
 
-    let reading_re = Regex::new(r#"<span\s+class="pinyin_h">([^<]+)</span>"#).unwrap();
-    presentation.reading = reading_re.captures(definition)
+    presentation.reading = SHOGAKUKAN_READING_RE.captures(definition)
         .and_then(|cap| cap.get(1))
         .map(|m| m.as_str().trim().to_string())
         .filter(|reading| is_kana(reading));
@@ -155,12 +186,9 @@ fn extract_daijirin_links(definition: &str) -> Vec<DictionaryLink> {
             relation: "redirect".to_string(),
         }];
     }
-    let link_re =
-        Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
-    let tag_re = Regex::new(r"<[^>]+>").unwrap();
     let navigation = is_navigation_definition(definition);
     let mut seen = HashSet::new();
-    link_re
+    ENTRY_LINK_RE
         .captures_iter(definition)
         .filter_map(|captures| {
             let target = captures.get(1)?.as_str().trim().to_string();
@@ -177,7 +205,7 @@ fn extract_daijirin_links(definition: &str) -> Vec<DictionaryLink> {
             let label = if navigation {
                 target.clone()
             } else {
-                tag_re
+                HTML_TAG_RE
                     .replace_all(captures.get(2)?.as_str(), "")
                     .trim()
                     .to_string()
@@ -230,15 +258,9 @@ fn clean_daijirin_markup(definition: &str, headword: &str, link_count: usize) ->
     if link_count >= 2 && is_kana(headword) && is_navigation_definition(definition) {
         return String::new();
     }
-    let structural = Regex::new(r"(?s)〈(?:親項目|子項目|句項目)〉.*?(</p>|$)").unwrap();
-    let without_structural = structural.replace_all(definition, "$1");
-    let anchors = Regex::new(
-        r#"(?s)(?:⇔|→|⇒|☞)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#,
-    )
-    .unwrap();
-    let without_anchors = anchors.replace_all(&without_structural, "");
-    let figures = Regex::new(r"(?s)<img\s+[^>]*/?>").unwrap();
-    let with_figures = figures.replace_all(&without_anchors, |captures: &regex::Captures<'_>| {
+    let without_structural = DAIJIRIN_STRUCTURAL_RE.replace_all(definition, "$1");
+    let without_anchors = DAIJIRIN_ANCHOR_RE.replace_all(&without_structural, "");
+    let with_figures = DAIJIRIN_FIGURE_RE.replace_all(&without_anchors, |captures: &regex::Captures<'_>| {
         let tag = captures
             .get(0)
             .map(|value| value.as_str())
@@ -252,10 +274,8 @@ fn clean_daijirin_markup(definition: &str, headword: &str, link_count: usize) ->
         };
         format!("<span class=\"media-omitted\">〔{label}〕</span>")
     });
-    let separators = Regex::new(r"(?:\s|&nbsp;|；|;)+(</?(?:br|p)[^>]*>)").unwrap();
-    let normalized = separators.replace_all(&with_figures, "$1");
-    Regex::new(r"(?:・|；|;)+\s*([。]|</|<br)")
-        .unwrap()
+    let normalized = DAIJIRIN_SEPARATOR_RE.replace_all(&with_figures, "$1");
+    DAIJIRIN_TRAILING_SEPARATOR_RE
         .replace_all(&normalized, "$1")
         .into_owned()
 }
@@ -281,18 +301,15 @@ fn extract_shogakukan_links(definition: &str) -> Vec<DictionaryLink> {
             relation: "redirect".to_string(),
         }];
     }
-    let link_re =
-        Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
-    let tag_re = Regex::new(r"<[^>]+>").unwrap();
     let mut seen = HashSet::new();
-    link_re
+    ENTRY_LINK_RE
         .captures_iter(definition)
         .filter_map(|captures| {
             let target = captures.get(1)?.as_str().trim().to_string();
             if target.is_empty() || !seen.insert(target.clone()) {
                 return None;
             }
-            let label = tag_re
+            let label = HTML_TAG_RE
                 .replace_all(captures.get(2)?.as_str(), "")
                 .trim()
                 .to_string();
@@ -319,18 +336,15 @@ fn extract_crown_links(definition: &str) -> Vec<DictionaryLink> {
             relation: "redirect".to_string(),
         }];
     }
-    let link_re =
-        Regex::new(r#"<a\s+[^>]*href=(?:['\"])entry://([^'\"]+)(?:['\"])[^>]*>(.*?)</a>"#).unwrap();
-    let tag_re = Regex::new(r"<[^>]+>").unwrap();
     let mut seen = HashSet::new();
-    link_re
+    ENTRY_LINK_RE
         .captures_iter(definition)
         .filter_map(|captures| {
             let target = captures.get(1)?.as_str().trim().to_string();
             if target.is_empty() || !seen.insert(target.clone()) {
                 return None;
             }
-            let label = tag_re
+            let label = HTML_TAG_RE
                 .replace_all(captures.get(2)?.as_str(), "")
                 .trim()
                 .to_string();
@@ -344,27 +358,17 @@ fn extract_crown_links(definition: &str) -> Vec<DictionaryLink> {
 }
 
 fn clean_shogakukan_markup(definition: &str) -> String {
-    let link_re = Regex::new(r#"(?i)<link\s+[^>]*>"#).unwrap();
-    let without_link = link_re.replace_all(definition, "");
-
-    let h3_re = Regex::new(r#"(?s)<h3>.*?</h3>"#).unwrap();
-    let without_h3 = h3_re.replace_all(&without_link, "");
-
-    let ref_re = Regex::new(r#"(?i)(?:参见：|參見：)?\s*<a\s+[^>]*href=(?:['\"])entry://[^'\"]+(?:['\"])[^>]*>.*?</a>"#).unwrap();
-    let without_ref = ref_re.replace_all(&without_h3, "");
+    let without_link = LINK_TAG_RE.replace_all(definition, "");
+    let without_h3 = SHOGAKUKAN_HEADING_RE.replace_all(&without_link, "");
+    let without_ref = SHOGAKUKAN_REFERENCE_RE.replace_all(&without_h3, "");
 
     without_ref.into_owned()
 }
 
 fn clean_crown_markup(definition: &str) -> String {
-    let link_re = Regex::new(r#"(?i)<link\s+[^>]*>"#).unwrap();
-    let without_link = link_re.replace_all(definition, "");
-
-    let anchor_re = Regex::new(r#"(?i)<a\s+name=[^>]*>\s*</a>"#).unwrap();
-    let without_anchor = anchor_re.replace_all(&without_link, "");
-
-    let midashi_re = Regex::new(r#"(?s)<div\s+class="midashi">.*?</div>"#).unwrap();
-    let without_midashi = midashi_re.replace_all(&without_anchor, "");
+    let without_link = LINK_TAG_RE.replace_all(definition, "");
+    let without_anchor = CROWN_ANCHOR_RE.replace_all(&without_link, "");
+    let without_midashi = CROWN_HEADWORD_RE.replace_all(&without_anchor, "");
 
     without_midashi.into_owned()
 }

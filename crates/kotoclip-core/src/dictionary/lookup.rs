@@ -11,7 +11,8 @@ use unicode_normalization::UnicodeNormalization;
 
 const FORM_KEY: i64 = 0;
 const READING_KEY: i64 = 1;
-const DEFINITION_CACHE_BLOCKS: usize = 16;
+const DEFINITION_CACHE_BLOCKS: usize = 64;
+const PRESENTATION_CACHE_ENTRIES: usize = 128;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DictionaryStats {
@@ -47,6 +48,32 @@ struct DefinitionBlockCache {
     order: VecDeque<(usize, i64)>,
 }
 
+#[derive(Default)]
+struct PresentationCache {
+    entries: HashMap<(usize, i64), presentation::DictionaryPresentation>,
+    order: VecDeque<(usize, i64)>,
+}
+
+impl PresentationCache {
+    fn get(&mut self, key: (usize, i64)) -> Option<presentation::DictionaryPresentation> {
+        let value = self.entries.get(&key)?.clone();
+        self.order.retain(|candidate| *candidate != key);
+        self.order.push_back(key);
+        Some(value)
+    }
+
+    fn insert(&mut self, key: (usize, i64), value: presentation::DictionaryPresentation) {
+        self.entries.insert(key, value);
+        self.order.retain(|candidate| *candidate != key);
+        self.order.push_back(key);
+        while self.order.len() > PRESENTATION_CACHE_ENTRIES {
+            if let Some(expired) = self.order.pop_front() {
+                self.entries.remove(&expired);
+            }
+        }
+    }
+}
+
 impl DefinitionBlockCache {
     fn get(&mut self, key: (usize, i64)) -> Option<Arc<Vec<u8>>> {
         let value = self.blocks.get(&key)?.clone();
@@ -71,6 +98,7 @@ pub struct DictionaryEngine {
     databases: Vec<DictionaryDatabase>,
     exists_cache: Mutex<HashMap<String, bool>>,
     definition_cache: Mutex<DefinitionBlockCache>,
+    presentation_cache: Mutex<PresentationCache>,
 }
 
 impl DictionaryEngine {
@@ -138,6 +166,7 @@ impl DictionaryEngine {
             databases,
             exists_cache: Mutex::new(HashMap::new()),
             definition_cache: Mutex::new(DefinitionBlockCache::default()),
+            presentation_cache: Mutex::new(PresentationCache::default()),
         })
     }
 
@@ -468,6 +497,8 @@ impl DictionaryEngine {
                 .unwrap_or_default();
             targets.extend(rows);
         }
+        targets.sort();
+        targets.dedup();
         targets
     }
 
@@ -558,6 +589,7 @@ impl DictionaryEngine {
         rows.filter_map(|row| {
             let definition = self.load_definition(database_index, &row)?;
             Some(self.entry(
+                database_index,
                 database.name.clone(),
                 row.entry_id,
                 row.headword,
@@ -609,6 +641,7 @@ impl DictionaryEngine {
 
     fn entry(
         &self,
+        database_index: usize,
         dict_name: String,
         entry_id: i64,
         headword: String,
@@ -617,7 +650,19 @@ impl DictionaryEngine {
         structured_reading: Option<String>,
         match_type: &str,
     ) -> DictEntry {
-        let presentation = presentation::present(&dict_name, &raw_headword, &definition);
+        let key = (database_index, entry_id);
+        let presentation = self
+            .presentation_cache
+            .lock()
+            .ok()
+            .and_then(|mut cache| cache.get(key))
+            .unwrap_or_else(|| {
+                let value = presentation::present(&dict_name, &raw_headword, &definition);
+                if let Ok(mut cache) = self.presentation_cache.lock() {
+                    cache.insert(key, value.clone());
+                }
+                value
+            });
         DictEntry {
             entry_key: format!("{dict_name}\u{1f}{entry_id}"),
             dict_name,

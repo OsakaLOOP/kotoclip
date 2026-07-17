@@ -9,6 +9,9 @@ import { morphemeLookupTarget, type MorphemeLookupTarget } from "../utils/dictio
 type LookupWord = (word: string, reading?: string) => Promise<DictionaryLookup | null>;
 type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
 
+const HOVER_LOOKUP_DELAY_MS = 48;
+const WHOLE_LOOKUP_DELAY_MS = 220;
+
 interface SourceIdentity {
   paragraphId: number;
   tokenIndex: number;
@@ -323,29 +326,40 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     const word = target.query;
     const generation = ++componentGeneration;
     const requestKey = lookupKey(word, target.lookupReading);
-    const cached = cachedLookup(word, target.lookupReading);
+    const cachedResult = resultCache.get(requestKey);
+    const hasCachedResult = resultCache.has(requestKey);
     floatDebug.snapshot("request.component", {
-      status: cached.immediate ? "cache-hit" : "pending",
+      status: hasCachedResult ? "cache-hit" : "pending",
       generation,
       key: requestKey,
       word,
       reading: target.lookupReading,
     });
-    floatDebug.record("request", "component", "resolve", cached.immediate ? "cache-hit" : "pending", {
+    floatDebug.record("request", "component", "resolve", hasCachedResult ? "cache-hit" : "pending", {
       generation,
       key: requestKey,
       word,
       reading: target.lookupReading,
     });
-    if (cached.immediate) {
-      componentLookup.value = cached.value;
+    if (hasCachedResult) {
+      componentLookup.value = cachedResult ?? null;
       componentLoading.value = false;
       publishSession("component-resolved", "cache-hit");
       return;
     }
     componentLookup.value = null;
     componentLoading.value = true;
-    const lookup = await cached.promise;
+    await waitForHoverIntent(HOVER_LOOKUP_DELAY_MS);
+    if (generation !== componentGeneration || !visible.value) {
+      floatDebug.record("request", "component", "intent-cancelled", requestKey, {
+        generation,
+        currentGeneration: componentGeneration,
+        visibleRequested: visible.value,
+      });
+      return;
+    }
+    const cached = cachedLookup(word, target.lookupReading);
+    const lookup = await cached.promise!;
     if (generation !== componentGeneration) {
       floatDebug.record("request", "component", "settle-discarded", "generation-mismatch", {
         generation,
@@ -389,29 +403,41 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     }
     const generation = ++wholeGeneration;
     const requestKey = lookupKey(lexical.base_form, lexical.reading);
-    const cached = cachedLookup(lexical.base_form, lexical.reading);
+    const cachedResult = resultCache.get(requestKey);
+    const hasCachedResult = resultCache.has(requestKey);
     floatDebug.snapshot("request.whole", {
-      status: cached.immediate ? "cache-hit" : "pending",
+      status: hasCachedResult ? "cache-hit" : "pending",
       generation,
       key: requestKey,
       word: lexical.base_form,
       reading: lexical.reading,
     });
-    floatDebug.record("request", "whole", "resolve", cached.immediate ? "cache-hit" : "pending", {
+    floatDebug.record("request", "whole", "resolve", hasCachedResult ? "cache-hit" : "pending", {
       generation,
       key: requestKey,
       word: lexical.base_form,
       reading: lexical.reading,
     });
-    if (cached.immediate) {
-      wholeLookup.value = cached.value?.entries.length ? cached.value : null;
+    if (hasCachedResult) {
+      wholeLookup.value = cachedResult?.entries.length ? cachedResult : null;
       wholeLoading.value = false;
       publishSession("whole-resolved", "cache-hit");
       return;
     }
     wholeLookup.value = null;
+    wholeLoading.value = false;
+    await waitForHoverIntent(WHOLE_LOOKUP_DELAY_MS);
+    if (generation !== wholeGeneration || !visible.value) {
+      floatDebug.record("request", "whole", "intent-cancelled", requestKey, {
+        generation,
+        currentGeneration: wholeGeneration,
+        visibleRequested: visible.value,
+      });
+      return;
+    }
     wholeLoading.value = true;
-    const lookup = await cached.promise;
+    const cached = cachedLookup(lexical.base_form, lexical.reading);
+    const lookup = await cached.promise!;
     if (generation !== wholeGeneration) {
       floatDebug.record("request", "whole", "settle-discarded", "generation-mismatch", {
         generation,
@@ -603,6 +629,10 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
 
 function lookupKey(word: string, reading: string) {
   return `${word}\u001f${reading}`;
+}
+
+function waitForHoverIntent(delay: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, delay));
 }
 
 function rectDebugSnapshot(rect: RectSnapshot | null) {

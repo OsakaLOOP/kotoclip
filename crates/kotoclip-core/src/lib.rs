@@ -32,6 +32,141 @@ pub struct Engine {
     profile: ProfileEngine,
 }
 
+/// 悬浮查词专用服务，与文档分析使用独立的 SQLite 连接和锁域。
+pub struct DictionaryService {
+    dictionary: DictionaryEngine,
+    profile: ProfileEngine,
+}
+
+impl DictionaryService {
+    pub fn new_from_dictionary_sources<
+        P1: AsRef<Path>,
+        P2: AsRef<Path>,
+        P3: AsRef<Path>,
+    >(
+        dictionary_source_dir: P1,
+        dicts_dir: P2,
+        user_db_path: P3,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            dictionary: DictionaryEngine::prepare(dictionary_source_dir, dicts_dir)?,
+            profile: ProfileEngine::new(user_db_path)?,
+        })
+    }
+
+    pub fn lookup_word(
+        &self,
+        word: &str,
+        reading: Option<&str>,
+        priority_list: &[String],
+    ) -> DictionaryLookup {
+        let query_key = dictionary_query_key(word, reading);
+        let initial_entries = dictionary::aggregate::sort_definitions(
+            self.dictionary.lookup(word, reading),
+            priority_list,
+        );
+        let mut candidates = Vec::<DictionaryCandidate>::new();
+        if is_kana(word) {
+            for entry in initial_entries.iter().filter(|entry| entry.headword == word) {
+                for link in entry.links.iter().filter(|link| link.relation == "candidate") {
+                    if let Some(candidate) = candidates
+                        .iter_mut()
+                        .find(|candidate| candidate.target == link.target)
+                    {
+                        if !candidate.dictionary_names.contains(&entry.dict_name) {
+                            candidate.dictionary_names.push(entry.dict_name.clone());
+                        }
+                    } else {
+                        candidates.push(DictionaryCandidate {
+                            target: link.target.clone(),
+                            label: link.label.clone(),
+                            relation: link.relation.clone(),
+                            dictionary_names: vec![entry.dict_name.clone()],
+                        });
+                    }
+                }
+            }
+        }
+        let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
+            candidates
+                .iter()
+                .any(|candidate| &candidate.target == target)
+        });
+        let entries = selected_target
+            .as_deref()
+            .map(|target| self.dictionary.lookup(target, reading))
+            .filter(|entries| !entries.is_empty())
+            .unwrap_or_else(|| initial_entries.clone());
+        let mut dictionary_names = Vec::new();
+        for entry in initial_entries.iter().chain(entries.iter()) {
+            if !dictionary_names.contains(&entry.dict_name) {
+                dictionary_names.push(entry.dict_name.clone());
+            }
+        }
+        DictionaryLookup {
+            query: word.to_string(),
+            reading: reading.map(str::to_string),
+            selected_target,
+            candidates,
+            dictionary_names,
+            entries: dictionary::aggregate::sort_definitions(entries, priority_list),
+        }
+    }
+
+    pub fn dictionary_settings(&self) -> DictionarySettings {
+        let available_dictionaries = self.dictionary.names();
+        let configured_order = {
+            let order = self.profile.dictionary_order();
+            if order.is_empty() {
+                self.profile.default_dictionary().into_iter().collect()
+            } else {
+                order
+            }
+        };
+        let mut dictionary_order = configured_order
+            .into_iter()
+            .filter(|name| available_dictionaries.contains(name))
+            .collect::<Vec<_>>();
+        let unordered_dictionaries = available_dictionaries
+            .iter()
+            .filter(|name| !dictionary_order.contains(name))
+            .cloned()
+            .collect::<Vec<_>>();
+        dictionary_order.extend(unordered_dictionaries);
+        DictionarySettings {
+            available_dictionaries,
+            default_dictionary: dictionary_order.first().cloned(),
+            dictionary_order,
+        }
+    }
+
+    pub fn set_dictionary_order(
+        &self,
+        order: &[String],
+    ) -> Result<DictionarySettings, Box<dyn std::error::Error>> {
+        let available = self.dictionary.names();
+        if order.len() != available.len()
+            || order.iter().any(|name| !available.contains(name))
+            || order.iter().collect::<std::collections::HashSet<_>>().len() != order.len()
+        {
+            return Err("词典排序必须包含每本已加载词典且不能重复".into());
+        }
+        self.profile.set_dictionary_order(order)?;
+        Ok(self.dictionary_settings())
+    }
+
+    pub fn choose_dictionary_target(
+        &self,
+        query: &str,
+        reading: Option<&str>,
+        target: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.profile
+            .set_dictionary_choice(&dictionary_query_key(query, reading), target)?;
+        Ok(())
+    }
+}
+
 impl Engine {
     /// 从对应路径初始化整个引擎 (包括形态素字典、SQLite 词典群目录以及用户数据 SQLite 文件)
     pub fn new<P1: AsRef<Path>, P2: AsRef<Path>, P3: AsRef<Path>>(
@@ -145,17 +280,44 @@ impl Engine {
         text: &str,
         document_readings: &HashMap<String, String>,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
-        let mut tokens = self.analyze_stable_text(text);
+        self.analyze_document_batch_with_stable(text, document_readings)
+            .map(|(_, tokens)| tokens)
+    }
+
+    /// 同时返回可持久化的稳定层与当前用户态水合后的正文层。
+    /// 稳定层必须在读取画像和应用用户分词选择前复制，避免缓存写入重跑全文。
+    pub fn analyze_document_batch_with_stable(
+        &self,
+        text: &str,
+        document_readings: &HashMap<String, String>,
+    ) -> Result<(Vec<AnnotatedToken>, Vec<AnnotatedToken>), Box<dyn std::error::Error>> {
+        let stable_tokens = self.analyze_stable_text(text);
+        let mut tokens = stable_tokens.clone();
         pipeline::ruby::override_token_readings_with_document_map(&mut tokens, document_readings);
-        self.hydrate_stable_tokens_for_document_batch(tokens)
+        let tokens = self.hydrate_stable_tokens_for_document_batch(tokens)?;
+        Ok((stable_tokens, tokens))
     }
 
     pub fn analyze_document_batch_with_progress<F>(
         &self,
         text: &str,
         document_readings: &HashMap<String, String>,
-        mut report: F,
+        report: F,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>>
+    where
+        F: FnMut(AnalysisProgress),
+    {
+        self.analyze_document_batch_with_progress_and_stable(text, document_readings, report)
+            .map(|(_, tokens)| tokens)
+    }
+
+    /// 与带进度的正文批分析一致，但保留稳定层供文档会话异步落盘。
+    pub fn analyze_document_batch_with_progress_and_stable<F>(
+        &self,
+        text: &str,
+        document_readings: &HashMap<String, String>,
+        mut report: F,
+    ) -> Result<(Vec<AnnotatedToken>, Vec<AnnotatedToken>), Box<dyn std::error::Error>>
     where
         F: FnMut(AnalysisProgress),
     {
@@ -164,12 +326,13 @@ impl Engine {
             1,
             "准备首屏分析",
         ));
-        let mut tokens = self.pipeline.process_with_dictionary_and_progress(
+        let stable_tokens = self.pipeline.process_with_dictionary_and_progress(
             text,
             &[],
             &self.dictionary,
             &mut report,
         );
+        let mut tokens = stable_tokens.clone();
         pipeline::ruby::override_token_readings_with_document_map(&mut tokens, document_readings);
         let choices = self.profile.get_segmentation_choices()?;
         self.pipeline
@@ -199,7 +362,7 @@ impl Engine {
             100,
             "首屏分析完成",
         ));
-        Ok(annotated)
+        Ok((stable_tokens, annotated))
     }
 
     /// Analyze text and optionally record the rendered lexical tokens as exposures.

@@ -367,6 +367,7 @@ export function useTokenization() {
   const backendReady = ref(false);
   const backendError = ref<string | null>(null);
   let unlistenBackendReady: UnlistenFn | undefined;
+  let unlistenAnalysisProgress: UnlistenFn | undefined;
   const tokenCache = new Map<string, AnnotatedToken>();
   const sessionStrings: string[] = [];
   let orderedTokenIds: string[] = [];
@@ -390,6 +391,22 @@ export function useTokenization() {
   function disposeBackendStatusListener() {
     unlistenBackendReady?.();
     unlistenBackendReady = undefined;
+  }
+
+  function finishAnalysis(requestId: string, completed = false) {
+    if (activeRequestId.value !== requestId) return;
+    if (completed) {
+      analysisProgress.value = {
+        ...analysisProgress.value,
+        phase: "completed",
+        percent: 100,
+        message: "分析完成",
+      };
+    }
+    unlistenAnalysisProgress?.();
+    unlistenAnalysisProgress = undefined;
+    isAnalyzing.value = false;
+    activeRequestId.value = null;
   }
 
   function enqueueDocumentOperation<T>(operation: () => Promise<T>): Promise<T> {
@@ -425,7 +442,12 @@ export function useTokenization() {
       if (existing) Object.assign(existing, token);
       else tokenCache.set(tokenId, token);
     });
-    if (patch.orderedTokenIds.length > 0) orderedTokenIds = patch.orderedTokenIds;
+    if (patch.orderedTokenIds.length > 0) {
+      orderedTokenIds = patch.orderedTokenIds;
+    } else if (patch.kind === "range_replace") {
+      // 顺序补块只携带新增 ID；乱序或结构替换仍由完整顺序表覆盖。
+      orderedTokenIds.push(...patch.tokenIds);
+    }
     const ordered = orderedTokenIds.map((tokenId) => tokenCache.get(tokenId));
     if (ordered.some((token) => token === undefined)) {
       throw new Error("文档 Patch 缺少有序 Token 所需的数据");
@@ -459,7 +481,9 @@ export function useTokenization() {
       requestId,
       message: "准备分析",
     };
-    let unlisten: UnlistenFn | undefined;
+    unlistenAnalysisProgress?.();
+    unlistenAnalysisProgress = undefined;
+    let handoffToContinuation = false;
     const totalStartedAt = performance.now();
     let listenerSetupMs = 0;
     let invokeAndTransferMs = 0;
@@ -467,7 +491,7 @@ export function useTokenization() {
     try {
       // 先建立监听再调用 IPC，避免丢失最早的阶段事件。
       const listenerStartedAt = performance.now();
-      unlisten = await listen<AnalysisProgress>("analysis-progress", ({ payload }) => {
+      unlistenAnalysisProgress = await listen<AnalysisProgress>("analysis-progress", ({ payload }) => {
         if (payload.requestId === activeRequestId.value) {
           analysisProgress.value = payload;
         }
@@ -500,6 +524,9 @@ export function useTokenization() {
         backendDurationMs: backendDurationMs,
         ipcAndParseMs: Math.max(0, Math.round(invokeAndTransferMs - backendDurationMs)),
       };
+      // 首屏可交互后立即撤去阻塞态；后续批次仍保留监听，但不能遮挡阅读器。
+      isAnalyzing.value = false;
+      handoffToContinuation = true;
       return true;
     } catch (err: any) {
       if (activeRequestId.value === requestId) {
@@ -512,11 +539,7 @@ export function useTokenization() {
       console.error("Tokenization Error:", err);
       return false;
     } finally {
-      unlisten?.();
-      if (activeRequestId.value === requestId) {
-        isAnalyzing.value = false;
-        activeRequestId.value = null;
-      }
+      if (!handoffToContinuation) finishAnalysis(requestId);
     }
   }
 
@@ -549,34 +572,40 @@ export function useTokenization() {
   async function continueDocumentAnalysis() {
     const sessionId = activeSessionId.value;
     if (!sessionId) return;
-    let firstContinuation = true;
-    while (activeSessionId.value === sessionId && !documentComplete.value) {
-      const patch = await enqueueDocumentOperation(() => invoke<AnalysisPatch | null>("continue_document_analysis", {
-          sessionId,
-          baseRevision: documentRevision.value,
-          targetCharacters: firstContinuation ? 4_000 : 100_000,
-        }));
-      if (!patch || activeSessionId.value !== sessionId) return;
-      paragraphs.value = buildParagraphs(mergePatch(patch));
-      firstContinuation = false;
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    }
-    if (activeSessionId.value !== sessionId) return;
-    // Expression 不参与首屏阻断；全部正文范围稳定后统一扫描并以注解 Patch 合并。
-    await refreshDocumentExpressions();
-    if (activeSessionId.value !== sessionId) return;
-    await enqueueDocumentOperation(() => invoke<boolean>("finalize_document", {
-      sessionId,
-      baseRevision: documentRevision.value,
-    }));
-    if (!lastOpenCacheHit.value) {
-      window.setTimeout(() => {
-        if (activeSessionId.value !== sessionId) return;
-        void enqueueDocumentOperation(() => invoke<boolean>("persist_document_cache", {
-          sessionId,
-          baseRevision: documentRevision.value,
-        })).catch((error) => console.error("Document cache persist failed:", error));
-      }, 1_000);
+    const requestId = activeRequestId.value;
+    try {
+      let firstContinuation = true;
+      while (activeSessionId.value === sessionId && !documentComplete.value) {
+        const patch = await enqueueDocumentOperation(() => invoke<AnalysisPatch | null>("continue_document_analysis", {
+            sessionId,
+            baseRevision: documentRevision.value,
+            targetCharacters: firstContinuation ? 4_000 : 8_000,
+            requestId,
+          }));
+        if (!patch || activeSessionId.value !== sessionId) return;
+        paragraphs.value = buildParagraphs(mergePatch(patch));
+        firstContinuation = false;
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      }
+      if (activeSessionId.value !== sessionId) return;
+      // Expression 不参与首屏阻断；全部正文范围稳定后统一扫描并以注解 Patch 合并。
+      await refreshDocumentExpressions();
+      if (activeSessionId.value !== sessionId) return;
+      await enqueueDocumentOperation(() => invoke<boolean>("finalize_document", {
+        sessionId,
+        baseRevision: documentRevision.value,
+      }));
+      if (!lastOpenCacheHit.value) {
+        window.setTimeout(() => {
+          if (activeSessionId.value !== sessionId) return;
+          void enqueueDocumentOperation(() => invoke<boolean>("persist_document_cache", {
+            sessionId,
+            baseRevision: documentRevision.value,
+          })).catch((error) => console.error("Document cache persist failed:", error));
+        }, 1_000);
+      }
+    } finally {
+      if (requestId) finishAnalysis(requestId, activeSessionId.value === sessionId);
     }
   }
 

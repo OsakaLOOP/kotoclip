@@ -159,6 +159,28 @@ function selectDictionaryAfterChoice() {
   );
 }
 
+function handleDictionarySelect(dictionaryName: string) {
+  const selected = selectedCandidate.value;
+  if (selected && !selected.dictionary_names.includes(dictionaryName)) {
+    const replacement = (props.lookup?.candidates ?? [])
+      .find((candidate) => candidate.dictionary_names.includes(dictionaryName));
+    if (replacement) {
+      activeDictionaryName.value = dictionaryName;
+      emit("select", replacement.target);
+      return;
+    }
+  }
+
+  activeDictionaryName.value = dictionaryName;
+  if (!dictionaryHasReading(dictionaryName, selectedReadingKey.value)) {
+    const replacementReading = readingChoices.value.find((choice) =>
+      dictionaryHasReading(dictionaryName, choice.key)
+    );
+    if (replacementReading) selectedReadingKey.value = replacementReading.key;
+  }
+  if (!dictionarySupportsCurrentChoice(dictionaryName)) selectDictionaryAfterChoice();
+}
+
 watch(
   () => props.lookup,
   async () => {
@@ -182,12 +204,12 @@ const visibleDictionaryGroups = computed(() => {
   if (!activeDictionaryName.value) return [];
   return dictionaryGroups.value
     .filter((group) => group.name === activeDictionaryName.value)
-    .map((group) => ({
-      ...group,
-      entries: selectedReadingKey.value
+    .map((group) => {
+      const filtered = selectedReadingKey.value
         ? group.entries.filter((entry) => normalizeReading(entry.reading) === selectedReadingKey.value)
-        : group.entries,
-    }));
+        : group.entries;
+      return { ...group, entries: filtered.length ? filtered : group.entries };
+    });
 });
 const definitionViewportRef = ref<HTMLElement | null>(null);
 const cachedContentHeight = ref(0);
@@ -293,7 +315,7 @@ function handleShortcut(event: KeyboardEvent) {
 
   let handled = false;
   if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.dictionaryKey)) {
-    handled = selectNextOption(dictionaryOptions.value, (key) => { activeDictionaryName.value = key; });
+    handled = selectNextOption(dictionaryOptions.value, handleDictionarySelect);
   } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey, true) && readingOptions.value.length > 1) {
     handled = selectNextOption(candidateOptions.value, handleCandidateSelect);
   } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey)) {
@@ -421,9 +443,8 @@ function handleDefinitionClick(event: MouseEvent) {
               label="词典"
               :options="dictionaryOptions"
               :shortcut-keys="dictionaryShortcutKeys"
-              @select="activeDictionaryName = $event"
+              @select="handleDictionarySelect"
             />
-            <div v-if="!visibleDictionaryGroups.some((group) => group.entries.length)" class="empty-state">当前组合暂无本地词典释义</div>
             <section v-for="group in visibleDictionaryGroups" :key="group.name" class="dictionary-group">
             <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
               <div class="entry-meta">

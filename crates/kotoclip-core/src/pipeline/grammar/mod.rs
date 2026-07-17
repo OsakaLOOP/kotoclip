@@ -28,26 +28,15 @@ pub fn canonicalize_document_coordinates(tokens: &mut [AnnotatedToken]) {
         .collect::<Vec<_>>();
 
     let morpheme_range_for = |char_range: (usize, usize)| {
-        let mut first = None;
-        let mut last = None;
-        for (index, range) in morpheme_ranges.iter().enumerate() {
-            if ranges_overlap(*range, char_range) || contains_range(char_range, *range) {
-                first.get_or_insert(index);
-                last = Some(index + 1);
-            }
-        }
-        first.zip(last).unwrap_or((0, 0))
+        range_bounds(&morpheme_ranges, char_range).unwrap_or((0, 0))
     };
     let token_range_for = |ranges: &[(usize, usize)]| {
         let mut first = None;
         let mut last = None;
-        for (index, token_range) in token_ranges.iter().enumerate() {
-            if ranges
-                .iter()
-                .any(|range| ranges_overlap(*token_range, *range) || contains_range(*range, *token_range))
-            {
-                first.get_or_insert(index);
-                last = Some(index + 1);
+        for range in ranges {
+            if let Some((start, end)) = range_bounds(&token_ranges, *range) {
+                first = Some(first.map_or(start, |value: usize| value.min(start)));
+                last = Some(last.map_or(end, |value: usize| value.max(end)));
             }
         }
         first.zip(last).unwrap_or((0, 0))
@@ -104,6 +93,75 @@ pub fn canonicalize_document_coordinates(tokens: &mut [AnnotatedToken]) {
                 occurrence_id(&tag.concept_id, &tag.pattern_id, &tag.display_ranges);
         }
     }
+}
+
+/// 顺序追加文档批次时，分析结果已经在批次局部坐标中完成规范化。这里仅将
+/// token／语素下标平移到文档坐标，避免为每个新批次重新扫描已完成全文。
+pub fn offset_document_coordinates(
+    tokens: &mut [AnnotatedToken],
+    token_offset: usize,
+    morpheme_offset: usize,
+) {
+    let offset_range = |range: &mut (usize, usize), offset: usize| {
+        if range.0 != 0 || range.1 != 0 {
+            range.0 += offset;
+            range.1 += offset;
+        }
+    };
+    for token in tokens {
+        for tag in &mut token.bunsetsu.grammar_tags {
+            offset_range(&mut tag.morpheme_range, morpheme_offset);
+            if let Some(explanation) = &mut tag.explanation {
+                for capture in &mut explanation.bound_captures {
+                    offset_range(&mut capture.morpheme_range, morpheme_offset);
+                }
+            }
+        }
+        for chain in &mut token.bunsetsu.morphology.chains {
+            chain.anchor_morpheme += morpheme_offset;
+            offset_range(&mut chain.morpheme_range, morpheme_offset);
+            for operator in &mut chain.operators {
+                offset_range(&mut operator.source_morpheme_range, morpheme_offset);
+            }
+        }
+        for occurrence in &mut token.bunsetsu.grammar_occurrences {
+            offset_range(&mut occurrence.covered_token_range, token_offset);
+            for capture in &mut occurrence.captures {
+                offset_range(&mut capture.morpheme_range, morpheme_offset);
+            }
+        }
+    }
+}
+
+/// `canonicalize_document_coordinates` 在 Token 已按字符位置排序后调用；范围边界
+/// 因而可用二分查找定位，避免每个语法字段重新扫描整篇文档。
+fn range_bounds(ranges: &[(usize, usize)], target: (usize, usize)) -> Option<(usize, usize)> {
+    if target.0 >= target.1 || ranges.is_empty() {
+        return None;
+    }
+    let mut low = 0;
+    let mut high = ranges.len();
+    while low < high {
+        let middle = (low + high) / 2;
+        if ranges[middle].1 <= target.0 {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+    let start = low;
+
+    low = start;
+    high = ranges.len();
+    while low < high {
+        let middle = (low + high) / 2;
+        if ranges[middle].0 < target.1 {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+    (start < low).then_some((start, low))
 }
 
 #[derive(Debug, Clone)]

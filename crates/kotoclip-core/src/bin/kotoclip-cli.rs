@@ -1100,7 +1100,10 @@ fn audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 fn benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let source_path = PathBuf::from(args.required("source").map_err(io::Error::other)?);
     let source = std::fs::read_to_string(&source_path)?;
-    let text = extract_chapter(&source, args.options.get("chapter").map(String::as_str))?;
+    let text = limit_benchmark_text(
+        extract_chapter(&source, args.options.get("chapter").map(String::as_str))?,
+        args.usize("max-chars", 0).map_err(io::Error::other)?,
+    );
     let profile = args.required("profile").map_err(io::Error::other)?;
     let engine = Engine::new(
         args.options
@@ -1115,7 +1118,7 @@ fn benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let mut current_phase: Option<(String, u128)> = None;
     let mut phases = Vec::new();
     let tokens = engine.analyze_text_with_progress(
-        text,
+        &text,
         !args.flags.contains("no-record-exposure"),
         |event| {
             let elapsed = started.elapsed().as_millis();
@@ -1171,7 +1174,10 @@ fn reader_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 
     let chapter = args.options.get("chapter").cloned();
     let chapter_started = Instant::now();
-    let text = extract_chapter(&source, chapter.as_deref())?;
+    let text = limit_benchmark_text(
+        extract_chapter(&source, chapter.as_deref())?,
+        args.usize("max-chars", 0).map_err(io::Error::other)?,
+    );
     let chapter_extract_ms = chapter_started.elapsed().as_millis();
 
     let engine_started = Instant::now();
@@ -1188,7 +1194,7 @@ fn reader_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 
     let analysis_started = Instant::now();
     let (tokens, timings) =
-        engine.analyze_text_profiled(text, !args.flags.contains("no-record-exposure"))?;
+        engine.analyze_text_profiled(&text, !args.flags.contains("no-record-exposure"))?;
     let analysis_total_ms = analysis_started.elapsed().as_millis();
 
     // 桌面端热路径使用字符串表紧凑模型；这里保持与 Tauri 返回体一致，
@@ -1207,7 +1213,7 @@ fn reader_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         ipc_payload_serialize_ms,
         end_to_end_ms: total_started.elapsed().as_millis(),
         raw_characters: text.chars().count(),
-        analyzed_characters: ruby::prepare_text(text).text.chars().count(),
+        analyzed_characters: ruby::prepare_text(&text).text.chars().count(),
         tokens: tokens.len(),
         ipc_payload_bytes: ipc_payload.len(),
         engine_initialization_details: initialization_timings.entries(),
@@ -1227,7 +1233,10 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let source_path = PathBuf::from(args.required("source").map_err(io::Error::other)?);
     let source = std::fs::read_to_string(&source_path)?;
     let chapter = args.options.get("chapter").cloned();
-    let text = extract_chapter(&source, chapter.as_deref())?;
+    let text = limit_benchmark_text(
+        extract_chapter(&source, chapter.as_deref())?,
+        args.usize("max-chars", 0).map_err(io::Error::other)?,
+    );
     let system_dictionary = PathBuf::from(
         args.options
             .get("system-dict")
@@ -1259,9 +1268,11 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     } else if continuation == 0 {
         4_000
     } else {
-        100_000
+        8_000
     }) {
-        let tokens = engine.analyze_document_batch(&batch.source, session.document_readings())?;
+        let (stable_tokens, tokens) =
+            engine.analyze_document_batch_with_stable(&batch.source, session.document_readings())?;
+        session.record_stable_batch(&batch, stable_tokens);
         let patch = session.append_analyzed_batch(session.revision, &batch, tokens)?;
         let payload = serde_json::to_vec(&patch)?;
         progressive_patch_bytes += payload.len();
@@ -1279,7 +1290,7 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         .iter()
         .map(|token| token.bunsetsu.surface.as_str())
         .collect();
-    let expected = ruby::prepare_text(text).text;
+    let expected = ruby::prepare_text(&text).text;
 
     let deferred_expression_started = Instant::now();
     let changed = engine.refresh_expression_annotations_changed(&mut session.tokens)?;
@@ -1324,12 +1335,11 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let temporary_cache = !args.options.contains_key("cache-dir");
     let cache = AnalysisCache::new(&cache_directory, &system_dictionary, &dictionary_directory)?;
     let cache_started = Instant::now();
-    let stable = engine.analyze_stable_text(text);
-    cache.store(text, &stable)?;
+    cache.store(&text, session.stable_tokens_for_cache())?;
     let cache_store_ms = cache_started.elapsed().as_millis();
 
     let warm_started = Instant::now();
-    let cached = cache.load(text).ok_or("刚写入的缓存无法读取")?;
+    let cached = cache.load(&text).ok_or("刚写入的缓存无法读取")?;
     let mut warm_session =
         DocumentSession::new_progressive("warm".to_string(), text.to_string(), false);
     warm_session.set_cached_stable_tokens(cached);
@@ -1342,7 +1352,7 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     } else if warm_continuation == 0 {
         4_000
     } else {
-        100_000
+        8_000
     }) {
         let stable = warm_session
             .take_cached_stable_tokens(&batch)
@@ -2700,6 +2710,14 @@ fn extract_chapter<'a>(source: &'a str, chapter: Option<&str>) -> Result<&'a str
     Ok(&body[..end])
 }
 
+/// 基准采样按字符截取，避免为定位复杂度问题重复运行整章。
+fn limit_benchmark_text(text: &str, max_characters: usize) -> String {
+    if max_characters == 0 {
+        return text.to_string();
+    }
+    text.chars().take(max_characters).collect()
+}
+
 fn is_lexical(pos: &str) -> bool {
     matches!(
         pos,
@@ -2761,11 +2779,11 @@ fn print_help() {
   audit --source PATH [--chapter TITLE] [--page-lines N --page N]
         [--start-line N --line-count N --sample-every N]
         [--json PATH --min-coverage 0.10 --max-misses N]
-  benchmark --source PATH --profile PATH [--chapter TITLE]
+  benchmark --source PATH --profile PATH [--chapter TITLE --max-chars N]
         [--no-record-exposure] [--json PATH]
-  reader-benchmark --source PATH --profile PATH [--chapter TITLE]
+  reader-benchmark --source PATH --profile PATH [--chapter TITLE --max-chars N]
         [--no-record-exposure] [--json PATH]
-  session-benchmark --source PATH --profile PATH [--chapter TITLE]
+  session-benchmark --source PATH --profile PATH [--chapter TITLE --max-chars N]
         [--cache-dir PATH] [--json PATH]
   incremental-consistency --source PATH --profile PATH [--chapter TITLE]
         [--seed N --load-cases N --rule-cases N --json PATH]

@@ -168,8 +168,8 @@ pub async fn open_document(
         .next_batch(2_000)
         .ok_or_else(|| "文档没有可分析内容".to_string())?;
     let engine = state.engine.lock().map_err(|error| error.to_string())?;
-    let tokens = engine
-        .analyze_document_batch_with_progress(
+    let (stable_tokens, tokens) = engine
+        .analyze_document_batch_with_progress_and_stable(
             &batch.source,
             session.document_readings(),
             |progress| {
@@ -183,6 +183,7 @@ pub async fn open_document(
             },
         )
         .map_err(|error| error.to_string())?;
+    session.record_stable_batch(&batch, stable_tokens);
     let patch = session
         .append_analyzed_batch(0, &batch, tokens)
         .map_err(|error| error.to_string())?;
@@ -207,11 +208,14 @@ pub async fn open_document(
 
 #[tauri::command]
 pub async fn continue_document_analysis(
+    window: Window,
     state: State<'_, AppState>,
     session_id: String,
     base_revision: u64,
     target_characters: Option<usize>,
+    request_id: Option<String>,
 ) -> Result<Option<AnalysisPatch>, String> {
+    let request_id = request_id.unwrap_or_else(|| "continue-document".to_string());
     let engine = state.engine.lock().map_err(|error| error.to_string())?;
     let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
     let session = sessions
@@ -228,9 +232,23 @@ pub async fn continue_document_analysis(
             .hydrate_stable_tokens_for_document_batch(stable)
             .map_err(|error| error.to_string())?
     } else {
-        engine
-            .analyze_document_batch(&batch.source, session.document_readings())
-            .map_err(|error| error.to_string())?
+        let (stable_tokens, tokens) = engine
+            .analyze_document_batch_with_progress_and_stable(
+                &batch.source,
+                session.document_readings(),
+                |progress| {
+                    let _ = window.emit(
+                        "analysis-progress",
+                        AnalysisProgressEvent {
+                            request_id: request_id.clone(),
+                            progress,
+                        },
+                    );
+                },
+            )
+            .map_err(|error| error.to_string())?;
+        session.record_stable_batch(&batch, stable_tokens);
+        tokens
     };
     let patch = session
         .append_analyzed_batch(base_revision, &batch, tokens)
@@ -262,9 +280,11 @@ pub async fn request_document_range(
                 .hydrate_stable_tokens_for_document_batch(stable)
                 .map_err(|error| error.to_string())?
         } else {
-            engine
-                .analyze_document_batch(&batch.source, session.document_readings())
-                .map_err(|error| error.to_string())?
+            let (stable_tokens, tokens) = engine
+                .analyze_document_batch_with_stable(&batch.source, session.document_readings())
+                .map_err(|error| error.to_string())?;
+            session.record_stable_batch(&batch, stable_tokens);
+            tokens
         };
         let patch = session
             .append_analyzed_batch(base_revision, &batch, tokens)
@@ -368,24 +388,30 @@ pub async fn persist_document_cache(
     session_id: String,
     base_revision: u64,
 ) -> Result<bool, String> {
-    let engine = state.engine.lock().map_err(|error| error.to_string())?;
-    let sessions = state.sessions.lock().map_err(|error| error.to_string())?;
-    let session = sessions
-        .get(&session_id)
-        .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
-    session
-        .require_revision(base_revision)
-        .map_err(|error| error.to_string())?;
-    if !session.is_complete() {
-        return Ok(false);
-    }
-    let stable_tokens = engine.analyze_stable_text(&session.source);
-    state
+    // 先在锁内取得不可变快照；序列化和文件 I/O 不能阻塞范围请求或后续 mutation。
+    let (source, stable_tokens) = {
+        let sessions = state.sessions.lock().map_err(|error| error.to_string())?;
+        let session = sessions
+            .get(&session_id)
+            .ok_or_else(|| format!("文档会话不存在：{session_id}"))?;
+        session
+            .require_revision(base_revision)
+            .map_err(|error| error.to_string())?;
+        if !session.is_complete() || session.stable_tokens_for_cache().is_empty() {
+            return Ok(false);
+        }
+        (session.source.clone(), session.stable_tokens_for_cache().to_vec())
+    };
+    let cache = state
         .analysis_cache
         .lock()
         .map_err(|error| error.to_string())?
-        .store(&session.source, &stable_tokens)
-        .map_err(|error| error.to_string())?;
+        .clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Err(error) = cache.store(&source, &stable_tokens) {
+            eprintln!("文档稳定缓存写入失败：{error}");
+        }
+    });
     Ok(true)
 }
 
@@ -528,16 +554,16 @@ pub async fn lookup_word(
     reading: Option<String>,
     priority_list: Vec<String>,
 ) -> Result<DictionaryLookup, String> {
-    let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    Ok(engine.lookup_word(&word, reading.as_deref(), &priority_list))
+    let dictionary = state.dictionary.lock().map_err(|e| e.to_string())?;
+    Ok(dictionary.lookup_word(&word, reading.as_deref(), &priority_list))
 }
 
 #[tauri::command]
 pub async fn get_dictionary_settings(
     state: State<'_, AppState>,
 ) -> Result<DictionarySettings, String> {
-    let engine = state.engine.lock().map_err(|error| error.to_string())?;
-    Ok(engine.dictionary_settings())
+    let dictionary = state.dictionary.lock().map_err(|error| error.to_string())?;
+    Ok(dictionary.dictionary_settings())
 }
 
 #[tauri::command]
@@ -545,8 +571,8 @@ pub async fn set_dictionary_order(
     state: State<'_, AppState>,
     order: Vec<String>,
 ) -> Result<DictionarySettings, String> {
-    let engine = state.engine.lock().map_err(|error| error.to_string())?;
-    engine
+    let dictionary = state.dictionary.lock().map_err(|error| error.to_string())?;
+    dictionary
         .set_dictionary_order(&order)
         .map_err(|error| error.to_string())
 }
@@ -558,8 +584,8 @@ pub async fn choose_dictionary_target(
     reading: Option<String>,
     target: String,
 ) -> Result<(), String> {
-    let engine = state.engine.lock().map_err(|e| e.to_string())?;
-    engine
+    let dictionary = state.dictionary.lock().map_err(|e| e.to_string())?;
+    dictionary
         .choose_dictionary_target(&query, reading.as_deref(), &target)
         .map_err(|e| e.to_string())
 }

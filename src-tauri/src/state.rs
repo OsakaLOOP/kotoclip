@@ -1,6 +1,6 @@
 use kotoclip_core::cache::AnalysisCache;
 use kotoclip_core::document::DocumentSession;
-use kotoclip_core::Engine;
+use kotoclip_core::{DictionaryService, Engine};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{atomic::AtomicU64, Arc, Condvar, Mutex, MutexGuard};
@@ -99,6 +99,7 @@ impl<T> Deref for ResourceGuard<'_, T> {
 /// 全局共享状态，在 Tauri 后端各个 Commands 之间持有并发安全的核心 Engine 实例
 pub struct AppState {
     pub engine: LazyResource<Engine>,
+    pub dictionary: LazyResource<DictionaryService>,
     pub sessions: Mutex<HashMap<String, DocumentSession>>,
     pub next_session_id: AtomicU64,
     pub analysis_cache: LazyResource<AnalysisCache>,

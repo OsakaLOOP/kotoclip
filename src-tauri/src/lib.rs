@@ -2,7 +2,7 @@ pub mod commands;
 pub mod paths;
 pub mod state;
 
-use kotoclip_core::{cache::AnalysisCache, Engine};
+use kotoclip_core::{cache::AnalysisCache, DictionaryService, Engine};
 use state::AppState;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicU64, Mutex};
@@ -23,9 +23,11 @@ pub fn run() {
         .setup(|app| {
             // 先注册可等待的资源，让 Tauri 能立即进入事件循环并绘制前端。
             let engine = state::LazyResource::pending();
+            let dictionary = state::LazyResource::pending();
             let analysis_cache = state::LazyResource::pending();
             app.manage(AppState {
                 engine: engine.clone(),
+                dictionary: dictionary.clone(),
                 sessions: Mutex::new(HashMap::new()),
                 next_session_id: AtomicU64::new(1),
                 analysis_cache: analysis_cache.clone(),
@@ -40,9 +42,16 @@ pub fn run() {
                         let paths = paths::AppPaths::resolve(&app_handle)
                             .map_err(|error| error.to_string())?;
 
-                        let engine_value = Engine::new_from_dictionary_sources(
-                            &paths.system_dictionary,
+                        let dictionary_value = DictionaryService::new_from_dictionary_sources(
                             &paths.dictionary_source_dir,
+                            &paths.dictionary_dir,
+                            &paths.profile_db,
+                        )
+                        .map_err(|error| error.to_string())?;
+                        dictionary.initialize(Ok(dictionary_value));
+
+                        let engine_value = Engine::new(
+                            &paths.system_dictionary,
                             &paths.dictionary_dir,
                             &paths.profile_db,
                         )
@@ -61,6 +70,7 @@ pub fn run() {
 
                     if let Err(error) = result {
                         engine.initialize(Err(error.clone()));
+                        dictionary.initialize(Err(error.clone()));
                         analysis_cache.initialize(Err(error.clone()));
                         let _ = app_handle.emit(
                             "backend-ready",

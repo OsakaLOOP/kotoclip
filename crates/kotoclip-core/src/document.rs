@@ -171,6 +171,7 @@ pub struct DocumentSession {
     record_exposure_on_complete: bool,
     exposure_recorded: bool,
     cached_stable_tokens: Vec<AnnotatedToken>,
+    stable_tokens_for_cache: Vec<AnnotatedToken>,
     document_readings: HashMap<String, String>,
 }
 
@@ -195,6 +196,7 @@ impl DocumentSession {
             record_exposure_on_complete: false,
             exposure_recorded: false,
             cached_stable_tokens: Vec::new(),
+            stable_tokens_for_cache: Vec::new(),
             document_readings,
         }
     }
@@ -223,6 +225,7 @@ impl DocumentSession {
             record_exposure_on_complete,
             exposure_recorded: false,
             cached_stable_tokens: Vec::new(),
+            stable_tokens_for_cache: Vec::new(),
             document_readings,
         }
     }
@@ -234,6 +237,44 @@ impl DocumentSession {
 
     pub fn set_cached_stable_tokens(&mut self, tokens: Vec<AnnotatedToken>) {
         self.cached_stable_tokens = tokens;
+    }
+
+    /// 冷分析时逐批保存稳定 NLP 产物，落盘不允许再次执行整篇管线。
+    pub fn record_stable_batch(&mut self, batch: &DocumentBatch, mut tokens: Vec<AnnotatedToken>) {
+        let token_offset = self
+            .stable_tokens_for_cache
+            .iter()
+            .filter(|token| token.bunsetsu.char_range.0 < batch.char_range.0)
+            .count();
+        let out_of_order = self
+            .stable_tokens_for_cache
+            .iter()
+            .any(|token| token.bunsetsu.char_range.0 > batch.char_range.0);
+        let morpheme_offset = self
+            .stable_tokens_for_cache
+            .iter()
+            .map(|token| token.bunsetsu.morphemes.len())
+            .sum();
+        offset_tokens(&mut tokens, batch.char_range.0, token_offset);
+        if !out_of_order {
+            crate::pipeline::grammar::offset_document_coordinates(
+                &mut tokens,
+                token_offset,
+                morpheme_offset,
+            );
+        }
+        self.stable_tokens_for_cache.extend(tokens);
+        if out_of_order {
+            self.stable_tokens_for_cache
+                .sort_by_key(|token| token.bunsetsu.char_range.0);
+            crate::pipeline::grammar::canonicalize_document_coordinates(
+                &mut self.stable_tokens_for_cache,
+            );
+        }
+    }
+
+    pub fn stable_tokens_for_cache(&self) -> &[AnnotatedToken] {
+        &self.stable_tokens_for_cache
     }
 
     pub fn document_readings(&self) -> &HashMap<String, String> {
@@ -324,27 +365,38 @@ impl DocumentSession {
             .iter()
             .any(|token| token.bunsetsu.char_range.0 > batch.char_range.0);
         offset_tokens(&mut tokens, batch.char_range.0, token_offset);
+        let morpheme_offset = self
+            .tokens
+            .iter()
+            .map(|token| token.bunsetsu.morphemes.len())
+            .sum();
+        if !out_of_order {
+            crate::pipeline::grammar::offset_document_coordinates(
+                &mut tokens,
+                token_offset,
+                morpheme_offset,
+            );
+        }
         stabilize_expression_ids(&mut tokens);
         let token_ids = stable_token_ids(&tokens);
-        self.tokens.extend(tokens.iter().cloned());
-        self.tokens.sort_by_key(|token| token.bunsetsu.char_range.0);
-        crate::pipeline::grammar::canonicalize_document_coordinates(&mut self.tokens);
-        reindex_expression_token_ranges(&mut self.tokens);
-        self.token_ids = stable_token_ids(&self.tokens);
+        let appended_start = self.tokens.len();
+        self.tokens.extend(tokens);
+        if out_of_order {
+            self.tokens.sort_by_key(|token| token.bunsetsu.char_range.0);
+            crate::pipeline::grammar::canonicalize_document_coordinates(&mut self.tokens);
+            reindex_expression_token_ranges(&mut self.tokens);
+            self.token_ids = stable_token_ids(&self.tokens);
+        } else {
+            self.token_ids.extend(token_ids.iter().cloned());
+        }
         self.analyzed_chunks[batch.chunk_start..batch.chunk_end].fill(true);
         let (patch_tokens, patch_token_ids) = if out_of_order {
             (self.tokens.clone(), self.token_ids.clone())
         } else {
-            let added_ids = token_ids.iter().cloned().collect::<HashSet<_>>();
-            let mut patch_tokens = Vec::new();
-            let mut patch_token_ids = Vec::new();
-            for (token_id, token) in self.token_ids.iter().zip(&self.tokens) {
-                if added_ids.contains(token_id) {
-                    patch_token_ids.push(token_id.clone());
-                    patch_tokens.push(token.clone());
-                }
-            }
-            (patch_tokens, patch_token_ids)
+            (
+                self.tokens[appended_start..].to_vec(),
+                self.token_ids[appended_start..].to_vec(),
+            )
         };
         self.revision += 1;
         Ok(AnalysisPatch {
@@ -359,7 +411,9 @@ impl DocumentSession {
             char_range: batch.char_range,
             removed_token_ids: Vec::new(),
             token_ids: patch_token_ids,
-            ordered_token_ids: self.token_ids.clone(),
+            ordered_token_ids: (base_revision == 0 || out_of_order)
+                .then(|| self.token_ids.clone())
+                .unwrap_or_default(),
             analysis: self.encoder.encode_patch(&patch_tokens),
             fingerprint: self.fingerprint.clone(),
             invalidation: None,
@@ -968,6 +1022,27 @@ mod tests {
         assert!(session.should_record_exposure());
         session.mark_exposure_recorded();
         assert!(!session.should_record_exposure());
+    }
+
+    #[test]
+    fn sequential_append_uses_delta_order_after_full_first_patch() {
+        let mut session = DocumentSession::new_progressive(
+            "session-1".to_string(),
+            "一\n二\n三".to_string(),
+            false,
+        );
+        let first = session.next_batch(1).expect("首批应存在");
+        let first_patch = session
+            .append_analyzed_batch(0, &first, vec![token("一", (0, 1))])
+            .expect("首批应提交");
+        assert_eq!(first_patch.ordered_token_ids.len(), 1);
+
+        let second = session.next_batch(1).expect("第二批应存在");
+        let second_patch = session
+            .append_analyzed_batch(1, &second, vec![token("二", (0, 1))])
+            .expect("顺序补块应提交");
+        assert!(second_patch.ordered_token_ids.is_empty());
+        assert_eq!(second_patch.token_ids.len(), 1);
     }
 
     #[test]
