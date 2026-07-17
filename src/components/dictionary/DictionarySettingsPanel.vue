@@ -2,6 +2,13 @@
 import { computed, ref, watch } from "vue";
 import { GripVertical, MoveDown, MoveUp, X } from "@lucide/vue";
 import type { DictionarySettings } from "../../types";
+import {
+  dictionaryShortcutKeyOptions,
+  dictionaryShortcutSettings,
+  setDictionaryShortcut,
+  shortcutKeyLabel,
+  type DictionaryShortcutSettings,
+} from "../../composables/useDictionaryShortcuts";
 
 const props = defineProps<{
   show: boolean;
@@ -55,6 +62,10 @@ function handleDrop(target: string) {
   draggedDictionary.value = null;
   dragTarget.value = null;
 }
+
+function updateShortcut(name: keyof DictionaryShortcutSettings, event: Event) {
+  setDictionaryShortcut(name, (event.target as HTMLSelectElement).value);
+}
 </script>
 
 <template>
@@ -90,6 +101,40 @@ function handleDrop(target: string) {
             </div>
           </li>
         </ol>
+        <section class="shortcut-settings" aria-labelledby="dictionary-shortcut-heading">
+          <div class="section-heading">
+            <h3 id="dictionary-shortcut-heading">悬浮快捷键</h3>
+            <p>保持鼠标位置不动时循环气泡选项；同时显示表记和读音时，表记使用 Shift 组合键。</p>
+          </div>
+          <label>
+            <span>切换词典</span>
+            <span class="shortcut-control">
+              <kbd v-if="dictionaryShortcutSettings.dictionaryKey">{{ shortcutKeyLabel(dictionaryShortcutSettings.dictionaryKey) }}</kbd>
+              <select :value="dictionaryShortcutSettings.dictionaryKey" @change="updateShortcut('dictionaryKey', $event)">
+                <option
+                  v-for="option in dictionaryShortcutKeyOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :disabled="Boolean(option.value && option.value === dictionaryShortcutSettings.choiceKey)"
+                >{{ option.label }}</option>
+              </select>
+            </span>
+          </label>
+          <label>
+            <span>切换表记／读音</span>
+            <span class="shortcut-control">
+              <kbd v-if="dictionaryShortcutSettings.choiceKey">{{ shortcutKeyLabel(dictionaryShortcutSettings.choiceKey) }}</kbd>
+              <select :value="dictionaryShortcutSettings.choiceKey" @change="updateShortcut('choiceKey', $event)">
+                <option
+                  v-for="option in dictionaryShortcutKeyOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :disabled="Boolean(option.value && option.value === dictionaryShortcutSettings.dictionaryKey)"
+                >{{ option.label }}</option>
+              </select>
+            </span>
+          </label>
+        </section>
       </section>
     </div>
   </Transition>
@@ -97,7 +142,7 @@ function handleDrop(target: string) {
 
 <style scoped>
 .settings-overlay { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, #000 32%, transparent); backdrop-filter: blur(3px); }
-.settings-panel { width: min(460px, 100%); padding: 20px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-primary); box-shadow: var(--shadow-md); }
+.settings-panel { width: min(460px, 100%); max-height: min(720px, calc(100vh - 40px)); overflow-y: auto; padding: 20px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-primary); box-shadow: var(--shadow-md); }
 header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 h2 { color: var(--text-primary); font-size: 1.06rem; }
 p { margin-top: 4px; color: var(--text-secondary); font-size: .82rem; }
@@ -116,6 +161,14 @@ strong { overflow: hidden; color: var(--text-primary); font-size: .85rem; text-o
 .move-actions button:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
 .move-actions button:disabled { opacity: .35; cursor: not-allowed; }
 .empty-state { margin-top: 10px; }
+.shortcut-settings { display: grid; gap: 9px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+.section-heading { margin-bottom: 2px; }
+h3 { color: var(--text-primary); font-size: .9rem; }
+.shortcut-settings label { display: flex; align-items: center; justify-content: space-between; gap: 14px; color: var(--text-secondary); font-size: .82rem; }
+.shortcut-control { display: flex; align-items: center; gap: 7px; }
+.shortcut-control select { min-width: 92px; height: 32px; border: 1px solid var(--border-color); border-radius: 6px; padding: 0 28px 0 9px; background: var(--bg-card); color: var(--text-primary); font: .78rem var(--font-ui); }
+kbd { min-width: 22px; padding: 3px 6px 4px; border: 1px solid color-mix(in srgb, var(--border-color) 88%, var(--text-muted)); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-card); color: var(--text-secondary); font: 700 .68rem/1 var(--font-ui); text-align: center; box-shadow: 0 1px 0 color-mix(in srgb, var(--border-color) 55%, transparent); }
+@media (max-width: 420px) { .shortcut-settings label { align-items: flex-start; flex-direction: column; gap: 6px; } .shortcut-control { width: 100%; } .shortcut-control select { flex: 1; } }
 .fade-enter-active, .fade-leave-active { transition: opacity .12s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

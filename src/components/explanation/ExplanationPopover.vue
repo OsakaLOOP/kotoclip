@@ -165,6 +165,7 @@ onBeforeUnmount(() => {
     :loading="wholeLoading"
     kind-label="整体"
     :can-go-back="wholeCanGoBack"
+    :shortcuts-enabled="false"
     @enter="emit('enter', $event)"
     @leave="emit('leave', $event)"
     @navigate="emit('navigateWhole', $event)"
@@ -183,6 +184,7 @@ onBeforeUnmount(() => {
     :loading="componentLoading"
     :kind-label="componentLabel"
     :can-go-back="componentCanGoBack"
+    shortcuts-enabled
     @enter="emit('enter', $event)"
     @leave="emit('leave', $event)"
     @navigate="emit('navigateComponent', $event)"

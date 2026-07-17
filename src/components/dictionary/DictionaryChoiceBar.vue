@@ -5,6 +5,7 @@ import { Star } from "@lucide/vue";
 defineProps<{
   label: string;
   options: DictionaryChoiceOption[];
+  shortcutKeys?: string[];
 }>();
 
 const emit = defineEmits<{ select: [key: string] }>();
@@ -12,7 +13,12 @@ const emit = defineEmits<{ select: [key: string] }>();
 
 <template>
   <section v-if="options.length" class="dictionary-choice-bar">
-    <div class="dictionary-choice-label">{{ label }}</div>
+    <div class="dictionary-choice-label">
+      <span>{{ label }}</span>
+      <span v-if="shortcutKeys?.length" class="shortcut-keys" aria-label="快捷键">
+        <kbd v-for="key in shortcutKeys" :key="key">{{ key }}</kbd>
+      </span>
+    </div>
     <div class="dictionary-choice-viewport no-scrollbar">
       <div class="dictionary-choice-options" :class="{ 'is-dense': options.length > 8 }">
         <button
@@ -35,7 +41,9 @@ const emit = defineEmits<{ select: [key: string] }>();
 
 <style scoped>
 .dictionary-choice-bar { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; align-items: start; border-top: 1px solid var(--border-color); padding-top: 9px; margin-top: 7px; }
-.dictionary-choice-label { padding-top: 5px; color: var(--text-muted); font: 700 .7rem var(--font-ui); letter-spacing: .04em; }
+.dictionary-choice-label { display: flex; align-items: center; gap: 5px; padding-top: 5px; color: var(--text-muted); font: 700 .7rem var(--font-ui); letter-spacing: .04em; }
+.shortcut-keys { display: inline-flex; align-items: center; gap: 2px; }
+kbd { min-width: 18px; padding: 1px 4px 2px; border: 1px solid color-mix(in srgb, var(--border-color) 88%, var(--text-muted)); border-bottom-width: 2px; border-radius: 4px; background: color-mix(in srgb, var(--bg-card) 92%, transparent); color: var(--text-secondary); font: 700 .62rem/1.1 var(--font-ui); text-align: center; box-shadow: 0 1px 0 color-mix(in srgb, var(--border-color) 55%, transparent); letter-spacing: 0; }
 .dictionary-choice-viewport { overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
 .dictionary-choice-options { display: flex; gap: 6px; width: max-content; min-width: 100%; }
 .dictionary-choice-options.is-dense { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto); justify-content: start; }

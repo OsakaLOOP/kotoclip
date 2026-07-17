@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ChevronLeft, Star } from "@lucide/vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
+import {
+  dictionaryShortcutSettings,
+  matchesDictionaryShortcut,
+  shortcutKeyLabel,
+} from "../composables/useDictionaryShortcuts";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionaryChoiceBar from "./dictionary/DictionaryChoiceBar.vue";
 import LoadingSkeleton from "./common/LoadingSkeleton.vue";
@@ -25,6 +30,7 @@ const props = defineProps<{
   maxHeight?: number;
   kindLabel?: string;
   panelId: string;
+  shortcutsEnabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -274,6 +280,55 @@ function handleReadingSelect(readingKey: string) {
   selectDictionaryAfterChoice();
 }
 
+function selectNextOption(options: DictionaryChoiceOption[], select: (key: string) => void) {
+  if (options.length <= 1) return false;
+  const activeIndex = options.findIndex((option) => option.active);
+  select(options[(activeIndex + 1 + options.length) % options.length].key);
+  return true;
+}
+
+function handleShortcut(event: KeyboardEvent) {
+  if (!props.shortcutsEnabled || !props.show || props.loading) return;
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
+
+  let handled = false;
+  if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.dictionaryKey)) {
+    handled = selectNextOption(dictionaryOptions.value, (key) => { activeDictionaryName.value = key; });
+  } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey, true) && readingOptions.value.length > 1) {
+    handled = selectNextOption(candidateOptions.value, handleCandidateSelect);
+  } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey)) {
+    handled = readingOptions.value.length > 1
+      ? selectNextOption(readingOptions.value, handleReadingSelect)
+      : selectNextOption(candidateOptions.value, handleCandidateSelect);
+  }
+
+  if (handled) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}
+
+const dictionaryShortcutKeys = computed(() => (
+  dictionaryShortcutSettings.dictionaryKey
+    ? [shortcutKeyLabel(dictionaryShortcutSettings.dictionaryKey)]
+    : []
+));
+
+const readingShortcutKeys = computed(() => (
+  dictionaryShortcutSettings.choiceKey
+    ? [shortcutKeyLabel(dictionaryShortcutSettings.choiceKey)]
+    : []
+));
+
+const candidateShortcutKeys = computed(() => {
+  if (!dictionaryShortcutSettings.choiceKey) return [];
+  const key = shortcutKeyLabel(dictionaryShortcutSettings.choiceKey);
+  return readingOptions.value.length > 1 ? ["Shift", key] : [key];
+});
+
+onMounted(() => window.addEventListener("keydown", handleShortcut));
+onBeforeUnmount(() => window.removeEventListener("keydown", handleShortcut));
+
 function managedLinkGroups(entry: DictEntry) {
   const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
   const groups = new Map<string, DictionaryLink[]>();
@@ -339,6 +394,7 @@ function handleDefinitionClick(event: MouseEvent) {
         v-if="candidateOptions.length"
         label="表记"
         :options="candidateOptions"
+        :shortcut-keys="candidateShortcutKeys"
         @select="handleCandidateSelect"
         />
 
@@ -346,6 +402,7 @@ function handleDefinitionClick(event: MouseEvent) {
         v-if="readingOptions.length > 1"
         label="读音"
         :options="readingOptions"
+        :shortcut-keys="readingShortcutKeys"
         @select="handleReadingSelect"
         />
 
@@ -363,6 +420,7 @@ function handleDefinitionClick(event: MouseEvent) {
               class="dictionary-switcher"
               label="词典"
               :options="dictionaryOptions"
+              :shortcut-keys="dictionaryShortcutKeys"
               @select="activeDictionaryName = $event"
             />
             <div v-if="!visibleDictionaryGroups.some((group) => group.entries.length)" class="empty-state">当前组合暂无本地词典释义</div>
