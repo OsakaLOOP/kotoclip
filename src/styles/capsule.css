@@ -27,7 +27,7 @@
   display: inline-flex;
   align-items: center;
   position: relative;
-  margin-right: 0.25em; /* 相邻 content 文节仅保留 0.25em 的行内间距 */
+  margin-right: 0.12em; /* 相邻 content 文节行内间距缩减为原先一半 */
   margin-left: 0;
   margin-top: 0.15rem;
   margin-bottom: 0.15rem;
@@ -39,6 +39,11 @@
   cursor: pointer;
   user-select: none;
   background-clip: padding-box;
+}
+
+/* 标点符号前贴紧前面的文节 */
+.bunsetsu-capsule:has(+ .punctuation) {
+  margin-right: 0 !important;
 }
 
 /* 句首/句末停顿：句末 。！？…（含后随闭合引号/括号）之后在下一内容文节前增加 0.5em 停顿 */
@@ -211,11 +216,14 @@
   color: var(--grammar-text, #1769aa) !important;
 }
 
-/* 标点符号/符号胶囊 (标点两侧不额外插入间隙，永远不可选、不可拖拽) */
+/* 标点符号/符号胶囊 (标点前紧贴前文节，后保留 0.12em 间距，永远不可选、不可拖拽) */
 .bunsetsu-capsule.punctuation {
   cursor: default;
   padding: 0 !important;
-  margin: 0 !important; /* 标点两侧无额外间距 */
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0.12em !important; /* 标点右侧保留正常间距 */
   background-color: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;

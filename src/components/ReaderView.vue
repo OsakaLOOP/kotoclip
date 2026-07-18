@@ -562,7 +562,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       <div
         v-if="!showInput"
         ref="scrollContainerRef"
-        class="reader-viewport no-scrollbar"
+        class="reader-viewport"
         @scroll="handleReaderScroll"
       >
         <div
@@ -579,9 +579,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             :style="{
               position: 'absolute',
               top: 0,
-              left: 0,
-              width: '100%',
-              transform: `translateY(${virtualRow.start}px)`,
+              left: '50%',
+              width: '85%',
+              transform: `translateY(${virtualRow.start}px) translateX(-50%)`,
             }"
             :data-index="virtualRow.index"
             :ref="measureVirtualRow"
@@ -933,11 +933,27 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 /* 阅读器视口样式 */
 .reader-viewport {
   flex: 1;
-  max-width: clamp(600px, 75vw, 960px);
   width: 100%;
   overflow-y: auto;
-  padding: 40px clamp(24px, 5vw, 64px);
+  padding: 40px 0;
   box-sizing: border-box;
+}
+
+.reader-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reader-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.reader-viewport::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.reader-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 /* 详细释义弹窗 */
