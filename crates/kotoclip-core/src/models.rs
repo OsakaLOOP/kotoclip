@@ -653,6 +653,169 @@ pub struct DictEntry {
     pub content_blocks: Vec<DictionaryContentBlock>,
     pub match_type: String,
     pub links: Vec<DictionaryLink>,
+    #[serde(default)]
+    pub occurrence_id: String,
+    #[serde(default)]
+    pub source_record_index: usize,
+    #[serde(default)]
+    pub entry_kind: String,
+    #[serde(default)]
+    pub header: DictionaryOccurrenceHeader,
+    #[serde(default)]
+    pub senses: Vec<DictionarySense>,
+    #[serde(default)]
+    pub sections: Vec<DictionarySection>,
+    #[serde(default)]
+    pub adapter_diagnostics: DictionaryAdapterDiagnostics,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub match_evidence: Option<DictionaryMatchEvidence>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw_definition: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryOccurrenceHeader {
+    pub display_form: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canonical_form: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reading: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub historical_reading: Option<String>,
+    #[serde(default)]
+    pub pronunciations: Vec<DictionaryPronunciation>,
+    #[serde(default)]
+    pub scoped_forms: Vec<DictionaryForm>,
+    #[serde(default)]
+    pub pos_tags: Vec<DictionaryTag>,
+    #[serde(default)]
+    pub usage_tags: Vec<DictionaryTag>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub short_note: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryPronunciation {
+    pub system: String,
+    pub label: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryForm {
+    pub form: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reading: Option<String>,
+    #[serde(default)]
+    pub kind: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryTag {
+    pub kind: String,
+    pub label: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryText {
+    #[serde(default)]
+    pub lang: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub qualifier: Option<String>,
+    pub html: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryExample {
+    pub source: DictionaryText,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub translation: Option<DictionaryText>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<DictionaryText>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionarySense {
+    pub sense_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marker: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heading: Option<String>,
+    #[serde(default)]
+    pub glosses: Vec<DictionaryText>,
+    #[serde(default)]
+    pub definitions: Vec<DictionaryText>,
+    #[serde(default)]
+    pub tags: Vec<DictionaryTag>,
+    #[serde(default)]
+    pub examples: Vec<DictionaryExample>,
+    #[serde(default)]
+    pub notes: Vec<DictionaryText>,
+    #[serde(default)]
+    pub relations: Vec<DictionaryLink>,
+    #[serde(default)]
+    pub children: Vec<DictionarySense>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionarySectionItem {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label_html: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reading: Option<String>,
+    #[serde(default)]
+    pub content: Vec<DictionaryText>,
+    #[serde(default)]
+    pub tags: Vec<DictionaryTag>,
+    #[serde(default)]
+    pub examples: Vec<DictionaryExample>,
+    #[serde(default)]
+    pub senses: Vec<DictionarySense>,
+    #[serde(default)]
+    pub relations: Vec<DictionaryLink>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionarySection {
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(default)]
+    pub items: Vec<DictionarySectionItem>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryAdapterDiagnostics {
+    #[serde(default)]
+    pub coverage: String,
+    #[serde(default)]
+    pub warnings: Vec<String>,
+    #[serde(default)]
+    pub omitted: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryMatchEvidence {
+    pub kind: String,
+    pub query_form: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub matched_form: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requested_reading: Option<String>,
+    #[serde(default)]
+    pub reading_match: String,
+    #[serde(default)]
+    pub pos_match: String,
+    #[serde(default)]
+    pub dictionary_local: bool,
+    #[serde(default)]
+    pub penalties: Vec<String>,
+    #[serde(default)]
+    pub score: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -671,10 +834,18 @@ pub struct DictionaryLink {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DictionaryCandidate {
+    #[serde(default)]
+    pub candidate_id: String,
     pub target: String,
     pub label: String,
     pub relation: String,
     pub dictionary_names: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reading: Option<String>,
+    #[serde(default)]
+    pub entry_kind: String,
+    #[serde(default)]
+    pub occurrence_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -682,6 +853,10 @@ pub struct DictionaryLookup {
     pub query: String,
     pub reading: Option<String>,
     pub selected_target: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected_occurrence_id: Option<String>,
+    #[serde(default)]
+    pub mode: String,
     pub candidates: Vec<DictionaryCandidate>,
     pub dictionary_names: Vec<String>,
     pub entries: Vec<DictEntry>,

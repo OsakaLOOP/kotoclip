@@ -1,12 +1,12 @@
 import { computed, nextTick, ref, watch } from "vue";
-import type { AnnotatedToken, DictionaryLookup, GrammarTag } from "../types";
+import type { AnnotatedToken, DictionaryLookup, GrammarTag, PosTag } from "../types";
 import { snapshotRect, type RectSnapshot } from "../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS, scheduleCloseGrace } from "../explanation/closeGrace";
 import { floatDebug } from "../explanation/floatDebug";
 import { deriveExplanationRenderGate } from "../explanation/interactionGate";
 import { morphemeLookupTarget, type MorphemeLookupTarget } from "../utils/dictionaryTarget";
 
-type LookupWord = (word: string, reading?: string, background?: boolean) => Promise<DictionaryLookup | null>;
+type LookupWord = (word: string, reading?: string, background?: boolean, pos?: PosTag) => Promise<DictionaryLookup | null>;
 type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
 
 const HOVER_LOOKUP_DELAY_MS = 48;
@@ -326,7 +326,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     const resolveStartedAt = performance.now();
     const word = target.query;
     const generation = ++componentGeneration;
-    const requestKey = lookupKey(word, target.lookupReading);
+    const requestKey = lookupKey(word, target.lookupReading, target.pos);
     const cachedResult = resultCache.get(requestKey);
     const hasCachedResult = resultCache.has(requestKey);
     floatDebug.snapshot("request.component", {
@@ -359,7 +359,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       });
       return;
     }
-    const cached = cachedLookup(word, target.lookupReading, false);
+    const cached = cachedLookup(word, target.lookupReading, false, target.pos);
     const invokeStartedAt = performance.now();
     const lookup = await cached.promise!;
     if (generation !== componentGeneration) {
@@ -411,7 +411,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       return;
     }
     const generation = ++wholeGeneration;
-    const requestKey = lookupKey(lexical.base_form, lexical.reading);
+    const requestKey = lookupKey(lexical.base_form, lexical.reading, lexical.output_pos);
     const cachedResult = resultCache.get(requestKey);
     const hasCachedResult = resultCache.has(requestKey);
     floatDebug.snapshot("request.whole", {
@@ -445,7 +445,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       return;
     }
     wholeLoading.value = true;
-    const cached = cachedLookup(lexical.base_form, lexical.reading, true);
+    const cached = cachedLookup(lexical.base_form, lexical.reading, true, lexical.output_pos);
     const invokeStartedAt = performance.now();
     const lookup = await cached.promise!;
     if (generation !== wholeGeneration) {
@@ -478,8 +478,8 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     publishSession("whole-resolved", "network-or-ipc");
   }
 
-  function cachedLookup(word: string, reading = "", background = false) {
-    const key = lookupKey(word, reading);
+  function cachedLookup(word: string, reading = "", background = false, pos?: PosTag) {
+    const key = lookupKey(word, reading, pos);
     if (resultCache.has(key)) {
       floatDebug.record("request", "cache", "result-hit", key);
       return { immediate: true as const, value: resultCache.get(key) ?? null };
@@ -488,7 +488,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     let promise = inflightCache.get(inflightKey);
     if (!promise) {
       floatDebug.record("request", "cache", "start-inflight", key);
-      promise = lookupWord(word, reading || undefined, background).then((lookup) => {
+      promise = lookupWord(word, reading || undefined, background, pos).then((lookup) => {
         resultCache.set(key, lookup);
         inflightCache.delete(inflightKey);
         floatDebug.record("request", "cache", "store-result", key, {
@@ -644,8 +644,9 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
   };
 }
 
-function lookupKey(word: string, reading: string) {
-  return `${word}\u001f${reading}`;
+function lookupKey(word: string, reading: string, pos?: PosTag) {
+  const posKey = pos ? `${pos.major}/${pos.sub1}/${pos.sub2}/${pos.sub3}` : "";
+  return `${word}\u001f${reading}\u001f${posKey}`;
 }
 
 function waitForHoverIntent(delay: number) {

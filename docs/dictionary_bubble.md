@@ -1,271 +1,239 @@
-# 悬浮词典模块完整设计与迭代指南
+# 悬浮词典模块维护指南
 
-## 1. 模块目的
+状态：**多词典查询与结构化气泡主要重构已完成（2026-07-18）**。
 
-本模块在阅读正文时提供可滚动、可导航、可选择读音与表记的本地词典界面，并保留词典原有的语义关联。
+本文是模块入口和日常维护指南。完整数据协议、设计理由和第一批验收见 [`dictionary_lookup_and_bubble_refactor.md`](dictionary_lookup_and_bubble_refactor.md)；后续增量项目见 [`dictionary_refactor_followups.md`](dictionary_refactor_followups.md)。
 
-核心对象包括：
+## 1. 模块职责
 
-- 普通表记与读音精确查询。
-- `@@@LINK` 重定向。
-- 纯假名对应一个或多个汉字表记。
-- 同一汉字表记对应多个读音和独立释义。
-- 近义、反义、参照、亲项目、子项目和惯用句导航。
-- 多本词典的优先级、分组和专用内容样式。
+悬浮词典负责：
 
-模块不负责改变原文、强制采用某个分词路径或把词典读音写回 NLP。分词与 ruby 提供查询证据，词典模块负责展示和人工选择。
+- 将正文或内部成分的表记、读音和 POS 转成上下文查询；
+- 在每本词典内优先检索直接 occurrence，再处理词典本地别名与候选；
+- 保留同表记多读音、同形同读异义、姓氏、汉字条、接辞、导航等独立身份；
+- 将三本词典的原始 HTML 转成统一表头、义项树、双语例句、标签、关系和 section；
+- 在气泡中切换当前词典、当前 occurrence 和词典候选；
+- 在无法可靠消歧时完整显示候选，不伪造语义首选。
 
-## 2. 当前实现入口
+本模块不负责：
+
+- 修改原文或分词结果；
+- 将多个词典的义项强行合并成一个统一词条；
+- 根据读音相同自动认定语义相同；
+- 在 Vue/CSS 中重新解析词典原始 class；
+- 擅自改写词典的语义或翻译质量。
+
+## 2. 核心不变量
+
+1. occurrence 是最小内容身份，稳定到“词典 + 源 entry + 子记录”。
+2. 其他读音、表记、词条类型和同形异义是候选，不是“释义 N”。
+3. 同一 occurrence 内的真实层级才进入 `DictionarySense.children`。
+4. 表头只消费当前 occurrence 的全局事实；局部 POS、语法和语域留在对应 sense。
+5. POS 是软证据。exact/compatible 可以加分，conflict 可以降序，但 unknown 或接近分数不得导致候选删除。
+6. 每本词典独立完成 direct-first 和 alias 处理，alias 不跨数据库扩散。
+7. 结构化解析失败时保留安全 fallback 和 diagnostics，不伪装成已完整解析。
+8. 日文和中文片段必须带语言角色，中文使用独立字体栈。
+
+## 3. 当前代码入口
 
 | 入口 | 职责 |
 | --- | --- |
-| `crates/kotoclip-core/src/dictionary/lookup.rs` | 多 SQLite 查询、重定向解析、读音排序和结果聚合 |
-| `crates/kotoclip-core/src/dictionary/presentation.rs` | 词典专用格式解析、安全清洗和通用内容模块生成 |
-| `crates/kotoclip-core/src/dictionary/aggregate.rs` | 多词典优先级排序 |
-| `crates/kotoclip-core/src/profile/dictionary.rs` | 用户表记选择的持久化与内存缓存 |
-| `crates/kotoclip-core/src/models.rs` | 查询结果、内容模块和语义链接协议 |
-| `src/composables/useDictionary.ts` | Tauri 查询与选择命令封装 |
-| `src/components/TooltipPanel.vue` | 气泡状态、动态表头、词典分组和关系模块编排 |
-| `src/utils/dictionaryTarget.ts` | 保持既有词典查询策略，并把词汇所有权活用链归一为同一悬浮目标 |
-| `src/components/dictionary/DictionaryChoiceBar.vue` | 表记/读音共用的直接选择控件 |
-| `src/components/dictionary/DictionaryContent.vue` | 通用内容模块渲染器 |
-| `src/components/common/LoadingSkeleton.vue` | 可复用加载骨架；当前提供词典内容变体 |
-| `src/styles/dictionaries/daijirin.css` | 大辞林专用样式覆盖 |
-| `src/styles/dictionaries/generic.css` | 未知词典的安全通用样式 |
-| `scripts/audit_dictionary_bubble.py` | 当前词典与第一话真实内容审计 |
+| `crates/kotoclip-core/src/dictionary/lookup.rs` | 多 SQLite direct-first 查询、命中证据、软 POS 排序、质量门 |
+| `crates/kotoclip-core/src/dictionary/lookup_state.rs` | 统一装配完整 `DictionaryLookup`、候选、词典列表和默认 occurrence |
+| `crates/kotoclip-core/src/dictionary/html.rs` | 把不规范 HTML 片段解析为可遍历树 |
+| `crates/kotoclip-core/src/dictionary/adapters/mod.rs` | 分词典适配器分发 |
+| `crates/kotoclip-core/src/dictionary/adapters/daijirin.rs` | 大辞林表头、义项层级、例句、ruby、关系和专用 section |
+| `crates/kotoclip-core/src/dictionary/adapters/shogakukan.rs` | 小学馆多记录拆分、双语例句、限定 gloss、subentry 和标签 |
+| `crates/kotoclip-core/src/dictionary/adapters/crown.rs` | Crown 中文 gloss、例句翻译、限定、复合/惯用/谚语和词源 |
+| `crates/kotoclip-core/src/dictionary/adapters/common.rs` | 通用文本工具、安全 fallback 和结构化兼容 HTML |
+| `crates/kotoclip-core/src/dictionary/bubble_html.rs` | 完整 Lookup 的自包含 CLI 研究预览 |
+| `crates/kotoclip-core/src/models.rs` | occurrence/header/sense/section/example/relation/evidence 协议 |
+| `crates/kotoclip-core/src/lib.rs` | DictionaryService/Engine 的查询编排与用户选择 |
+| `src-tauri/src/commands.rs` | `lookup_word`、词典设置和候选选择 IPC |
+| `src/composables/useDictionary.ts` | 前端查询、设置和 target 选择封装 |
+| `src/components/TooltipPanel.vue` | 当前词典、occurrence、候选、表头、导航和快捷键状态 |
+| `src/components/dictionary/DictionaryChoiceBar.vue` | 词典、occurrence 和候选的共用横向控件 |
+| `src/components/dictionary/DictionaryContent.vue` | 结构化正文与 section 渲染 |
+| `src/components/dictionary/DictionarySenseTree.vue` | 递归义项树、双语例句、标签、note 和 sense relation |
+| `src/styles/dictionaries/generic.css` | 语言字体、层级、例句和 section 的通用样式 |
 
-## 3. 通用数据协议
+`dictionary/presentation.rs` 只保留适配器兼容入口。新增词典语义规则应进入 `dictionary/adapters/`，不要重新堆回 presentation 或 TooltipPanel。
 
-### 3.1 `DictionaryLookup`
+## 4. 查询流程
 
-一次查询返回：
-
-- `query`、`reading`：原始查询词与上下文读音。
-- `selected_target`：纯假名表记选择的持久目标。
-- `candidates`：受管理的表记候选。
-- `entries`：按读音匹配和词典优先级排序的词条。
-
-### 3.2 `DictEntry`
-
-每个词条包含：
-
-- `entry_key`：由词典名和 SQLite entry ID 构成的稳定键；同词头多义项不会冲突。
-- `dict_name`、`headword`、`reading`、`match_type`。
-- `is_preferred`：是否与正文读音匹配。
-- `style_profile`：`daijirin` 或 `generic` 等专用样式配置名。
-- `content_blocks`：通用内容模块列表。
-- `links`：已经从原始 HTML 中提取的结构化语义链接。
-- `definition_html`：兼容导出与旧调用方的清洗后正文。
-
-### 3.3 内容模块
-
-当前稳定模块为 `rich_text`。模块协议同时保留 `kind`、可选 `label` 和 `html`，以便后续加入：
-
-- 例句组。
-- 词源或用法说明。
-- 音调和发音信息。
-- 可实际加载的图片、音频或表格。
-
-通用 UI 只遍历存在的模块；空模块不生成标题、边框或占位区域。
-
-## 4. 词典专用适配层
-
-专用适配器理解原始词典格式，输出统一协议。通用气泡不解析某本词典的 HTML 类名。
-
-### 4.1 大辞林适配器
-
-大辞林适配器负责：
-
-1. 解析 `@@@LINK` 重定向。
-2. 识别 `☞` 导航页，并把成对的“假名链接＋汉字链接”合并为一个表记候选。
-3. 提取近义、反义、参照、亲项目、子项目和句项目。
-4. 从正文 HTML 中移除已经结构化的固定格式导航，避免重复显示。
-5. 保留 `bss`、`annot`、`ruby`、`rei`、`deco`、`lefta`、`leftb`、`kh`、`ku` 等正文语义。
-6. 将缺少资源文件的 `gaiji`、`glyph`、`cut` 图片转换为明确的外字、图示或图版提示，不伪装成可加载媒体。
-7. 使用白名单清洗 HTML，不加载词典附带的外部 CSS。
-
-### 4.2 Generic 适配器
-
-未知词典只进行安全 HTML 清洗并生成 `rich_text`。它不会猜测大辞林关系标记，也不会继承大辞林 CSS。
-
-新增词典时，应新增或扩展适配器，而不是向 `TooltipPanel.vue` 添加词典名称判断。
-
-## 5. 查询与读音排序
-
-查询顺序以表记证据为主，读音用于排序而不是删除：
-
-1. 查询结构化表记索引。
-2. 解析同一表记的全部重定向目标。
-3. 保留全部读音词条。
-4. 与上下文读音匹配的词条设置 `is_preferred` 并稳定排在前面。
-5. 其他读音继续返回，允许用户检查。
-6. 没有表记结果时再使用结构化读音和模糊查询。
-
-这保证 `七日` 的 `なのか` 与 `なぬか` 同时存在，而上下文为 `ナノカ` 时前者加星并成为默认项。
-
-作者 ruby 是上游权威读音。连续 ruby 如 `七《なの》日《か》` 会在同次全文分析中形成 `七日 → ナノカ` 的文档级映射，供后续未标注的相同词头查询使用。
-
-## 6. 选择持久化
-
-纯假名导航选择写入：
-
-```sql
-CREATE TABLE user_dictionary_choices (
-    query_key       TEXT PRIMARY KEY,
-    selected_target TEXT NOT NULL,
-    selected_at     TEXT NOT NULL DEFAULT (datetime('now'))
-);
+```text
+正文/内部目标
+  → query + reading? + POS? + mode
+  → 每词典 direct headword/form
+  → 当前词典 alias/navigation candidates
+  → reading/POS/kind evidence 打分
+  → occurrence 列表与 match evidence
+  → Lookup 状态装配
+  → 单活动词典气泡
 ```
 
-`query_key` 由查询词与读音构成。画像引擎启动时把全部选择加载到内存，查询不需要每次访问 SQLite。
+上下文模式的原则：
 
-表记选择会持久化；汉字多读音切换当前只改变本次气泡视图。后者尚未持久化，因为同一汉字在不同上下文中可能需要不同读音。
+- exact canonical/form 可以进入正文；
+- dictionary-local explicit alias 可以进入正文或候选；
+- 仅同音、fuzzy、无关汉字条、姓氏或拘束语素不得替代直接正文；
+- reading conflict、POS conflict 和 entry kind conflict 用于降序，不直接证明语义错误；
+- 每本词典最佳 occurrence 只有在分差明确且质量足够时才设置 `is_preferred`；并列时全部保留且 UI 显示未消歧。
 
-## 7. UI 交互
+纯假名 navigation candidate 仍可很多，例如 `もう` 的汉字/拘束形候选。它们位于候选条，不与 canonical 副词正文混排。
 
-### 7.1 悬浮与退出
+## 5. 统一数据协议
 
-- 正文胶囊与气泡分别维护悬浮状态。
-- 离开胶囊后保留短暂通道，允许鼠标进入气泡。
-- 进入气泡取消关闭；离开两者后才关闭。
-- 胶囊内部 span/ruby 间的 `mouseover` 不重复查词。
-- 异步请求带序号，旧结果不能覆盖当前词条。
+### 5.1 `DictionaryLookup`
 
-### 7.2 动态表头
+- `query/reading/mode`：请求身份；
+- `selected_target`：已选择的词典候选；
+- `selected_occurrence_id`：只有可明确选择时才存在；
+- `candidates`：词典管理的 alternative target；
+- `dictionary_names`：当前查询涉及的词典顺序；
+- `entries`：所有已加载 occurrence；
+- `timing`：查询和适配诊断。
 
-- 初始状态显示正文词头、读音和词性。
-- 表记或读音选择后，表头跟随当前激活词条。
-- 跳转到关联词后隐藏原正文词性和语法，避免上下文串用。
-- 返回按钮恢复上一词条及其选项状态。
+### 5.2 `DictEntry` 兼容层
 
-### 7.2.1 词形原型与活用表头
+`DictEntry` 当前同时承担 occurrence 传输和旧调用兼容：
 
-词形展示和词典查询使用同一条 morphology chain，但必须区分三个字段：
+- 新结构：`occurrence_id`、`entry_kind`、`header`、`senses`、`sections`、`adapter_diagnostics`、`match_evidence`；
+- 兼容结构：`headword`、`reading`、`definition_html`、`content_blocks`、`links`；
+- `definition_html` 由统一 IR 生成，使用与 Vue 相同的 `sense-tree`、`dictionary-section` 等 DOM 协议；
+- 无结构化内容时才使用安全清洗后的 fallback block。
 
-- `lemma_form` 是用户看到的规范原型，例如 `説明する`、`静かな`、`やすい`；ナ形容词不在默认 UI 中改写成研究语境使用的 `〜だ`。
-- `dictionary_form` 保留语言学内部还原，例如 `静かだ`，供规则、对照和后续研究使用，不直接充当气泡标题。
-- `lookup_form` 保持既有词典查询策略，例如分别查询 `説明`、`静か`、`やすい`，不会为了标题显示而强制改变词典后端。
+### 5.3 表头
 
-正文悬浮和气泡显示遵循以下契约：
+`DictionaryOccurrenceHeader` 保存：
 
-- `見え＋なかっ＋た`、`説明＋し＋ます`、`静か＋な` 等同一 lexical chain 的全部语素共享一个词形目标；黄色范围直接使用 `source_ranges`，不再由前端重新拼接 `head_word` 猜测。
-- 同一文节中的第二条词形链保持独立身份，例如悬浮 `分かり＋やすく` 的 `やすく` 时查询和显示 `やすい`，不得回退到文节词头 `分かる`。
-- functional chain 或 accepted 语法范围使用蓝色入口；未被 lexical、functional 或 grammar 范围覆盖的语素才使用辅助灰色。
-- 气泡表头合并词形信息：左侧显示原型、规范读音和词性，右侧仅在需要时显示本句实际形及有序活用规则；每条规则同时显示短标签和简短解说。
-- 表头不再另设“本句形态”卡片，也不重复显示“表面形 ← 原型”；基本形且没有活用步骤时只保留左侧词条身份。
-- 功能用言通常由蓝色范围优先打开 GrammarPopover；若没有更具体的语法 occurrence，悬浮仍保留该功能链自己的词形身份，不得被文节词头覆盖。
+- 当前 display/canonical form；
+- 当前 reading 与历史读音；
+- 音调等 pronunciation；
+- 当前 occurrence 明确声明的 scoped forms；
+- 全局 POS/usage；
+- 词源和短注。
 
-### 7.3 统一选项条
+局部词性或语法不能被提升到全局。例如大辞林 `ごちゃごちゃ` 的 `一（副）スル/二（形動）` 分别留在两个顶层 sense；表头不显示合并后的“副、形动、スル”。
 
-表记与读音使用同一个 `DictionaryChoiceBar`：
+### 5.4 义项和 section
 
-- 假名→表记：点击候选并持久化目标。
-- 汉字→读音：点击读音并切换当前正文。
-- 最佳读音显示星标并默认激活。
-- 少量选项单行显示；大量选项使用可横向滚动的双行轨道。
-- 不使用展开/收起下拉，因此一次点击即可切换。
-- 同一读音下存在多个独立释义时顺序展示，不增加第二层选择。
-- `headword`、`reading` 等内部匹配类型不作为游离 UI 提示；只有同读音多条释义时显示必要的“释义 N”序号。
+- `DictionarySense` 表示真实编号层级；
+- `DictionaryExample` 将 source/translation/note 分开；
+- `DictionarySection` 表示惯用、谚语、复合词、表记、派生、可能形等不应混入主义项的内容；
+- `internal_reference` 表示当前 occurrence 内的“某义项同前”，UI 不把它误作新词查询；
+- entry 级 `links` 只保存无法归属具体 sense/section 的关系。
 
-### 7.4 滚动和冻结标题
+## 6. 分词典适配约束
 
-- 气泡最大高度根据锚点上下的真实可用空间计算。
-- 滚轮不会传递到阅读器。
-- 主词头使用与卡片边缘融合的渐变冻结层。
-- 词典名冻结标题使用半透明胶囊，只覆盖自身宽度，不形成横向方块。
+### 6.1 大辞林
 
-### 7.5 加载状态
+- `bss/hy/ruby/annot` 用于表头，正文不重复词头；
+- `invert-rect/rect/no/lefta/leftb` 按 DOM 顺序构建树；
+- `.rei` 独立为例句；
+- `━/—・` 只在基底可确定时展开；
+- `〈親項目/子項目/句項目〉` 保持 typed relation；
+- 音调、历史读音、来源、短注和局部 grammar 分离；
+- `漢/音`、纯导航和 redirect 使用独立 entry kind。
 
-词典来源标题不属于加载骨架，会立即显示或复用本气泡缓存的来源名称。骨架只覆盖正文区，模拟词头和分义行；后续查询复用上一次实际正文高度，避免“原内容 → 骨架 → 新内容”造成连续高度跳变。`LoadingSkeleton` 是通用组件，通过 `variant` 提供特定模块形态；减少动态效果的系统设置下停止闪动。
+### 6.2 小学馆
 
-### 7.6 悬浮快捷键
+- 一个 definition 内的连续 `<h3> + <section>` 必须拆成独立 occurrence；
+- `meaning[level/no/type]` 建树；
+- `jae + ja_cn` 固定生成上下两行双语例句；
+- `subhead/subheadword` 进入 section item，可继续包含 sense tree；
+- 方块标签只有符合编号格式时才作为 marker，`成語/口語` 等作为 tag；
+- 外文 `[フ]silhouette` 等是 origin，不是 reading。
 
-- 快捷键只在解释气泡显示且不处于加载状态时响应，鼠标可以继续停留在正文胶囊上。
-- 默认 `D` 循环当前查询涉及的词典，默认 `F` 循环读音或唯一存在的表记选项。
-- 表记与读音同时显示时，`F` 循环读音，`Shift+F` 循环表记，避免一个按键在两个轨道之间产生歧义。
-- 选项条使用原生语义 `<kbd>` 显示键帽提示；灰色但可点击的选项同样参与快捷键循环。
-- 词典设置面板可分别修改或关闭两个基础按键，配置保存在 `localStorage` 的 `kotoclip.dictionary-shortcuts.v1`。
-- 输入框、文本域和下拉控件获得焦点时不响应；双解释面板只由成分面板处理快捷键，避免一次按键切换两个面板。
+### 6.3 Crown
 
-## 8. 多词典扩展
+- `mean_yakugo` 是中文主 gloss，拼音默认省略；
+- 括号英语默认省略；中文缺失且英文承担唯一语义时才保留 secondary English；
+- 每个 `yakugo_sub_box` 的限定只作用于本组 gloss；
+- `mean_yorei + mean_reiyaku` 配成双语例句；
+- `group_hukugo/kanyo/kotowaza` 进入各自 section；
+- `mj_katsuyogobi` 可组成 `する` 等完整 form/reading，同时保留 stem form。
 
-后端扫描 `data/dicts` 下全部兼容 SQLite。结果按用户优先级排序，前端按 `dict_name` 分组。
+## 7. 气泡信息架构
 
-新增词典的最小步骤：
+从上到下：
 
-1. 提供兼容的 entries、entry_forms 与 entry_readings。
-2. 确定 generic 清洗是否足够。
-3. 若存在固定导航或专用标签，增加 presentation 适配器。
-4. 为专用 `style_profile` 增加作用域 CSS。
-5. 输出已有通用模块；不修改气泡整体结构。
+1. 当前 occurrence 表头；
+2. 当前词典 occurrence 选择条；
+3. alternative target 候选条；
+4. 词典切换条；
+5. 当前词典、当前 occurrence 的结构化正文；
+6. entry 级关系与必要诊断。
 
-## 9. 真实内容审计
+宽屏表头为两列：左侧是词条身份，右侧是当前 occurrence 的音调、词源、异表记、历史读音和本句词形信息。右侧没有事实时允许收缩，不为布局对称搬入其他 occurrence 的内容。
+
+词典正文默认只显示一本，避免三本词典重复表头和长正文同时展开。不同词典之间通过切换获取互补信息，不跨词典强行对齐 sense。
+
+## 8. 选择与快捷键
+
+- 词典优先级来自用户设置，首项作为默认活动词典；
+- occurrence 切换只影响当前词典；
+- target 选择通过 Tauri 命令持久化，并重新查询目标；
+- 同形同读异义没有可靠证据时不显示星标，仍默认打开第一条供阅读，同时明确显示“未消歧”；
+- 默认 `D` 循环词典，默认 `F` 循环 occurrence；同时存在 target 候选时使用 `Shift+F`；
+- 输入控件获得焦点时不响应气泡快捷键。
+
+## 9. 字体与排版
+
+- UI：`--font-ui`；
+- 日文：`--font-ja`；
+- 中文：`--font-zh`；
+- 每个 `DictionaryText` 设置 `lang`；
+- 中文 gloss 并列使用紧凑中文标点，不插入大段全角空格；
+- 顶层 marker 与子层 marker 使用不同尺寸和缩进；
+- 无编号 sense 使用单列布局，不占用空 marker 列；
+- 例句 source 和 translation 纵向排列；
+- ruby 必须使用真实 `<ruby><rt>`。
+
+## 10. CLI 研究入口
 
 ```powershell
-python scripts/audit_dictionary_bubble.py `
-  --dict data/dicts/daijirin.db `
-  --source "D:\Downloads\epub-exp\source\七日の喰い神 (ガガガ文庫) (カミツキレイニー)\output.md"
+cargo run -p kotoclip-core --bin kotoclip-cli -- dict-bubble-html `
+  --word うける --reading ウケル --pos-major 動詞 `
+  --json .agents/analysis/ukeru.lookup.json `
+  --output .agents/analysis/ukeru.lookup.html `
+  --no-open --timing
 ```
 
-当前抽样覆盖：
+- JSON 为完整 `DictionaryLookup`；
+- HTML 使用单活动词典布局，可切换已加载词典和 occurrence；
+- target 候选只展示当前 Lookup 中已知信息，不在静态页面伪造重新查询结果；
+- `--no-open` 适合批量固化；
+- 脚本可用于生成文件和索引，语义判断仍须读取对应原始 HTML。
 
-- `ボリューム`、`ひやし`、`七日` 等重定向。
-- `いる`、`ある`、`かみ` 等纯假名多表记。
-- `七日`、`煙草` 等同表记多读音。
-- 多义编号、例句、旧读音、汉字条目、季语、外字、图示和图版占位。
-- 近反义、连续参照、亲项目、子项目和句项目。
+第一批 18 词的原文事实和修复结论见 [`analysis/dictionary_refactor_source_notes.md`](analysis/dictionary_refactor_source_notes.md)。
 
-## 10. 已知限制
+## 11. 新样本处理流程
 
-- 汉字多读音选择没有上下文级持久化。
-- Generic 适配器不提取未知词典的专有关系格式。
-- 大辞林图片资源未转录到 SQLite，目前只能显示类型提示。
-- `rich_text` 仍包含大辞林内部的多义结构；例句和释义尚未完全拆成独立数据模块。
-- 词典优先级保存在用户画像数据库；顶部“词典”设置支持拖拽排序，首项为默认词典，词典浮层可在当前命中词典间切换。
-- 关系类型依赖专用适配器规则，新增原始形态必须通过抽样审计补充。
-- 气泡尚无键盘打开入口，主要面向鼠标悬浮与点击。
+1. 固化完整 Lookup JSON/HTML；
+2. 打开对应 source packet 或 `raw_definition`；
+3. 确认问题属于 lookup、splitter、adapter、IR、renderer 或 CSS；
+4. 在最窄正确层修改；
+5. 不能可靠判断时保留候选、unknown 或 diagnostics；
+6. 把原文证据和结论追加到分析记录；
+7. 运行定向 Rust 测试、core check 和前端 build。
 
-## 11. 后续方向
+禁止：
 
-### 优先级 A：内容模块深化
+- 用正则全文猜 POS；
+- 从例句反推全局词性并覆盖原词典事实；
+- 因候选多而静默删除 occurrence；
+- 在通用 CSS 中隐藏无法理解的正文；
+- 只看清洗后可见文本，不看原始 DOM 层级；
+- 批量读完所有巨大原始文件后再凭记忆修改适配器。
 
-- 把多义项、例句、用法、词源和音调拆成独立模块。
-- 允许通用 UI 对例句折叠、复制或加入摘录。
-- 为每个模块记录来源位置和解析置信度。
+## 12. 当前已知边界
 
-### 优先级 B：上下文选择
+- 大辞林局部音调尚未绑定到具体 sense；
+- 小学馆子记录仍待 schema v5 在构建期建立完整直接索引；
+- 部分词典没有显式 POS，只能保持 unknown；
+- 大量合法 navigation candidate 仍可增加分组/折叠；
+- 内部 sense reference 已结构化但尚未滚动定位；
+- 拼音、英语、详细历史信息的用户显示偏好尚未实现。
 
-- 为汉字多读音增加 `document_only` 或上下文签名选择。
-- 区分作品专名、普通词义和临时查看，不把一次选择全局泛化。
-- 将作者 ruby、N-best 选择和用户词典选择作为独立证据显示。
-- 可选 LLM 消歧框架见 `docs/llm_dictionary_disambiguation.md`；当前只提供协议、传输抽象与 UI 授权端口，未接入气泡。
-
-### 优先级 C：多媒体资源
-
-- 转录 MDict 图片、音频与字体资源，并建立安全资源 URI。
-- 用真实媒体模块替换当前外字/图示/图版提示。
-- 对资源缺失、损坏和不支持格式提供明确降级。
-
-### 优先级 D：多词典治理
-
-- 词典启用、禁用设置。
-- 每本词典的适配器版本与 schema 能力声明。
-- 适配器抽样夹具和未知标签统计。
-- 同一语义关系跨词典去重，同时保留来源。
-
-### 优先级 E：可访问性与窄屏
-
-- 为胶囊增加键盘打开和焦点通道。
-- 选项条支持方向键切换和 Home/End。
-- 窄屏时将悬浮气泡切换为底部面板。
-- 为骨架、动态表头和导航历史补充更完整的读屏状态。
-
-## 12. 维护注意事项
-
-- 不要在通用气泡中解析某本词典的 HTML。
-- 不要因读音不匹配而删除其他合法词条；只排序和标记。
-- 不要让结构化关系继续留在正文 HTML 中重复展示。
-- 不要加载词典自带的远程 CSS 或不受控资源。
-- 不要用同一词头构造 Vue key；必须使用稳定 entry ID。
-- 不要为展示完整辞书形而改变既有词典查询词；语言学辞书形与 lookup form 由 MorphologyChain 分开记录。
-- 修改大辞林解析规则前先阅读真实词条样本，并同步更新本文件。
+这些边界均有明确扩展点，不要求改变当前 occurrence、IR、查询职责或单活动词典气泡。详细项目见 [`dictionary_refactor_followups.md`](dictionary_refactor_followups.md)。

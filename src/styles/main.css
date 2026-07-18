@@ -3,6 +3,8 @@
   --font-ui: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   /* 日文内容字体栈：胶囊文节、输入域、释义预览 */
   --font-ja: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif;
+  /* 中文词典正文：避免 Windows 日文区域优先采用日文字形 */
+  --font-zh: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
 
   font-family: var(--font-ui);
   font-size: 16px;

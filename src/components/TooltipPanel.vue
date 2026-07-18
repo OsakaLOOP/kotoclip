@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { ChevronLeft, Star } from "@lucide/vue";
+import { ChevronLeft } from "@lucide/vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
 import {
   dictionaryShortcutSettings,
@@ -72,42 +72,11 @@ const showMorphologySummary = computed(() => {
   ));
 });
 
-function normalizeReading(value: string | null | undefined) {
-  return Array.from(value ?? "").map((character) =>
-    character >= "ぁ" && character <= "ゖ"
-      ? String.fromCharCode(character.charCodeAt(0) + 0x60)
-      : character,
-  ).join("");
-}
-
-const readingChoices = computed(() => {
-  const choices = new Map<string, { label: string; preferred: boolean }>();
-  for (const entry of props.lookup?.entries ?? []) {
-    if (!entry.reading) continue;
-    const key = normalizeReading(entry.reading);
-    const existing = choices.get(key);
-    choices.set(key, { label: existing?.label ?? entry.reading, preferred: Boolean(existing?.preferred || entry.is_preferred) });
-  }
-  return [...choices.entries()].map(([key, value]) => ({ key, ...value }));
-});
-
-const selectedReadingKey = ref<string | null>(null);
-watch(
-  () => props.lookup,
-  () => {
-    const choices = readingChoices.value;
-    const preferred = choices.find((choice) => choice.preferred)?.key;
-    const requested = normalizeReading(props.lookup?.reading);
-    selectedReadingKey.value = preferred ?? choices.find((choice) => choice.key === requested)?.key ?? choices[0]?.key ?? null;
-  },
-  { immediate: true },
-);
-
 const displayableEntries = computed(() => {
   const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
   return (props.lookup?.entries ?? []).filter((entry) => {
     const hasManagedRelation = entry.links.some((link) => !candidateTargets.has(link.target));
-    return entry.content_blocks.length || hasManagedRelation;
+    return entry.senses.length || entry.sections.length || entry.content_blocks.length || hasManagedRelation;
   });
 });
 
@@ -125,12 +94,15 @@ const dictionaryGroups = computed(() => {
 });
 
 const activeDictionaryName = ref<string | null>(null);
+const selectedOccurrenceByDictionary = ref<Record<string, string>>({});
 
-function dictionaryHasReading(dictionaryName: string, readingKey: string | null) {
-  if (!readingKey) return displayableEntries.value.some((entry) => entry.dict_name === dictionaryName);
-  return displayableEntries.value.some((entry) => (
-    entry.dict_name === dictionaryName && normalizeReading(entry.reading) === readingKey
+function meaningfulEntries(entries: DictEntry[]) {
+  const withContent = entries.filter((entry) => (
+    entry.entry_kind !== "navigation"
+    && entry.entry_kind !== "redirect"
+    && (entry.senses.length || entry.sections.length || entry.content_blocks.length)
   ));
+  return withContent.length ? withContent : entries;
 }
 
 const selectedCandidate = computed(() => (
@@ -141,10 +113,18 @@ function dictionarySupportsCurrentChoice(dictionaryName: string) {
   if (selectedCandidate.value && !selectedCandidate.value.dictionary_names.includes(dictionaryName)) {
     return false;
   }
-  return dictionaryHasReading(dictionaryName, selectedReadingKey.value);
+  return dictionaryGroups.value.some((group) => group.name === dictionaryName && group.entries.length > 0);
 }
 
-function selectDictionaryAfterChoice() {
+function defaultOccurrence(entries: DictEntry[]) {
+  const candidates = meaningfulEntries(entries);
+  return candidates.find((entry) => entry.occurrence_id === props.lookup?.selected_occurrence_id)
+    ?? candidates.find((entry) => entry.is_preferred)
+    ?? candidates[0]
+    ?? null;
+}
+
+function synchronizeSelection() {
   const names = dictionaryGroups.value.map((group) => group.name);
   const previous = activeDictionaryName.value;
   const supported = names.filter(dictionarySupportsCurrentChoice);
@@ -157,6 +137,15 @@ function selectDictionaryAfterChoice() {
     ?? previous
     ?? null
   );
+  const nextSelection: Record<string, string> = {};
+  for (const group of dictionaryGroups.value) {
+    const previousId = selectedOccurrenceByDictionary.value[group.name];
+    const entries = meaningfulEntries(group.entries);
+    const selected = entries.find((entry) => entry.occurrence_id === previousId)
+      ?? defaultOccurrence(entries);
+    if (selected) nextSelection[group.name] = selected.occurrence_id;
+  }
+  selectedOccurrenceByDictionary.value = nextSelection;
 }
 
 function handleDictionarySelect(dictionaryName: string) {
@@ -172,20 +161,14 @@ function handleDictionarySelect(dictionaryName: string) {
   }
 
   activeDictionaryName.value = dictionaryName;
-  if (!dictionaryHasReading(dictionaryName, selectedReadingKey.value)) {
-    const replacementReading = readingChoices.value.find((choice) =>
-      dictionaryHasReading(dictionaryName, choice.key)
-    );
-    if (replacementReading) selectedReadingKey.value = replacementReading.key;
-  }
-  if (!dictionarySupportsCurrentChoice(dictionaryName)) selectDictionaryAfterChoice();
+  if (!dictionarySupportsCurrentChoice(dictionaryName)) synchronizeSelection();
 }
 
 watch(
   () => props.lookup,
   async () => {
     await nextTick();
-    selectDictionaryAfterChoice();
+    synchronizeSelection();
   },
   { immediate: true },
 );
@@ -196,21 +179,76 @@ const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
     label: group.name,
     active: activeDictionaryName.value === group.name,
     unavailable: !dictionarySupportsCurrentChoice(group.name),
-    title: dictionarySupportsCurrentChoice(group.name) ? undefined : "当前表记或读音无此词典释义",
+    title: dictionarySupportsCurrentChoice(group.name) ? undefined : "当前词条无此词典释义",
   })),
 );
 
-const visibleDictionaryGroups = computed(() => {
-  if (!activeDictionaryName.value) return [];
-  return dictionaryGroups.value
-    .filter((group) => group.name === activeDictionaryName.value)
-    .map((group) => {
-      const filtered = selectedReadingKey.value
-        ? group.entries.filter((entry) => normalizeReading(entry.reading) === selectedReadingKey.value)
-        : group.entries;
-      return { ...group, entries: filtered.length ? filtered : group.entries };
-    });
+const activeDictionaryEntries = computed(() => {
+  const entries = dictionaryGroups.value.find((group) => group.name === activeDictionaryName.value)?.entries ?? [];
+  return meaningfulEntries(entries);
 });
+
+const activeEntry = computed(() => {
+  const selectedId = activeDictionaryName.value
+    ? selectedOccurrenceByDictionary.value[activeDictionaryName.value]
+    : null;
+  return activeDictionaryEntries.value.find((entry) => entry.occurrence_id === selectedId)
+    ?? defaultOccurrence(activeDictionaryEntries.value)
+    ?? undefined;
+});
+
+function entryKindLabel(kind: string) {
+  return ({ lexical: "词汇", phrase: "短语", surname: "姓氏", kanji: "汉字条", prefix: "接头成分", suffix: "接尾成分", bound_morpheme: "拘束成分", onomatopoeia: "拟声", navigation: "导航", redirect: "跳转" } as Record<string, string>)[kind] ?? "词条";
+}
+
+function plainHtml(value: string) {
+  return value.replace(/<[^>]*>/gu, "").replace(/&amp;/gu, "&").replace(/&lt;/gu, "<").replace(/&gt;/gu, ">");
+}
+
+function firstSenseSummary(senses: DictEntry["senses"]): string | undefined {
+  for (const sense of senses) {
+    const value = sense.glosses[0]?.html
+      || sense.definitions[0]?.html
+      || firstSenseSummary(sense.children);
+    if (value) return plainHtml(value);
+  }
+  return undefined;
+}
+
+function occurrenceLabel(entry: DictEntry) {
+  const form = entry.header.display_form || entry.headword;
+  const peers = activeDictionaryEntries.value.filter((candidate) => (
+    (candidate.header.display_form || candidate.headword) === form
+    && (candidate.header.reading || candidate.reading) === (entry.header.reading || entry.reading)
+  ));
+  const summary = firstSenseSummary(entry.senses);
+  const qualifier = peers.length > 1 && summary
+    ? summary
+    : entry.entry_kind !== "lexical" ? entryKindLabel(entry.entry_kind) : "";
+  return qualifier ? `${form} · ${qualifier}` : form;
+}
+
+const occurrenceOptions = computed<DictionaryChoiceOption[]>(() => (
+  activeDictionaryEntries.value.map((entry) => ({
+    key: entry.occurrence_id,
+    label: occurrenceLabel(entry),
+    active: entry.occurrence_id === activeEntry.value?.occurrence_id,
+    preferred: entry.is_preferred,
+    title: [
+      entry.header.reading ? `读音：${entry.header.reading}` : "",
+      entryKindLabel(entry.entry_kind),
+      entry.match_evidence?.kind ? `命中：${entry.match_evidence.kind}` : "",
+    ].filter(Boolean).join("；"),
+  }))
+));
+
+function handleOccurrenceSelect(occurrenceId: string) {
+  if (!activeDictionaryName.value) return;
+  selectedOccurrenceByDictionary.value = {
+    ...selectedOccurrenceByDictionary.value,
+    [activeDictionaryName.value]: occurrenceId,
+  };
+}
 const definitionViewportRef = ref<HTMLElement | null>(null);
 const cachedContentHeight = ref(0);
 
@@ -227,11 +265,6 @@ watch(
 
 const loadingContentHeight = computed(() => `${cachedContentHeight.value || 220}px`);
 
-const activeEntry = computed(() => {
-  const entries = visibleDictionaryGroups.value.flatMap((group) => group.entries);
-  return entries.find((entry) => entry.is_preferred) ?? entries[0];
-});
-
 const isSourceQuery = computed(() =>
   !props.lookup || props.lookup.query === sourceQuery.value,
 );
@@ -242,21 +275,45 @@ const showsSourceIdentity = computed(() => (
 ));
 
 const activeHeadword = computed(() => {
-  if (showsSourceIdentity.value) return sourceLemma.value;
-  return props.lookup?.selected_target
-    ?? activeEntry.value?.headword
+  return (activeEntry.value?.header.display_form
+    || activeEntry.value?.headword)
     ?? props.lookup?.query
     ?? sourceLemma.value;
 });
 
 const activeReading = computed(() => {
-  const reading = activeEntry.value?.reading
+  const reading = activeEntry.value?.header.reading
+    || activeEntry.value?.reading
     || (showsSourceIdentity.value
       ? props.token?.bunsetsu.head_word.reading
       : props.lookup?.reading);
   return showsSourceIdentity.value
     ? readingForMorphologyLemma(morphologyChain.value, reading)
     : reading;
+});
+
+const activeHeaderTags = computed(() => [
+  ...(activeEntry.value?.header.pos_tags ?? []),
+  ...(activeEntry.value?.header.usage_tags ?? []),
+]);
+
+const activeHeaderFacts = computed(() => {
+  const header = activeEntry.value?.header;
+  if (!header) return [];
+  const facts = header.pronunciations.map((item) => `${item.label} ${item.value}`);
+  if (header.origin) facts.push(`词源 ${header.origin}`);
+  if (header.historical_reading) facts.push(`历史读音 ${header.historical_reading}`);
+  for (const form of header.scoped_forms) {
+    if (form.form !== header.display_form) facts.push(`异表记 ${form.form}`);
+  }
+  if (header.short_note) facts.push(header.short_note);
+  return facts;
+});
+
+const matchHint = computed(() => {
+  const evidence = activeEntry.value?.match_evidence;
+  if (!evidence) return "";
+  return ({ explicit_alias: "词典别名", compatibility_alias: "兼容表记", reading_fallback: "读音回退", fuzzy: "模糊命中" } as Record<string, string>)[evidence.kind] ?? "";
 });
 
 function relationLabel(relation: string) {
@@ -280,26 +337,8 @@ const candidateOptions = computed<DictionaryChoiceOption[]>(() =>
   })),
 );
 
-const readingOptions = computed<DictionaryChoiceOption[]>(() =>
-  readingChoices.value.map((choice) => ({
-    key: choice.key,
-    label: choice.label,
-    active: selectedReadingKey.value === choice.key,
-    preferred: choice.preferred,
-    unavailable: Boolean(activeDictionaryName.value && !dictionaryHasReading(activeDictionaryName.value, choice.key)),
-    title: activeDictionaryName.value && !dictionaryHasReading(activeDictionaryName.value, choice.key)
-      ? "当前词典未收录此读音"
-      : choice.preferred ? "与正文读音匹配" : "其他收录读音",
-  })),
-);
-
 function handleCandidateSelect(target: string) {
   emit("select", target);
-}
-
-function handleReadingSelect(readingKey: string) {
-  selectedReadingKey.value = readingKey;
-  selectDictionaryAfterChoice();
 }
 
 function selectNextOption(options: DictionaryChoiceOption[], select: (key: string) => void) {
@@ -316,11 +355,11 @@ function handleShortcut(event: KeyboardEvent) {
   let handled = false;
   if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.dictionaryKey)) {
     handled = selectNextOption(dictionaryOptions.value, handleDictionarySelect);
-  } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey, true) && readingOptions.value.length > 1) {
+  } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey, true) && candidateOptions.value.length > 1) {
     handled = selectNextOption(candidateOptions.value, handleCandidateSelect);
   } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey)) {
-    handled = readingOptions.value.length > 1
-      ? selectNextOption(readingOptions.value, handleReadingSelect)
+    handled = occurrenceOptions.value.length > 1
+      ? selectNextOption(occurrenceOptions.value, handleOccurrenceSelect)
       : selectNextOption(candidateOptions.value, handleCandidateSelect);
   }
 
@@ -336,7 +375,7 @@ const dictionaryShortcutKeys = computed(() => (
     : []
 ));
 
-const readingShortcutKeys = computed(() => (
+const occurrenceShortcutKeys = computed(() => (
   dictionaryShortcutSettings.choiceKey
     ? [shortcutKeyLabel(dictionaryShortcutSettings.choiceKey)]
     : []
@@ -345,7 +384,7 @@ const readingShortcutKeys = computed(() => (
 const candidateShortcutKeys = computed(() => {
   if (!dictionaryShortcutSettings.choiceKey) return [];
   const key = shortcutKeyLabel(dictionaryShortcutSettings.choiceKey);
-  return readingOptions.value.length > 1 ? ["Shift", key] : [key];
+  return occurrenceOptions.value.length > 1 ? ["Shift", key] : [key];
 });
 
 onMounted(() => window.addEventListener("keydown", handleShortcut));
@@ -398,74 +437,77 @@ function handleDefinitionClick(event: MouseEvent) {
                 <span v-if="activeReading" class="reading">【{{ activeReading }}】</span>
               </div>
               <div class="headword-meta">
-                <span v-if="isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
+                <span v-for="tag in activeHeaderTags" :key="`${tag.kind}:${tag.label}`" class="header-tag" :data-kind="tag.kind">{{ tag.label }}</span>
+                <span v-if="!activeHeaderTags.length && isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
+                <span v-if="activeEntry && activeEntry.entry_kind !== 'lexical'" class="header-tag" data-kind="entry-kind">{{ entryKindLabel(activeEntry.entry_kind) }}</span>
+                <span v-if="matchHint" class="match-hint">{{ matchHint }}</span>
                 <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
               </div>
             </div>
-            <div v-if="showMorphologySummary && morphologyChain" class="header-morphology" aria-label="本句词形与活用">
-              <strong v-if="morphologyChain.surface_form !== sourceLemma" class="current-form">{{ morphologyChain.surface_form }}</strong>
-              <div v-for="step in morphologySteps" :key="step.operator_id" class="morphology-step">
-                <b>{{ step.label || step.output_state }}</b>
-                <span v-if="step.description">{{ step.description }}</span>
-              </div>
+            <div v-if="activeHeaderFacts.length || showMorphologySummary && morphologyChain && isSourceQuery" class="header-morphology" aria-label="当前词条与本句信息">
+              <div v-for="fact in activeHeaderFacts" :key="fact" class="header-fact">{{ fact }}</div>
+              <template v-if="showMorphologySummary && morphologyChain && isSourceQuery">
+                <strong v-if="morphologyChain.surface_form !== sourceLemma" class="current-form">{{ morphologyChain.surface_form }}</strong>
+                <div v-for="step in morphologySteps" :key="step.operator_id" class="morphology-step">
+                  <b>{{ step.label || step.output_state }}</b>
+                  <span v-if="step.description">{{ step.description }}</span>
+                </div>
+              </template>
             </div>
           </div>
         </header>
 
         <DictionaryChoiceBar
-        v-if="candidateOptions.length"
-        label="表记"
-        :options="candidateOptions"
-        :shortcut-keys="candidateShortcutKeys"
-        @select="handleCandidateSelect"
+          v-if="occurrenceOptions.length > 1"
+          label="词条"
+          :options="occurrenceOptions"
+          :shortcut-keys="occurrenceShortcutKeys"
+          @select="handleOccurrenceSelect"
         />
 
         <DictionaryChoiceBar
-        v-if="readingOptions.length > 1"
-        label="读音"
-        :options="readingOptions"
-        :shortcut-keys="readingShortcutKeys"
-        @select="handleReadingSelect"
+          v-if="candidateOptions.length"
+          label="跳转"
+          :options="candidateOptions"
+          :shortcut-keys="candidateShortcutKeys"
+          @select="handleCandidateSelect"
         />
 
         <div v-if="loading || dictionaryGroups.length || !lookup?.candidates.length" class="tooltip-section definitions" @click="handleDefinitionClick">
-        <div
-          ref="definitionViewportRef"
-          class="definition-viewport"
-          :class="{ 'is-loading': loading }"
-          :style="loading ? { height: loadingContentHeight } : undefined"
-        >
-          <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
-          <template v-else>
-            <DictionaryChoiceBar
-              v-if="dictionaryOptions.length"
-              class="dictionary-switcher"
-              label="词典"
-              :options="dictionaryOptions"
-              :shortcut-keys="dictionaryShortcutKeys"
-              @select="handleDictionarySelect"
-            />
-            <section v-for="group in visibleDictionaryGroups" :key="group.name" class="dictionary-group">
-            <article v-for="(entry, entryIndex) in group.entries" :key="entry.entry_key" class="dictionary-entry">
-              <div class="entry-meta">
-                <strong><Star v-if="entry.is_preferred && readingOptions.length <= 1" class="preferred-mark" :size="13" fill="currentColor" aria-label="读音匹配" />{{ entry.headword }}</strong>
-                <span v-if="group.entries.length > 1">释义 {{ entryIndex + 1 }}</span>
-              </div>
-              <div class="entry-body">
-                <DictionaryContent :entry="entry" />
-              <div v-if="managedLinkGroups(entry).length" class="managed-relations">
-                <details v-for="relationGroup in managedLinkGroups(entry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
-                  <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
-                  <div class="relation-list">
-                    <button v-for="link in relationGroup.links" :key="link.target" type="button" :data-relation="link.relation" @click="emit('navigate', link.target)">{{ link.label || link.target }}</button>
+          <div
+            ref="definitionViewportRef"
+            class="definition-viewport"
+            :class="{ 'is-loading': loading }"
+            :style="loading ? { height: loadingContentHeight } : undefined"
+          >
+            <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
+            <template v-else>
+              <DictionaryChoiceBar
+                v-if="dictionaryOptions.length"
+                class="dictionary-switcher"
+                label="词典"
+                :options="dictionaryOptions"
+                :shortcut-keys="dictionaryShortcutKeys"
+                @select="handleDictionarySelect"
+              />
+              <section v-if="activeEntry" class="dictionary-group">
+                <article :key="activeEntry.occurrence_id" class="dictionary-entry">
+                  <div class="entry-body">
+                    <DictionaryContent :entry="activeEntry" @navigate="emit('navigate', $event)" />
+                    <div v-if="managedLinkGroups(activeEntry).length" class="managed-relations">
+                      <details v-for="relationGroup in managedLinkGroups(activeEntry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
+                        <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
+                        <div class="relation-list">
+                          <button v-for="link in relationGroup.links" :key="`${link.relation}:${link.target}`" type="button" :data-relation="link.relation" @click="emit('navigate', link.target)">{{ link.label || link.target }}</button>
+                        </div>
+                      </details>
+                    </div>
                   </div>
-                </details>
-              </div>
-              </div>
-            </article>
-            </section>
-          </template>
-        </div>
+                </article>
+              </section>
+              <div v-else class="empty-state">当前词典没有可显示的 occurrence。</div>
+            </template>
+          </div>
         </div>
       </div>
     </section>
@@ -473,17 +515,21 @@ function handleDefinitionClick(event: MouseEvent) {
 </template>
 
 <style scoped>
-.tooltip-panel { position: fixed; z-index: 1000; box-sizing: border-box; width: min(460px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ja); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
+.tooltip-panel { position: fixed; z-index: 1000; box-sizing: border-box; width: min(480px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ui); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
 .tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: flex-start; margin: -14px -14px 6px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 76%, transparent 100%); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent); backdrop-filter: blur(18px); }
 .header-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, .9fr) minmax(160px, 1.1fr); gap: 12px; align-items: start; }
 .headword-block { min-width: 0; }
 .headword-line { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: baseline; }
 .headword-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
 .back-button { display: grid; place-items: center; flex: 0 0 28px; padding: 0; line-height: 26px; }
-.base-form { color: var(--accent-color); font-size: 1.25rem; font-weight: 700; }
-.reading, .tooltip-pos { color: var(--text-muted); font-size: .78rem; }
+.base-form { color: var(--accent-color); font: 700 1.25rem/1.35 var(--font-ja); }
+.reading { color: var(--text-muted); font: .78rem var(--font-ja); }
+.tooltip-pos { color: var(--text-muted); font-size: .75rem; }
 .tooltip-kind { color: var(--text-muted); font: 700 .68rem var(--font-ui); }
+.header-tag, .match-hint { display: inline-flex; align-items: center; border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent); border-radius: 4px; padding: 0 5px; color: var(--text-secondary); font: 700 .66rem/1.55 var(--font-ui); }
+.header-tag[data-kind="usage"], .header-tag[data-kind="entry-kind"], .match-hint { background: var(--accent-light); color: var(--accent-color); }
 .header-morphology { min-width: 0; display: grid; gap: 4px; padding-left: 11px; border-left: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent); }
+.header-fact { color: var(--text-secondary); font: .7rem/1.4 var(--font-ui); }
 .current-form { color: var(--text-primary); font-size: .88rem; line-height: 1.35; }
 .morphology-step { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px; align-items: baseline; font-size: .68rem; line-height: 1.35; }
 .morphology-step b { color: #6c5ab0; font: 700 .66rem var(--font-ui); }

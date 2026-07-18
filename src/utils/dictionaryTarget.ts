@@ -66,7 +66,7 @@ export function dictionaryLemma(morpheme: Morpheme) {
 export function dictionaryTargetForToken(token: AnnotatedToken) {
   const lexical = token.bunsetsu.lexical_units[0];
   if (lexical) {
-    return { word: lexical.base_form, reading: lexical.reading };
+    return { word: lexical.base_form, reading: lexical.reading, pos: lexical.output_pos };
   }
   const formation = token.bunsetsu.word_formations[0];
   if (formation) {
@@ -75,6 +75,7 @@ export function dictionaryTargetForToken(token: AnnotatedToken) {
       return {
         word: dictionaryLemma(morpheme),
         reading: morpheme.reading,
+        pos: morpheme.pos,
       };
     }
   }
@@ -89,5 +90,6 @@ export function dictionaryTargetForToken(token: AnnotatedToken) {
       char_range: token.bunsetsu.char_range,
     }),
     reading: token.bunsetsu.head_word.reading,
+    pos: token.bunsetsu.head_word.pos,
   };
 }

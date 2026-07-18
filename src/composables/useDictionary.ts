@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { DictionaryLookup, DictionarySettings } from "../types";
+import type { DictionaryLookup, DictionarySettings, PosTag } from "../types";
 
 export function useDictionary() {
   const dictionaryResults = ref<DictionaryLookup | null>(null);
@@ -32,7 +32,7 @@ export function useDictionary() {
    * @param word 辞书形原形
    * 默认词典排在检索结果首位，其余已加载词典保持稳定顺序。
    */
-  async function lookupWord(word: string, reading?: string, background = false) {
+  async function lookupWord(word: string, reading?: string, background = false, pos?: PosTag) {
     if (!word) {
       dictionaryResults.value = null;
       return null;
@@ -43,6 +43,7 @@ export function useDictionary() {
       const results = await invoke<DictionaryLookup>("lookup_word", {
         word,
         reading,
+        pos,
         priorityList: priorityList(),
         background,
       });

@@ -20,5 +20,6 @@ thiserror = "1"
 chrono = { version = "0.4", features = ["serde"] }
 sha2 = "0.10"
 ammonia = "4"
+html5ever = "0.39"
 regex = "1"
 flate2 = "1"

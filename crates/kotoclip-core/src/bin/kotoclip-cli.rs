@@ -3,6 +3,7 @@ use kotoclip_core::dictionary::lookup::DictionaryEngine;
 use kotoclip_core::document::{AnalysisStage, DocumentSession, StageInvalidation};
 use kotoclip_core::pipeline::{ruby, Pipeline};
 use kotoclip_core::transport::CompactAnalysis;
+use kotoclip_core::models::PosTag;
 use kotoclip_core::Engine;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -210,6 +211,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     match command.as_str() {
         "dict-info" => dict_info(&args),
         "lookup" => lookup(&args),
+        "dict-bubble-html" => dict_bubble_html(&args),
         "analyze" => analyze(&args),
         "grammar-inspect" => grammar_inspect(&args),
         "grammar-scan" => grammar_scan(&args),
@@ -340,6 +342,77 @@ fn lookup(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         println!("诊断耗时：{}", serde_json::to_string_pretty(&timing)?);
     }
     Ok(())
+}
+
+fn dict_bubble_html(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let word = args.required("word").map_err(io::Error::other)?;
+    let reading = args.options.get("reading").map(String::as_str);
+    let pos = cli_pos(args);
+
+    let (entries, timing) = dictionary(args)?.lookup_profiled_with_pos(word, reading, pos.as_ref());
+    let lookup = kotoclip_core::dictionary::lookup_state::build_lookup(
+        word,
+        reading,
+        None,
+        "contextual-cli",
+        &entries,
+        entries.clone(),
+        Some(timing.clone()),
+    );
+
+    let html_content = kotoclip_core::dictionary::bubble_html::generate_bubble_preview_html(
+        &lookup,
+    );
+
+    // JSON 与 HTML 使用同一份完整 Lookup，便于检查候选、活动 occurrence 和词典可用性。
+    if let Some(json_path) = args.options.get("json") {
+        std::fs::write(json_path, serde_json::to_string_pretty(&lookup)?)?;
+        println!("Lookup JSON 已保存至：{}", json_path);
+    }
+
+    if args.flags.contains("raw") {
+        // --raw 模式下直接输出到 stdout
+        print!("{}", html_content);
+    } else {
+        // 确定输出文件路径
+        let output_path = if let Some(path) = args.options.get("output") {
+            PathBuf::from(path)
+        } else {
+            // 没有指定时生成到临时文件目录
+            let mut temp_dir = std::env::temp_dir();
+            temp_dir.push(format!("kotoclip_dict_preview_{}.html", word));
+            temp_dir
+        };
+
+        std::fs::write(&output_path, &html_content)?;
+        println!("HTML 已渲染并保存至：{}", output_path.display());
+
+        if !args.flags.contains("no-open") {
+            let status = std::process::Command::new("cmd")
+                .args(["/C", "start", "", &output_path.to_string_lossy()])
+                .status();
+
+            if let Err(e) = status {
+                eprintln!("自动打开浏览器失败：{}，您可以手动在浏览器中打开该文件。", e);
+            }
+        }
+    }
+
+    if args.flags.contains("timing") {
+        println!("诊断耗时：{}", serde_json::to_string_pretty(&timing)?);
+    }
+
+    Ok(())
+}
+
+fn cli_pos(args: &CliArgs) -> Option<PosTag> {
+    let major = args.options.get("pos-major")?.clone();
+    Some(PosTag {
+        major,
+        sub1: args.options.get("pos-sub1").cloned().unwrap_or_default(),
+        sub2: args.options.get("pos-sub2").cloned().unwrap_or_default(),
+        sub3: args.options.get("pos-sub3").cloned().unwrap_or_default(),
+    })
 }
 
 fn analyze(args: &CliArgs) -> Result<(), Box<dyn Error>> {
@@ -2763,6 +2836,8 @@ fn print_help() {
 命令：
   dict-info
   lookup --word WORD [--reading READING] [--full --timing]
+  dict-bubble-html --word WORD [--reading READING] [--pos-major POS --pos-sub1 POS]
+        [--output PATH] [--raw --json PATH --timing --no-open]
   analyze (--text TEXT | --source PATH)
   grammar-inspect (--text TEXT | --source PATH)
   grammar-scan (--text TEXT | --source PATH) [--chapter TITLE]

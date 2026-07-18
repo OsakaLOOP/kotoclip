@@ -14,9 +14,9 @@ pub mod transport;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryCandidate, DictionaryLookup, DictionaryLookupTiming, DictionarySettings, ExpressionAnnotation,
+    AnnotatedToken, DictionaryLookup, DictionaryLookupTiming, DictionarySettings, ExpressionAnnotation,
     ExpressionRule,
-    ExpressionRulePreview, SegmentationCandidate, SegmentationChoice,
+    ExpressionRulePreview, PosTag, SegmentationCandidate, SegmentationChoice,
 };
 use performance::TimingCollector;
 use pipeline::Pipeline;
@@ -91,39 +91,32 @@ impl DictionaryService {
         reading: Option<&str>,
         priority_list: &[String],
     ) -> DictionaryLookup {
+        self.lookup_word_contextual_profiled(word, reading, None, priority_list)
+    }
+
+    pub fn lookup_word_contextual_profiled(
+        &self,
+        word: &str,
+        reading: Option<&str>,
+        pos: Option<&PosTag>,
+        priority_list: &[String],
+    ) -> DictionaryLookup {
         let started = Instant::now();
         let query_key = dictionary_query_key(word, reading);
-        let (initial_entries, mut timing) = self.dictionary.lookup_profiled(word, reading);
+        let (initial_entries, mut timing) = self
+            .dictionary
+            .lookup_profiled_with_pos(word, reading, pos);
         let initial_entries = dictionary::aggregate::sort_definitions(initial_entries, priority_list);
-        let mut candidates = Vec::<DictionaryCandidate>::new();
-        if is_kana(word) {
-            for entry in initial_entries.iter().filter(|entry| entry.headword == word) {
-                for link in entry.links.iter().filter(|link| link.relation == "candidate") {
-                    if let Some(candidate) = candidates
-                        .iter_mut()
-                        .find(|candidate| candidate.target == link.target)
-                    {
-                        if !candidate.dictionary_names.contains(&entry.dict_name) {
-                            candidate.dictionary_names.push(entry.dict_name.clone());
-                        }
-                    } else {
-                        candidates.push(DictionaryCandidate {
-                            target: link.target.clone(),
-                            label: link.label.clone(),
-                            relation: link.relation.clone(),
-                            dictionary_names: vec![entry.dict_name.clone()],
-                        });
-                    }
-                }
-            }
-        }
+        let candidates = dictionary::lookup_state::collect_candidates(word, &initial_entries);
         let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
             candidates
                 .iter()
                 .any(|candidate| &candidate.target == target)
         });
         let entries = if let Some(target) = selected_target.as_deref() {
-            let (selected_entries, selected_timing) = self.dictionary.lookup_profiled(target, reading);
+            let (selected_entries, selected_timing) = self
+                .dictionary
+                .lookup_profiled_with_pos(target, reading, pos);
             if !selected_entries.is_empty() {
                 merge_dictionary_timing(&mut timing, selected_timing);
                 selected_entries
@@ -133,22 +126,17 @@ impl DictionaryService {
         } else {
             initial_entries.clone()
         };
-        let mut dictionary_names = Vec::new();
-        for entry in initial_entries.iter().chain(entries.iter()) {
-            if !dictionary_names.contains(&entry.dict_name) {
-                dictionary_names.push(entry.dict_name.clone());
-            }
-        }
         timing.service_ms = started.elapsed().as_millis() as u64;
-        DictionaryLookup {
-            query: word.to_string(),
-            reading: reading.map(str::to_string),
+        let entries = dictionary::aggregate::sort_definitions(entries, priority_list);
+        dictionary::lookup_state::build_lookup(
+            word,
+            reading,
             selected_target,
-            candidates,
-            dictionary_names,
-            entries: dictionary::aggregate::sort_definitions(entries, priority_list),
-            timing: Some(timing),
-        }
+            "contextual",
+            &initial_entries,
+            entries,
+            Some(timing),
+        )
     }
 
     pub fn dictionary_settings(&self) -> DictionarySettings {
@@ -618,28 +606,7 @@ impl Engine {
             self.dictionary.lookup(word, reading),
             priority_list,
         );
-        let mut candidates = Vec::<DictionaryCandidate>::new();
-        if is_kana(word) {
-            for entry in initial_entries.iter().filter(|entry| entry.headword == word) {
-                for link in entry.links.iter().filter(|link| link.relation == "candidate") {
-                    if let Some(candidate) = candidates
-                        .iter_mut()
-                        .find(|candidate| candidate.target == link.target)
-                    {
-                        if !candidate.dictionary_names.contains(&entry.dict_name) {
-                            candidate.dictionary_names.push(entry.dict_name.clone());
-                        }
-                    } else {
-                        candidates.push(DictionaryCandidate {
-                            target: link.target.clone(),
-                            label: link.label.clone(),
-                            relation: link.relation.clone(),
-                            dictionary_names: vec![entry.dict_name.clone()],
-                        });
-                    }
-                }
-            }
-        }
+        let candidates = dictionary::lookup_state::collect_candidates(word, &initial_entries);
         let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
             candidates
                 .iter()
@@ -650,21 +617,16 @@ impl Engine {
             .map(|target| self.dictionary.lookup(target, reading))
             .filter(|entries| !entries.is_empty())
             .unwrap_or_else(|| initial_entries.clone());
-        let mut dictionary_names = Vec::new();
-        for entry in initial_entries.iter().chain(entries.iter()) {
-            if !dictionary_names.contains(&entry.dict_name) {
-                dictionary_names.push(entry.dict_name.clone());
-            }
-        }
-        DictionaryLookup {
-            query: word.to_string(),
-            reading: reading.map(str::to_string),
+        let entries = dictionary::aggregate::sort_definitions(entries, priority_list);
+        dictionary::lookup_state::build_lookup(
+            word,
+            reading,
             selected_target,
-            candidates,
-            dictionary_names,
-            entries: dictionary::aggregate::sort_definitions(entries, priority_list),
-            timing: None,
-        }
+            "contextual",
+            &initial_entries,
+            entries,
+            None,
+        )
     }
 
     pub fn dictionary_settings(&self) -> DictionarySettings {
@@ -966,13 +928,6 @@ impl Engine {
 
 fn dictionary_query_key(word: &str, reading: Option<&str>) -> String {
     format!("{}\u{1f}{}", word.trim(), reading.unwrap_or("*"))
-}
-
-fn is_kana(value: &str) -> bool {
-    !value.is_empty()
-        && value
-            .chars()
-            .all(|character| ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー')
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

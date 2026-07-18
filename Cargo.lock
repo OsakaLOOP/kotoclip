@@ -2080,6 +2080,7 @@ dependencies = [
  "ammonia",
  "chrono",
  "flate2",
+ "html5ever 0.39.0",
  "log",
  "regex",
  "rmp-serde",

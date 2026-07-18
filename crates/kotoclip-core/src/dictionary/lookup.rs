@@ -1,5 +1,7 @@
 use crate::dictionary::{bundle, presentation};
-use crate::models::{DictEntry, DictionaryEntryRef, DictionaryLookupTiming};
+use crate::models::{
+    DictEntry, DictionaryEntryRef, DictionaryLookupTiming, DictionaryMatchEvidence, PosTag,
+};
 use flate2::read::ZlibDecoder;
 use rusqlite::{Connection, OpenFlags, Row};
 use serde::Serialize;
@@ -51,19 +53,19 @@ struct DefinitionBlockCache {
 
 #[derive(Default)]
 struct PresentationCache {
-    entries: HashMap<(usize, i64), presentation::DictionaryPresentation>,
+    entries: HashMap<(usize, i64), Vec<presentation::DictionaryPresentation>>,
     order: VecDeque<(usize, i64)>,
 }
 
 impl PresentationCache {
-    fn get(&mut self, key: (usize, i64)) -> Option<presentation::DictionaryPresentation> {
+    fn get(&mut self, key: (usize, i64)) -> Option<Vec<presentation::DictionaryPresentation>> {
         let value = self.entries.get(&key)?.clone();
         self.order.retain(|candidate| *candidate != key);
         self.order.push_back(key);
         Some(value)
     }
 
-    fn insert(&mut self, key: (usize, i64), value: presentation::DictionaryPresentation) {
+    fn insert(&mut self, key: (usize, i64), value: Vec<presentation::DictionaryPresentation>) {
         self.entries.insert(key, value);
         self.order.retain(|candidate| *candidate != key);
         self.order.push_back(key);
@@ -436,6 +438,15 @@ impl DictionaryEngine {
         headword: &str,
         reading: Option<&str>,
     ) -> (Vec<DictEntry>, DictionaryLookupTiming) {
+        self.lookup_profiled_with_pos(headword, reading, None)
+    }
+
+    pub fn lookup_profiled_with_pos(
+        &self,
+        headword: &str,
+        reading: Option<&str>,
+        pos: Option<&PosTag>,
+    ) -> (Vec<DictEntry>, DictionaryLookupTiming) {
         let started = Instant::now();
         let mut timing = DictionaryLookupTiming::default();
         if headword.is_empty() {
@@ -444,32 +455,102 @@ impl DictionaryEngine {
         let normalized_reading = reading
             .filter(|value| !value.is_empty() && *value != "*")
             .map(normalize_reading);
-        let mut redirected = Vec::new();
+        let mut direct = Vec::new();
         let mut seen = HashSet::new();
-        for target in self.redirect_targets(headword, &mut timing) {
-            for entry in self.lookup_direct(&target, reading, &mut timing) {
-                if seen.insert(entry.entry_key.clone()) {
-                    redirected.push(entry);
+        for database_index in 0..self.databases.len() {
+            let direct_in_database = self.lookup_exact_in_database(
+                database_index,
+                headword,
+                "exact_form",
+                &mut timing,
+            );
+            let has_content = direct_in_database.iter().any(|entry| {
+                !matches!(entry.entry_kind.as_str(), "navigation" | "redirect")
+                    && (!entry.senses.is_empty() || !entry.sections.is_empty())
+            });
+            for entry in direct_in_database.iter().cloned() {
+                if seen.insert(entry.occurrence_id.clone()) {
+                    direct.push(entry);
+                }
+            }
+            if has_content {
+                continue;
+            }
+            let mut targets = self.redirect_targets_in_database(database_index, headword, &mut timing);
+            for target in direct_in_database
+                .iter()
+                .flat_map(|entry| &entry.links)
+                .filter(|link| matches!(link.relation.as_str(), "candidate" | "redirect"))
+                .map(|link| link.target.clone())
+            {
+                if !targets.contains(&target) {
+                    targets.push(target);
+                }
+            }
+            for target in targets {
+                for entry in self.lookup_exact_in_database(
+                    database_index,
+                    &target,
+                    "explicit_alias",
+                    &mut timing,
+                ) {
+                    if seen.insert(entry.occurrence_id.clone()) {
+                        direct.push(entry);
+                    }
                 }
             }
         }
-        if !redirected.is_empty() {
-            rank_readings(&mut redirected, normalized_reading.as_deref());
-            timing.entries = redirected.len();
+        if !direct.is_empty() {
+            rank_entries(
+                &mut direct,
+                headword,
+                normalized_reading.as_deref(),
+                pos,
+            );
+            timing.entries = direct.len();
             timing.service_ms = started.elapsed().as_millis() as u64;
-            return (redirected, timing);
+            return (direct, timing);
         }
 
-        let mut direct = self.lookup_direct(headword, reading, &mut timing);
-        if direct.is_empty() {
-            if let Some(target) = compatibility_redirect_target(headword) {
-                direct = self.lookup_direct(target, None, &mut timing);
+        if let Some(target) = compatibility_redirect_target(headword) {
+            direct = self.lookup_exact(target, &mut timing);
+            if !direct.is_empty() {
+                for entry in &mut direct {
+                    entry.match_type = "compatibility_alias".to_string();
+                }
             }
         }
-        rank_readings(&mut direct, normalized_reading.as_deref());
+        if direct.is_empty() {
+            if let Some(reading) = reading.filter(|value| !value.is_empty() && *value != "*") {
+                for candidate in reading_candidates(headword, reading) {
+                    direct = self.query_key(READING_KEY, &candidate, "reading_fallback", &mut timing);
+                    if !direct.is_empty() {
+                        break;
+                    }
+                }
+            }
+        }
+        rank_entries(
+            &mut direct,
+            headword,
+            normalized_reading.as_deref(),
+            pos,
+        );
         timing.entries = direct.len();
         timing.service_ms = started.elapsed().as_millis() as u64;
         (direct, timing)
+    }
+
+    fn lookup_exact(
+        &self,
+        headword: &str,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<DictEntry> {
+        let mut results = self.query_key(FORM_KEY, &normalize_form(headword), "exact_form", timing);
+        if results.is_empty() {
+            results = self.query_exact_headword(headword, timing);
+        }
+        results
     }
 
     fn lookup_direct(
@@ -478,17 +559,19 @@ impl DictionaryEngine {
         reading: Option<&str>,
         timing: &mut DictionaryLookupTiming,
     ) -> Vec<DictEntry> {
-        let mut results = self.query_key(FORM_KEY, &normalize_form(headword), "headword", timing);
+        let mut results = self.lookup_exact(headword, timing);
         if results.is_empty() && is_kana_query(headword) {
-            results = self.query_key(READING_KEY, &normalize_reading(headword), "reading", timing);
-        }
-        if results.is_empty() {
-            results = self.query_exact_headword(headword, timing);
+            results = self.query_key(
+                READING_KEY,
+                &normalize_reading(headword),
+                "reading_fallback",
+                timing,
+            );
         }
         if results.is_empty() {
             if let Some(reading) = reading.filter(|value| !value.is_empty()) {
                 for candidate in reading_candidates(headword, reading) {
-                    results = self.query_key(READING_KEY, &candidate, "reading", timing);
+                    results = self.query_key(READING_KEY, &candidate, "reading_fallback", timing);
                     if !results.is_empty() {
                         break;
                     }
@@ -501,23 +584,25 @@ impl DictionaryEngine {
         results
     }
 
-    fn redirect_targets(&self, headword: &str, timing: &mut DictionaryLookupTiming) -> Vec<String> {
+    fn redirect_targets_in_database(
+        &self,
+        database_index: usize,
+        headword: &str,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<String> {
         let started = Instant::now();
         let normalized = normalize_form(headword);
         let mut targets = Vec::new();
-        for database in &self.databases {
-            let Ok(mut statement) = database.connection.prepare(
-                "SELECT target FROM aliases \
-                 WHERE alias = ?1 OR normalized_alias = ?2 \
-                 ORDER BY target",
-            ) else {
-                continue;
-            };
-            let rows = statement
+        let database = &self.databases[database_index];
+        if let Ok(mut statement) = database.connection.prepare(
+            "SELECT target FROM aliases \
+             WHERE alias = ?1 OR normalized_alias = ?2 \
+             ORDER BY target",
+        ) {
+            targets = statement
                 .query_map([headword, &normalized], |row| row.get::<_, String>(0))
                 .map(|rows| rows.flatten().collect::<Vec<_>>())
                 .unwrap_or_default();
-            targets.extend(rows);
         }
         targets.sort();
         targets.dedup();
@@ -532,6 +617,27 @@ impl DictionaryEngine {
         match_type: &str,
         timing: &mut DictionaryLookupTiming,
     ) -> Vec<DictEntry> {
+        let mut results = Vec::new();
+        for database_index in 0..self.databases.len() {
+            results.extend(self.query_key_in_database(
+                database_index,
+                kind,
+                value,
+                match_type,
+                timing,
+            ));
+        }
+        results
+    }
+
+    fn query_key_in_database(
+        &self,
+        database_index: usize,
+        kind: i64,
+        value: &str,
+        match_type: &str,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<DictEntry> {
         let sql = "SELECT e.id, COALESCE(k.display_value, k.normalized_value), e.headword, \
                           e.definition_block_id, e.definition_offset, e.definition_length, \
                           (SELECT COALESCE(r.display_value, r.normalized_value) \
@@ -541,23 +647,39 @@ impl DictionaryEngine {
                    FROM entry_keys k JOIN entries e ON e.id = k.entry_id \
                    WHERE k.kind = ?1 AND k.normalized_value = ?2 \
                    ORDER BY k.rank, e.id LIMIT 10";
+        let database = &self.databases[database_index];
+        let Ok(mut statement) = database.connection.prepare(sql) else {
+            return Vec::new();
+        };
+        let query_started = Instant::now();
+        let Ok(rows) = statement.query_map((kind, value), raw_entry) else {
+            return Vec::new();
+        };
+        let rows = rows.flatten().collect::<Vec<_>>();
+        timing.sqlite_ms += query_started.elapsed().as_millis() as u64;
+        self.materialize(database_index, rows.into_iter(), match_type, timing)
+    }
+
+    fn query_exact_headword(&self, value: &str, timing: &mut DictionaryLookupTiming) -> Vec<DictEntry> {
         let mut results = Vec::new();
-        for (database_index, database) in self.databases.iter().enumerate() {
-            let Ok(mut statement) = database.connection.prepare(sql) else {
-                continue;
-            };
-            let query_started = Instant::now();
-            let Ok(rows) = statement.query_map((kind, value), raw_entry) else {
-                continue;
-            };
-            let rows = rows.flatten().collect::<Vec<_>>();
-            timing.sqlite_ms += query_started.elapsed().as_millis() as u64;
-            results.extend(self.materialize(database_index, rows.into_iter(), match_type, timing));
+        for database_index in 0..self.databases.len() {
+            results.extend(self.query_exact_headword_in_database(
+                database_index,
+                value,
+                "exact_headword",
+                timing,
+            ));
         }
         results
     }
 
-    fn query_exact_headword(&self, value: &str, timing: &mut DictionaryLookupTiming) -> Vec<DictEntry> {
+    fn query_exact_headword_in_database(
+        &self,
+        database_index: usize,
+        value: &str,
+        match_type: &str,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<DictEntry> {
         let sql = "SELECT e.id, COALESCE((\
                           SELECT COALESCE(k.display_value, k.normalized_value) \
                           FROM entry_keys k \
@@ -570,18 +692,40 @@ impl DictionaryEngine {
                        WHERE r.entry_id = e.id AND r.kind = 1 \
                        ORDER BY r.rank LIMIT 1) \
                    FROM entries e WHERE e.headword = ?1 ORDER BY e.id LIMIT 10";
-        let mut results = Vec::new();
-        for (database_index, database) in self.databases.iter().enumerate() {
-            let Ok(mut statement) = database.connection.prepare(sql) else {
-                continue;
-            };
-            let query_started = Instant::now();
-            let Ok(rows) = statement.query_map([value], raw_entry) else {
-                continue;
-            };
-            let rows = rows.flatten().collect::<Vec<_>>();
-            timing.sqlite_ms += query_started.elapsed().as_millis() as u64;
-            results.extend(self.materialize(database_index, rows.into_iter(), "headword", timing));
+        let database = &self.databases[database_index];
+        let Ok(mut statement) = database.connection.prepare(sql) else {
+            return Vec::new();
+        };
+        let query_started = Instant::now();
+        let Ok(rows) = statement.query_map([value], raw_entry) else {
+            return Vec::new();
+        };
+        let rows = rows.flatten().collect::<Vec<_>>();
+        timing.sqlite_ms += query_started.elapsed().as_millis() as u64;
+        self.materialize(database_index, rows.into_iter(), match_type, timing)
+    }
+
+    fn lookup_exact_in_database(
+        &self,
+        database_index: usize,
+        headword: &str,
+        match_type: &str,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<DictEntry> {
+        let mut results = self.query_key_in_database(
+            database_index,
+            FORM_KEY,
+            &normalize_form(headword),
+            match_type,
+            timing,
+        );
+        if results.is_empty() {
+            results = self.query_exact_headword_in_database(
+                database_index,
+                headword,
+                match_type,
+                timing,
+            );
         }
         results
     }
@@ -625,9 +769,11 @@ impl DictionaryEngine {
         timing: &mut DictionaryLookupTiming,
     ) -> Vec<DictEntry> {
         let database = &self.databases[database_index];
-        rows.filter_map(|row| {
-            let definition = self.load_definition(database_index, &row, timing)?;
-            Some(self.entry(
+        rows.flat_map(|row| {
+            let Some(definition) = self.load_definition(database_index, &row, timing) else {
+                return Vec::new();
+            };
+            self.entries(
                 database_index,
                 database.name.clone(),
                 row.entry_id,
@@ -637,7 +783,7 @@ impl DictionaryEngine {
                 row.reading,
                 match_type,
                 timing,
-            ))
+            )
         })
         .collect()
     }
@@ -689,7 +835,7 @@ impl DictionaryEngine {
         definition
     }
 
-    fn entry(
+    fn entries(
         &self,
         database_index: usize,
         dict_name: String,
@@ -700,35 +846,81 @@ impl DictionaryEngine {
         structured_reading: Option<String>,
         match_type: &str,
         timing: &mut DictionaryLookupTiming,
-    ) -> DictEntry {
+    ) -> Vec<DictEntry> {
         let started = Instant::now();
         let key = (database_index, entry_id);
-        let presentation = self
+        let presentations = self
             .presentation_cache
             .lock()
             .ok()
             .and_then(|mut cache| cache.get(key))
             .unwrap_or_else(|| {
-                let value = presentation::present(&dict_name, &raw_headword, &definition);
+                let value = presentation::present(
+                    &dict_name,
+                    &headword,
+                    &raw_headword,
+                    structured_reading.as_deref(),
+                    &definition,
+                );
                 if let Ok(mut cache) = self.presentation_cache.lock() {
                     cache.insert(key, value.clone());
                 }
                 value
             });
-        let entry = DictEntry {
-            entry_key: format!("{dict_name}\u{1f}{entry_id}"),
-            dict_name,
-            headword,
-            reading: structured_reading.or(presentation.reading),
-            is_preferred: false,
-            definition_html: presentation.definition_html,
-            style_profile: presentation.style_profile,
-            content_blocks: presentation.content_blocks,
-            match_type: match_type.to_string(),
-            links: presentation.links,
-        };
+        let source_entry_key = format!("{dict_name}\u{1f}{entry_id}");
+        let entries = presentations
+            .into_iter()
+            .map(|presentation| {
+                let occurrence_id = if presentation.occurrence_suffix.is_empty() {
+                    source_entry_key.clone()
+                } else {
+                    format!("{source_entry_key}\u{1f}{}", presentation.occurrence_suffix)
+                };
+                let display_form = if presentation.header.display_form.is_empty() {
+                    headword.clone()
+                } else {
+                    presentation.header.display_form.clone()
+                };
+                let reading = presentation
+                    .header
+                    .reading
+                    .clone()
+                    .or_else(|| structured_reading.clone());
+                DictEntry {
+                    entry_key: source_entry_key.clone(),
+                    dict_name: dict_name.clone(),
+                    headword: display_form,
+                    reading,
+                    is_preferred: false,
+                    definition_html: presentation.definition_html,
+                    style_profile: presentation.style_profile,
+                    content_blocks: presentation.content_blocks,
+                    match_type: match_type.to_string(),
+                    links: presentation.links,
+                    occurrence_id,
+                    source_record_index: presentation.source_record_index,
+                    entry_kind: presentation.entry_kind,
+                    header: presentation.header,
+                    senses: presentation.senses,
+                    sections: presentation.sections,
+                    adapter_diagnostics: presentation.diagnostics,
+                    match_evidence: Some(DictionaryMatchEvidence {
+                        kind: match_type.to_string(),
+                        query_form: String::new(),
+                        matched_form: Some(headword.clone()),
+                        requested_reading: None,
+                        reading_match: "absent".to_string(),
+                        pos_match: "unknown".to_string(),
+                        dictionary_local: matches!(match_type, "explicit_alias"),
+                        penalties: Vec::new(),
+                        score: 0,
+                    }),
+                    raw_definition: Some(definition.clone()),
+                }
+            })
+            .collect();
         timing.presentation_ms += started.elapsed().as_millis() as u64;
-        entry
+        entries
     }
 }
 
@@ -751,16 +943,210 @@ fn compatibility_redirect_target(headword: &str) -> Option<&'static str> {
     }
 }
 
-fn rank_readings(entries: &mut [DictEntry], requested: Option<&str>) {
+fn rank_entries(
+    entries: &mut [DictEntry],
+    query: &str,
+    requested: Option<&str>,
+    requested_pos: Option<&PosTag>,
+) {
+    let normalized_query = normalize_form(query);
     for entry in entries.iter_mut() {
-        entry.is_preferred = requested.is_some_and(|requested| {
-            entry
-                .reading
-                .as_deref()
-                .is_some_and(|reading| normalize_reading(reading) == requested)
-        });
+        let mut score = match entry.match_type.as_str() {
+            "exact_headword" => 180,
+            "exact_form" => 160,
+            "explicit_alias" => 120,
+            "compatibility_alias" => 105,
+            "reading_fallback" => 55,
+            "fuzzy" => 10,
+            _ => 80,
+        };
+        let mut penalties = Vec::new();
+        if normalize_form(&entry.header.display_form) == normalized_query
+            || normalize_form(&entry.headword) == normalized_query
+        {
+            score += 45;
+        }
+        let reading_match = match (requested, entry.reading.as_deref()) {
+            (Some(requested), Some(reading)) if normalize_reading(reading) == requested => {
+                score += 30;
+                "exact"
+            }
+            (Some(_), Some(_)) => {
+                score -= 45;
+                penalties.push("reading_conflict".to_string());
+                "conflict"
+            }
+            (Some(_), None) => "absent",
+            (None, _) => "absent",
+        };
+        let pos_match = pos_compatibility(requested_pos, entry);
+        match pos_match {
+            // 词性只作为软证据。上游分词结果与词典底层分类并不总能一一对应，
+            // 不能仅凭 POS 冲突把真实 occurrence 压到候选列表之外。
+            "exact" => score += 24,
+            "compatible" => score += 12,
+            "conflict" => {
+                score -= 20;
+                penalties.push("pos_conflict".to_string());
+            }
+            _ => {}
+        }
+        match entry.entry_kind.as_str() {
+            "kanji" => {
+                score -= 80;
+                penalties.push("kanji_entry".to_string());
+            }
+            "surname" => {
+                score -= 65;
+                penalties.push("surname".to_string());
+            }
+            "prefix" | "suffix" | "bound_morpheme" => {
+                if !query.starts_with('-') && !query.ends_with('-') {
+                    score -= 75;
+                    penalties.push("bound_morpheme".to_string());
+                }
+            }
+            "navigation" | "redirect" => {
+                score -= 120;
+                penalties.push("navigation_only".to_string());
+            }
+            _ => {}
+        }
+        if entry
+            .reading
+            .as_deref()
+            .is_some_and(|reading| (reading.starts_with('-') || reading.ends_with('-'))
+                && !query.starts_with('-')
+                && !query.ends_with('-'))
+        {
+            score -= 60;
+            if !penalties.iter().any(|penalty| penalty == "bound_morpheme") {
+                penalties.push("bound_morpheme".to_string());
+            }
+        }
+        entry.is_preferred = false;
+        if let Some(evidence) = entry.match_evidence.as_mut() {
+            evidence.query_form = query.to_string();
+            evidence.requested_reading = requested.map(str::to_string);
+            evidence.reading_match = reading_match.to_string();
+            evidence.pos_match = pos_match.to_string();
+            evidence.penalties = penalties;
+            evidence.score = score;
+        }
     }
-    entries.sort_by_key(|entry| !entry.is_preferred);
+    entries.sort_by(|left, right| {
+        let left_score = left.match_evidence.as_ref().map_or(0, |value| value.score);
+        let right_score = right.match_evidence.as_ref().map_or(0, |value| value.score);
+        right_score
+            .cmp(&left_score)
+            .then_with(|| left.dict_name.cmp(&right.dict_name))
+            .then_with(|| left.source_record_index.cmp(&right.source_record_index))
+    });
+    let mut dictionary_indices = HashMap::<String, Vec<usize>>::new();
+    for (index, entry) in entries.iter().enumerate() {
+        dictionary_indices
+            .entry(entry.dict_name.clone())
+            .or_default()
+            .push(index);
+    }
+    for indices in dictionary_indices.values() {
+        let substantive = indices
+            .iter()
+            .copied()
+            .filter(|index| {
+                !matches!(
+                    entries[*index].entry_kind.as_str(),
+                    "navigation" | "redirect"
+                )
+            })
+            .collect::<Vec<_>>();
+        let candidates = if substantive.is_empty() {
+            indices.as_slice()
+        } else {
+            substantive.as_slice()
+        };
+        let Some(best_index) = candidates.first().copied() else {
+            continue;
+        };
+        let best_score = entries[best_index]
+            .match_evidence
+            .as_ref()
+            .map_or(i32::MIN, |evidence| evidence.score);
+        let second_score = candidates.get(1).and_then(|index| {
+            entries[*index]
+                .match_evidence
+                .as_ref()
+                .map(|evidence| evidence.score)
+        });
+        let has_clear_margin = second_score.is_none_or(|score| best_score - score >= 16);
+        if best_score >= 80 && has_clear_margin {
+            entries[best_index].is_preferred = true;
+        }
+    }
+}
+
+fn pos_compatibility(requested: Option<&PosTag>, entry: &DictEntry) -> &'static str {
+    let Some(requested) = requested else {
+        return "unknown";
+    };
+    let labels = entry
+        .header
+        .pos_tags
+        .iter()
+        .chain(
+            entry
+                .senses
+                .iter()
+                .flat_map(dictionary_sense_tags)
+                .filter(|tag| tag.kind == "pos"),
+        )
+        .map(|tag| tag.label.as_str())
+        .collect::<Vec<_>>();
+    if labels.is_empty() {
+        return match entry.entry_kind.as_str() {
+            "surname" if requested.major == "名詞" => "compatible",
+            "prefix" | "suffix" | "bound_morpheme" if requested.sub1.contains("接尾") || requested.sub1.contains("接頭") => "compatible",
+            "surname" | "kanji" | "prefix" | "suffix" | "bound_morpheme" => "conflict",
+            _ => "unknown",
+        };
+    }
+    if labels.iter().all(|label| label.contains("連語")) {
+        return "unknown";
+    }
+    let markers = match requested.major.as_str() {
+        "動詞" => &["動"][..],
+        "形容詞" => &["形"][..],
+        "副詞" => &["副"][..],
+        "連体詞" => &["連体"][..],
+        "接続詞" => &["接続", "接"][..],
+        "名詞" => &["名", "姓"][..],
+        "助詞" => &["助詞"][..],
+        "助動詞" => &["助動"][..],
+        "感動詞" => &["感"][..],
+        _ => &[][..],
+    };
+    if markers.is_empty() {
+        return "unknown";
+    }
+    if labels
+        .iter()
+        .any(|label| markers.iter().any(|marker| label.contains(marker)))
+    {
+        "exact"
+    } else {
+        "conflict"
+    }
+}
+
+fn dictionary_sense_tags(
+    sense: &crate::models::DictionarySense,
+) -> Box<dyn Iterator<Item = &crate::models::DictionaryTag> + '_> {
+    Box::new(
+        sense
+            .tags
+            .iter()
+            .chain(sense.children.iter().flat_map(dictionary_sense_tags)),
+    )
 }
 
 fn normalize_reading(value: &str) -> String {

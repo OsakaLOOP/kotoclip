@@ -414,7 +414,7 @@ async function viewFullDefinition(paragraphId: number, tokenIndex: number) {
   showDefinitionModal.value = true;
   modalDefinitions.value = [];
 
-  const lookup = await lookupWord(target.word, target.reading);
+  const lookup = await lookupWord(target.word, target.reading, false, target.pos);
   modalDefinitions.value = lookup?.entries ?? [];
 }
 

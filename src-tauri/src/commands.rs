@@ -5,7 +5,7 @@ use kotoclip_core::document::{
 };
 use kotoclip_core::models::{
     AnnotatedToken, DictionaryLookup, DictionarySettings, ExportEntry, ExpressionRule,
-    SegmentationCandidate,
+    PosTag, SegmentationCandidate,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
@@ -566,6 +566,7 @@ pub async fn lookup_word(
     state: State<'_, AppState>,
     word: String,
     reading: Option<String>,
+    pos: Option<PosTag>,
     priority_list: Vec<String>,
     background: Option<bool>,
 ) -> Result<DictionaryLookup, String> {
@@ -576,7 +577,12 @@ pub async fn lookup_word(
         state.dictionary.lock().map_err(|e| e.to_string())?
     };
     let resource_wait_ms = started.elapsed().as_millis() as u64;
-    let mut lookup = dictionary.lookup_word_profiled(&word, reading.as_deref(), &priority_list);
+    let mut lookup = dictionary.lookup_word_contextual_profiled(
+        &word,
+        reading.as_deref(),
+        pos.as_ref(),
+        &priority_list,
+    );
     if let Some(timing) = &mut lookup.timing {
         timing.resource_wait_ms = resource_wait_ms;
         timing.service_ms = started.elapsed().as_millis() as u64;
