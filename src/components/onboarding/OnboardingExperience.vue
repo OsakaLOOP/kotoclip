@@ -13,6 +13,7 @@ interface Slide {
   eyebrow: string;
   title: string;
   lead: string;
+  leadPoints: string[];
 }
 
 const emit = defineEmits<{
@@ -22,27 +23,31 @@ const emit = defineEmits<{
 const slides: Slide[] = [
   {
     id: "welcome",
-    eyebrow: "KOTOCLIP · V1.0",
-    title: "欢迎来到 KotoClip",
-    lead: "你的日语整本书阅读智能助手",
+    eyebrow: "欢迎来到 KOTOCLIP · V1.0",
+    title: "想读整本日语书？\n就从这里开始",
+    lead: "KotoClip 是面向整本书阅读的日语智能助手。文本解析、查词、语法说明和学习记录，都集中在同一个阅读界面中。",
+    leadPoints: ["整本书阅读", "本地文本解析", "按需展开辅助"],
   },
   {
     id: "ascent",
     eyebrow: "01 · 读懂整本",
-    title: "水平还没到，也可以开始读整本书",
-    lead: "把句子拆清楚，把解释放回语境，让阅读继续往前。",
+    title: "读到卡住的地方，随手查清楚就好",
+    lead: "从语素、文节到词典义项和语法结构，所有辅助都在正文中按需展开，尽量不打断连续阅读。",
+    leadPoints: ["悬浮快速查词", "多 MDict 词典接入", "语法分析引擎", "AI 语境问答"],
   },
   {
     id: "interest",
     eyebrow: "02 · 兴趣激励",
-    title: "奖励自己，也让喜欢的内容带你继续读",
-    lead: "经典名著、网络文案、视频字幕与 ACGN 作品，都能进入同一套阅读流程。",
+    title: "喜欢的内容，当然可以拿来学日语",
+    lead: "支持经典名著、网络文案、视频字幕和 ACGN 作品。导入后即可使用同一套文本解析、悬浮查词和语法分析功能。",
+    leadPoints: ["统一导入", "自动解析", "保留阅读记录"],
   },
   {
     id: "system",
     eyebrow: "03 · 建立体系",
-    title: "读过的内容，逐渐连成自己的日语体系",
-    lead: "分级、文法、卡片与复习提示互相衔接，把每次读懂都留下来。",
+    title: "边读边整理，\n慢慢建立自己的日语体系",
+    lead: "N1–N5 分级、文法知识、卡片生成和复习提醒统一管理。阅读时查过、记过的内容，可以直接用于制卡和复习。",
+    leadPoints: ["N1–N5 分级", "ANKI 卡片生成", "内置遗忘曲线"],
   },
 ];
 
@@ -137,28 +142,33 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKeydown));
           <div class="copy-column">
             <p class="eyebrow">{{ current.eyebrow }}</p>
             <h1>{{ current.title }}</h1>
-            <p class="lead">{{ current.lead }}</p>
+            <div class="lead-block">
+              <p class="lead">{{ current.lead }}</p>
+              <div class="lead-points" :aria-label="`${current.eyebrow}核心能力`">
+                <span v-for="point in current.leadPoints" :key="point">{{ point }}</span>
+              </div>
+            </div>
 
             <p v-if="current.id === 'welcome'" class="body-copy">
-              从一句一句看懂，走到真正读完一本书。KotoClip 会在你需要时提供恰到好处的帮助。
+              导入真正想读的内容，遇到不懂的地方再展开辅助，平时尽量保留直接阅读原文的节奏。
             </p>
 
             <div v-else-if="current.id === 'ascent'" class="feature-grid feature-grid--ascent">
               <article>
                 <span class="feature-index">01</span>
-                <div><strong>语素与文节拆分</strong><p>先看清句子由什么组成。</p></div>
+                <div><strong>悬浮快速查词</strong><p>鼠标悬浮在词语或语素上，即时查看读音、原形、词性和本句义项。</p></div>
               </article>
               <article>
                 <span class="feature-index">02</span>
-                <div><strong>权威词典解释</strong><p>用可靠来源确认本句含义。</p></div>
+                <div><strong>多 MDict 词典接入</strong><p>接入多部本地 MDict 词典，按优先级查询，并可随时切换。</p></div>
               </article>
               <article>
                 <span class="feature-index">03</span>
-                <div><strong>智能语法分析</strong><p>找到连接关系和句内作用。</p></div>
+                <div><strong>语法分析引擎</strong><p>拆分语素与文节，识别活用、功能语素和句内语法。</p></div>
               </article>
               <article>
                 <span class="feature-index">04</span>
-                <div><strong>AI 语境问答</strong><p>带着当前段落继续追问。</p></div>
+                <div><strong>AI 语境问答</strong><p>围绕当前词、句或段落继续追问，不必重新交代上下文。</p></div>
               </article>
             </div>
 
@@ -169,14 +179,14 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKeydown));
                 <span>视频字幕</span>
                 <span>ACGN 作品</span>
               </div>
-              <p class="conversion-line"><Check :size="17" aria-hidden="true" /> 一键成为你的阅读教材</p>
+              <p class="conversion-line"><Check :size="17" aria-hidden="true" /> 导入后，一键成为教材</p>
             </div>
 
             <div v-else class="feature-grid feature-grid--system">
-              <article><span class="system-glyph">N</span><div><strong>N1–N5 严格分级</strong><p>清楚定位当前难度。</p></div></article>
-              <article><span class="system-glyph">文</span><div><strong>完整文法与阅读技巧</strong><p>从规则走向真实语境。</p></div></article>
-              <article><span class="system-glyph">卡</span><div><strong>ANKI 卡片生成</strong><p>把阅读现场直接带入复习。</p></div></article>
-              <article><span class="system-glyph">曲</span><div><strong>遗忘曲线动态提示</strong><p>在需要的时候再次遇见。</p></div></article>
+              <article><span class="system-glyph">N</span><div><strong>N1–N5 分级体系</strong><p>按统一等级标注文法和阅读难点，明确当前难度。</p></div></article>
+              <article><span class="system-glyph">文</span><div><strong>完整文法与阅读技巧</strong><p>从形态、功能语素到句法和读解方法，按主题整理。</p></div></article>
+              <article><span class="system-glyph">卡</span><div><strong>ANKI 卡片生成</strong><p>从原文、词义和笔记生成卡片，减少重复整理。</p></div></article>
+              <article><span class="system-glyph">曲</span><div><strong>内置遗忘曲线</strong><p>根据接触和复习记录动态提示，在合适的时间回顾。</p></div></article>
             </div>
 
             <div class="actions">
@@ -196,17 +206,17 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKeydown));
                 type="button"
                 @click="next"
               >
-                {{ current.id === 'welcome' ? '了解 KotoClip' : current.id === 'system' ? '开始使用 KotoClip' : '继续' }}
+                {{ current.id === 'welcome' ? '看看怎么帮我阅读' : current.id === 'system' ? '开始使用 KotoClip' : '继续' }}
                 <ArrowRight :size="17" aria-hidden="true" />
               </button>
 
               <p v-else class="reward-direction">
-                点击右侧那一点奖励，继续前往“兴趣激励”。
+                点一下右侧的小奖励，接着看看怎样把兴趣变成持续的激励。
               </p>
             </div>
 
             <p v-if="current.id === 'system'" class="release-note">
-              v1.0 从核心阅读体验开始，相关能力会持续完善。
+              部分能力会在 v1.0 后续更新中逐步开放。
             </p>
           </div>
 
@@ -438,6 +448,7 @@ h1 {
   line-height: 1.07;
   letter-spacing: -.055em;
   text-wrap: balance;
+  white-space: pre-line;
 }
 
 [data-slide="ascent"] h1,
@@ -446,17 +457,50 @@ h1 {
   font-size: clamp(2.05rem, 3.35vw, 3.8rem);
 }
 
-.lead {
+.lead-block {
   max-width: 590px;
   margin-top: 22px;
+}
+
+.lead {
+  margin: 0;
   color: var(--page-muted);
-  font-size: clamp(1rem, 1.38vw, 1.22rem);
-  line-height: 1.75;
+  font-size: clamp(.92rem, 1.15vw, 1.06rem);
+  line-height: 1.72;
 }
 
 [data-slide="welcome"] .lead {
   color: var(--page-ink);
-  font-weight: 650;
+  font-weight: 560;
+}
+
+.lead-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 17px;
+  margin-top: 12px;
+}
+
+.lead-points span {
+  position: relative;
+  padding-left: 12px;
+  color: var(--page-ink);
+  font-size: .7rem;
+  font-weight: 760;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+
+.lead-points span::before {
+  content: "";
+  position: absolute;
+  top: .52em;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--page-accent);
+  box-shadow: 0 0 0 4px var(--page-accent-soft);
 }
 
 .body-copy {
@@ -630,7 +674,9 @@ h1 {
   .art-column { height: min(35vh, 310px); }
   .eyebrow { margin-bottom: 12px; }
   h1, [data-slide="ascent"] h1, [data-slide="interest"] h1, [data-slide="system"] h1 { font-size: clamp(1.8rem, 9vw, 2.75rem); }
-  .lead { margin-top: 14px; font-size: .95rem; }
+  .lead-block { margin-top: 14px; }
+  .lead { font-size: .9rem; }
+  .lead-points { gap: 7px 14px; }
   .feature-grid--ascent, .feature-grid--system { grid-template-columns: 1fr; }
   .slide { padding-bottom: 108px; }
   .onboarding-footer { display: none; }
