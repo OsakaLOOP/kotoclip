@@ -377,21 +377,21 @@ impl Engine {
             .apply_segmentation_choices(&mut tokens, &choices);
         let token_count = tokens.len();
         report(AnalysisProgress::counted(
-            AnalysisPhase::DictionaryMatching,
+            AnalysisPhase::ProfileScoring,
+            0,
             token_count,
-            token_count,
-            80,
-            "正文结构分析完成",
+            86,
+            "开始计算词汇熟悉度",
         ));
         let annotated =
             self.profile
                 .annotate_tokens_with_progress(tokens, |completed, total| {
-                    let percent = 80 + ((completed * 19 / total.max(1)) as u8);
+                    let percent = 86 + ((completed * 13 / total.max(1)) as u8);
                     report(AnalysisProgress::counted(
                         AnalysisPhase::ProfileScoring,
                         completed,
                         total,
-                        percent,
+                        percent.min(99),
                         "计算词汇熟悉度",
                     ));
                 })?;
@@ -441,22 +441,22 @@ impl Engine {
             .apply_segmentation_choices(&mut tokens, &segmentation_choices);
         let token_count = tokens.len();
         report(AnalysisProgress::counted(
-            AnalysisPhase::DictionaryMatching,
+            AnalysisPhase::ProfileScoring,
+            0,
             token_count,
-            token_count,
-            46,
-            "词典词汇整体已在文节前解析",
+            86,
+            "开始计算词汇熟悉度",
         ));
         // 调用画像引擎打分标注
         let mut annotated =
             self.profile
                 .annotate_tokens_with_progress(tokens, |completed, total| {
-                    let percent = 46 + ((completed * 1 / total.max(1)) as u8);
+                    let percent = 86 + ((completed * 2 / total.max(1)) as u8);
                     report(AnalysisProgress::counted(
                         AnalysisPhase::ProfileScoring,
                         completed,
                         total,
-                        percent,
+                        percent.min(88),
                         "计算词汇熟悉度",
                     ));
                 })?;
@@ -464,19 +464,19 @@ impl Engine {
         // 阶段长时间显示 61%~96% 而实际工作已经完成。
         report(AnalysisProgress::stage(
             AnalysisPhase::ExpressionMatching,
-            47,
+            89,
             "应用自定义表达规则",
         ));
         self.profile.apply_expression_rules(&mut annotated)?;
         report(AnalysisProgress::stage(
             AnalysisPhase::ExpressionMatching,
-            50,
+            91,
             "匹配内置表达",
         ));
         pipeline::expressions::apply_builtin_expressions(&mut annotated);
         report(AnalysisProgress::stage(
             AnalysisPhase::ExpressionMatching,
-            92,
+            93,
             "匹配呼应表达",
         ));
         pipeline::expressions::apply_correlative_expressions(&mut annotated);
@@ -490,12 +490,12 @@ impl Engine {
         if record_exposure {
             self.profile
                 .record_token_exposures_with_progress(&annotated, |completed, total| {
-                    let percent = 98 + ((completed * 2 / total.max(1)) as u8);
+                    let percent = 97 + ((completed * 2 / total.max(1)) as u8);
                     report(AnalysisProgress::counted(
                         AnalysisPhase::RecordingExposure,
                         completed,
                         total,
-                        percent,
+                        percent.min(99),
                         "记录本次词汇曝光",
                     ));
                 })?;

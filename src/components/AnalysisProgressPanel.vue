@@ -10,9 +10,9 @@ const props = defineProps<{
 const stages: Array<{ phase: AnalysisPhase; label: string }> = [
   { phase: "preparing", label: "准备" },
   { phase: "tokenizing", label: "形态素" },
+  { phase: "dictionary_matching", label: "词典" },
   { phase: "chunking", label: "文节" },
   { phase: "grammar_matching", label: "语法" },
-  { phase: "dictionary_matching", label: "词典" },
   { phase: "profile_scoring", label: "评分" },
   { phase: "expression_matching", label: "表达" },
   { phase: "recording_exposure", label: "记录" },

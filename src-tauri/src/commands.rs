@@ -10,7 +10,7 @@ use kotoclip_core::models::{
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
 use std::time::Instant;
-use tauri::{Emitter, State, Window};
+use tauri::{Emitter, Manager, State, Window};
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -122,16 +122,29 @@ pub async fn open_document(
     text: String,
     record_exposure: Option<bool>,
     request_id: Option<String>,
+    disable_progressive: Option<bool>,
 ) -> Result<DocumentResponse, String> {
     let request_id = request_id.unwrap_or_else(|| "open-document".to_string());
     let started = std::time::Instant::now();
     let sequence = state.next_session_id.fetch_add(1, Ordering::Relaxed);
     let session_id = format!("document-{sequence}");
-    let cached = state
-        .analysis_cache
-        .lock()
-        .map_err(|error| error.to_string())?
-        .load(&text);
+    let disable_progressive = disable_progressive.unwrap_or(false);
+    let target_chars = if disable_progressive {
+        usize::MAX
+    } else {
+        10_000
+    };
+    let disable_cache = std::env::var("KOTOCLIP_NO_CACHE").is_ok()
+        || std::env::var("KOTOCLIP_DISABLE_CACHE").is_ok();
+    let cached = if disable_cache {
+        None
+    } else {
+        state
+            .analysis_cache
+            .lock()
+            .map_err(|error| error.to_string())?
+            .load(&text)
+    };
     if let Some(stable_tokens) = cached {
         let engine = state.engine.lock().map_err(|error| error.to_string())?;
         let mut session = DocumentSession::new_progressive(
@@ -141,7 +154,7 @@ pub async fn open_document(
         );
         session.set_cached_stable_tokens(stable_tokens);
         let batch = session
-            .next_batch(2_000)
+            .next_batch(target_chars)
             .ok_or_else(|| "缓存文档没有可恢复内容".to_string())?;
         let stable_batch = session
             .take_cached_stable_tokens(&batch)
@@ -166,7 +179,7 @@ pub async fn open_document(
     let mut session =
         DocumentSession::new_progressive(session_id.clone(), text, record_exposure.unwrap_or(true));
     let batch = session
-        .next_batch(2_000)
+        .next_batch(target_chars)
         .ok_or_else(|| "文档没有可分析内容".to_string())?;
     let engine = state.engine.lock().map_err(|error| error.to_string())?;
     let (stable_tokens, tokens) = engine
@@ -174,7 +187,7 @@ pub async fn open_document(
             &batch.source,
             session.document_readings(),
             |progress| {
-                let _ = window.emit(
+                let _ = window.app_handle().emit(
                     "analysis-progress",
                     AnalysisProgressEvent {
                         request_id: request_id.clone(),
@@ -238,7 +251,7 @@ pub async fn continue_document_analysis(
                 &batch.source,
                 session.document_readings(),
                 |progress| {
-                    let _ = window.emit(
+                    let _ = window.app_handle().emit(
                         "analysis-progress",
                         AnalysisProgressEvent {
                             request_id: request_id.clone(),
@@ -334,7 +347,7 @@ pub async fn apply_document_mutation(
         let engine = state.engine.lock().map_err(|error| error.to_string())?;
         engine
             .analyze_text_with_progress(&text, record_exposure, |progress| {
-                let _ = window.emit(
+                let _ = window.app_handle().emit(
                     "analysis-progress",
                     AnalysisProgressEvent {
                         request_id: request_id.clone(),

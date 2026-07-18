@@ -498,7 +498,7 @@ impl Pipeline {
 
         report(AnalysisProgress::stage(
             AnalysisPhase::Tokenizing,
-            3,
+            5,
             "执行形态素分析",
         ));
 
@@ -577,16 +577,21 @@ impl Pipeline {
                 lexical_candidates,
             }));
             prepared_chars_count += segment_len;
-            let percent = 3 + ((prepared_chars_count * 24) / total_chars) as u8;
+            let percent = 5 + ((prepared_chars_count * 20) / total_chars) as u8;
             report(AnalysisProgress::counted(
                 AnalysisPhase::Tokenizing,
                 prepared_chars_count,
                 total_chars,
-                percent.min(27),
+                percent.min(25),
                 "执行形态素分析与候选准备",
             ));
         }
 
+        report(AnalysisProgress::stage(
+            AnalysisPhase::DictionaryMatching,
+            26,
+            "查询本地词典词汇",
+        ));
         let resolved_dictionary_forms = if let Some(dictionary) = dictionary {
             let started = Instant::now();
             let matches = dictionary.resolve_exact_forms_batch(&dictionary_queries);
@@ -597,10 +602,15 @@ impl Pipeline {
         } else {
             HashMap::new()
         };
+        report(AnalysisProgress::stage(
+            AnalysisPhase::DictionaryMatching,
+            64,
+            "本地词典查询完成",
+        ));
 
         report(AnalysisProgress::stage(
             AnalysisPhase::Chunking,
-            28,
+            65,
             "解析词典词汇并构建文节",
         ));
 
@@ -682,8 +692,8 @@ impl Pipeline {
                 }
             }
 
-            let progress_percent = 27 + ((completed_chars * 13) / total_chars) as u8;
-            let (phase, message) = if progress_percent < 37 {
+            let progress_percent = 65 + ((completed_chars * 20) / total_chars) as u8;
+            let (phase, message) = if progress_percent < 75 {
                 (AnalysisPhase::Chunking, "解析词典词汇并构建文节")
             } else {
                 (AnalysisPhase::GrammarMatching, "匹配语法模式")
@@ -692,14 +702,14 @@ impl Pipeline {
                 phase,
                 completed_chars,
                 total_chars,
-                progress_percent.min(40),
+                progress_percent.min(85),
                 message,
             ));
         }
 
         report(AnalysisProgress::stage(
             AnalysisPhase::GrammarMatching,
-            40,
+            85,
             "语法模式匹配完成",
         ));
 

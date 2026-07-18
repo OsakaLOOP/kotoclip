@@ -38,6 +38,16 @@ export interface AnalysisProgress {
   message: string;
 }
 
+interface BackendAnalysisProgressEvent {
+  requestId: string;
+  phase: AnalysisPhase;
+  completed: number;
+  total: number;
+  percent: number;
+  message: string;
+}
+
+
 interface CompactAnalysis {
   s: string[];
   t: CompactToken[];
@@ -365,6 +375,7 @@ export function useTokenization() {
   const lastPatchBytes = ref(0);
   const lastInvalidation = ref<AnalysisPatch["invalidation"] | null>(null);
   const backendReady = ref(false);
+  const disableProgressive = ref(false);
   const backendError = ref<string | null>(null);
   let unlistenBackendReady: UnlistenFn | undefined;
   let unlistenAnalysisProgress: UnlistenFn | undefined;
@@ -379,6 +390,23 @@ export function useTokenization() {
         backendReady.value = payload.ready;
         backendError.value = payload.error ?? null;
       });
+
+      const progressStarts = new Map<string, number>();
+      await listen<BackendAnalysisProgressEvent>("analysis-progress", ({ payload }) => {
+        let startTime = progressStarts.get(payload.requestId);
+        if (!startTime) {
+          startTime = performance.now();
+          progressStarts.set(payload.requestId, startTime);
+        }
+        const elapsed = (performance.now() - startTime).toFixed(1);
+        console.log(
+          `[Analysis Progress] [${new Date().toISOString()}] (+${elapsed}ms) [Req: ${payload.requestId}] Phase: ${payload.phase}, Percent: ${payload.percent}%, Message: ${payload.message}`
+        );
+        if (payload.phase === "completed" || payload.percent === 100) {
+          progressStarts.delete(payload.requestId);
+        }
+      });
+
       const status = await invoke<{ ready: boolean }>("backend_status");
       backendReady.value = status.ready;
       backendError.value = null;
@@ -491,9 +519,16 @@ export function useTokenization() {
     try {
       // 先建立监听再调用 IPC，避免丢失最早的阶段事件。
       const listenerStartedAt = performance.now();
-      unlistenAnalysisProgress = await listen<AnalysisProgress>("analysis-progress", ({ payload }) => {
+      unlistenAnalysisProgress = await listen<BackendAnalysisProgressEvent>("analysis-progress", ({ payload }) => {
         if (payload.requestId === activeRequestId.value) {
-          analysisProgress.value = payload;
+          analysisProgress.value = {
+            requestId: payload.requestId,
+            phase: payload.phase,
+            completed: payload.completed,
+            total: payload.total,
+            percent: payload.percent,
+            message: payload.message,
+          };
         }
       });
       listenerSetupMs = performance.now() - listenerStartedAt;
@@ -504,11 +539,16 @@ export function useTokenization() {
         text,
         recordExposure,
         requestId,
+        disableProgressive: disableProgressive.value,
       });
       const allTokens = mergePatch(response.patch);
       lastOpenCacheHit.value = response.cacheHit;
       const backendDurationMs = response.backendDurationMs;
       invokeAndTransferMs = performance.now() - invokeStartedAt;
+
+      console.log(
+        `[Analysis IPC Complete] [${new Date().toISOString()}] (+${(performance.now() - totalStartedAt).toFixed(1)}ms) Cache Hit: ${response.cacheHit}, Tokens: ${allTokens.length}, Backend Time: ${backendDurationMs}ms`
+      );
       if (activeRequestId.value !== requestId) return false;
       if (previousSessionId && previousSessionId !== activeSessionId.value) {
         void invoke("close_document", { sessionId: previousSessionId });
@@ -576,6 +616,7 @@ export function useTokenization() {
     try {
       let firstContinuation = true;
       while (activeSessionId.value === sessionId && !documentComplete.value) {
+        const batchStartedAt = performance.now();
         const patch = await enqueueDocumentOperation(() => invoke<AnalysisPatch | null>("continue_document_analysis", {
             sessionId,
             baseRevision: documentRevision.value,
@@ -583,11 +624,17 @@ export function useTokenization() {
             requestId,
           }));
         if (!patch || activeSessionId.value !== sessionId) return;
-        paragraphs.value = buildParagraphs(mergePatch(patch));
+        const allTokens = mergePatch(patch);
+        paragraphs.value = buildParagraphs(allTokens);
+        const elapsed = performance.now() - batchStartedAt;
+        console.log(
+          `[Background Batch Complete] [${new Date().toISOString()}] (+${elapsed.toFixed(1)}ms) Session: ${sessionId}, Revision: ${documentRevision.value}, Tokens: ${allTokens.length}, Complete: ${documentComplete.value}`
+        );
         firstContinuation = false;
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       }
       if (activeSessionId.value !== sessionId) return;
+      console.log(`[Document Analysis Finished] [${new Date().toISOString()}] Session: ${sessionId}, Final Revision: ${documentRevision.value}`);
       // Expression 不参与首屏阻断；全部正文范围稳定后统一扫描并以注解 Patch 合并。
       await refreshDocumentExpressions();
       if (activeSessionId.value !== sessionId) return;
@@ -736,6 +783,7 @@ export function useTokenization() {
     lastInvalidation,
     backendReady,
     backendError,
+    disableProgressive,
     initializeBackendStatus,
     disposeBackendStatusListener,
     analyzeText,
