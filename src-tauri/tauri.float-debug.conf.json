@@ -1,5 +1,5 @@
 {
   "build": {
-    "devUrl": "http://localhost:1420/?ui-float-debug=true"
+    "devUrl": "http://127.0.0.1:1420/?ui-float-debug=true"
   }
 }

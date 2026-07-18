@@ -46,6 +46,7 @@ const state = reactive({
   enabled,
   settings: initialSettings,
   events: [] as FloatDebugEvent[],
+  requests: [] as FloatDebugEvent[],
   snapshots: {} as Record<string, FloatDebugValue>,
 });
 let sequence = 0;
@@ -96,8 +97,15 @@ function clampOpacity(value: number) {
 }
 
 function trimHistory() {
-  const overflow = state.events.length - state.settings.historyLimit;
-  if (overflow > 0) state.events.splice(0, overflow);
+  // timer 会在指针抖动时大量产生，不能把用于性能诊断的 request 全部挤出。
+  const reservedRequests = Math.min(32, Math.floor(state.settings.historyLimit / 2));
+  while (state.events.length > state.settings.historyLimit) {
+    const requestCount = state.events.filter((event) => event.category === "request").length;
+    const removable = state.events.findIndex((event) => (
+      event.category !== "request" || requestCount > reservedRequests
+    ));
+    state.events.splice(removable >= 0 ? removable : 0, 1);
+  }
 }
 
 function record(
@@ -108,9 +116,63 @@ function record(
   detail?: Record<string, FloatDebugValue>,
 ) {
   if (!enabled || state.settings.paused || !state.settings.categories[category]) return;
+
+  const currentSequence = ++sequence;
+  const currentTimestamp = performance.now();
+
+  // 1. 维护独立的 state.requests 队列 (专用于“词典请求诊断”面板，排除 cache-hit/skip 噪音，不受 timer 等高频事件挤占)
+  if (category === "request" && (source === "component" || source === "whole") && action !== "skip" && outcome !== "cache-hit") {
+    const gen = detail?.generation;
+    if (typeof gen === "number" && action !== "resolve" && action !== "navigate" && action !== "select") {
+      const existingReq = [...state.requests].reverse().find((e) =>
+        e.source === source && e.detail?.generation === gen
+      );
+      if (existingReq) {
+        existingReq.action = action;
+        if (outcome !== undefined) existingReq.outcome = outcome;
+        if (detail !== undefined) {
+          existingReq.detail = { ...existingReq.detail, ...detail };
+        }
+      }
+    } else if (action === "resolve" || action === "navigate" || action === "select") {
+      state.requests.push({
+        sequence: currentSequence,
+        timestamp: currentTimestamp,
+        category,
+        source,
+        action,
+        outcome,
+        detail: detail ? { ...detail } : undefined,
+      });
+      if (state.requests.length > 60) {
+        state.requests.shift();
+      }
+    }
+  }
+
+  // 2. 维护通用的 state.events 队列 (用于“按序历史”展示)
+  if (category === "request" && (source === "component" || source === "whole")) {
+    const gen = detail?.generation;
+    if (typeof gen === "number" && action !== "resolve" && action !== "navigate" && action !== "select") {
+      const existing = [...state.events].reverse().find((e) =>
+        e.category === "request" &&
+        e.source === source &&
+        e.detail?.generation === gen
+      );
+      if (existing) {
+        existing.action = action;
+        if (outcome !== undefined) existing.outcome = outcome;
+        if (detail !== undefined) {
+          existing.detail = { ...existing.detail, ...detail };
+        }
+        return; // 更新完已有事件，无需再 push 到 events 队列
+      }
+    }
+  }
+
   state.events.push({
-    sequence: ++sequence,
-    timestamp: performance.now(),
+    sequence: currentSequence,
+    timestamp: currentTimestamp,
     category,
     source,
     action,
@@ -127,6 +189,7 @@ function snapshot(name: string, value: FloatDebugValue) {
 
 function clear() {
   state.events.splice(0);
+  state.requests.splice(0);
 }
 
 function report() {
@@ -157,6 +220,10 @@ function report() {
     snapshotText("session"),
     snapshotText("request.component"),
     snapshotText("request.whole"),
+    ...state.events
+      .filter((event) => event.category === "request")
+      .slice(-12)
+      .map((event) => `#${event.sequence} +${event.timestamp.toFixed(1)}ms ${event.source}.${event.action}${event.outcome ? ` => ${event.outcome}` : ""}${event.detail ? ` detail=${JSON.stringify(event.detail)}` : ""}`),
     "",
     "[按序历史]",
     ...state.events.map((event) => {

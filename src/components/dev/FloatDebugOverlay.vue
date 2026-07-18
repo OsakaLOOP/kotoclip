@@ -34,6 +34,7 @@ const panelBoxes = computed(() => snapshotRecord("panelBoxes"));
 const gate = computed(() => snapshotRecord("gate"));
 const timer = computed(() => snapshotRecord("timer"));
 const timerSequence = computed(() => floatDebug.state.events.filter((event) => event.category === "timer").slice(-10));
+const requestSequence = computed(() => [...floatDebug.state.requests].reverse());
 const visibleEvents = computed(() => floatDebug.state.events
   .filter((event) => floatDebug.state.settings.categories[event.category])
   .slice(-80)
@@ -108,6 +109,26 @@ function timerLine(event: FloatDebugEvent) {
   const id = event.detail?.timerId ?? "—";
   const reason = event.detail?.reason ?? event.outcome ?? "—";
   return `#${event.sequence} ${event.action}  id=${String(id)}  ${String(reason)}`;
+}
+
+function requestLine(event: FloatDebugEvent) {
+  let total = "等待中";
+  if (typeof event.detail?.totalUntilRenderMs === "number") {
+    total = `${event.detail.totalUntilRenderMs}ms`;
+  } else if (event.outcome === "cache-hit") {
+    total = "缓存命中";
+  } else if (event.action.includes("cancelled")) {
+    total = "已取消";
+  } else if (event.action.includes("discarded")) {
+    total = "已丢弃";
+  } else if (event.action === "skip") {
+    total = "已跳过";
+  }
+
+  const backend = recordValue(event.detail?.backend);
+  const service = numberValue(backend?.serviceMs);
+  const wait = numberValue(backend?.resourceWaitMs);
+  return `#${event.sequence} ${event.source}.${event.action} · 总 ${total} · 后端 ${service ?? "—"}ms · 等待 ${wait ?? "—"}ms`;
 }
 
 async function copyReport() {
@@ -217,6 +238,19 @@ onBeforeUnmount(() => {
         </ol>
       </section>
 
+      <section class="request-section" aria-label="词典请求诊断">
+        <div class="section-heading">
+          <strong>词典请求诊断</strong>
+          <span>{{ requestSequence.length ? `最近 ${requestSequence.length} 条` : '尚无查词请求' }}</span>
+        </div>
+        <ol>
+          <li v-for="entry in requestSequence" :key="entry.sequence">
+            <code>{{ requestLine(entry) }}</code>
+            <details v-if="entry.detail"><summary>阶段字段</summary><code>{{ eventDetail(entry) }}</code></details>
+          </li>
+        </ol>
+      </section>
+
       <section class="gate-section" aria-label="最终门控">
         <strong>最终门控</strong>
         <span :class="{ on: gateEnabled('dictionary') }">词典</span>
@@ -277,7 +311,7 @@ onBeforeUnmount(() => {
 button,select,input { box-sizing: border-box; max-width: 100%; border: 1px solid #496170; border-radius: 5px; background: #20313c; color: #e2edf3; font: inherit; }button { padding: 3px 8px; cursor: pointer; }
 .live-scene { padding: 9px 10px; border-bottom: 1px solid #2b414d; background: #14222b; }.scene-heading,.section-heading { justify-content: space-between; margin-bottom: 7px; }.scene-heading span,.section-heading span { color: #8299a8; }.scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }.scene-grid > div { display: flex; align-items: baseline; gap: 7px; min-width: 0; }.scene-grid label,.geometry-grid label { flex: 0 0 auto; color: #75c7f2; }.scene-grid b { color: #ffcf7d; }.scene-grid strong { color: #fff; font-size: 13px; }.scene-grid span { color: #9db0bb; }.scene-grid code { overflow-wrap: anywhere; }
 .geometry-grid { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #2b414d; }.geometry-grid article { min-width: 0; padding: 8px 10px; }.geometry-grid article + article { border-left: 1px solid #2b414d; }.geometry-grid h3 { margin: 0 0 6px; color: #9adf93; font-size: 11px; }.geometry-grid p { display: flex; gap: 7px; margin: 3px 0; }.geometry-grid code { min-width: 0; color: #c1d0d8; overflow-wrap: anywhere; }
-.timer-section { padding: 8px 10px; border-bottom: 1px solid #2b414d; }.timer-section ol { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; margin: 0; padding: 0; list-style: none; }.timer-section li { min-width: 0; color: #b9cad4; }.timer-section code { overflow-wrap: anywhere; }.timer-scheduled code { color: #ffca6b; }.timer-expired code { color: #ff8a80; }.timer-cancel code { color: #8bd4ff; }
+.timer-section,.request-section { padding: 8px 10px; border-bottom: 1px solid #2b414d; }.timer-section ol { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; margin: 0; padding: 0; list-style: none; }.timer-section li,.request-section li { min-width: 0; color: #b9cad4; }.timer-section code,.request-section code { overflow-wrap: anywhere; }.timer-scheduled code { color: #ffca6b; }.timer-expired code { color: #ff8a80; }.timer-cancel code { color: #8bd4ff; }.request-section ol { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; max-height: 180px; overflow-y: auto; }.request-section li { display: grid; gap: 2px; }.request-section details summary { color: #718895; cursor: pointer; }.request-section details code { display: block; margin-top: 3px; color: #8fa6b3; font-size: 10px; }
 .gate-section { flex-wrap: wrap; gap: 6px; padding: 7px 10px; border-bottom: 1px solid #2b414d; }.gate-section > span { padding: 1px 6px; border: 1px solid #405560; border-radius: 999px; color: #718895; }.gate-section > span.on { border-color: #6bbd66; background: #213d2b; color: #a9e8a3; }.gate-section code { margin-left: auto; color: #9dafb9; overflow-wrap: anywhere; }
 .debug-config,.raw-state { flex: 0 0 auto; border-bottom: 1px solid #2b414d; }.debug-config > summary,.raw-state > summary { padding: 6px 10px; color: #8fa6b3; cursor: pointer; }.config-content { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; padding: 0 10px 8px; }.config-content label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }.config-content input[type="number"] { width: 66px; }
 .history-section { min-height: 120px; overflow: hidden; display: flex; flex: 1 1 auto; flex-direction: column; }.section-heading { flex: 0 0 auto; padding: 6px 10px; margin: 0; background: #14232c; }.event-list { flex: 1 1 auto; margin: 0; padding: 0; overflow: auto; list-style: none; }.event-list li { padding: 5px 8px; border-top: 1px solid #1f323d; }.event-main { gap: 7px; min-width: 0; }.event-main > span,.event-main time { flex: 0 0 auto; color: #6e8796; }.event-main b { flex: 0 0 auto; min-width: 52px; color: #70c4ee; }.event-main strong { min-width: 0; color: #d9e6ec; overflow-wrap: anywhere; }.event-main em { margin-left: auto; color: #ffcf7d; font-style: normal; text-align: right; }.event-list details summary { color: #718895; cursor: pointer; }.event-list details code { display: block; margin-top: 3px; color: #8fa6b3; font-size: 10px; overflow-wrap: anywhere; }

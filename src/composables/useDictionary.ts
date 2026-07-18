@@ -32,7 +32,7 @@ export function useDictionary() {
    * @param word 辞书形原形
    * 默认词典排在检索结果首位，其余已加载词典保持稳定顺序。
    */
-  async function lookupWord(word: string, reading?: string) {
+  async function lookupWord(word: string, reading?: string, background = false) {
     if (!word) {
       dictionaryResults.value = null;
       return null;
@@ -44,6 +44,7 @@ export function useDictionary() {
         word,
         reading,
         priorityList: priorityList(),
+        background,
       });
       dictionaryResults.value = results;
       return results;

@@ -17,17 +17,35 @@ struct BackendReadyEvent {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let run_started = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    println!("[时间戳] Rust tauri_app_lib::run 开始: {}", run_started);
+
     // 构建并启动 Tauri 桌面应用
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
+        .setup(move |app| {
+            let setup_entered = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis();
+            println!(
+                "[时间戳] Rust setup 阶段进入: {}, 距离 run 开始: {}ms",
+                setup_entered,
+                setup_entered - run_started
+            );
+
             // 先注册可等待的资源，让 Tauri 能立即进入事件循环并绘制前端。
             let engine = state::LazyResource::pending();
             let dictionary = state::LazyResource::pending();
+            let dictionary_background = state::LazyResource::pending();
             let analysis_cache = state::LazyResource::pending();
             app.manage(AppState {
                 engine: engine.clone(),
                 dictionary: dictionary.clone(),
+                dictionary_background: dictionary_background.clone(),
                 sessions: Mutex::new(HashMap::new()),
                 next_session_id: AtomicU64::new(1),
                 analysis_cache: analysis_cache.clone(),
@@ -38,6 +56,10 @@ pub fn run() {
             std::thread::Builder::new()
                 .name("kotoclip-backend-init".to_string())
                 .spawn(move || {
+                    // 主动避让 1.5 秒，让出 CPU 调度资源优先保障 WebView2 的建立与首屏渲染
+                    std::thread::sleep(std::time::Duration::from_millis(1500));
+
+                    let start_time = std::time::SystemTime::now();
                     let result = (|| -> Result<(), String> {
                         let paths = paths::AppPaths::resolve(&app_handle)
                             .map_err(|error| error.to_string())?;
@@ -49,6 +71,13 @@ pub fn run() {
                         )
                         .map_err(|error| error.to_string())?;
                         dictionary.initialize(Ok(dictionary_value));
+
+                        let background_dictionary_value = DictionaryService::open_existing(
+                            &paths.dictionary_dir,
+                            &paths.profile_db,
+                        )
+                        .map_err(|error| error.to_string())?;
+                        dictionary_background.initialize(Ok(background_dictionary_value));
 
                         let engine_value = Engine::new(
                             &paths.system_dictionary,
@@ -65,12 +94,17 @@ pub fn run() {
                         )
                         .map_err(|error| error.to_string())?;
                         analysis_cache.initialize(Ok(cache_value));
+
+                        if let Ok(elapsed) = start_time.elapsed() {
+                            println!("[开发日志] 后台分析引擎与词典就绪，耗时: {}ms", elapsed.as_millis());
+                        }
                         Ok(())
                     })();
 
                     if let Err(error) = result {
                         engine.initialize(Err(error.clone()));
                         dictionary.initialize(Err(error.clone()));
+                        dictionary_background.initialize(Err(error.clone()));
                         analysis_cache.initialize(Err(error.clone()));
                         let _ = app_handle.emit(
                             "backend-ready",
@@ -94,8 +128,8 @@ pub fn run() {
 
             Ok(())
         })
-        // 注册所有和前端 IPC 交互的 Command 处理器
         .invoke_handler(tauri::generate_handler![
+            commands::log_ui_timestamps,
             commands::open_document,
             commands::backend_status,
             commands::continue_document_analysis,

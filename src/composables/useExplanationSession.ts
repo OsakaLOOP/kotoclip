@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { AnnotatedToken, DictionaryLookup, GrammarTag } from "../types";
 import { snapshotRect, type RectSnapshot } from "../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS, scheduleCloseGrace } from "../explanation/closeGrace";
@@ -6,7 +6,7 @@ import { floatDebug } from "../explanation/floatDebug";
 import { deriveExplanationRenderGate } from "../explanation/interactionGate";
 import { morphemeLookupTarget, type MorphemeLookupTarget } from "../utils/dictionaryTarget";
 
-type LookupWord = (word: string, reading?: string) => Promise<DictionaryLookup | null>;
+type LookupWord = (word: string, reading?: string, background?: boolean) => Promise<DictionaryLookup | null>;
 type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
 
 const HOVER_LOOKUP_DELAY_MS = 48;
@@ -323,6 +323,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
   }
 
   async function resolveComponent(target: MorphemeLookupTarget) {
+    const resolveStartedAt = performance.now();
     const word = target.query;
     const generation = ++componentGeneration;
     const requestKey = lookupKey(word, target.lookupReading);
@@ -358,7 +359,8 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       });
       return;
     }
-    const cached = cachedLookup(word, target.lookupReading);
+    const cached = cachedLookup(word, target.lookupReading, false);
+    const invokeStartedAt = performance.now();
     const lookup = await cached.promise!;
     if (generation !== componentGeneration) {
       floatDebug.record("request", "component", "settle-discarded", "generation-mismatch", {
@@ -370,6 +372,8 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     }
     componentLookup.value = lookup;
     componentLoading.value = false;
+    await nextTick();
+    const renderSettledAt = performance.now();
     floatDebug.snapshot("request.component", {
       status: "accepted",
       generation,
@@ -380,11 +384,16 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       generation,
       key: requestKey,
       entries: lookup?.entries.length ?? 0,
+      intentDelayMs: Math.round(invokeStartedAt - resolveStartedAt),
+      invokeAndTransferMs: Math.round(renderSettledAt - invokeStartedAt),
+      totalUntilRenderMs: Math.round(renderSettledAt - resolveStartedAt),
+      backend: lookup?.timing ? { ...lookup.timing } : null,
     });
     publishSession("component-resolved", "network-or-ipc");
   }
 
   async function resolveWhole(token: AnnotatedToken, focused: MorphemeLookupTarget) {
+    const resolveStartedAt = performance.now();
     const lexical = token.bunsetsu.lexical_units[0];
     const sameAsComponent = lexical
       && lexical.base_form === focused.query
@@ -436,7 +445,8 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       return;
     }
     wholeLoading.value = true;
-    const cached = cachedLookup(lexical.base_form, lexical.reading);
+    const cached = cachedLookup(lexical.base_form, lexical.reading, true);
+    const invokeStartedAt = performance.now();
     const lookup = await cached.promise!;
     if (generation !== wholeGeneration) {
       floatDebug.record("request", "whole", "settle-discarded", "generation-mismatch", {
@@ -448,6 +458,8 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     }
     wholeLookup.value = lookup?.entries.length ? lookup : null;
     wholeLoading.value = false;
+    await nextTick();
+    const renderSettledAt = performance.now();
     floatDebug.snapshot("request.whole", {
       status: "accepted",
       generation,
@@ -458,28 +470,33 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       generation,
       key: requestKey,
       entries: lookup?.entries.length ?? 0,
+      intentDelayMs: Math.round(invokeStartedAt - resolveStartedAt),
+      invokeAndTransferMs: Math.round(renderSettledAt - invokeStartedAt),
+      totalUntilRenderMs: Math.round(renderSettledAt - resolveStartedAt),
+      backend: lookup?.timing ? { ...lookup.timing } : null,
     });
     publishSession("whole-resolved", "network-or-ipc");
   }
 
-  function cachedLookup(word: string, reading = "") {
+  function cachedLookup(word: string, reading = "", background = false) {
     const key = lookupKey(word, reading);
     if (resultCache.has(key)) {
       floatDebug.record("request", "cache", "result-hit", key);
       return { immediate: true as const, value: resultCache.get(key) ?? null };
     }
-    let promise = inflightCache.get(key);
+    const inflightKey = `${key}\u001f${background ? "background" : "interactive"}`;
+    let promise = inflightCache.get(inflightKey);
     if (!promise) {
       floatDebug.record("request", "cache", "start-inflight", key);
-      promise = lookupWord(word, reading || undefined).then((lookup) => {
+      promise = lookupWord(word, reading || undefined, background).then((lookup) => {
         resultCache.set(key, lookup);
-        inflightCache.delete(key);
+        inflightCache.delete(inflightKey);
         floatDebug.record("request", "cache", "store-result", key, {
           entries: lookup?.entries.length ?? 0,
         });
         return lookup;
       });
-      inflightCache.set(key, promise);
+      inflightCache.set(inflightKey, promise);
     } else {
       floatDebug.record("request", "cache", "join-inflight", key);
     }

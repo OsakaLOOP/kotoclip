@@ -9,6 +9,7 @@ use kotoclip_core::models::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
+use std::time::Instant;
 use tauri::{Emitter, State, Window};
 
 #[derive(Clone, Serialize)]
@@ -553,9 +554,21 @@ pub async fn lookup_word(
     word: String,
     reading: Option<String>,
     priority_list: Vec<String>,
+    background: Option<bool>,
 ) -> Result<DictionaryLookup, String> {
-    let dictionary = state.dictionary.lock().map_err(|e| e.to_string())?;
-    Ok(dictionary.lookup_word(&word, reading.as_deref(), &priority_list))
+    let started = Instant::now();
+    let dictionary = if background.unwrap_or(false) {
+        state.dictionary_background.lock().map_err(|e| e.to_string())?
+    } else {
+        state.dictionary.lock().map_err(|e| e.to_string())?
+    };
+    let resource_wait_ms = started.elapsed().as_millis() as u64;
+    let mut lookup = dictionary.lookup_word_profiled(&word, reading.as_deref(), &priority_list);
+    if let Some(timing) = &mut lookup.timing {
+        timing.resource_wait_ms = resource_wait_ms;
+        timing.service_ms = started.elapsed().as_millis() as u64;
+    }
+    Ok(lookup)
 }
 
 #[tauri::command]
@@ -572,9 +585,17 @@ pub async fn set_dictionary_order(
     order: Vec<String>,
 ) -> Result<DictionarySettings, String> {
     let dictionary = state.dictionary.lock().map_err(|error| error.to_string())?;
-    dictionary
+    let settings = dictionary
         .set_dictionary_order(&order)
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+    drop(dictionary);
+    state
+        .dictionary_background
+        .lock()
+        .map_err(|error| error.to_string())?
+        .set_dictionary_order(&order)
+        .map_err(|error| error.to_string())?;
+    Ok(settings)
 }
 
 #[tauri::command]
@@ -586,6 +607,13 @@ pub async fn choose_dictionary_target(
 ) -> Result<(), String> {
     let dictionary = state.dictionary.lock().map_err(|e| e.to_string())?;
     dictionary
+        .choose_dictionary_target(&query, reading.as_deref(), &target)
+        .map_err(|e| e.to_string())?;
+    drop(dictionary);
+    state
+        .dictionary_background
+        .lock()
+        .map_err(|e| e.to_string())?
         .choose_dictionary_target(&query, reading.as_deref(), &target)
         .map_err(|e| e.to_string())
 }
@@ -718,4 +746,11 @@ pub async fn export_selected(
 ) -> Result<String, String> {
     kotoclip_core::export::json::export_to_json(&source_text, selected_entries)
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn log_ui_timestamps(boot_time: u64, main_loaded: u64, app_mounted: u64) {
+    println!("[时间戳] UI 端 - HTML 开始响应: {}", boot_time);
+    println!("[时间戳] UI 端 - main.ts 开始执行: {}, 距离 HTML 响应: {}ms", main_loaded, main_loaded.saturating_sub(boot_time));
+    println!("[时间戳] UI 端 - App.vue 挂载完成: {}, 距离 HTML 响应: {}ms", app_mounted, app_mounted.saturating_sub(boot_time));
 }

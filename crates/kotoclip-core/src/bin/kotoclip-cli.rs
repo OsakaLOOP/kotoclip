@@ -316,7 +316,7 @@ fn dict_info(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 fn lookup(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let word = args.required("word").map_err(io::Error::other)?;
     let reading = args.options.get("reading").map(String::as_str);
-    let results = dictionary(args)?.lookup(word, reading);
+    let (results, timing) = dictionary(args)?.lookup_profiled(word, reading);
     if results.is_empty() {
         println!("未命中：{word}");
         return Ok(());
@@ -335,6 +335,9 @@ fn lookup(args: &CliArgs) -> Result<(), Box<dyn Error>> {
             entry.headword,
             definition
         );
+    }
+    if args.flags.contains("timing") {
+        println!("诊断耗时：{}", serde_json::to_string_pretty(&timing)?);
     }
     Ok(())
 }
@@ -2759,7 +2762,7 @@ fn print_help() {
 
 命令：
   dict-info
-  lookup --word WORD [--reading READING] [--full]
+  lookup --word WORD [--reading READING] [--full --timing]
   analyze (--text TEXT | --source PATH)
   grammar-inspect (--text TEXT | --source PATH)
   grammar-scan (--text TEXT | --source PATH) [--chapter TITLE]

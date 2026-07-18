@@ -14,7 +14,7 @@ pub mod transport;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryCandidate, DictionaryLookup, DictionarySettings, ExpressionAnnotation,
+    AnnotatedToken, DictionaryCandidate, DictionaryLookup, DictionaryLookupTiming, DictionarySettings, ExpressionAnnotation,
     ExpressionRule,
     ExpressionRulePreview, SegmentationCandidate, SegmentationChoice,
 };
@@ -38,7 +38,28 @@ pub struct DictionaryService {
     profile: ProfileEngine,
 }
 
+fn merge_dictionary_timing(target: &mut DictionaryLookupTiming, source: DictionaryLookupTiming) {
+    target.redirect_ms += source.redirect_ms;
+    target.sqlite_ms += source.sqlite_ms;
+    target.definition_ms += source.definition_ms;
+    target.presentation_ms += source.presentation_ms;
+    target.definition_cache_hits += source.definition_cache_hits;
+    target.definition_cache_misses += source.definition_cache_misses;
+    target.entries += source.entries;
+}
+
 impl DictionaryService {
+    /// 打开已准备好的词典目录。用于后台整词预取，避免与前台悬浮共用 SQLite 连接锁。
+    pub fn open_existing<P1: AsRef<Path>, P2: AsRef<Path>>(
+        dicts_dir: P1,
+        user_db_path: P2,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            dictionary: DictionaryEngine::new(dicts_dir)?,
+            profile: ProfileEngine::new(user_db_path)?,
+        })
+    }
+
     pub fn new_from_dictionary_sources<
         P1: AsRef<Path>,
         P2: AsRef<Path>,
@@ -60,11 +81,20 @@ impl DictionaryService {
         reading: Option<&str>,
         priority_list: &[String],
     ) -> DictionaryLookup {
+        self.lookup_word_profiled(word, reading, priority_list)
+    }
+
+    /// 悬浮词典的可观测查询入口；记录真实词典读取与富内容转换开销。
+    pub fn lookup_word_profiled(
+        &self,
+        word: &str,
+        reading: Option<&str>,
+        priority_list: &[String],
+    ) -> DictionaryLookup {
+        let started = Instant::now();
         let query_key = dictionary_query_key(word, reading);
-        let initial_entries = dictionary::aggregate::sort_definitions(
-            self.dictionary.lookup(word, reading),
-            priority_list,
-        );
+        let (initial_entries, mut timing) = self.dictionary.lookup_profiled(word, reading);
+        let initial_entries = dictionary::aggregate::sort_definitions(initial_entries, priority_list);
         let mut candidates = Vec::<DictionaryCandidate>::new();
         if is_kana(word) {
             for entry in initial_entries.iter().filter(|entry| entry.headword == word) {
@@ -92,17 +122,24 @@ impl DictionaryService {
                 .iter()
                 .any(|candidate| &candidate.target == target)
         });
-        let entries = selected_target
-            .as_deref()
-            .map(|target| self.dictionary.lookup(target, reading))
-            .filter(|entries| !entries.is_empty())
-            .unwrap_or_else(|| initial_entries.clone());
+        let entries = if let Some(target) = selected_target.as_deref() {
+            let (selected_entries, selected_timing) = self.dictionary.lookup_profiled(target, reading);
+            if !selected_entries.is_empty() {
+                merge_dictionary_timing(&mut timing, selected_timing);
+                selected_entries
+            } else {
+                initial_entries.clone()
+            }
+        } else {
+            initial_entries.clone()
+        };
         let mut dictionary_names = Vec::new();
         for entry in initial_entries.iter().chain(entries.iter()) {
             if !dictionary_names.contains(&entry.dict_name) {
                 dictionary_names.push(entry.dict_name.clone());
             }
         }
+        timing.service_ms = started.elapsed().as_millis() as u64;
         DictionaryLookup {
             query: word.to_string(),
             reading: reading.map(str::to_string),
@@ -110,6 +147,7 @@ impl DictionaryService {
             candidates,
             dictionary_names,
             entries: dictionary::aggregate::sort_definitions(entries, priority_list),
+            timing: Some(timing),
         }
     }
 
@@ -625,6 +663,7 @@ impl Engine {
             candidates,
             dictionary_names,
             entries: dictionary::aggregate::sort_definitions(entries, priority_list),
+            timing: None,
         }
     }
 

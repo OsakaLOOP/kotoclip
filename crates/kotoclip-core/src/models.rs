@@ -685,6 +685,23 @@ pub struct DictionaryLookup {
     pub candidates: Vec<DictionaryCandidate>,
     pub dictionary_names: Vec<String>,
     pub entries: Vec<DictEntry>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timing: Option<DictionaryLookupTiming>,
+}
+
+/// 悬浮查词端到端诊断数据。仅开发诊断消费，不参与词典语义与缓存键。
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DictionaryLookupTiming {
+    pub resource_wait_ms: u64,
+    pub service_ms: u64,
+    pub redirect_ms: u64,
+    pub sqlite_ms: u64,
+    pub definition_ms: u64,
+    pub presentation_ms: u64,
+    pub definition_cache_hits: usize,
+    pub definition_cache_misses: usize,
+    pub entries: usize,
 }
 
 /// 可在界面中展示和配置的本地词典集合。

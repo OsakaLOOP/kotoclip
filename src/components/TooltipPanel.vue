@@ -489,6 +489,7 @@ function handleDefinitionClick(event: MouseEvent) {
 .morphology-step b { color: #6c5ab0; font: 700 .66rem var(--font-ui); }
 .morphology-step span { color: var(--text-secondary); }
 .tooltip-section { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px; }
+.tooltip-header + :deep(.dictionary-choice-bar) { margin-top: 0; padding-top: 9px; border-top: 0; }
 .definition-viewport.is-loading { overflow: hidden; }
 .definition-skeleton { height: 100%; }
 .relation-list { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -496,7 +497,7 @@ button { border: 1px solid var(--border-color); border-radius: 999px; padding: 3
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 .dictionary-entry + .dictionary-entry { border-top: 1px dashed var(--border-color); margin-top: 12px; padding-top: 12px; }
 .dictionary-group + .dictionary-group { margin-top: 14px; }
-.dictionary-switcher { margin-bottom: 10px; }
+.dictionary-switcher { margin: 0 0 10px; padding-top: 0; border-top: 0; }
 .entry-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .entry-body { padding-top: 3px; }
 .entry-meta span, .empty-state { color: var(--text-muted); font: .75rem var(--font-ui); }

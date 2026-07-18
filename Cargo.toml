@@ -14,3 +14,8 @@ incremental = true
 [profile.release]
 debug = 0
 incremental = false
+
+# 开启所有开发渠道下第三方包的编译器优化，降低 debug 模式下 Vibrato 与 SQLite 的初始化开销。
+[profile.dev.package."*"]
+opt-level = 3
+

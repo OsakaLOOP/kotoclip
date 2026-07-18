@@ -1,5 +1,5 @@
 use crate::dictionary::{bundle, presentation};
-use crate::models::{DictEntry, DictionaryEntryRef};
+use crate::models::{DictEntry, DictionaryEntryRef, DictionaryLookupTiming};
 use flate2::read::ZlibDecoder;
 use rusqlite::{Connection, OpenFlags, Row};
 use serde::Serialize;
@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use unicode_normalization::UnicodeNormalization;
 
 const FORM_KEY: i64 = 0;
@@ -426,16 +427,27 @@ impl DictionaryEngine {
     }
 
     pub fn lookup(&self, headword: &str, reading: Option<&str>) -> Vec<DictEntry> {
+        self.lookup_profiled(headword, reading).0
+    }
+
+    /// 保留查询、定义块解压与富内容解析的真实耗时，供悬浮查词诊断使用。
+    pub fn lookup_profiled(
+        &self,
+        headword: &str,
+        reading: Option<&str>,
+    ) -> (Vec<DictEntry>, DictionaryLookupTiming) {
+        let started = Instant::now();
+        let mut timing = DictionaryLookupTiming::default();
         if headword.is_empty() {
-            return Vec::new();
+            return (Vec::new(), timing);
         }
         let normalized_reading = reading
             .filter(|value| !value.is_empty() && *value != "*")
             .map(normalize_reading);
         let mut redirected = Vec::new();
         let mut seen = HashSet::new();
-        for target in self.redirect_targets(headword) {
-            for entry in self.lookup_direct(&target, reading) {
+        for target in self.redirect_targets(headword, &mut timing) {
+            for entry in self.lookup_direct(&target, reading, &mut timing) {
                 if seen.insert(entry.entry_key.clone()) {
                     redirected.push(entry);
                 }
@@ -443,31 +455,40 @@ impl DictionaryEngine {
         }
         if !redirected.is_empty() {
             rank_readings(&mut redirected, normalized_reading.as_deref());
-            return redirected;
+            timing.entries = redirected.len();
+            timing.service_ms = started.elapsed().as_millis() as u64;
+            return (redirected, timing);
         }
 
-        let mut direct = self.lookup_direct(headword, reading);
+        let mut direct = self.lookup_direct(headword, reading, &mut timing);
         if direct.is_empty() {
             if let Some(target) = compatibility_redirect_target(headword) {
-                direct = self.lookup_direct(target, None);
+                direct = self.lookup_direct(target, None, &mut timing);
             }
         }
         rank_readings(&mut direct, normalized_reading.as_deref());
-        direct
+        timing.entries = direct.len();
+        timing.service_ms = started.elapsed().as_millis() as u64;
+        (direct, timing)
     }
 
-    fn lookup_direct(&self, headword: &str, reading: Option<&str>) -> Vec<DictEntry> {
-        let mut results = self.query_key(FORM_KEY, &normalize_form(headword), "headword");
+    fn lookup_direct(
+        &self,
+        headword: &str,
+        reading: Option<&str>,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<DictEntry> {
+        let mut results = self.query_key(FORM_KEY, &normalize_form(headword), "headword", timing);
         if results.is_empty() && is_kana_query(headword) {
-            results = self.query_key(READING_KEY, &normalize_reading(headword), "reading");
+            results = self.query_key(READING_KEY, &normalize_reading(headword), "reading", timing);
         }
         if results.is_empty() {
-            results = self.query_exact_headword(headword);
+            results = self.query_exact_headword(headword, timing);
         }
         if results.is_empty() {
             if let Some(reading) = reading.filter(|value| !value.is_empty()) {
                 for candidate in reading_candidates(headword, reading) {
-                    results = self.query_key(READING_KEY, &candidate, "reading");
+                    results = self.query_key(READING_KEY, &candidate, "reading", timing);
                     if !results.is_empty() {
                         break;
                     }
@@ -475,12 +496,13 @@ impl DictionaryEngine {
             }
         }
         if results.is_empty() {
-            results = self.lookup_fuzzy(headword);
+            results = self.lookup_fuzzy(headword, timing);
         }
         results
     }
 
-    fn redirect_targets(&self, headword: &str) -> Vec<String> {
+    fn redirect_targets(&self, headword: &str, timing: &mut DictionaryLookupTiming) -> Vec<String> {
+        let started = Instant::now();
         let normalized = normalize_form(headword);
         let mut targets = Vec::new();
         for database in &self.databases {
@@ -499,10 +521,17 @@ impl DictionaryEngine {
         }
         targets.sort();
         targets.dedup();
+        timing.redirect_ms += started.elapsed().as_millis() as u64;
         targets
     }
 
-    fn query_key(&self, kind: i64, value: &str, match_type: &str) -> Vec<DictEntry> {
+    fn query_key(
+        &self,
+        kind: i64,
+        value: &str,
+        match_type: &str,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<DictEntry> {
         let sql = "SELECT e.id, COALESCE(k.display_value, k.normalized_value), e.headword, \
                           e.definition_block_id, e.definition_offset, e.definition_length, \
                           (SELECT COALESCE(r.display_value, r.normalized_value) \
@@ -517,15 +546,18 @@ impl DictionaryEngine {
             let Ok(mut statement) = database.connection.prepare(sql) else {
                 continue;
             };
+            let query_started = Instant::now();
             let Ok(rows) = statement.query_map((kind, value), raw_entry) else {
                 continue;
             };
-            results.extend(self.materialize(database_index, rows.flatten(), match_type));
+            let rows = rows.flatten().collect::<Vec<_>>();
+            timing.sqlite_ms += query_started.elapsed().as_millis() as u64;
+            results.extend(self.materialize(database_index, rows.into_iter(), match_type, timing));
         }
         results
     }
 
-    fn query_exact_headword(&self, value: &str) -> Vec<DictEntry> {
+    fn query_exact_headword(&self, value: &str, timing: &mut DictionaryLookupTiming) -> Vec<DictEntry> {
         let sql = "SELECT e.id, COALESCE((\
                           SELECT COALESCE(k.display_value, k.normalized_value) \
                           FROM entry_keys k \
@@ -543,15 +575,18 @@ impl DictionaryEngine {
             let Ok(mut statement) = database.connection.prepare(sql) else {
                 continue;
             };
+            let query_started = Instant::now();
             let Ok(rows) = statement.query_map([value], raw_entry) else {
                 continue;
             };
-            results.extend(self.materialize(database_index, rows.flatten(), "headword"));
+            let rows = rows.flatten().collect::<Vec<_>>();
+            timing.sqlite_ms += query_started.elapsed().as_millis() as u64;
+            results.extend(self.materialize(database_index, rows.into_iter(), "headword", timing));
         }
         results
     }
 
-    fn lookup_fuzzy(&self, word: &str) -> Vec<DictEntry> {
+    fn lookup_fuzzy(&self, word: &str, timing: &mut DictionaryLookupTiming) -> Vec<DictEntry> {
         let query = format!("\"{}\"", word.replace('"', ""));
         let sql = "SELECT e.id, COALESCE((\
                           SELECT COALESCE(k.display_value, k.normalized_value) \
@@ -571,10 +606,13 @@ impl DictionaryEngine {
             let Ok(mut statement) = database.connection.prepare(sql) else {
                 continue;
             };
+            let query_started = Instant::now();
             let Ok(rows) = statement.query_map([&query], raw_entry) else {
                 continue;
             };
-            results.extend(self.materialize(database_index, rows.flatten(), "fuzzy"));
+            let rows = rows.flatten().collect::<Vec<_>>();
+            timing.sqlite_ms += query_started.elapsed().as_millis() as u64;
+            results.extend(self.materialize(database_index, rows.into_iter(), "fuzzy", timing));
         }
         results
     }
@@ -584,10 +622,11 @@ impl DictionaryEngine {
         database_index: usize,
         rows: impl Iterator<Item = RawEntry>,
         match_type: &str,
+        timing: &mut DictionaryLookupTiming,
     ) -> Vec<DictEntry> {
         let database = &self.databases[database_index];
         rows.filter_map(|row| {
-            let definition = self.load_definition(database_index, &row)?;
+            let definition = self.load_definition(database_index, &row, timing)?;
             Some(self.entry(
                 database_index,
                 database.name.clone(),
@@ -597,12 +636,19 @@ impl DictionaryEngine {
                 definition,
                 row.reading,
                 match_type,
+                timing,
             ))
         })
         .collect()
     }
 
-    fn load_definition(&self, database_index: usize, row: &RawEntry) -> Option<String> {
+    fn load_definition(
+        &self,
+        database_index: usize,
+        row: &RawEntry,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Option<String> {
+        let started = Instant::now();
         let key = (database_index, row.definition_block_id);
         let cached = self
             .definition_cache
@@ -610,8 +656,10 @@ impl DictionaryEngine {
             .ok()
             .and_then(|mut cache| cache.get(key));
         let block = if let Some(block) = cached {
+            timing.definition_cache_hits += 1;
             block
         } else {
+            timing.definition_cache_misses += 1;
             let database = &self.databases[database_index];
             let (expected_size, compressed): (usize, Vec<u8>) = database
                 .connection
@@ -636,7 +684,9 @@ impl DictionaryEngine {
         };
         let end = row.definition_offset.checked_add(row.definition_length)?;
         let bytes = block.get(row.definition_offset..end)?;
-        String::from_utf8(bytes.to_vec()).ok()
+        let definition = String::from_utf8(bytes.to_vec()).ok();
+        timing.definition_ms += started.elapsed().as_millis() as u64;
+        definition
     }
 
     fn entry(
@@ -649,7 +699,9 @@ impl DictionaryEngine {
         definition: String,
         structured_reading: Option<String>,
         match_type: &str,
+        timing: &mut DictionaryLookupTiming,
     ) -> DictEntry {
+        let started = Instant::now();
         let key = (database_index, entry_id);
         let presentation = self
             .presentation_cache
@@ -663,7 +715,7 @@ impl DictionaryEngine {
                 }
                 value
             });
-        DictEntry {
+        let entry = DictEntry {
             entry_key: format!("{dict_name}\u{1f}{entry_id}"),
             dict_name,
             headword,
@@ -674,7 +726,9 @@ impl DictionaryEngine {
             content_blocks: presentation.content_blocks,
             match_type: match_type.to_string(),
             links: presentation.links,
-        }
+        };
+        timing.presentation_ms += started.elapsed().as_millis() as u64;
+        entry
     }
 }
 

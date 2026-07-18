@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, onMounted } from "vue";
+import { invoke } from "@tauri-apps/api/core";
 import ReaderView from "./components/ReaderView.vue";
 import { floatDebug } from "./explanation/floatDebug";
 
@@ -7,6 +8,26 @@ const isInsider = import.meta.env.VITE_BUILD_CHANNEL === "insider";
 const FloatDebugOverlay = import.meta.env.DEV && floatDebug.enabled
   ? defineAsyncComponent(() => import("./components/dev/FloatDebugOverlay.vue"))
   : null;
+
+onMounted(() => {
+  const bootTime = (window as any).__boot_start_time || Date.now();
+  const mainTime = (window as any).__main_loaded_time || Date.now();
+  const appMountedTime = Date.now();
+
+  console.log(
+    "[时间戳] App.vue 根视图完全挂载: %d (延迟: %dms)",
+    appMountedTime,
+    appMountedTime - bootTime
+  );
+
+  invoke("log_ui_timestamps", {
+    bootTime,
+    mainLoaded: mainTime,
+    appMounted: appMountedTime,
+  }).catch((err) => {
+    console.error("无法发送时间戳到后端:", err);
+  });
+});
 </script>
 
 <template>

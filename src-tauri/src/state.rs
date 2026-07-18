@@ -100,6 +100,8 @@ impl<T> Deref for ResourceGuard<'_, T> {
 pub struct AppState {
     pub engine: LazyResource<Engine>,
     pub dictionary: LazyResource<DictionaryService>,
+    /// 后台整词预取使用独立 SQLite 连接，不能阻塞前台悬浮词条。
+    pub dictionary_background: LazyResource<DictionaryService>,
     pub sessions: Mutex<HashMap<String, DocumentSession>>,
     pub next_session_id: AtomicU64,
     pub analysis_cache: LazyResource<AnalysisCache>,
