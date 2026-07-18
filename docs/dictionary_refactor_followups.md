@@ -8,6 +8,19 @@
 
 原文事实：`docs/analysis/dictionary_refactor_source_notes.md`
 
+内部架构与差距：`docs/dictionary_internal_architecture.md`
+
+## 0. 架构硬化主线
+
+后续项目按 `dictionary_internal_architecture.md` 的四条主线组织：
+
+1. 有序 document blocks 与 residual 保真；
+2. adapter descriptor/context/typed diagnostics；
+3. per-dictionary Lookup group 与 sense scope；
+4. 受控 extension renderer registry。
+
+这些项目优先于继续增加零散 UI 特例。新样本仍可直接扩展现有适配器；一旦问题涉及未知片段丢失、源顺序无法表达或新内容需要专用组件，应归入上述架构主线。
+
 ## 1. 使用方式
 
 本文件只记录不要求推翻当前架构的后续工作。新增问题先判断所属层，再放入相应项目；不要把单词典 DOM 特例直接写进 Vue，也不要为追求自动消歧删除真实候选。
@@ -118,7 +131,7 @@
 
 ### 4.2 contextual/navigation/search 模式完全分流
 
-现状：模型已保留 `mode`，上下文路径使用严格 direct-first；主动搜索和导航的完整 UI/命令入口尚可进一步明确。
+现状：模型已保留 `mode`，planner 已采用 direct-first 和 dictionary-local alias；`mode` 尚未传入 `DictionaryEngine`，无 direct 结果时当前固定路径仍会尝试 reading fallback。主动搜索和导航也没有各自独立的可执行 policy。
 
 扩展方向：
 
@@ -144,7 +157,7 @@
 - 扩充 `deco` 新类型的明确 section 映射；
 - 处理更多历史语法、出处和外字容器；
 - 将来源词、短注与局部 note 的边界继续细化；
-- 为未知结构输出 adapter warning，而不是静默并入 definition。
+- 未知结构必须输出 adapter warning；静默并入 definition 不属于允许的降级路径。
 
 ### 5.2 小学馆
 

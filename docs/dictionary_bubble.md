@@ -2,7 +2,7 @@
 
 状态：**多词典查询与结构化气泡主要重构已完成（2026-07-18）**。
 
-本文是模块入口和日常维护指南。完整数据协议、设计理由和第一批验收见 [`dictionary_lookup_and_bubble_refactor.md`](dictionary_lookup_and_bubble_refactor.md)；后续增量项目见 [`dictionary_refactor_followups.md`](dictionary_refactor_followups.md)。
+本文是模块入口和日常维护指南。完整数据协议、设计理由和第一批验收见 [`dictionary_lookup_and_bubble_refactor.md`](dictionary_lookup_and_bubble_refactor.md)；内部执行模型、动态渲染边界和实现差距见 [`dictionary_internal_architecture.md`](dictionary_internal_architecture.md)；后续增量项目见 [`dictionary_refactor_followups.md`](dictionary_refactor_followups.md)。
 
 ## 1. 模块职责
 
@@ -26,7 +26,7 @@
 ## 2. 核心不变量
 
 1. occurrence 是最小内容身份，稳定到“词典 + 源 entry + 子记录”。
-2. 其他读音、表记、词条类型和同形异义是候选，不是“释义 N”。
+2. 其他读音、表记、词条类型和同形异义进入候选层；“释义 N”只对应同一 occurrence 内的真实 sense。
 3. 同一 occurrence 内的真实层级才进入 `DictionarySense.children`。
 4. 表头只消费当前 occurrence 的全局事实；局部 POS、语法和语域留在对应 sense。
 5. POS 是软证据。exact/compatible 可以加分，conflict 可以降序，但 unknown 或接近分数不得导致候选删除。
@@ -78,7 +78,7 @@
 - dictionary-local explicit alias 可以进入正文或候选；
 - 仅同音、fuzzy、无关汉字条、姓氏或拘束语素不得替代直接正文；
 - reading conflict、POS conflict 和 entry kind conflict 用于降序，不直接证明语义错误；
-- 每本词典最佳 occurrence 只有在分差明确且质量足够时才设置 `is_preferred`；并列时全部保留且 UI 显示未消歧。
+- 每本词典最佳 occurrence 只有在分差明确且质量足够时才设置 `is_preferred`；并列时全部保留。当前 Tooltip 通过无星标和多个 occurrence 选项隐式表达不确定性，独立“未消歧”状态标签列入后续改进。
 
 纯假名 navigation candidate 仍可很多，例如 `もう` 的汉字/拘束形候选。它们位于候选条，不与 canonical 副词正文混排。
 
@@ -143,7 +143,7 @@
 - `jae + ja_cn` 固定生成上下两行双语例句；
 - `subhead/subheadword` 进入 section item，可继续包含 sense tree；
 - 方块标签只有符合编号格式时才作为 marker，`成語/口語` 等作为 tag；
-- 外文 `[フ]silhouette` 等是 origin，不是 reading。
+- 外文 `[フ]silhouette` 等解析为 origin；reading 继续使用当前日文 occurrence 的读音。
 
 ### 6.3 Crown
 
@@ -174,7 +174,7 @@
 - 词典优先级来自用户设置，首项作为默认活动词典；
 - occurrence 切换只影响当前词典；
 - target 选择通过 Tauri 命令持久化，并重新查询目标；
-- 同形同读异义没有可靠证据时不显示星标，仍默认打开第一条供阅读，同时明确显示“未消歧”；
+- 同形同读异义没有可靠证据时不显示星标，仍默认打开第一条供阅读；显式 ambiguity status 由后续 per-dictionary Lookup group 提供；
 - 默认 `D` 循环词典，默认 `F` 循环 occurrence；同时存在 target 候选时使用 `Shift+F`；
 - 输入控件获得焦点时不响应气泡快捷键。
 

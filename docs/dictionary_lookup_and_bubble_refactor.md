@@ -10,9 +10,11 @@
 
 后续项目：`docs/dictionary_refactor_followups.md`
 
+内部执行模型、renderer 动态边界、适配器状态和实现差距见 `docs/dictionary_internal_architecture.md`。
+
 ## 1. 目标与边界
 
-本次重构同时处理本地词典查询、词典源 HTML 适配、统一中间结构、词典气泡表头与正文渲染。目标不是把不同词典压成一个“统一大词条”，而是在保留各词典事实边界的前提下，提供稳定、可解释、可切换的统一使用协议。
+本次重构同时处理本地词典查询、词典源 HTML 适配、统一中间结构、词典气泡表头与正文渲染。系统保留各词典独立的事实边界，并提供稳定、可解释、可切换的统一使用协议。
 
 必须满足以下约束：
 
@@ -23,7 +25,7 @@
 5. **上下文悬浮采用严格质量门。** 精确表记、结构化表记变体和词典明确别名可以进入正文；不得在表记失败后按读音返回任意同音词，也不得使用模糊搜索。主动搜索和词典内部导航可以显式扩大候选范围。
 6. **结构化解析失败可以降级，不能伪装成功。** 适配器必须保留安全清洗后的 fallback HTML，并报告解析覆盖情况；UI 不得把导航空条、严重错配条目或纯关系页当成完整释义。
 
-主要重构的完成标准不是穷尽所有词典细节，而是使新增样本只需要扩展词典适配规则、标签映射、查询证据或局部组件，不再改写 occurrence 边界、统一 IR、查询层职责和气泡信息架构。当前实现已达到这一标准；尚未覆盖的源格式和产品增强统一进入后续项目清单。
+主要重构的完成标准是：新增样本只需要扩展词典适配规则、标签映射、查询证据或局部组件，并保持 occurrence 边界、统一 IR、查询层职责和气泡信息架构稳定。当前实现已达到这一标准；尚未覆盖的源格式和产品增强统一进入后续项目清单。
 
 ## 2. 重构前根因
 
@@ -231,7 +233,7 @@ DictionaryExample
 - 日文和中文分别带 `lang=ja`、`lang=zh-CN`；
 - Crown 拼音默认不进入主例句，仅在适配诊断或将来“显示拼音”偏好中保留；
 - Crown 括号英文对应默认不进入主释义；只有缺少中文且英语补足实际语义时才作为 secondary gloss；
-- 小学馆 `jae` 与 `ja_cn` 必须拆为两行，而不是依赖 CSS 在同一 HTML 流中换行。
+- 小学馆 `jae` 与 `ja_cn` 必须结构化为两行；CSS 只负责两行的视觉排版。
 
 ### 5.5 标签、说明与关系
 
@@ -295,7 +297,7 @@ DictionaryExample
 4. 当前词典当前 occurrence 的结构化正文；
 5. 无法归属义项的 entry 级关系或诊断性 fallback。
 
-读音不是独立于 occurrence 的全局筛选器。若两个读音属于两个 occurrence，它们应出现在候选条，而不是先合并 entries 再按 reading 过滤。
+读音属于 occurrence 身份和查询证据。两个读音对应两个 occurrence 时，两者进入候选条并分别保留完整表头与正文。
 
 ### 7.2 表头形态
 
@@ -357,7 +359,8 @@ DictionaryContent
 | 阶段 | 状态 | 当前入口 |
 | --- | --- | --- |
 | 新模型和查询证据 | 完成 | `models.rs`、`dictionary/lookup.rs` |
-| direct-first、dictionary-local alias、bound marker 与质量门 | 完成 | `dictionary/lookup.rs` |
+| direct-first、dictionary-local alias、bound marker 与基础质量门 | 完成 | `dictionary/lookup.rs` |
+| contextual/navigation/search policy 分流 | 部分完成 | `mode` 已进入响应，尚未参数化 query planner |
 | Lookup 状态统一装配 | 完成 | `dictionary/lookup_state.rs` |
 | 小学馆 occurrence splitter | 完成 | `dictionary/adapters/shogakukan.rs` |
 | 大辞林/Crown/小学馆专用适配器 | 完成 | `dictionary/adapters/` |
@@ -389,7 +392,7 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- dict-bubble-html `
   --no-open --timing
 ```
 
-- `--json` 输出完整 `DictionaryLookup`，不是裸 `Vec<DictEntry>`；
+- `--json` 输出完整 `DictionaryLookup`；旧裸 `Vec<DictEntry>` 输出已经移除；
 - HTML 以单活动词典、occurrence 候选和当前表头为主视图，可在静态页面内切换词典与已加载 occurrence；
 - 候选 target 选择在真实应用中会重新查询，静态 HTML 只显示 target 与来源词典，不伪造未加载正文；
 - `--no-open` 用于批量固化，避免反复拉起浏览器。
@@ -460,7 +463,7 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- dict-bubble-html `
 出现以下情况才表示核心协议需要升级：
 
 - 一个源 occurrence 无法用稳定 ID 表示；
-- 真实语义层级无法用 sense tree/section 表示且不是单词典偶发格式；
+- 真实语义层级无法用 sense tree/section 表示，并且该形态在多个样本或词典中稳定出现；
 - 查询证据无法通过 additive evidence 表达，必须让适配器参与跨词典排序；
 - UI 必须重新解析原始 HTML 才能显示必要事实。
 
@@ -471,7 +474,7 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- dict-bubble-html `
 - 原文研究：18 个目标词、三本词典所有实际命中 occurrence；
 - Rust：Lookup 状态定向测试、`cargo check -p kotoclip-core`；
 - 前端：`vue-tsc --noEmit` 与 Vite production build；
-- CLI：完整 Lookup JSON、单活动词典 HTML、候选与未消歧状态；
+- CLI：完整 Lookup JSON、单活动词典 HTML、候选与未消歧状态；普通 Tooltip 的显式 ambiguity 标签尚待 per-dictionary group；
 - 明确保留的精度边界：大辞林音调尚未绑定到具体 sense、部分词典 POS 只能为 unknown、候选导航仍可能较多。
 
 这些边界均已有模型位置和诊断出口，不要求推翻当前架构。
