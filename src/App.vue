@@ -1,13 +1,38 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted } from "vue";
+import { defineAsyncComponent, onMounted, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import ReaderView from "./components/ReaderView.vue";
+import OnboardingExperience from "./components/onboarding/OnboardingExperience.vue";
 import { floatDebug } from "./explanation/floatDebug";
 
 const isInsider = import.meta.env.VITE_BUILD_CHANNEL === "insider";
+const onboardingStorageKey = "kotoclip:onboarding:v1";
+const onboardingPreview = new URLSearchParams(window.location.search).get("onboarding") === "1";
+
+function shouldShowOnboarding(): boolean {
+  if (onboardingPreview) return true;
+  try {
+    return window.localStorage.getItem(onboardingStorageKey) !== "completed";
+  } catch {
+    return true;
+  }
+}
+
+const showOnboarding = ref(shouldShowOnboarding());
 const FloatDebugOverlay = import.meta.env.DEV && floatDebug.enabled
   ? defineAsyncComponent(() => import("./components/dev/FloatDebugOverlay.vue"))
   : null;
+
+function completeOnboarding() {
+  if (!onboardingPreview) {
+    try {
+      window.localStorage.setItem(onboardingStorageKey, "completed");
+    } catch {
+      // 本地存储不可用时仍允许用户进入阅读器。
+    }
+  }
+  showOnboarding.value = false;
+}
 
 onMounted(() => {
   const bootTime = (window as any).__boot_start_time || Date.now();
@@ -36,9 +61,13 @@ onMounted(() => {
     不得商业利用或二次分发；如因此造成侵权，作者不负责任。
   </aside>
   <div class="reader-shell">
-    <ReaderView />
+    <ReaderView v-show="!showOnboarding" />
+    <OnboardingExperience
+      v-if="showOnboarding"
+      @complete="completeOnboarding"
+    />
   </div>
-  <FloatDebugOverlay v-if="FloatDebugOverlay" />
+  <FloatDebugOverlay v-if="FloatDebugOverlay && !showOnboarding" />
 </template>
 
 <style>
@@ -61,6 +90,8 @@ onMounted(() => {
 .reader-shell {
   flex: 1;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .reader-shell .reader-container {
