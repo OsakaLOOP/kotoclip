@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { GripVertical, MoveDown, MoveUp, X } from "@lucide/vue";
+import { ChevronDown, ChevronUp, GripVertical, X } from "@lucide/vue";
 import type { DictionarySettings } from "../../types";
 import {
   dictionaryShortcutKeyOptions,
@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const orderedDictionaries = ref<string[]>([]);
 const draggedDictionary = ref<string | null>(null);
-const dragTarget = ref<string | null>(null);
+const dragInsertIndex = ref<number | null>(null);
 watch(
   () => props.settings,
   (settings) => {
@@ -53,14 +53,54 @@ function moveByOffset(dictionary: string, offset: number) {
   if (target) moveDictionary(dictionary, target);
 }
 
-function handleDragStart(dictionary: string) {
-  draggedDictionary.value = dictionary;
+function resetDrag() {
+  draggedDictionary.value = null;
+  dragInsertIndex.value = null;
 }
 
-function handleDrop(target: string) {
-  if (draggedDictionary.value) moveDictionary(draggedDictionary.value, target);
-  draggedDictionary.value = null;
-  dragTarget.value = null;
+function handleDragStart(dictionary: string, event: DragEvent) {
+  draggedDictionary.value = dictionary;
+  dragInsertIndex.value = orderedDictionaries.value.indexOf(dictionary);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", dictionary);
+  }
+}
+
+function handleDragOver(index: number, event: DragEvent) {
+  if (!draggedDictionary.value) return;
+  const row = event.currentTarget as HTMLElement;
+  const bounds = row.getBoundingClientRect();
+  dragInsertIndex.value = event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+}
+
+function handleListDragOver(event: DragEvent) {
+  if (!draggedDictionary.value || event.target !== event.currentTarget) return;
+  dragInsertIndex.value = orderedDictionaries.value.length;
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+}
+
+function handleDrop() {
+  const dictionary = draggedDictionary.value;
+  const insertionIndex = dragInsertIndex.value;
+  if (!dictionary || insertionIndex === null) {
+    resetDrag();
+    return;
+  }
+  const order = [...orderedDictionaries.value];
+  const from = order.indexOf(dictionary);
+  if (from < 0) {
+    resetDrag();
+    return;
+  }
+  order.splice(from, 1);
+  const adjustedIndex = Math.max(0, Math.min(order.length, insertionIndex - (insertionIndex > from ? 1 : 0)));
+  order.splice(adjustedIndex, 0, dictionary);
+  resetDrag();
+  if (order.every((item, index) => item === orderedDictionaries.value[index])) return;
+  orderedDictionaries.value = order;
+  emit("reorder", order);
 }
 
 function updateShortcut(name: keyof DictionaryShortcutSettings, event: Event) {
@@ -80,24 +120,34 @@ function updateShortcut(name: keyof DictionaryShortcutSettings, event: Event) {
           <button type="button" class="close-button" aria-label="关闭词典设置" @click="emit('close')"><X :size="19" aria-hidden="true" /></button>
         </header>
         <p v-if="!hasDictionaries" class="empty-state">尚未加载本地词典。</p>
-        <ol v-else class="dictionary-list" aria-label="词典优先级">
+        <ol v-else class="dictionary-list" aria-label="词典优先级" @dragover.prevent="handleListDragOver" @drop.prevent="handleDrop">
           <li
             v-for="(dictionary, index) in orderedDictionaries"
             :key="dictionary"
-            :class="{ dragging: draggedDictionary === dictionary, 'drag-target': dragTarget === dictionary && draggedDictionary !== dictionary }"
-            draggable="true"
-            @dragstart="handleDragStart(dictionary)"
-            @dragend="draggedDictionary = null; dragTarget = null"
-            @dragover.prevent="dragTarget = dictionary"
-            @drop.prevent="handleDrop(dictionary)"
+            :class="{
+              dragging: draggedDictionary === dictionary,
+              'drop-before': draggedDictionary && dragInsertIndex === index,
+              'drop-after': draggedDictionary && dragInsertIndex === orderedDictionaries.length && index === orderedDictionaries.length - 1,
+            }"
+            @dragover.prevent.stop="handleDragOver(index, $event)"
+            @drop.prevent.stop="handleDrop"
           >
-            <GripVertical class="drag-handle" :size="17" aria-hidden="true" />
+            <span
+              class="drag-handle"
+              draggable="true"
+              :title="`拖动 ${dictionary} 调整优先级`"
+              aria-hidden="true"
+              @dragstart.stop="handleDragStart(dictionary, $event)"
+              @dragend="resetDrag"
+            ><GripVertical :size="17" aria-hidden="true" /></span>
             <span class="priority">{{ index + 1 }}</span>
-            <strong>{{ dictionary }}</strong>
-            <span v-if="index === 0" class="default-badge">默认</span>
+            <span class="dictionary-name">
+              <strong>{{ dictionary }}</strong>
+              <span v-if="index === 0" class="default-badge">默认</span>
+            </span>
             <div class="move-actions">
-              <button type="button" :disabled="index === 0" :aria-label="`上移 ${dictionary}`" @click="moveByOffset(dictionary, -1)"><MoveUp :size="14" aria-hidden="true" /></button>
-              <button type="button" :disabled="index === orderedDictionaries.length - 1" :aria-label="`下移 ${dictionary}`" @click="moveByOffset(dictionary, 1)"><MoveDown :size="14" aria-hidden="true" /></button>
+              <button type="button" :disabled="index === 0" :aria-label="`上移 ${dictionary}`" @click="moveByOffset(dictionary, -1)"><ChevronUp :size="17" :stroke-width="2.25" aria-hidden="true" /></button>
+              <button type="button" :disabled="index === orderedDictionaries.length - 1" :aria-label="`下移 ${dictionary}`" @click="moveByOffset(dictionary, 1)"><ChevronDown :size="17" :stroke-width="2.25" aria-hidden="true" /></button>
             </div>
           </li>
         </ol>
@@ -148,16 +198,22 @@ h2 { color: var(--text-primary); font-size: 1.06rem; }
 p { margin-top: 4px; color: var(--text-secondary); font-size: .82rem; }
 .close-button { display: grid; place-items: center; flex: 0 0 auto; border: 0; background: transparent; color: var(--text-muted); line-height: 1; cursor: pointer; }
 .dictionary-list { display: grid; gap: 8px; margin-top: 10px; padding: 0; list-style: none; }
-.dictionary-list li { display: grid; grid-template-columns: auto 24px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; min-height: 44px; padding: 8px 9px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: grab; transition: border-color .12s ease, background-color .12s ease, transform .12s ease; }
-.dictionary-list li:active { cursor: grabbing; }
+.dictionary-list li { position: relative; display: grid; grid-template-columns: 24px 24px minmax(0, 1fr) 64px; align-items: center; gap: 9px; min-height: 48px; padding: 8px 9px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); transition: border-color .12s ease, background-color .12s ease, transform .12s ease; }
 .dictionary-list li.dragging { opacity: .46; transform: scale(.985); }
-.dictionary-list li.drag-target { border-color: var(--accent-color); background: var(--accent-light); }
-.drag-handle { color: var(--text-muted); font-size: 1.1rem; letter-spacing: -2px; }
+.dictionary-list li.drop-before::before,
+.dictionary-list li.drop-after::after { content: ""; position: absolute; z-index: 2; right: 8px; left: 8px; height: 2px; border-radius: 999px; background: var(--accent-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-light) 82%, transparent); }
+.dictionary-list li.drop-before::before { top: -5px; }
+.dictionary-list li.drop-after::after { bottom: -5px; }
+.drag-handle { display: grid; width: 24px; height: 30px; place-items: center; border-radius: 6px; color: var(--text-muted); cursor: grab; user-select: none; }
+.drag-handle:hover { background: var(--bg-secondary); color: var(--accent-color); }
+.drag-handle:active { cursor: grabbing; }
 .priority { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: var(--bg-secondary); color: var(--text-muted); font: 700 .68rem var(--font-ui); }
-strong { overflow: hidden; color: var(--text-primary); font-size: .85rem; text-overflow: ellipsis; white-space: nowrap; }
+.dictionary-name { display: flex; min-width: 0; align-items: center; gap: 8px; }
+strong { min-width: 0; overflow: hidden; color: var(--text-primary); font-size: .85rem; text-overflow: ellipsis; white-space: nowrap; }
 .default-badge { padding: 2px 7px; border-radius: 999px; background: var(--accent-light); color: var(--accent-color); font: 700 .68rem var(--font-ui); }
-.move-actions { display: flex; gap: 3px; }
-.move-actions button { width: 24px; height: 24px; border: 1px solid var(--border-color); border-radius: 5px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.move-actions { display: inline-grid; grid-template-columns: repeat(2, 30px); gap: 4px; }
+.move-actions button { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--border-color); border-radius: 7px; padding: 0; background: transparent; color: var(--text-secondary); line-height: 0; cursor: pointer; }
+.move-actions button svg { display: block; }
 .move-actions button:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
 .move-actions button:disabled { opacity: .35; cursor: not-allowed; }
 .empty-state { margin-top: 10px; }
