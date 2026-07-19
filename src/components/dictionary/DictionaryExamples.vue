@@ -11,6 +11,7 @@ const pageSize = 2;
 const expanded = ref(false);
 const page = ref(0);
 const direction = ref<"next" | "previous">("next");
+const navigationSide = ref<"previous" | "next" | null>(null);
 const totalPages = computed(() => Math.max(1, Math.ceil(props.examples.length / pageSize)));
 const visibleExamples = computed(() => {
   if (expanded.value) return props.examples;
@@ -41,16 +42,34 @@ function showNext() {
 
 function toggleExpanded() {
   expanded.value = !expanded.value;
+  navigationSide.value = null;
+}
+
+function updateNavigationSide(event: PointerEvent) {
+  if (expanded.value || props.examples.length <= pageSize || event.pointerType === "touch") {
+    navigationSide.value = null;
+    return;
+  }
+  const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const activationWidth = Math.min(72, Math.max(48, bounds.width * 0.16));
+  const offset = event.clientX - bounds.left;
+  if (offset <= activationWidth && page.value > 0) {
+    navigationSide.value = "previous";
+  } else if (offset >= bounds.width - activationWidth && page.value < totalPages.value - 1) {
+    navigationSide.value = "next";
+  } else {
+    navigationSide.value = null;
+  }
 }
 </script>
 
 <template>
-  <section class="example-browser" :class="{ 'is-expanded': expanded, 'is-paged': examples.length > pageSize && !expanded }" :aria-label="`例句，共 ${examples.length} 条`">
+  <section class="example-browser" :class="{ 'is-expanded': expanded }" :aria-label="`例句，共 ${examples.length} 条`">
     <div v-if="examples.length > pageSize" class="example-browser__status" aria-live="polite">
       {{ expanded ? `共 ${examples.length} 条` : `${page + 1}/${totalPages}` }}
     </div>
 
-    <div class="example-browser__viewport">
+    <div class="example-browser__viewport" @pointermove="updateNavigationSide" @pointerleave="navigationSide = null">
       <Transition :name="transitionName" mode="out-in">
         <div :key="expanded ? 'expanded' : `page-${page}`" class="example-browser__page">
           <blockquote v-for="(example, index) in visibleExamples" :key="`${expanded ? index : page * pageSize + index}:${example.source.html}`" class="example-pair">
@@ -62,10 +81,10 @@ function toggleExpanded() {
       </Transition>
 
       <template v-if="examples.length > pageSize && !expanded">
-        <button type="button" class="example-browser__nav example-browser__nav--previous" :disabled="page === 0" aria-label="上一页例句" @click="showPrevious">
+        <button type="button" class="example-browser__nav example-browser__nav--previous" :class="{ 'is-visible': navigationSide === 'previous' }" :disabled="page === 0" aria-label="上一页例句" @click="showPrevious">
           <ChevronLeft :size="21" aria-hidden="true" />
         </button>
-        <button type="button" class="example-browser__nav example-browser__nav--next" :disabled="page === totalPages - 1" aria-label="下一页例句" @click="showNext">
+        <button type="button" class="example-browser__nav example-browser__nav--next" :class="{ 'is-visible': navigationSide === 'next' }" :disabled="page === totalPages - 1" aria-label="下一页例句" @click="showNext">
           <ChevronRight :size="21" aria-hidden="true" />
         </button>
       </template>

@@ -506,9 +506,6 @@ fn render_examples(examples: &[DictionaryExample], output: &mut String) {
         return;
     }
     output.push_str("<section class=\"example-browser preview-example-browser");
-    if examples.len() > 2 {
-        output.push_str(" is-paged");
-    }
     output.push_str("\" data-example-browser>");
     if examples.len() > 2 {
         output.push_str("<div class=\"example-browser__status\" aria-live=\"polite\"><span data-example-counter></span><span data-example-total hidden></span></div>");

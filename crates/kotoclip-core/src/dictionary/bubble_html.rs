@@ -673,6 +673,7 @@ const PREVIEW_SCRIPT: &str = r#"
     if (items.length <= 2) return;
     const previous = browser.querySelector('[data-example-previous]');
     const next = browser.querySelector('[data-example-next]');
+    const viewport = browser.querySelector('.example-browser__viewport');
     const toggle = browser.querySelector('[data-example-toggle]');
     const counter = browser.querySelector('[data-example-counter]');
     const total = browser.querySelector('[data-example-total]');
@@ -691,13 +692,26 @@ const PREVIEW_SCRIPT: &str = r#"
       total.hidden = !expanded;
       total.textContent = `共 ${items.length} 条`;
       browser.classList.toggle('is-expanded', expanded);
-      browser.classList.toggle('is-paged', !expanded);
+      if (expanded || previous.disabled) previous.classList.remove('is-visible');
+      if (expanded || next.disabled) next.classList.remove('is-visible');
       toggle.textContent = expanded ? '折叠' : '展开';
       toggle.setAttribute('aria-expanded', String(expanded));
       window.setTimeout(() => browser.classList.remove('is-changing'), 180);
     };
     previous.addEventListener('click', () => { if (page > 0) { page -= 1; render(); } });
     next.addEventListener('click', () => { if (page < pages - 1) { page += 1; render(); } });
+    viewport.addEventListener('pointermove', (event) => {
+      if (expanded || event.pointerType === 'touch') return;
+      const bounds = viewport.getBoundingClientRect();
+      const activationWidth = Math.min(72, Math.max(48, bounds.width * 0.16));
+      const offset = event.clientX - bounds.left;
+      previous.classList.toggle('is-visible', !previous.disabled && offset <= activationWidth);
+      next.classList.toggle('is-visible', !next.disabled && offset >= bounds.width - activationWidth);
+    });
+    viewport.addEventListener('pointerleave', () => {
+      previous.classList.remove('is-visible');
+      next.classList.remove('is-visible');
+    });
     toggle.addEventListener('click', () => { expanded = !expanded; render(); });
     render();
   });
