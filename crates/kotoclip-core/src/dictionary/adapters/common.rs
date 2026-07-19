@@ -505,7 +505,15 @@ fn render_examples(examples: &[DictionaryExample], output: &mut String) {
     if examples.is_empty() {
         return;
     }
-    output.push_str("<section class=\"example-browser preview-example-browser\" data-example-browser><div class=\"example-browser__page\">");
+    output.push_str("<section class=\"example-browser preview-example-browser");
+    if examples.len() > 2 {
+        output.push_str(" is-paged");
+    }
+    output.push_str("\" data-example-browser>");
+    if examples.len() > 2 {
+        output.push_str("<div class=\"example-browser__status\" aria-live=\"polite\"><span data-example-counter></span><span data-example-total hidden></span></div>");
+    }
+    output.push_str("<div class=\"example-browser__viewport\"><div class=\"example-browser__page\">");
     for (index, example) in examples.iter().enumerate() {
         output.push_str("<div data-example-index=\"");
         output.push_str(&index.to_string());
@@ -515,7 +523,11 @@ fn render_examples(examples: &[DictionaryExample], output: &mut String) {
     }
     output.push_str("</div>");
     if examples.len() > 2 {
-        output.push_str("<footer class=\"example-browser__controls\"><div class=\"example-browser__pager\" data-example-pager><button type=\"button\" data-example-previous aria-label=\"上一页例句\">‹</button><span class=\"example-browser__counter\" data-example-counter></span><button type=\"button\" data-example-next aria-label=\"下一页例句\">›</button></div><span class=\"example-browser__total\" data-example-total hidden></span><button type=\"button\" class=\"example-browser__toggle\" data-example-toggle aria-expanded=\"false\">展开</button></footer>");
+        output.push_str("<button type=\"button\" class=\"example-browser__nav example-browser__nav--previous\" data-example-previous aria-label=\"上一页例句\">‹</button><button type=\"button\" class=\"example-browser__nav example-browser__nav--next\" data-example-next aria-label=\"下一页例句\">›</button>");
+    }
+    output.push_str("</div>");
+    if examples.len() > 2 {
+        output.push_str("<footer class=\"example-browser__controls\"><button type=\"button\" class=\"example-browser__toggle\" data-example-toggle aria-expanded=\"false\">展开</button></footer>");
     }
     output.push_str("</section>");
 }

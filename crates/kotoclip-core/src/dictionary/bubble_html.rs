@@ -675,7 +675,6 @@ const PREVIEW_SCRIPT: &str = r#"
     const next = browser.querySelector('[data-example-next]');
     const toggle = browser.querySelector('[data-example-toggle]');
     const counter = browser.querySelector('[data-example-counter]');
-    const pager = browser.querySelector('[data-example-pager]');
     const total = browser.querySelector('[data-example-total]');
     const pages = Math.ceil(items.length / 2);
     let page = 0;
@@ -688,9 +687,11 @@ const PREVIEW_SCRIPT: &str = r#"
       previous.disabled = expanded || page === 0;
       next.disabled = expanded || page === pages - 1;
       counter.textContent = `${page + 1}/${pages}`;
-      pager.hidden = expanded;
+      counter.hidden = expanded;
       total.hidden = !expanded;
       total.textContent = `共 ${items.length} 条`;
+      browser.classList.toggle('is-expanded', expanded);
+      browser.classList.toggle('is-paged', !expanded);
       toggle.textContent = expanded ? '折叠' : '展开';
       toggle.setAttribute('aria-expanded', String(expanded));
       window.setTimeout(() => browser.classList.remove('is-changing'), 180);

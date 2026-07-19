@@ -533,7 +533,9 @@ fn parse_major_groups(
         *counter += 1;
         let mut group = DictionarySense {
             sense_id: format!("s{counter}"),
-            marker: Some(common::normalize_visible_text(&marker_element.text())),
+            marker: Some(normalize_sense_marker(&common::normalize_visible_text(
+                &marker_element.text(),
+            ))),
             ..Default::default()
         };
         let raw_segment = HtmlElement {
@@ -640,7 +642,9 @@ fn parse_rect_groups(
         *counter += 1;
         let mut group = DictionarySense {
             sense_id: format!("s{counter}"),
-            marker: Some(common::normalize_visible_text(&marker_element.text())),
+            marker: Some(normalize_sense_marker(&common::normalize_visible_text(
+                &marker_element.text(),
+            ))),
             ..Default::default()
         };
         let child_segment = HtmlElement {
@@ -946,10 +950,27 @@ fn marker_text(element: &HtmlElement) -> Option<String> {
     let value = common::normalize_visible_text(&element.text());
     let value = value.trim().trim_end_matches(['.', '．']).trim();
     if element.has_class("no") || is_marker(value) {
-        Some(value.to_string())
+        Some(normalize_sense_marker(value))
     } else {
         None
     }
+}
+
+fn normalize_sense_marker(value: &str) -> String {
+    let mut chars = value.chars();
+    let Some(character) = chars.next() else {
+        return String::new();
+    };
+    if chars.next().is_some() {
+        return value.to_string();
+    }
+    let number = match character {
+        '①'..='⑳' => character as u32 - '①' as u32 + 1,
+        '㉑'..='㉟' => character as u32 - '㉑' as u32 + 21,
+        '㊱'..='㊿' => character as u32 - '㊱' as u32 + 36,
+        _ => return value.to_string(),
+    };
+    number.to_string()
 }
 
 fn is_marker(value: &str) -> bool {
@@ -960,7 +981,7 @@ fn is_marker(value: &str) -> bool {
     if chars.next().is_some() {
         return false;
     }
-    matches!(first, '①'..='⑳' | '㋐'..='㋾' | '一'..='十')
+    matches!(first, '①'..='⑳' | '㉑'..='㉟' | '㊱'..='㊿' | '㋐'..='㋾' | '一'..='十')
 }
 
 fn body_inline_html(element: &HtmlElement) -> String {
@@ -1670,5 +1691,16 @@ mod tests {
             "definition_html={}",
             occurrence.definition_html
         );
+        assert_eq!(occurrence.senses[0].marker.as_deref(), Some("1"));
+    }
+
+    #[test]
+    fn normalizes_enclosed_numeric_markers_without_changing_other_levels() {
+        assert_eq!(normalize_sense_marker("①"), "1");
+        assert_eq!(normalize_sense_marker("⑳"), "20");
+        assert_eq!(normalize_sense_marker("㉑"), "21");
+        assert_eq!(normalize_sense_marker("㊿"), "50");
+        assert_eq!(normalize_sense_marker("一"), "一");
+        assert_eq!(normalize_sense_marker("㋐"), "㋐");
     }
 }
