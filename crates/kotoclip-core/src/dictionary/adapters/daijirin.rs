@@ -8,13 +8,11 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 static POS_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"[（(]((?:動|名|副|形|連|接|感|助|自|他|サ変)[^）)]{0,12})[）)]")
-        .unwrap()
+    Regex::new(r"[（(]((?:動|名|副|形|連|接|感|助|自|他|サ変)[^）)]{0,12})[）)]").unwrap()
 });
 static HEADER_NOTE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"【[^】]+】〔([^〕]+)〕").unwrap());
-static FORM_SCOPE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"《([^》]+)》").unwrap());
+static FORM_SCOPE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"《([^》]+)》").unwrap());
 static ORTHOGRAPHY_LINE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^「([^」]+)」は(.+)$").unwrap());
 static DERIVATION_RE: LazyLock<Regex> =
@@ -70,16 +68,20 @@ pub fn adapt(
                 .map(|form| DictionaryForm {
                     form: form.clone(),
                     reading: None,
-                    kind: if form == &display_form { "canonical" } else { "variant" }.to_string(),
+                    kind: if form == &display_form {
+                        "canonical"
+                    } else {
+                        "variant"
+                    }
+                    .to_string(),
                 })
                 .chain(
-                    (!indexed_form.is_empty()
-                        && !forms.iter().any(|form| form == indexed_form))
-                    .then(|| DictionaryForm {
-                        form: indexed_form.to_string(),
-                        reading: None,
-                        kind: "indexed".to_string(),
-                    }),
+                    (!indexed_form.is_empty() && !forms.iter().any(|form| form == indexed_form))
+                        .then(|| DictionaryForm {
+                            form: indexed_form.to_string(),
+                            reading: None,
+                            kind: "indexed".to_string(),
+                        }),
                 )
                 .collect(),
             ..Default::default()
@@ -107,11 +109,14 @@ pub fn adapt(
             values
         });
     if !accent_values.is_empty() {
-        occurrence.header.pronunciations.push(DictionaryPronunciation {
-            system: "dictionary_accent".to_string(),
-            label: "音调".to_string(),
-            value: accent_values.join(" / "),
-        });
+        occurrence
+            .header
+            .pronunciations
+            .push(DictionaryPronunciation {
+                system: "dictionary_accent".to_string(),
+                label: "音调".to_string(),
+                value: accent_values.join(" / "),
+            });
     }
     if let Some(note) = HEADER_NOTE_RE
         .captures(&visible)
@@ -123,7 +128,8 @@ pub fn adapt(
     }
     if occurrence.header.short_note.is_none() {
         if let Some(note) = header_bracket_note(&root) {
-            if note.contains("動詞化") || note.contains("形容詞化") || note.contains("名詞化") {
+            if note.contains("動詞化") || note.contains("形容詞化") || note.contains("名詞化")
+            {
                 occurrence.header.origin = Some(note);
             } else {
                 occurrence.header.short_note = Some(note);
@@ -142,9 +148,16 @@ pub fn adapt(
             continue;
         }
         if matches!(label.as_str(), "口語" | "古" | "俗" | "方言" | "専門")
-            && !occurrence.header.usage_tags.iter().any(|tag| tag.label == label)
+            && !occurrence
+                .header
+                .usage_tags
+                .iter()
+                .any(|tag| tag.label == label)
         {
-            occurrence.header.usage_tags.push(common::tag("usage", label));
+            occurrence
+                .header
+                .usage_tags
+                .push(common::tag("usage", label));
         }
     }
 
@@ -188,21 +201,22 @@ pub fn adapt(
         if occurrence.header.pos_tags.is_empty() {
             if let Some(captures) = POS_RE.captures(&visible) {
                 if let Some(value) = captures.get(1) {
-                    occurrence.header.pos_tags.push(common::tag("pos", value.as_str()));
+                    occurrence
+                        .header
+                        .pos_tags
+                        .push(common::tag("pos", value.as_str()));
                 }
             }
         }
         let mut containers = Vec::new();
         collect_top_pair_containers(&root, &mut containers);
         for container in containers {
-            occurrence
-                .senses
-                .extend(parse_pairs(
-                    container,
-                    example_form,
-                    placeholder_stem.as_deref(),
-                    &mut counter,
-                ));
+            occurrence.senses.extend(parse_pairs(
+                container,
+                example_form,
+                placeholder_stem.as_deref(),
+                &mut counter,
+            ));
         }
         if occurrence.senses.is_empty() {
             if let Some(sense) = parse_single_definition(
@@ -215,11 +229,7 @@ pub fn adapt(
             }
         }
     }
-    occurrence.sections = collect_deco_sections(
-        &root,
-        example_form,
-        placeholder_stem.as_deref(),
-    );
+    occurrence.sections = collect_deco_sections(&root, example_form, placeholder_stem.as_deref());
     occurrence.links = structural_links(&root);
     if definition.contains("⇒")
         && !occurrence.senses.iter().any(sense_has_substantive_content)
@@ -248,12 +258,12 @@ pub fn adapt(
             .warnings
             .push("未识别大辞林义项容器，已保留安全降级内容".to_string());
     }
-    if (definition.contains("—・") || definition.contains("━・"))
-        && placeholder_stem.is_none()
+    if (definition.contains("—・") || definition.contains("━・")) && placeholder_stem.is_none()
     {
-        occurrence.diagnostics.warnings.push(
-            "原文含活用语干占位，但未能从词头读取可靠活用边界".to_string(),
-        );
+        occurrence
+            .diagnostics
+            .warnings
+            .push("原文含活用语干占位，但未能从词头读取可靠活用边界".to_string());
     }
     vec![common::finish(occurrence, "daijirin", definition)]
 }
@@ -384,7 +394,10 @@ fn historical_conjugation(root: &HtmlElement) -> Option<(String, String)> {
                 }
                 let detail = common::normalize_visible_text(&detail);
                 let mut parts = detail.split_whitespace().collect::<Vec<_>>();
-                let reading = parts.pop().map(common::normalize_reading).unwrap_or_default();
+                let reading = parts
+                    .pop()
+                    .map(common::normalize_reading)
+                    .unwrap_or_default();
                 let conjugation = common::normalize_visible_text(&parts.join(" "));
                 if !conjugation.is_empty() && !reading.is_empty() {
                     return Some((conjugation, reading));
@@ -408,9 +421,9 @@ fn header_bracket_note(root: &HtmlElement) -> Option<String> {
     let end = paragraph
         .children
         .iter()
-        .position(|node| {
-            matches!(node, HtmlNode::Element(element) if has_direct_marker_pair(element))
-        })
+        .position(
+            |node| matches!(node, HtmlNode::Element(element) if has_direct_marker_pair(element)),
+        )
         .unwrap_or(paragraph.children.len());
     let prefix = HtmlElement {
         name: "prefix".to_string(),
@@ -510,7 +523,10 @@ fn parse_major_groups(
 
     let mut groups = Vec::new();
     for (position, start) in starts.iter().copied().enumerate() {
-        let end = starts.get(position + 1).copied().unwrap_or(paragraph.children.len());
+        let end = starts
+            .get(position + 1)
+            .copied()
+            .unwrap_or(paragraph.children.len());
         let HtmlNode::Element(marker_element) = &paragraph.children[start] else {
             continue;
         };
@@ -520,27 +536,22 @@ fn parse_major_groups(
             marker: Some(common::normalize_visible_text(&marker_element.text())),
             ..Default::default()
         };
-        let segment = HtmlElement {
+        let raw_segment = HtmlElement {
             name: "segment".to_string(),
             attrs: Default::default(),
             children: paragraph.children[start + 1..end].to_vec(),
         };
-        let segment_text = common::normalize_visible_text(&segment.text());
-        let mut pos_label = None;
-        if let Some(captures) = POS_RE.captures(&segment_text) {
-            if let Some(value) = captures.get(1) {
-                let label = common::normalize_visible_text(value.as_str());
-                group.tags.push(common::tag("pos", &label));
-                pos_label = Some(label);
-            }
+        let (segment, pos_label) = strip_leading_pos_line(&raw_segment);
+        if let Some(label) = &pos_label {
+            group.tags.push(common::tag("pos", label));
         }
+        let segment = truncate_at_auxiliary_section(&segment);
         let rect_starts = segment
             .children
             .iter()
             .enumerate()
             .filter_map(|(index, node)| {
-                matches!(node, HtmlNode::Element(element) if is_rect_deco(element))
-                    .then_some(index)
+                matches!(node, HtmlNode::Element(element) if is_rect_deco(element)).then_some(index)
             })
             .collect::<Vec<_>>();
         let definition_segment = if rect_starts.is_empty() {
@@ -560,7 +571,11 @@ fn parse_major_groups(
             }
         };
         for label in local_grammar_labels(&definition_segment) {
-            if !group.tags.iter().any(|tag| tag.kind == "grammar" && tag.label == label) {
+            if !group
+                .tags
+                .iter()
+                .any(|tag| tag.kind == "grammar" && tag.label == label)
+            {
                 group.tags.push(common::tag("grammar", label));
             }
         }
@@ -576,14 +591,8 @@ fn parse_major_groups(
                 ));
             }
         }
-        let (mut definition, notes) =
-            extract_trailing_notes(body_inline_html(&definition_segment));
+        let (definition, notes) = extract_trailing_notes(body_inline_html(&definition_segment));
         group.notes.extend(notes);
-        if let Some(label) = pos_label {
-            definition = definition
-                .replace(&format!("（{label}）"), "")
-                .replace(&format!("({label})"), "");
-        }
         let relations = sense_links(&definition_segment);
         let (definition, form_tags) = clean_definition(
             common::normalize_visible_text(&definition),
@@ -640,7 +649,11 @@ fn parse_rect_groups(
             children: segment.children[start + 1..end].to_vec(),
         };
         for label in local_grammar_labels(&child_segment) {
-            if !group.tags.iter().any(|tag| tag.kind == "grammar" && tag.label == label) {
+            if !group
+                .tags
+                .iter()
+                .any(|tag| tag.kind == "grammar" && tag.label == label)
+            {
                 group.tags.push(common::tag("grammar", label));
             }
         }
@@ -694,28 +707,25 @@ fn parse_single_definition(
     let paragraph = paragraphs
         .into_iter()
         .find(|paragraph| paragraph.attr("indent") == Some("0"))?;
-    let body_start = paragraph.children.iter().position(
-        |node| matches!(node, HtmlNode::Element(element) if element.name == "br"),
-    )? + 1;
-    let segment = HtmlElement {
+    let body_start = paragraph
+        .children
+        .iter()
+        .position(|node| matches!(node, HtmlNode::Element(element) if element.name == "br"))?
+        + 1;
+    let raw_segment = HtmlElement {
         name: "segment".to_string(),
         attrs: Default::default(),
         children: paragraph.children[body_start..].to_vec(),
     };
+    let (segment, pos_label) = strip_leading_pos_line(&raw_segment);
+    let segment = truncate_at_auxiliary_section(&segment);
     if has_major_deco(&segment) || has_direct_marker_pair(&segment) {
         return None;
     }
-    let (mut definition, notes) = extract_trailing_notes(body_inline_html(&segment));
+    let (definition, notes) = extract_trailing_notes(body_inline_html(&segment));
     let mut tags = Vec::new();
-    let segment_text = common::normalize_visible_text(&segment.text());
-    if let Some(captures) = POS_RE.captures(&segment_text) {
-        if let Some(value) = captures.get(1) {
-            let label = common::normalize_visible_text(value.as_str());
-            tags.push(common::tag("pos", &label));
-            definition = definition
-                .replace(&format!("（{label}）"), "")
-                .replace(&format!("({label})"), "");
-        }
+    if let Some(label) = pos_label {
+        tags.push(common::tag("pos", label));
     }
     let relations = sense_links(&segment);
     let (definition, form_tags) = clean_definition(
@@ -733,7 +743,11 @@ fn parse_single_definition(
         }
     }
     let internal_relation = internal_sense_reference(&definition);
-    if definition.is_empty() && examples.is_empty() && relations.is_empty() && internal_relation.is_none() {
+    if definition.is_empty()
+        && examples.is_empty()
+        && relations.is_empty()
+        && internal_relation.is_none()
+    {
         return None;
     }
     *counter += 1;
@@ -754,8 +768,64 @@ fn parse_single_definition(
 fn sense_has_substantive_content(sense: &DictionarySense) -> bool {
     !sense.definitions.is_empty()
         || !sense.glosses.is_empty()
+        || !sense.gloss_groups.is_empty()
         || !sense.examples.is_empty()
         || sense.children.iter().any(sense_has_substantive_content)
+}
+
+fn strip_leading_pos_line(segment: &HtmlElement) -> (HtmlElement, Option<String>) {
+    let Some(line_end) = segment
+        .children
+        .iter()
+        .position(|node| matches!(node, HtmlNode::Element(element) if element.name == "br"))
+    else {
+        return (segment.clone(), None);
+    };
+    let prefix = HtmlElement {
+        name: "pos-prefix".to_string(),
+        attrs: Default::default(),
+        children: segment.children[..line_end].to_vec(),
+    };
+    let prefix_text = common::normalize_visible_text(&prefix.text());
+    let Some(label) = POS_RE
+        .captures(&prefix_text)
+        .and_then(|captures| captures.get(1))
+        .map(|value| common::normalize_visible_text(value.as_str()))
+        .filter(|value| !value.is_empty())
+    else {
+        return (segment.clone(), None);
+    };
+    (
+        HtmlElement {
+            name: segment.name.clone(),
+            attrs: segment.attrs.clone(),
+            children: segment.children[line_end + 1..].to_vec(),
+        },
+        Some(label),
+    )
+}
+
+fn truncate_at_auxiliary_section(segment: &HtmlElement) -> HtmlElement {
+    let end = segment
+        .children
+        .iter()
+        .position(
+            |node| matches!(node, HtmlNode::Element(element) if is_auxiliary_section_deco(element)),
+        )
+        .unwrap_or(segment.children.len());
+    HtmlElement {
+        name: segment.name.clone(),
+        attrs: segment.attrs.clone(),
+        children: segment.children[..end].to_vec(),
+    }
+}
+
+fn is_auxiliary_section_deco(element: &HtmlElement) -> bool {
+    element.has_class("deco")
+        && matches!(
+            common::normalize_visible_text(&element.text()).as_str(),
+            "表記" | "慣用" | "派生" | "可能" | "補足" | "注意"
+        )
 }
 
 fn has_major_deco(element: &HtmlElement) -> bool {
@@ -803,9 +873,7 @@ fn has_direct_marker_pair(element: &HtmlElement) -> bool {
     let children = common::direct_child_elements(element).collect::<Vec<_>>();
     children.windows(2).any(|pair| {
         marker_text(pair[0]).is_some()
-            && (pair[1].has_class("lefta")
-                || pair[1].has_class("leftb")
-                || pair[1].name == "div")
+            && (pair[1].has_class("lefta") || pair[1].has_class("leftb") || pair[1].name == "div")
     })
 }
 
@@ -837,10 +905,7 @@ fn parse_pairs(
         };
         let (raw_definition, notes) = extract_trailing_notes(body_inline_html(body));
         sense.notes.extend(notes);
-        let (definition, form_tags) = clean_definition(
-            raw_definition,
-            !sense.relations.is_empty(),
-        );
+        let (definition, form_tags) = clean_definition(raw_definition, !sense.relations.is_empty());
         let definition = expand_placeholders(&definition, display_form, placeholder_stem);
         sense.tags.extend(form_tags);
         if let Some(relation) = internal_sense_reference(&definition) {
@@ -860,14 +925,12 @@ fn parse_pairs(
             collect_top_pair_containers(child, &mut nested);
         }
         for nested_container in nested {
-            sense
-                .children
-                .extend(parse_pairs(
-                    nested_container,
-                    display_form,
-                    placeholder_stem,
-                    counter,
-                ));
+            sense.children.extend(parse_pairs(
+                nested_container,
+                display_form,
+                placeholder_stem,
+                counter,
+            ));
         }
         promote_parenthetical_heading(&mut sense);
         senses.push(sense);
@@ -969,11 +1032,8 @@ fn is_local_grammar_label(value: &str) -> bool {
 }
 
 fn internal_sense_reference(definition: &str) -> Option<crate::models::DictionaryLink> {
-    let plain = common::normalize_visible_text(
-        &definition
-            .replace("<small>", "")
-            .replace("</small>", ""),
-    );
+    let plain =
+        common::normalize_visible_text(&definition.replace("<small>", "").replace("</small>", ""));
     let plain = plain
         .chars()
         .filter(|character| !character.is_whitespace())
@@ -1077,11 +1137,7 @@ fn placeholder_stem(root: &HtmlElement, display_form: &str) -> Option<String> {
         .filter(|value| !value.is_empty())
 }
 
-fn expand_placeholders(
-    value: &str,
-    display_form: &str,
-    placeholder_stem: Option<&str>,
-) -> String {
+fn expand_placeholders(value: &str, display_form: &str, placeholder_stem: Option<&str>) -> String {
     let stem = placeholder_stem.unwrap_or(display_form);
     value
         .replace("━・", stem)
@@ -1289,7 +1345,10 @@ fn structural_links(root: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
         let text = paragraph.text();
         if text.contains('☞') {
             for link in navigation_candidates(paragraph) {
-                if !links.iter().any(|item: &crate::models::DictionaryLink| item.target == link.target) {
+                if !links
+                    .iter()
+                    .any(|item: &crate::models::DictionaryLink| item.target == link.target)
+                {
                     links.push(link);
                 }
             }
@@ -1342,7 +1401,10 @@ fn navigation_candidates(paragraph: &HtmlElement) -> Vec<crate::models::Dictiona
             HtmlNode::Element(element)
                 if element.name == "a" && line_is_navigation && !line_has_candidate =>
             {
-                if let Some(target) = element.attr("href").and_then(|href| href.strip_prefix("entry://")) {
+                if let Some(target) = element
+                    .attr("href")
+                    .and_then(|href| href.strip_prefix("entry://"))
+                {
                     links.push(crate::models::DictionaryLink {
                         target: target.to_string(),
                         label: common::normalize_visible_text(&element.text()),
@@ -1379,7 +1441,10 @@ fn collect_deco_sections_in(
         };
         if deco.has_class("deco") {
             let label = common::normalize_visible_text(&deco.text());
-            if matches!(label.as_str(), "表記" | "慣用" | "派生" | "可能" | "補足" | "注意") {
+            if matches!(
+                label.as_str(),
+                "表記" | "慣用" | "派生" | "可能" | "補足" | "注意"
+            ) {
                 let end = element.children[index + 1..]
                     .iter()
                     .position(|sibling| {
@@ -1388,12 +1453,9 @@ fn collect_deco_sections_in(
                     .map(|offset| index + 1 + offset)
                     .unwrap_or(element.children.len());
                 let lines = render_section_lines(&element.children[index + 1..end]);
-                if let Some(section) = build_deco_section(
-                    &label,
-                    &lines,
-                    example_form,
-                    placeholder_stem,
-                ) {
+                if let Some(section) =
+                    build_deco_section(&label, &lines, example_form, placeholder_stem)
+                {
                     output.push(section);
                 }
             }
@@ -1448,11 +1510,7 @@ fn build_deco_section(
             let items = lines
                 .iter()
                 .flat_map(|line| line.split('・'))
-                .map(|phrase| {
-                    phrase
-                        .replace('━', example_form)
-                        .replace('—', example_form)
-                })
+                .map(|phrase| phrase.replace('━', example_form).replace('—', example_form))
                 .map(|phrase| common::normalize_visible_text(&phrase))
                 .filter(|phrase| !phrase.is_empty())
                 .map(|phrase| DictionarySectionItem {
@@ -1569,5 +1627,48 @@ fn build_deco_section(
                 items,
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn removes_pos_html_and_auxiliary_sections_from_major_definition() {
+        let definition = r#"<p indent="0"><span class="bss">た・つ</span>【<hy>立つ</hy>】<br/><span class="deco" type="invert-rect">一</span>（動<span class="small">タ</span>五）<br/><div><div class="no">①</div><div class="lefta">直立する。<span class="rei">「山に—・つ」</span></div></div><span class="deco" type="round-rect">可能</span>たてる<br/><span class="deco" type="round-rect">表記</span>「立つ」は直立の意。</p>"#;
+        let occurrence = adapt("立つ", "たつ【立つ】", Some("たつ"), definition)
+            .into_iter()
+            .next()
+            .expect("应生成 occurrence");
+        assert_eq!(occurrence.senses.len(), 1);
+        assert_eq!(occurrence.senses[0].tags[0].label, "動タ五");
+        assert!(occurrence.senses[0]
+            .definitions
+            .iter()
+            .all(|definition| !definition.html.contains("small")
+                && !definition.html.contains("可能")));
+        assert!(occurrence
+            .sections
+            .iter()
+            .any(|section| section.kind == "conjugation"));
+        assert!(occurrence
+            .sections
+            .iter()
+            .any(|section| section.kind == "orthography"));
+    }
+
+    #[test]
+    fn keeps_marker_pair_definition_without_indent_attribute() {
+        let definition = r#"<p><span class="bss">こ</span>【<hy>子</hy>】<br><div><div class="no">①</div><div class="lefta">子供。⇔<a href="entry://親">親</a>・<a href="entry://祖">祖</a>。</div></div></p>"#;
+        let occurrence = adapt("子", "こ【子】", Some("こ"), definition)
+            .into_iter()
+            .next()
+            .expect("应生成 occurrence");
+        assert!(
+            occurrence.definition_html.contains("子供"),
+            "definition_html={}",
+            occurrence.definition_html
+        );
     }
 }

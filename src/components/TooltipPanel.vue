@@ -201,18 +201,13 @@ function entryKindLabel(kind: string) {
   return ({ lexical: "词汇", phrase: "短语", surname: "姓氏", kanji: "汉字条", prefix: "接头成分", suffix: "接尾成分", bound_morpheme: "拘束成分", onomatopoeia: "拟声", navigation: "导航", redirect: "跳转" } as Record<string, string>)[kind] ?? "词条";
 }
 
-function plainHtml(value: string) {
-  return value.replace(/<[^>]*>/gu, "").replace(/&amp;/gu, "&").replace(/&lt;/gu, "<").replace(/&gt;/gu, ">");
-}
-
-function firstSenseSummary(senses: DictEntry["senses"]): string | undefined {
-  for (const sense of senses) {
-    const value = sense.glosses[0]?.html
-      || sense.definitions[0]?.html
-      || firstSenseSummary(sense.children);
-    if (value) return plainHtml(value);
-  }
-  return undefined;
+function occurrenceDiscriminator(entry: DictEntry) {
+  const labels = [
+    ...entry.header.pos_tags.map((tag) => tag.label),
+    ...entry.header.usage_tags.map((tag) => tag.label),
+    ...(entry.entry_kind !== "lexical" ? [entryKindLabel(entry.entry_kind)] : []),
+  ].filter(Boolean);
+  return labels.slice(0, 2).join(" / ");
 }
 
 function occurrenceLabel(entry: DictEntry) {
@@ -221,11 +216,14 @@ function occurrenceLabel(entry: DictEntry) {
     (candidate.header.display_form || candidate.headword) === form
     && (candidate.header.reading || candidate.reading) === (entry.header.reading || entry.reading)
   ));
-  const summary = firstSenseSummary(entry.senses);
-  const qualifier = peers.length > 1 && summary
-    ? summary
-    : entry.entry_kind !== "lexical" ? entryKindLabel(entry.entry_kind) : "";
-  return qualifier ? `${form} · ${qualifier}` : form;
+  if (peers.length <= 1) {
+    return entry.entry_kind !== "lexical" ? `${form} · ${entryKindLabel(entry.entry_kind)}` : form;
+  }
+  const discriminator = occurrenceDiscriminator(entry);
+  const discriminatorIsUnique = discriminator && peers.filter((peer) => occurrenceDiscriminator(peer) === discriminator).length === 1;
+  if (discriminatorIsUnique) return `${form} · ${discriminator}`;
+  const position = peers.findIndex((peer) => peer.occurrence_id === entry.occurrence_id);
+  return `${form} · 同形条目 ${position + 1}/${peers.length}`;
 }
 
 const occurrenceOptions = computed<DictionaryChoiceOption[]>(() => (

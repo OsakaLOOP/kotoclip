@@ -48,6 +48,7 @@ kbd { min-width: 18px; padding: 1px 4px 2px; border: 1px solid color-mix(in srgb
 .dictionary-choice-options { display: flex; gap: 6px; width: max-content; min-width: 100%; }
 .dictionary-choice-options.is-dense { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto); justify-content: start; }
 button { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-height: 29px; max-width: 190px; border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 10px; background: color-mix(in srgb, var(--bg-card) 88%, transparent); color: var(--accent-color); white-space: nowrap; cursor: pointer; }
+button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 button.active { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 32%, transparent); }
 button.unavailable { border-color: color-mix(in srgb, var(--border-color) 72%, transparent); background: color-mix(in srgb, var(--bg-card) 62%, transparent); color: var(--text-muted); opacity: .52; }

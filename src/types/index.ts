@@ -169,8 +169,10 @@ export interface DictionaryForm { form: string; reading?: string | null; kind: s
 export interface DictionaryPronunciation { system: string; label: string; value: string; }
 export interface DictionaryOccurrenceHeader { display_form: string; canonical_form?: string | null; reading?: string | null; historical_reading?: string | null; pronunciations: DictionaryPronunciation[]; scoped_forms: DictionaryForm[]; pos_tags: DictionaryTag[]; usage_tags: DictionaryTag[]; origin?: string | null; short_note?: string | null; }
 export interface DictionaryText { lang: string; qualifier?: string | null; html: string; }
+export interface DictionaryGlossClause { separator?: string | null; qualifier?: string | null; leading_tags: DictionaryTag[]; text: DictionaryText; trailing_tags: DictionaryTag[]; }
+export interface DictionaryGlossGroup { heading?: string | null; clauses: DictionaryGlossClause[]; }
 export interface DictionaryExample { source: DictionaryText; translation?: DictionaryText | null; note?: DictionaryText | null; }
-export interface DictionarySense { sense_id: string; marker?: string | null; heading?: string | null; glosses: DictionaryText[]; definitions: DictionaryText[]; tags: DictionaryTag[]; examples: DictionaryExample[]; notes: DictionaryText[]; relations: DictionaryLink[]; children: DictionarySense[]; }
+export interface DictionarySense { sense_id: string; marker?: string | null; heading?: string | null; glosses: DictionaryText[]; gloss_groups: DictionaryGlossGroup[]; definitions: DictionaryText[]; tags: DictionaryTag[]; examples: DictionaryExample[]; notes: DictionaryText[]; relations: DictionaryLink[]; children: DictionarySense[]; }
 export interface DictionarySectionItem { label?: string | null; label_html?: string | null; reading?: string | null; content: DictionaryText[]; tags: DictionaryTag[]; examples: DictionaryExample[]; senses: DictionarySense[]; relations: DictionaryLink[]; }
 export interface DictionarySection { kind: string; label?: string | null; items: DictionarySectionItem[]; }
 export interface DictionaryAdapterDiagnostics { coverage: string; warnings: string[]; omitted: string[]; }

@@ -1,24 +1,21 @@
 use super::{common, AdaptedOccurrence};
 use crate::dictionary::html::{parse_fragment, HtmlElement, HtmlNode};
 use crate::models::{
-    DictionaryAdapterDiagnostics, DictionaryExample, DictionaryForm, DictionarySection,
-    DictionarySectionItem, DictionarySense, DictionaryTag, DictionaryText,
+    DictionaryAdapterDiagnostics, DictionaryExample, DictionaryForm, DictionaryGlossClause,
+    DictionaryGlossGroup, DictionarySection, DictionarySectionItem, DictionarySense, DictionaryTag,
+    DictionaryText,
 };
 use regex::Regex;
 use std::sync::LazyLock;
 
-static BRACKET_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"[［\[]([^］\]]{1,16})[］\]]").unwrap());
 static ANGLE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[〈<]([^〉>]{1,16})[〉>]").unwrap());
-static PAREN_RUBY_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"([一-龯々〆ヵヶ]+)\(([ぁ-ゖァ-ヺー]+)\)").unwrap()
-});
+static PAREN_RUBY_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"([一-龯々〆ヵヶ]+)\(([ぁ-ゖァ-ヺー]+)\)").unwrap());
 static FOREIGN_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[\[［]([^\]］]+)[\]］](.+)$").unwrap());
-static SENSE_MARKER_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(?:\d+|[①-⑳]|[一二三四五六七八九十]+|[㋐-㋾]|[A-Z])$").unwrap()
-});
+static SENSE_MARKER_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(?:\d+|[①-⑳]|[一二三四五六七八九十]+|[㋐-㋾]|[A-Z])$").unwrap());
 
 struct SenseDraft {
     level: usize,
@@ -88,9 +85,8 @@ fn adapt_record(
     structured_reading: Option<&str>,
     fallback_source: &str,
 ) -> AdaptedOccurrence {
-    let display_form = common::normalize_visible_text(
-        &heading.text_excluding_classes(&["pinyin_h"]),
-    );
+    let display_form =
+        common::normalize_visible_text(&heading.text_excluding_classes(&["pinyin_h"]));
     let heading_annotation = heading
         .first_by_class("pinyin_h")
         .map(HtmlElement::text)
@@ -255,7 +251,11 @@ fn shogakukan_foreign_origin(value: &str) -> Option<String> {
     let captures = FOREIGN_RE.captures(value)?;
     let code = captures.get(1)?.as_str().trim();
     let word = captures.get(2)?.as_str().trim();
-    if word.is_empty() || !word.chars().any(|character| character.is_ascii_alphabetic()) {
+    if word.is_empty()
+        || !word
+            .chars()
+            .any(|character| character.is_ascii_alphabetic())
+    {
         return None;
     }
     let language = match code {
@@ -332,8 +332,9 @@ fn parse_sense_paragraphs(
                     .map(str::to_string)
                     .or_else(|| first_marker(element));
                 let heading_text = first_typed_text(element, "語義区分2");
-                let (glosses, mut residual, tags) =
+                let (gloss_groups, mut residual, tags) =
                     meaning_payload(element, marker.as_deref());
+                let glosses = legacy_glosses(&gloss_groups);
                 if let Some(heading) = &heading_text {
                     residual = remove_once(&residual, heading);
                 }
@@ -342,10 +343,7 @@ fn parse_sense_paragraphs(
                     residual = remove_once(&residual, &relation.label);
                 }
                 if !relations.is_empty() {
-                    residual = residual
-                        .replace('⇒', "")
-                        .replace('→', "")
-                        .replace('☞', "");
+                    residual = residual.replace('⇒', "").replace('→', "").replace('☞', "");
                     residual = trim_outer_punctuation(&residual);
                 }
                 let mut sense = DictionarySense {
@@ -353,6 +351,7 @@ fn parse_sense_paragraphs(
                     marker,
                     heading: heading_text,
                     glosses,
+                    gloss_groups,
                     tags,
                     relations,
                     ..Default::default()
@@ -368,7 +367,15 @@ fn parse_sense_paragraphs(
                         sense.definitions.push(common::text("ja", residual));
                     }
                 }
-                drafts.push(SenseDraft { level, sense });
+                if let Some(previous) = drafts.last_mut().filter(|previous| {
+                    sense.marker.is_some()
+                        && previous.level == level
+                        && previous.sense.marker == sense.marker
+                }) {
+                    merge_repeated_sense_group(&mut previous.sense, sense);
+                } else {
+                    drafts.push(SenseDraft { level, sense });
+                }
             }
             Some("example") => {
                 let source = first_named_text(element, "jae");
@@ -419,9 +426,7 @@ fn contains_kana(value: &str) -> bool {
     })
 }
 
-fn subhead_content(
-    paragraph: &HtmlElement,
-) -> (Option<DictionaryText>, Vec<DictionaryTag>) {
+fn subhead_content(paragraph: &HtmlElement) -> (Option<DictionaryText>, Vec<DictionaryTag>) {
     let mut value = common::normalize_visible_text(&paragraph.text());
     let mut tags = Vec::new();
     for class in ["white-square", "black-square"] {
@@ -461,8 +466,14 @@ fn subhead_label(value: &str) -> (String, Option<String>) {
         let Some(whole) = captures.get(0) else {
             continue;
         };
-        let base = captures.get(1).map(|value| value.as_str()).unwrap_or_default();
-        let reading = captures.get(2).map(|value| value.as_str()).unwrap_or_default();
+        let base = captures
+            .get(1)
+            .map(|value| value.as_str())
+            .unwrap_or_default();
+        let reading = captures
+            .get(2)
+            .map(|value| value.as_str())
+            .unwrap_or_default();
         html.push_str(&common::escape_html(&value[last..whole.start()]));
         plain.push_str(&value[last..whole.start()]);
         html.push_str("<ruby>");
@@ -482,10 +493,7 @@ fn subhead_label(value: &str) -> (String, Option<String>) {
 
 fn collect_main_paragraphs<'a>(element: &'a HtmlElement, output: &mut Vec<&'a HtmlElement>) {
     for child in common::direct_child_elements(element) {
-        if matches!(
-            child.attr("data-orgtag"),
-            Some("subhead" | "subheadword")
-        ) {
+        if matches!(child.attr("data-orgtag"), Some("subhead" | "subheadword")) {
             continue;
         }
         if child.name == "p" {
@@ -506,183 +514,272 @@ fn first_by_orgtag<'a>(element: &'a HtmlElement, tag: &str) -> Option<&'a HtmlEl
 fn meaning_payload(
     element: &HtmlElement,
     marker: Option<&str>,
-) -> (Vec<DictionaryText>, String, Vec<DictionaryTag>) {
-    let visible = common::normalize_visible_text(&element.text());
-    let mut working_visible = visible.clone();
-    if let Some(heading) = first_typed_text(element, "語義区分2") {
-        working_visible = remove_once(&working_visible, &heading);
-    }
+) -> (Vec<DictionaryGlossGroup>, String, Vec<DictionaryTag>) {
+    let mut builder = GlossGroupBuilder::default();
+    collect_gloss_nodes(&element.children, marker, &mut builder);
+    let groups = builder.finish();
     let mut tags = Vec::new();
-    let bracket_labels = BRACKET_RE
-        .captures_iter(&working_visible)
-        .filter_map(|captures| captures.get(1))
-        .map(|value| common::normalize_visible_text(value.as_str()))
-        .filter(|value| !value.is_empty())
-        .collect::<Vec<_>>();
-    for label in bracket_labels.iter().filter(|label| is_pos_label(label)) {
-        push_unique_tag(&mut tags, "pos", label);
-    }
-    for captures in ANGLE_RE.captures_iter(&working_visible) {
-        if let Some(value) = captures.get(1) {
-            let label = common::normalize_visible_text(value.as_str());
-            if !label.is_empty() {
-                push_unique_tag(&mut tags, "domain", &label);
+    for group in &groups {
+        for clause in &group.clauses {
+            for tag in clause.leading_tags.iter().chain(&clause.trailing_tags) {
+                push_unique_tag(&mut tags, &tag.kind, &tag.label);
             }
         }
     }
-    let mut inline_labels = Vec::new();
-    for class in ["white-square", "black-square"] {
-        let mut elements = Vec::new();
-        element.all_by_class(class, &mut elements);
-        for label_element in elements {
-            let label = common::normalize_visible_text(&label_element.text());
-            if label.is_empty() || marker == Some(label.as_str()) {
+    let residual = if groups.iter().any(|group| {
+        group
+            .clauses
+            .iter()
+            .any(|clause| !clause.text.html.is_empty())
+    }) {
+        String::new()
+    } else {
+        let mut value = common::normalize_visible_text(&element.text());
+        if let Some(marker) = marker {
+            value = remove_once(&value, marker);
+        }
+        for group in &groups {
+            if let Some(heading) = &group.heading {
+                value = remove_once(&value, heading);
+            }
+        }
+        trim_outer_punctuation(&value)
+    };
+    (groups, residual, tags)
+}
+
+#[derive(Default)]
+struct GlossGroupBuilder {
+    groups: Vec<DictionaryGlossGroup>,
+    current_group: DictionaryGlossGroup,
+    current_clause: DictionaryGlossClause,
+    pending_separator: Option<String>,
+}
+
+impl GlossGroupBuilder {
+    fn heading(&mut self, value: &str) {
+        self.flush_group();
+        let value = common::normalize_visible_text(value);
+        self.current_group.heading = (!value.is_empty()).then_some(value);
+    }
+
+    fn qualifier(&mut self, value: &str) {
+        self.flush_clause();
+        let value = common::normalize_visible_text(value);
+        self.current_clause.qualifier = (!value.is_empty()).then_some(value);
+    }
+
+    fn tag(&mut self, kind: &str, label: &str) {
+        let label = common::normalize_visible_text(label);
+        if label.is_empty() {
+            return;
+        }
+        let tag = common::tag(kind, label);
+        let target = if self.current_clause.text.html.trim().is_empty() {
+            &mut self.current_clause.leading_tags
+        } else {
+            &mut self.current_clause.trailing_tags
+        };
+        if !target
+            .iter()
+            .any(|existing| existing.kind == tag.kind && existing.label == tag.label)
+        {
+            target.push(tag);
+        }
+    }
+
+    fn text(&mut self, value: &str) {
+        self.current_clause.text.html.push_str(value);
+    }
+
+    fn separator(&mut self, value: char) {
+        self.flush_clause();
+        self.pending_separator = Some(value.to_string());
+    }
+
+    fn flush_clause(&mut self) {
+        let raw = normalize_gloss_text(&self.current_clause.text.html);
+        let has_tags = !self.current_clause.leading_tags.is_empty()
+            || !self.current_clause.trailing_tags.is_empty();
+        if raw.is_empty() && self.current_clause.qualifier.is_none() && !has_tags {
+            self.current_clause = DictionaryGlossClause::default();
+            return;
+        }
+        self.current_clause.separator = self.pending_separator.take();
+        self.current_clause.text = if raw.is_empty() {
+            DictionaryText::default()
+        } else {
+            common::text(if contains_kana(&raw) { "ja" } else { "zh-CN" }, raw)
+        };
+        self.current_group
+            .clauses
+            .push(std::mem::take(&mut self.current_clause));
+    }
+
+    fn flush_group(&mut self) {
+        self.flush_clause();
+        if self.current_group.heading.is_some() || !self.current_group.clauses.is_empty() {
+            self.groups.push(std::mem::take(&mut self.current_group));
+        }
+        self.pending_separator = None;
+    }
+
+    fn finish(mut self) -> Vec<DictionaryGlossGroup> {
+        self.flush_group();
+        self.groups
+            .into_iter()
+            .filter(|group| {
+                group.clauses.iter().any(|clause| {
+                    !clause.text.html.is_empty()
+                        || !clause.leading_tags.is_empty()
+                        || !clause.trailing_tags.is_empty()
+                })
+            })
+            .collect()
+    }
+}
+
+fn collect_gloss_nodes(nodes: &[HtmlNode], marker: Option<&str>, builder: &mut GlossGroupBuilder) {
+    for node in nodes {
+        match node {
+            HtmlNode::Text(text) => collect_gloss_text(text, builder),
+            HtmlNode::Element(element) if element.attr("type") == Some("語義区分2") => {
+                builder.heading(&element.text());
+            }
+            HtmlNode::Element(element)
+                if element.has_class("white-square") || element.has_class("black-square") =>
+            {
+                let label = common::normalize_visible_text(&element.text());
+                if !label.is_empty() && marker != Some(label.as_str()) {
+                    builder.tag(inline_tag_kind(&label), &label);
+                }
+            }
+            HtmlNode::Element(element) if element.name == "a" => {}
+            HtmlNode::Element(element) if element.name == "b" => {
+                let value = common::normalize_visible_text(&element.text());
+                if marker != Some(value.as_str()) {
+                    collect_gloss_nodes(&element.children, marker, builder);
+                }
+            }
+            HtmlNode::Element(element) if element.name == "br" => builder.text(" "),
+            HtmlNode::Element(element) => collect_gloss_nodes(&element.children, marker, builder),
+        }
+    }
+}
+
+fn collect_gloss_text(source: &str, builder: &mut GlossGroupBuilder) {
+    let mut buffer = String::new();
+    let mut depth = 0usize;
+    let chars = source.chars().collect::<Vec<_>>();
+    let mut index = 0usize;
+    while index < chars.len() {
+        let character = chars[index];
+        let bracket = match character {
+            '［' => Some(('］', "square")),
+            '[' => Some((']', "square")),
+            '〈' => Some(('〉', "angle")),
+            '〔' => Some(('〕', "round")),
+            _ => None,
+        };
+        if depth == 0 {
+            if let Some((closing, kind)) = bracket {
+                if let Some(relative_end) = chars[index + 1..]
+                    .iter()
+                    .position(|candidate| *candidate == closing)
+                {
+                    flush_gloss_buffer(&mut buffer, builder);
+                    let end = index + 1 + relative_end;
+                    let label = chars[index + 1..end].iter().collect::<String>();
+                    match kind {
+                        "square" if is_pos_label(&common::normalize_visible_text(&label)) => {
+                            builder.tag("pos", &label)
+                        }
+                        "square" => builder.qualifier(&label),
+                        "angle" => builder.tag("domain", &label),
+                        "round" if contains_kana(&label) => builder.heading(&label),
+                        _ => {
+                            buffer.push(character);
+                            buffer.push_str(&label);
+                            buffer.push(closing);
+                        }
+                    }
+                    index = end + 1;
+                    continue;
+                }
+            }
+            if matches!(character, '；' | ';') {
+                flush_gloss_buffer(&mut buffer, builder);
+                builder.separator('；');
+                index += 1;
                 continue;
             }
-            if !inline_labels.contains(&label) {
-                inline_labels.push(label.clone());
-            }
-            push_unique_tag(&mut tags, "register", &label);
         }
+        match character {
+            '（' | '(' => depth += 1,
+            '）' | ')' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+        buffer.push(character);
+        index += 1;
     }
+    flush_gloss_buffer(&mut buffer, builder);
+}
 
-    let bold_values = bold_values(element, marker);
-    let semantic_qualifiers = bracket_labels
-        .iter()
-        .any(|label| !is_pos_label(label));
-    let mut residual = strip_meaning_scaffolding(&working_visible, marker, &bold_values);
-    for label in &inline_labels {
-        residual = remove_once(&residual, label);
+fn flush_gloss_buffer(buffer: &mut String, builder: &mut GlossGroupBuilder) {
+    if !buffer.is_empty() {
+        builder.text(buffer);
+        buffer.clear();
     }
-    if !has_lexical_content(&residual) {
-        residual.clear();
-    }
-    let glosses = if semantic_qualifiers {
-        residual.clear();
-        qualified_visible_glosses(&working_visible, marker, &inline_labels)
+}
+
+fn normalize_gloss_text(value: &str) -> String {
+    common::normalize_visible_text(value)
+        .trim_matches(|character: char| {
+            character.is_whitespace() || matches!(character, '。' | '．' | '⇒' | '→' | '☞')
+        })
+        .to_string()
+}
+
+fn inline_tag_kind(label: &str) -> &'static str {
+    if is_pos_label(label) {
+        "pos"
+    } else if matches!(label, "成語" | "書面語" | "口語" | "俗語" | "方言") {
+        "register"
     } else {
-        let mut without_bold = working_visible.clone();
-        if let Some(marker) = marker {
-            without_bold = remove_once(&without_bold, marker);
-        }
-        without_bold = ANGLE_RE.replace_all(&without_bold, "").to_string();
-        without_bold = BRACKET_RE.replace_all(&without_bold, "").to_string();
-        for label in &inline_labels {
-            without_bold = remove_once(&without_bold, label);
-        }
-        for value in &bold_values {
-            without_bold = remove_once(&without_bold, value);
-        }
-        let has_parenthetical_group = working_visible.contains('（')
-            || working_visible.contains('(');
-        if !bold_values.is_empty()
-            && has_parenthetical_group
-            && !has_lexical_content(&without_bold)
+        "usage"
+    }
+}
+
+fn legacy_glosses(groups: &[DictionaryGlossGroup]) -> Vec<DictionaryText> {
+    groups
+        .iter()
+        .flat_map(|group| &group.clauses)
+        .filter(|clause| !clause.text.html.is_empty())
+        .map(|clause| {
+            let mut text = clause.text.clone();
+            text.qualifier = clause.qualifier.clone();
+            text
+        })
+        .collect()
+}
+
+fn merge_repeated_sense_group(target: &mut DictionarySense, mut source: DictionarySense) {
+    target.gloss_groups.append(&mut source.gloss_groups);
+    target.glosses.append(&mut source.glosses);
+    for tag in source.tags {
+        if !target
+            .tags
+            .iter()
+            .any(|existing| existing.kind == tag.kind && existing.label == tag.label)
         {
-            let mut phrase = working_visible.clone();
-            if let Some(marker) = marker {
-                phrase = remove_once(&phrase, marker);
-            }
-            phrase = ANGLE_RE.replace_all(&phrase, "").to_string();
-            phrase = BRACKET_RE.replace_all(&phrase, "").to_string();
-            for label in &inline_labels {
-                phrase = remove_once(&phrase, label);
-            }
-            residual.clear();
-            phrase
-                .split(['；', ';'])
-                .map(trim_outer_punctuation)
-                .filter(|value| !value.is_empty())
-                .map(|value| common::text("zh-CN", value))
-                .collect()
-        } else {
-            bold_values
-                .iter()
-                .map(|value| common::text("zh-CN", value))
-                .collect()
-        }
-    };
-    (glosses, residual, tags)
-}
-
-fn bold_values(element: &HtmlElement, marker: Option<&str>) -> Vec<String> {
-    let mut bold = Vec::new();
-    element.all_by_name("b", &mut bold);
-    let mut values = Vec::new();
-    for item in bold {
-        let value = common::normalize_visible_text(&item.text());
-        if value.is_empty() || marker == Some(value.as_str()) || values.contains(&value) {
-            continue;
-        }
-        values.push(value);
-    }
-    values
-}
-
-fn qualified_visible_glosses(
-    visible: &str,
-    marker: Option<&str>,
-    inline_labels: &[String],
-) -> Vec<DictionaryText> {
-    let mut source = visible.to_string();
-    if let Some(marker) = marker {
-        source = remove_once(&source, marker);
-    }
-    source = ANGLE_RE.replace_all(&source, "").to_string();
-    for label in inline_labels {
-        source = remove_once(&source, label);
-    }
-    let pos_brackets = BRACKET_RE
-        .captures_iter(&source)
-        .filter_map(|captures| {
-            let whole = captures.get(0)?;
-            let label = captures.get(1)?;
-            is_pos_label(&common::normalize_visible_text(label.as_str()))
-                .then_some(whole.as_str().to_string())
-        })
-        .collect::<Vec<_>>();
-    for bracket in pos_brackets {
-        source = remove_once(&source, &bracket);
-    }
-    let semantic = BRACKET_RE
-        .captures_iter(&source)
-        .filter_map(|captures| {
-            let whole = captures.get(0)?;
-            let label = captures.get(1)?;
-            let label = common::normalize_visible_text(label.as_str());
-            (!label.is_empty() && !is_pos_label(&label))
-                .then_some((whole.start(), whole.end(), label))
-        })
-        .collect::<Vec<_>>();
-    let mut glosses = Vec::new();
-    if let Some((first_start, _, _)) = semantic.first() {
-        push_visible_phrases(&source[..*first_start], None, &mut glosses);
-    }
-    for (index, (_, end, qualifier)) in semantic.iter().enumerate() {
-        let next_start = semantic
-            .get(index + 1)
-            .map(|(start, _, _)| *start)
-            .unwrap_or(source.len());
-        push_visible_phrases(&source[*end..next_start], Some(qualifier), &mut glosses);
-    }
-    glosses
-}
-
-fn push_visible_phrases(
-    source: &str,
-    qualifier: Option<&String>,
-    output: &mut Vec<DictionaryText>,
-) {
-    for phrase in split_top_level_phrases(source) {
-        let item = qualifier
-            .map(|label| common::qualified_text("zh-CN", label, &phrase))
-            .unwrap_or_else(|| common::text("zh-CN", &phrase));
-        if !output.iter().any(|existing| {
-            existing.qualifier == item.qualifier && existing.html == item.html
-        }) {
-            output.push(item);
+            target.tags.push(tag);
         }
     }
+    target.definitions.append(&mut source.definitions);
+    target.examples.append(&mut source.examples);
+    target.notes.append(&mut source.notes);
+    target.relations.append(&mut source.relations);
+    target.children.append(&mut source.children);
 }
 
 fn split_top_level_phrases(source: &str) -> Vec<String> {
@@ -716,53 +813,104 @@ fn split_top_level_phrases(source: &str) -> Vec<String> {
     phrases
 }
 
-fn strip_meaning_scaffolding(
-    visible: &str,
-    marker: Option<&str>,
-    bold_values: &[String],
-) -> String {
-    let mut residual = visible.to_string();
-    if let Some(marker) = marker {
-        residual = remove_once(&residual, marker);
-    }
-    residual = ANGLE_RE.replace_all(&residual, "").to_string();
-    residual = BRACKET_RE.replace_all(&residual, "").to_string();
-    for value in bold_values {
-        residual = remove_once(&residual, value);
-    }
-    let residual = trim_outer_punctuation(&residual);
-    has_lexical_content(&residual)
-        .then_some(residual)
-        .unwrap_or_default()
-}
-
 fn trim_outer_punctuation(value: &str) -> String {
     common::normalize_visible_text(value)
         .trim_matches(|character: char| {
             character.is_whitespace()
-                || matches!(
-                    character,
-                    '，' | ',' | '；' | ';' | '。' | '．' | '、'
-                )
+                || matches!(character, '，' | ',' | '；' | ';' | '。' | '．' | '、')
         })
         .to_string()
-}
-
-fn has_lexical_content(value: &str) -> bool {
-    value.chars().any(|character| character.is_alphanumeric())
 }
 
 fn is_pos_label(label: &str) -> bool {
     matches!(
         label,
-        "名" | "名詞" | "代" | "代名詞" | "動" | "自動" | "他動" | "形" | "形動"
-            | "副" | "連体" | "連体詞" | "接続" | "接続詞" | "感" | "感動詞" | "助"
-            | "助詞" | "助動" | "助動詞" | "接頭" | "接頭語" | "接尾" | "接尾語"
+        "名" | "名詞"
+            | "代"
+            | "代名詞"
+            | "動"
+            | "自動"
+            | "他動"
+            | "形"
+            | "形動"
+            | "副"
+            | "連体"
+            | "連体詞"
+            | "接続"
+            | "接続詞"
+            | "感"
+            | "感動詞"
+            | "助"
+            | "助詞"
+            | "助動"
+            | "助動詞"
+            | "接頭"
+            | "接頭語"
+            | "接尾"
+            | "接尾語"
     )
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn adapt_one(definition: &str) -> AdaptedOccurrence {
+        adapt("测试", "测试", None, definition)
+            .into_iter()
+            .next()
+            .expect("应生成 occurrence")
+    }
+
+    #[test]
+    fn keeps_parenthetical_translation_and_commas_in_one_clause() {
+        let occurrence = adapt_one(
+            r#"<h3>振り返る<span class="pinyin_h">ふりかえる</span></h3><section class="description"><p data-orgtag="meaning" level="2" no="1"><b>1</b><span type="語義区分2">〔後ろを〕</span><b>回头看</b>，<b>回过头去</b>（<b>看</b>），<b>向后</b>（<b>看</b>）．</p></section>"#,
+        );
+        let group = &occurrence.senses[0].gloss_groups[0];
+        assert_eq!(group.heading.as_deref(), Some("〔後ろを〕"));
+        assert_eq!(group.clauses.len(), 1);
+        assert_eq!(
+            group.clauses[0].text.html,
+            "回头看，回过头去（看），向后（看）"
+        );
+        assert!(occurrence.senses[0].definitions.is_empty());
+    }
+
+    #[test]
+    fn preserves_internal_qualifiers_semicolons_and_trailing_tags() {
+        let occurrence = adapt_one(
+            r#"<h3>鍵<span class="pinyin_h">かぎ</span></h3><section class="description"><p data-orgtag="meaning" level="2" no="1"><b>1</b><span type="語義区分2">〔ドアなどの〕</span>［キー］<b>钥匙</b>；［錠前］<b>锁</b><span class="white-square">成語</span>．</p></section>"#,
+        );
+        let clauses = &occurrence.senses[0].gloss_groups[0].clauses;
+        assert_eq!(clauses.len(), 2);
+        assert_eq!(clauses[0].qualifier.as_deref(), Some("キー"));
+        assert_eq!(clauses[0].text.html, "钥匙");
+        assert_eq!(clauses[1].separator.as_deref(), Some("；"));
+        assert_eq!(clauses[1].qualifier.as_deref(), Some("錠前"));
+        assert_eq!(clauses[1].text.html, "锁");
+        assert_eq!(clauses[1].trailing_tags[0].label, "成語");
+    }
+
+    #[test]
+    fn merges_repeated_marker_paragraphs_as_multiple_groups() {
+        let occurrence = adapt_one(
+            r#"<h3>キック<span class="pinyin_h">きっく</span></h3><section class="description"><p data-orgtag="meaning" level="2" no="1"><b>1</b><span type="語義区分2">〔球技などで〕</span><b>踢球</b>．</p><p data-orgtag="meaning" level="2" no="1"><b>1</b><span type="語義区分2">〔反動・反発〕</span>反弹；反冲．</p></section>"#,
+        );
+        assert_eq!(occurrence.senses.len(), 1);
+        assert_eq!(occurrence.senses[0].gloss_groups.len(), 2);
+        assert_eq!(
+            occurrence.senses[0].gloss_groups[1].heading.as_deref(),
+            Some("〔反動・反発〕")
+        );
+    }
+}
+
 fn push_unique_tag(tags: &mut Vec<DictionaryTag>, kind: &str, label: &str) {
-    if !tags.iter().any(|tag| tag.kind == kind && tag.label == label) {
+    if !tags
+        .iter()
+        .any(|tag| tag.kind == kind && tag.label == label)
+    {
         tags.push(common::tag(kind, label));
     }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DictEntry, DictionaryLink } from "../../types";
 import DictionarySenseTree from "./DictionarySenseTree.vue";
+import DictionaryExamples from "./DictionaryExamples.vue";
 import "../../styles/dictionaries/generic.css";
 import "../../styles/dictionaries/daijirin.css";
 import "../../styles/dictionaries/shogakukan.css";
@@ -32,10 +33,7 @@ function relationKey(link: DictionaryLink) {
           </header>
           <div v-for="(content, contentIndex) in item.content" :key="`content:${contentIndex}`" class="dictionary-section__content" :lang="content.lang || undefined" v-html="content.html"></div>
           <DictionarySenseTree v-if="item.senses.length" :senses="item.senses" @navigate="emit('navigate', $event)" />
-          <blockquote v-for="(example, exampleIndex) in item.examples" :key="`example:${exampleIndex}`" class="example-pair">
-            <div class="example-source" :lang="example.source.lang || 'ja'" v-html="example.source.html"></div>
-            <div v-if="example.translation" class="example-translation" :lang="example.translation.lang || 'zh-CN'" v-html="example.translation.html"></div>
-          </blockquote>
+          <DictionaryExamples v-if="item.examples.length" :examples="item.examples" />
           <div v-if="item.relations.length" class="sense-relations">
             <button v-for="link in item.relations" :key="relationKey(link)" type="button" :data-relation="link.relation" @click="emit('navigate', link.target)">{{ link.label || link.target }}</button>
           </div>

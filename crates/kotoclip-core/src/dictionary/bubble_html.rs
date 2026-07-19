@@ -1,6 +1,4 @@
-use crate::models::{
-    DictEntry, DictionaryLink, DictionaryLookup, DictionarySense,
-};
+use crate::models::{DictEntry, DictionaryLink, DictionaryLookup};
 
 const GENERIC_CSS: &str = include_str!("../../../../src/styles/dictionaries/generic.css");
 const DAIJIRIN_CSS: &str = include_str!("../../../../src/styles/dictionaries/daijirin.css");
@@ -200,7 +198,9 @@ fn render_entry(entry: &DictEntry, unresolved: bool, active: bool, html: &mut St
     html.push_str(&escape_attr(&entry.occurrence_id));
     html.push_str("\">");
     render_entry_header(entry, unresolved, html);
-    html.push_str("<div class=\"preview-entry-body\"><div class=\"dictionary-content dictionary-content--");
+    html.push_str(
+        "<div class=\"preview-entry-body\"><div class=\"dictionary-content dictionary-content--",
+    );
     html.push_str(&escape_attr(&entry.style_profile));
     html.push_str("\">");
     if !entry.definition_html.trim().is_empty() {
@@ -258,7 +258,11 @@ fn render_entry_header(entry: &DictEntry, unresolved: bool, html: &mut String) {
         html.push_str(entry_kind_label(&entry.entry_kind));
         html.push_str("</span>");
     }
-    if let Some(hint) = entry.match_evidence.as_ref().and_then(|item| match_hint(&item.kind)) {
+    if let Some(hint) = entry
+        .match_evidence
+        .as_ref()
+        .and_then(|item| match_hint(&item.kind))
+    {
         html.push_str("<span class=\"preview-tag\" data-kind=\"match\">");
         html.push_str(hint);
         html.push_str("</span>");
@@ -352,9 +356,16 @@ fn dictionary_groups(lookup: &DictionaryLookup) -> Vec<(String, Vec<&DictEntry>)
         .collect()
 }
 
-fn default_entry<'a>(lookup: &DictionaryLookup, entries: &[&'a DictEntry]) -> Option<&'a DictEntry> {
+fn default_entry<'a>(
+    lookup: &DictionaryLookup,
+    entries: &[&'a DictEntry],
+) -> Option<&'a DictEntry> {
     if let Some(selected) = lookup.selected_occurrence_id.as_deref() {
-        if let Some(entry) = entries.iter().copied().find(|entry| entry.occurrence_id == selected) {
+        if let Some(entry) = entries
+            .iter()
+            .copied()
+            .find(|entry| entry.occurrence_id == selected)
+        {
             return Some(entry);
         }
     }
@@ -377,26 +388,65 @@ fn occurrence_label(entry: &DictEntry, peers: &[&DictEntry]) -> String {
     };
     let same_identity = peers
         .iter()
-        .filter(|peer| {
-            let peer_form = if peer.header.display_form.is_empty() {
-                &peer.headword
-            } else {
-                &peer.header.display_form
-            };
-            peer_form == form
-                && peer.header.reading.as_ref().or(peer.reading.as_ref())
-                    == entry.header.reading.as_ref().or(entry.reading.as_ref())
-        })
-        .count();
-    if same_identity > 1 {
-        if let Some(summary) = first_summary(&entry.senses) {
-            return format!("{form} · {}", truncate_chars(&summary, 18));
+        .copied()
+        .filter(|peer| same_occurrence_identity(entry, peer))
+        .collect::<Vec<_>>();
+    if same_identity.len() > 1 {
+        if let Some(discriminator) = occurrence_discriminator(entry) {
+            let unique = same_identity
+                .iter()
+                .filter(|peer| {
+                    occurrence_discriminator(peer).as_deref() == Some(discriminator.as_str())
+                })
+                .count()
+                == 1;
+            if unique {
+                return format!("{form} · {discriminator}");
+            }
         }
+        let position = same_identity
+            .iter()
+            .position(|peer| peer.occurrence_id == entry.occurrence_id)
+            .unwrap_or(0);
+        return format!("{form} · 同形条目 {}/{}", position + 1, same_identity.len());
     }
     if entry.entry_kind != "lexical" {
         return format!("{form} · {}", entry_kind_label(&entry.entry_kind));
     }
     form.to_string()
+}
+
+fn same_occurrence_identity(left: &DictEntry, right: &DictEntry) -> bool {
+    let left_form = if left.header.display_form.is_empty() {
+        &left.headword
+    } else {
+        &left.header.display_form
+    };
+    let right_form = if right.header.display_form.is_empty() {
+        &right.headword
+    } else {
+        &right.header.display_form
+    };
+    left_form == right_form
+        && left.header.reading.as_ref().or(left.reading.as_ref())
+            == right.header.reading.as_ref().or(right.reading.as_ref())
+}
+
+fn occurrence_discriminator(entry: &DictEntry) -> Option<String> {
+    let mut labels = entry
+        .header
+        .pos_tags
+        .iter()
+        .chain(&entry.header.usage_tags)
+        .map(|tag| tag.label.as_str())
+        .filter(|label| !label.is_empty())
+        .take(2)
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    if labels.is_empty() && entry.entry_kind != "lexical" {
+        labels.push(entry_kind_label(&entry.entry_kind).to_string());
+    }
+    (!labels.is_empty()).then(|| labels.join(" / "))
 }
 
 fn occurrence_title(entry: &DictEntry) -> String {
@@ -410,33 +460,22 @@ fn occurrence_title(entry: &DictEntry) -> String {
     let evidence = entry
         .match_evidence
         .as_ref()
-        .map(|value| format!("命中：{} / POS：{} / 分数：{}", value.kind, value.pos_match, value.score))
+        .map(|value| {
+            format!(
+                "命中：{} / POS：{} / 分数：{}",
+                value.kind, value.pos_match, value.score
+            )
+        })
         .unwrap_or_default();
-    [reading, entry_kind_label(&entry.entry_kind).to_string(), evidence]
-        .into_iter()
-        .filter(|value| !value.is_empty())
-        .collect::<Vec<_>>()
-        .join("；")
-}
-
-fn first_summary(senses: &[DictionarySense]) -> Option<String> {
-    for sense in senses {
-        let html = sense
-            .glosses
-            .first()
-            .map(|text| text.html.as_str())
-            .or_else(|| sense.definitions.first().map(|text| text.html.as_str()));
-        if let Some(html) = html {
-            let value = strip_html(html);
-            if !value.is_empty() {
-                return Some(value);
-            }
-        }
-        if let Some(value) = first_summary(&sense.children) {
-            return Some(value);
-        }
-    }
-    None
+    [
+        reading,
+        entry_kind_label(&entry.entry_kind).to_string(),
+        evidence,
+    ]
+    .into_iter()
+    .filter(|value| !value.is_empty())
+    .collect::<Vec<_>>()
+    .join("；")
 }
 
 fn header_facts(entry: &DictEntry) -> Vec<String> {
@@ -509,35 +548,6 @@ fn relation_label(relation: &str) -> &'static str {
         "reference" | "internal_reference" => "参照",
         "redirect" => "转至",
         _ => "关联",
-    }
-}
-
-fn strip_html(value: &str) -> String {
-    let mut output = String::new();
-    let mut in_tag = false;
-    for character in value.chars() {
-        match character {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            _ if !in_tag => output.push(character),
-            _ => {}
-        }
-    }
-    output
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .trim()
-        .to_string()
-}
-
-fn truncate_chars(value: &str, limit: usize) -> String {
-    let mut chars = value.chars();
-    let prefix = chars.by_ref().take(limit).collect::<String>();
-    if chars.next().is_some() {
-        format!("{prefix}…")
-    } else {
-        prefix
     }
 }
 
@@ -658,8 +668,106 @@ const PREVIEW_SCRIPT: &str = r#"
       if (target) target.textContent = `静态预览候选：${button.dataset.target}（应用中选择后会重新查询）`;
     });
   });
+  document.querySelectorAll('[data-example-browser]').forEach((browser) => {
+    const items = Array.from(browser.querySelectorAll('[data-example-index]'));
+    if (items.length <= 2) return;
+    const previous = browser.querySelector('[data-example-previous]');
+    const next = browser.querySelector('[data-example-next]');
+    const toggle = browser.querySelector('[data-example-toggle]');
+    const counter = browser.querySelector('[data-example-counter]');
+    const pager = browser.querySelector('[data-example-pager]');
+    const total = browser.querySelector('[data-example-total]');
+    const pages = Math.ceil(items.length / 2);
+    let page = 0;
+    let expanded = false;
+    const render = () => {
+      browser.classList.add('is-changing');
+      items.forEach((item, index) => {
+        item.hidden = !expanded && Math.floor(index / 2) !== page;
+      });
+      previous.disabled = expanded || page === 0;
+      next.disabled = expanded || page === pages - 1;
+      counter.textContent = `${page + 1}/${pages}`;
+      pager.hidden = expanded;
+      total.hidden = !expanded;
+      total.textContent = `共 ${items.length} 条`;
+      toggle.textContent = expanded ? '折叠' : '展开';
+      toggle.setAttribute('aria-expanded', String(expanded));
+      window.setTimeout(() => browser.classList.remove('is-changing'), 180);
+    };
+    previous.addEventListener('click', () => { if (page > 0) { page -= 1; render(); } });
+    next.addEventListener('click', () => { if (page < pages - 1) { page += 1; render(); } });
+    toggle.addEventListener('click', () => { expanded = !expanded; render(); });
+    render();
+  });
   const active = document.querySelector('.dictionary-choice.active');
   if (active) setDictionary(active.dataset.dictionary);
 })();
 </script>
 "#;
+
+#[cfg(test)]
+mod tests {
+    use super::occurrence_label;
+    use crate::models::{
+        DictEntry, DictionaryAdapterDiagnostics, DictionaryOccurrenceHeader, DictionarySense,
+        DictionaryText,
+    };
+
+    fn daijirin_occurrence(id: &str, definition: &str) -> DictEntry {
+        DictEntry {
+            entry_key: id.to_string(),
+            dict_name: "三省堂Super大辞林3.1".to_string(),
+            headword: "立つ".to_string(),
+            reading: Some("たつ".to_string()),
+            is_preferred: false,
+            definition_html: String::new(),
+            style_profile: "daijirin".to_string(),
+            content_blocks: Vec::new(),
+            match_type: "exact".to_string(),
+            links: Vec::new(),
+            occurrence_id: id.to_string(),
+            source_record_index: 0,
+            entry_kind: "lexical".to_string(),
+            header: DictionaryOccurrenceHeader {
+                display_form: "立つ".to_string(),
+                reading: Some("たつ".to_string()),
+                ..DictionaryOccurrenceHeader::default()
+            },
+            senses: vec![DictionarySense {
+                sense_id: "1".to_string(),
+                definitions: vec![DictionaryText {
+                    lang: "ja".to_string(),
+                    qualifier: None,
+                    html: definition.to_string(),
+                }],
+                ..DictionarySense::default()
+            }],
+            sections: Vec::new(),
+            adapter_diagnostics: DictionaryAdapterDiagnostics::default(),
+            match_evidence: None,
+            raw_definition: None,
+        }
+    }
+
+    #[test]
+    fn occurrence_labels_never_use_sense_body_as_identity() {
+        let first = daijirin_occurrence(
+            "三省堂Super大辞林3.1\u{1f}128321",
+            "座ったり横になったりしていた人が足を伸ばして自分の体を垂直の姿勢にする。",
+        );
+        let second = daijirin_occurrence(
+            "三省堂Super大辞林3.1\u{1f}128322",
+            "和船で，各種の柱の称。",
+        );
+        let peers = vec![&first, &second];
+
+        let first_label = occurrence_label(&first, &peers);
+        let second_label = occurrence_label(&second, &peers);
+
+        assert_eq!(first_label, "立つ · 同形条目 1/2");
+        assert_eq!(second_label, "立つ · 同形条目 2/2");
+        assert!(!first_label.contains("座ったり"));
+        assert!(!second_label.contains("和船"));
+    }
+}

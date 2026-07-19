@@ -727,6 +727,30 @@ pub struct DictionaryText {
     pub html: String,
 }
 
+/// 单个解释组中的连续子句。分号属于后一个子句的前置分隔符，
+/// 以便在保留源顺序的同时让限定语、标签和译文保持为一个逻辑对象。
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryGlossClause {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub separator: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub qualifier: Option<String>,
+    #[serde(default)]
+    pub leading_tags: Vec<DictionaryTag>,
+    pub text: DictionaryText,
+    #[serde(default)]
+    pub trailing_tags: Vec<DictionaryTag>,
+}
+
+/// 一个义项内部由日文适用范围开启的解释组。
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryGlossGroup {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heading: Option<String>,
+    #[serde(default)]
+    pub clauses: Vec<DictionaryGlossClause>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DictionaryExample {
     pub source: DictionaryText,
@@ -745,6 +769,8 @@ pub struct DictionarySense {
     pub heading: Option<String>,
     #[serde(default)]
     pub glosses: Vec<DictionaryText>,
+    #[serde(default)]
+    pub gloss_groups: Vec<DictionaryGlossGroup>,
     #[serde(default)]
     pub definitions: Vec<DictionaryText>,
     #[serde(default)]

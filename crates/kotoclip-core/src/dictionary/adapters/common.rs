@@ -1,8 +1,9 @@
 use super::AdaptedOccurrence;
 use crate::dictionary::html::{HtmlElement, HtmlNode};
 use crate::models::{
-    DictionaryAdapterDiagnostics, DictionaryContentBlock, DictionaryExample, DictionaryLink,
-    DictionaryOccurrenceHeader, DictionarySection, DictionarySense, DictionaryTag, DictionaryText,
+    DictionaryAdapterDiagnostics, DictionaryContentBlock, DictionaryExample, DictionaryGlossGroup,
+    DictionaryLink, DictionaryOccurrenceHeader, DictionarySection, DictionarySense, DictionaryTag,
+    DictionaryText,
 };
 use ammonia::Builder;
 use std::collections::HashSet;
@@ -47,7 +48,11 @@ pub fn fallback(
     }
 }
 
-pub fn finish(mut occurrence: AdaptedOccurrence, profile: &str, fallback_source: &str) -> AdaptedOccurrence {
+pub fn finish(
+    mut occurrence: AdaptedOccurrence,
+    profile: &str,
+    fallback_source: &str,
+) -> AdaptedOccurrence {
     occurrence.style_profile = profile.to_string();
     if occurrence.entry_kind.is_empty() {
         occurrence.entry_kind = "unknown".to_string();
@@ -159,7 +164,10 @@ pub fn normalize_visible_text(value: &str) -> String {
     let mut output = output.trim().to_string();
     for repeated in ["。。", "。。", "；；", "，，", "、、", "⇒⇒"] {
         while output.contains(repeated) {
-            output = output.replace(repeated, &repeated[..repeated.chars().next().unwrap().len_utf8()]);
+            output = output.replace(
+                repeated,
+                &repeated[..repeated.chars().next().unwrap().len_utf8()],
+            );
         }
     }
     output = output
@@ -193,7 +201,11 @@ pub fn extract_links(element: &HtmlElement, default_relation: &str) -> Vec<Dicti
             let label = normalize_visible_text(&anchor.text());
             Some(DictionaryLink {
                 target: target.to_string(),
-                label: if label.is_empty() { target.to_string() } else { label },
+                label: if label.is_empty() {
+                    target.to_string()
+                } else {
+                    label
+                },
                 relation: default_relation.to_string(),
             })
         })
@@ -209,9 +221,36 @@ pub fn direct_child_elements(element: &HtmlElement) -> impl Iterator<Item = &Htm
 
 pub fn sanitize_fallback(source: &str) -> String {
     let allowed: HashSet<&str> = [
-        "p", "div", "span", "br", "ruby", "rt", "rp", "b", "strong", "i", "em", "ul",
-        "ol", "li", "dl", "dt", "dd", "table", "thead", "tbody", "tr", "th", "td", "sup",
-        "sub", "small", "blockquote", "section", "jae", "ja_cn",
+        "p",
+        "div",
+        "span",
+        "br",
+        "ruby",
+        "rt",
+        "rp",
+        "b",
+        "strong",
+        "i",
+        "em",
+        "ul",
+        "ol",
+        "li",
+        "dl",
+        "dt",
+        "dd",
+        "table",
+        "thead",
+        "tbody",
+        "tr",
+        "th",
+        "td",
+        "sup",
+        "sub",
+        "small",
+        "blockquote",
+        "section",
+        "jae",
+        "ja_cn",
     ]
     .into_iter()
     .collect();
@@ -219,7 +258,10 @@ pub fn sanitize_fallback(source: &str) -> String {
         .tags(allowed)
         .add_tag_attributes("span", &["class", "type"])
         .add_tag_attributes("div", &["class", "id", "type", "delimiter", "data-orgtag"])
-        .add_tag_attributes("p", &["class", "level", "no", "type", "delimiter", "data-orgtag"])
+        .add_tag_attributes(
+            "p",
+            &["class", "level", "no", "type", "delimiter", "data-orgtag"],
+        )
         .add_tag_attributes("section", &["class"])
         .clean(source)
         .to_string();
@@ -275,9 +317,7 @@ fn render_structured_html(senses: &[DictionarySense], sections: &[DictionarySect
             if !item.senses.is_empty() {
                 render_sense_list(&item.senses, 0, &mut output);
             }
-            for example in &item.examples {
-                render_example(example, &mut output);
-            }
+            render_examples(&item.examples, &mut output);
             render_relations(&item.relations, &mut output);
             output.push_str("</article>");
         }
@@ -308,21 +348,27 @@ fn render_sense(sense: &DictionarySense, depth: usize, output: &mut String) {
         output.push_str("</span>");
     }
     output.push_str("<div class=\"sense-content\">");
-    if sense.heading.is_some() || !sense.tags.is_empty() {
-        output.push_str("<div class=\"sense-heading-row\">");
+    if !sense.gloss_groups.is_empty() {
+        output.push_str("<div class=\"sense-gloss-groups\">");
+        for group in &sense.gloss_groups {
+            render_gloss_group(group, output);
+        }
+        output.push_str("</div>");
+    } else if sense.heading.is_some() || !sense.tags.is_empty() || !sense.glosses.is_empty() {
+        output.push_str("<div class=\"sense-gloss-group\">");
         if let Some(heading) = &sense.heading {
             output.push_str("<span class=\"sense-heading\" lang=\"ja\">");
             output.push_str(&escape_html(heading));
             output.push_str("</span>");
         }
         render_tags(&sense.tags, output);
-        output.push_str("</div>");
-    }
-    if !sense.glosses.is_empty() {
-        output.push_str("<div class=\"sense-glosses\">");
+        output.push_str("<span class=\"sense-gloss-clauses\">");
         let mut previous_qualifier: Option<&str> = None;
-        for gloss in &sense.glosses {
-            output.push_str("<span class=\"sense-gloss\"");
+        for (index, gloss) in sense.glosses.iter().enumerate() {
+            if index > 0 {
+                output.push_str("<span class=\"sense-gloss-separator\">，</span>");
+            }
+            output.push_str("<span class=\"sense-gloss-clause\"");
             if !gloss.lang.is_empty() {
                 output.push_str(" lang=\"");
                 output.push_str(&escape_html(&gloss.lang));
@@ -334,15 +380,15 @@ fn render_sense(sense: &DictionarySense, depth: usize, output: &mut String) {
                 .as_deref()
                 .filter(|qualifier| Some(*qualifier) != previous_qualifier)
             {
-                output.push_str("<small class=\"sense-gloss__qualifier\" lang=\"ja\">");
+                output.push_str("<span class=\"sense-gloss__qualifier\" lang=\"ja\">");
                 output.push_str(&escape_html(qualifier));
-                output.push_str("</small>");
+                output.push_str("</span>");
             }
             output.push_str(&gloss.html);
             output.push_str("</span>");
             previous_qualifier = gloss.qualifier.as_deref();
         }
-        output.push_str("</div>");
+        output.push_str("</span></div>");
     }
     for definition in &sense.definitions {
         output.push_str("<div class=\"sense-definition\"");
@@ -355,13 +401,7 @@ fn render_sense(sense: &DictionarySense, depth: usize, output: &mut String) {
         output.push_str(&definition.html);
         output.push_str("</div>");
     }
-    if !sense.examples.is_empty() {
-        output.push_str("<div class=\"sense-examples\">");
-        for example in &sense.examples {
-            render_example(example, output);
-        }
-        output.push_str("</div>");
-    }
+    render_examples(&sense.examples, output);
     for note in &sense.notes {
         output.push_str("<div class=\"sense-note\"");
         if !note.lang.is_empty() {
@@ -379,6 +419,40 @@ fn render_sense(sense: &DictionarySense, depth: usize, output: &mut String) {
         render_sense_list(&sense.children, depth + 1, output);
     }
     output.push_str("</li>");
+}
+
+fn render_gloss_group(group: &DictionaryGlossGroup, output: &mut String) {
+    output.push_str("<div class=\"sense-gloss-group\">");
+    if let Some(heading) = &group.heading {
+        output.push_str("<span class=\"sense-heading\" lang=\"ja\">");
+        output.push_str(&escape_html(heading));
+        output.push_str("</span>");
+    }
+    output.push_str("<span class=\"sense-gloss-clauses\">");
+    for clause in &group.clauses {
+        if let Some(separator) = &clause.separator {
+            output.push_str("<span class=\"sense-gloss-separator\">");
+            output.push_str(&escape_html(separator));
+            output.push_str("</span>");
+        }
+        output.push_str("<span class=\"sense-gloss-clause\"");
+        if !clause.text.lang.is_empty() {
+            output.push_str(" lang=\"");
+            output.push_str(&escape_html(&clause.text.lang));
+            output.push('"');
+        }
+        output.push('>');
+        if let Some(qualifier) = &clause.qualifier {
+            output.push_str("<span class=\"sense-gloss__qualifier\" lang=\"ja\">");
+            output.push_str(&escape_html(qualifier));
+            output.push_str("</span>");
+        }
+        render_tags(&clause.leading_tags, output);
+        output.push_str(&clause.text.html);
+        render_tags(&clause.trailing_tags, output);
+        output.push_str("</span>");
+    }
+    output.push_str("</span></div>");
 }
 
 fn render_tags(tags: &[crate::models::DictionaryTag], output: &mut String) {
@@ -425,6 +499,25 @@ fn render_example(example: &DictionaryExample, output: &mut String) {
         output.push_str("</div>");
     }
     output.push_str("</blockquote>");
+}
+
+fn render_examples(examples: &[DictionaryExample], output: &mut String) {
+    if examples.is_empty() {
+        return;
+    }
+    output.push_str("<section class=\"example-browser preview-example-browser\" data-example-browser><div class=\"example-browser__page\">");
+    for (index, example) in examples.iter().enumerate() {
+        output.push_str("<div data-example-index=\"");
+        output.push_str(&index.to_string());
+        output.push_str("\">");
+        render_example(example, output);
+        output.push_str("</div>");
+    }
+    output.push_str("</div>");
+    if examples.len() > 2 {
+        output.push_str("<footer class=\"example-browser__controls\"><div class=\"example-browser__pager\" data-example-pager><button type=\"button\" data-example-previous aria-label=\"上一页例句\">‹</button><span class=\"example-browser__counter\" data-example-counter></span><button type=\"button\" data-example-next aria-label=\"下一页例句\">›</button></div><span class=\"example-browser__total\" data-example-total hidden></span><button type=\"button\" class=\"example-browser__toggle\" data-example-toggle aria-expanded=\"false\">展开</button></footer>");
+    }
+    output.push_str("</section>");
 }
 
 fn render_relations(relations: &[DictionaryLink], output: &mut String) {
