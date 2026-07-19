@@ -85,15 +85,19 @@
 .example-source { color: var(--text-secondary); font-family: var(--font-ja); }
 .example-translation { margin-top: 2px; color: var(--text-muted); font-family: var(--font-zh); }
 .example-note, .sense-note { margin-top: 5px; color: var(--text-muted); font-size: 0.78rem; }
-.example-browser__nav { position: absolute; z-index: 2; inset-block: 0; display: flex; align-items: center; width: var(--example-nav-width); border: 0; padding: 0 7px; color: var(--accent-color); opacity: 0; pointer-events: none; cursor: pointer; transition: color 140ms ease, opacity 140ms ease, background 160ms ease; }
-.example-browser__nav--previous { left: 0; justify-content: flex-start; background: linear-gradient(90deg, color-mix(in srgb, var(--bg-card) 98%, transparent) 18%, transparent 100%); }
-.example-browser__nav--next { right: 0; justify-content: flex-end; background: linear-gradient(270deg, color-mix(in srgb, var(--bg-card) 98%, transparent) 18%, transparent 100%); }
+.example-browser__nav { position: absolute; z-index: 2; inset-block: 0; display: flex; align-items: center; width: var(--example-nav-width); border: 0; padding: 0 7px; color: color-mix(in srgb, #9a742c 78%, var(--text-muted)); opacity: .62; pointer-events: auto; background: transparent; cursor: pointer; transition: color 140ms ease, opacity 140ms ease, background 160ms ease; }
+.example-browser__nav--previous { left: 0; justify-content: flex-start; }
+.example-browser__nav--next { right: 0; justify-content: flex-end; }
 .example-browser__nav.is-visible:not(:disabled),
-.example-browser__nav:focus-visible { opacity: 1; pointer-events: auto; }
-.example-browser__nav:hover:not(:disabled) { color: color-mix(in srgb, var(--accent-color) 82%, var(--text-primary)); }
-.example-browser__nav--previous:hover:not(:disabled) { background: linear-gradient(90deg, color-mix(in srgb, var(--bg-card) 100%, transparent) 30%, transparent 100%); }
-.example-browser__nav--next:hover:not(:disabled) { background: linear-gradient(270deg, color-mix(in srgb, var(--bg-card) 100%, transparent) 30%, transparent 100%); }
-.example-browser__nav:disabled { opacity: 0; pointer-events: none; }
+.example-browser__nav:hover:not(:disabled),
+.example-browser__nav:focus-visible { opacity: 1; color: var(--accent-color); }
+.example-browser__nav.is-visible.example-browser__nav--previous,
+.example-browser__nav:hover:not(:disabled).example-browser__nav--previous,
+.example-browser__nav:focus-visible.example-browser__nav--previous { background: linear-gradient(90deg, color-mix(in srgb, var(--bg-card) 98%, transparent) 18%, transparent 100%); }
+.example-browser__nav.is-visible.example-browser__nav--next,
+.example-browser__nav:hover:not(:disabled).example-browser__nav--next,
+.example-browser__nav:focus-visible.example-browser__nav--next { background: linear-gradient(270deg, color-mix(in srgb, var(--bg-card) 98%, transparent) 18%, transparent 100%); }
+.example-browser__nav:disabled { opacity: .3; pointer-events: none; color: color-mix(in srgb, #9a742c 68%, var(--text-muted)); }
 .example-browser__controls { display: flex; justify-content: flex-end; align-items: center; margin-top: 6px; color: var(--text-muted); font: 0.68rem/1.3 var(--font-ui); }
 .example-browser__controls button { display: inline-flex; align-items: center; justify-content: center; min-height: 24px; border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent); border-radius: 999px; padding: 2px 8px; background: color-mix(in srgb, var(--bg-card) 78%, transparent); color: var(--text-secondary); cursor: pointer; }
 .example-browser__controls button:hover { border-color: var(--accent-color); background: var(--accent-light); color: var(--accent-color); }
