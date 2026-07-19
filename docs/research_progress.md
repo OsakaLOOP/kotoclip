@@ -1,10 +1,14 @@
 # Kotoclip 分析研究进度
 
-更新日期：2026-07-16
+更新日期：2026-07-19
 
 ## 验收口径
 
 三个阶段都必须提供命令行入口、真实文本证据、自动化测试和独立提交。机械完整性只验证文本及范围契约，不替代分词或语法的人工语义判定。
+
+## v1.0 状态审计
+
+当前语言分析主干、语法 G0～G5、多词典 occurrence／sense IR 和增量文档会话已经形成可复用工程基础，但产品闭环仍缺文档库、统一现象协议、多体裁覆盖验收、句法／读解、语义事件、知识聚合、动态卡片、遗忘调度、自适应辅助和实际 AI 问答。按独立实现与验收边界归并后，剩余 8 个模块包；形态、文节、句法、深层分析及其他外部依赖另设“先实验再采用”清单，详见 [`v1_completion_plan.md`](v1_completion_plan.md)。
 
 ## 阶段一：外部词典与覆盖率
 
@@ -88,6 +92,15 @@
 - UI 使用细连接带、局部点状下划线和短标签，不合并或放大原文节胶囊；规则侧栏支持查看和删除。
 - CLI 新增 `expression-preview`、`expression-scan`、`expression-add`、`expression-list` 和 `expression-repl`。
 
+## 多词典查询与气泡统一
+
+状态：主要重构完成，进入样本驱动扩展。
+
+- 2026-07-18 的 `refactor(dictionary): unify multi-dictionary lookup and bubble` 将查询请求、候选、匹配证据、occurrence、义项树、分词典适配器和气泡渲染职责分层。
+- 当前覆盖大辞林、小学馆和 Crown 三个适配器；18 词全量审计没有留下需要重定义核心 IR 或单活动词典交互的 P0 架构阻塞项。
+- 后续工作转为音调／发音作用域、小学馆子记录索引、内部 sense reference、标签规范化、复杂省略词头、候选作用域与适配器回归统计等 P1/P2 项。
+- 权威协议见 `dictionary_lookup_and_bubble_refactor.md`，后续清单见 `dictionary_refactor_followups.md`；新增样本不得直接回到历史问题基线修改核心架构。
+
 ### 第一话交互扫描
 
 指定章节共发现 10 个跨文节命中、9 种表达：
@@ -132,7 +145,7 @@
 - 内容治理使用图标化来源与核验 badge：AI／人工／内置来源，作者·日期·版本聚合文本，以及未核验／AI 批量核验／成员权威核验三档 SVG；文法页可本机切换核验等级和成员名。
 - CLI 已覆盖 inspect、scan、residual、catalog、explain、library-audit、audit、compare 和 review；grouped residual review 强制每批 20～50 项并保留实际行、文节和语素证据。
 
-当前编译目录包含 100 个 concept、149 个 sense、110 个 realization/rule 和 100 份讲解，运行时 redirect 机制已完成但当前没有启用重定向。目录审计的悬空引用、不可发布规则、缺失来源和缺失搜索项均为 0；7 个代表句全部通过识别、范围重建和讲解解析。第一话 grouped residual 审计当前汇总 56 个候选签名，批次工具已验证为每批 20 项。
+当前编译目录包含 105 个 concept、154 个 sense、112 个 realization/rule 和 105 份讲解，运行时 redirect 机制已完成但当前没有启用重定向。目录审计的悬空引用、不可发布规则、缺失来源和缺失搜索项均为 0；7 个代表句全部通过识别、范围重建和讲解解析。第一话 grouped residual 审计当前汇总 56 个候选签名，批次工具已验证为每批 20 项。
 
 缓存目前采用保守策略：catalog 或 explanation 内容变化都会使稳定分析缓存失效，保证不会显示旧讲解；讲解缓存单独拆分属于后续性能优化。`incremental-consistency` 保留为管线迁移专项诊断，不再属于日常语法模块验收。
 

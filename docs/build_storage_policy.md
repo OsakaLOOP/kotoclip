@@ -11,13 +11,18 @@
 
 ## 分发资源边界
 
-Insider 便携包只包含：
+Insider 便携包的运行资源只包含：
 
 - `Kotoclip.exe`；
 - `ipadic/system.dic`；
-- `dict-sources/daijirin.kdict`。
+- `dict-sources/starter.kdict`；
+- `dict-sources/daijirin.kdict`；
+- `dict-sources/shogakukan.kdict`；
+- `dict-sources/crown.kdict`。
 
 包内不包含 `*.db`、`*.sqlite` 或原始 MDX。应用首次启动时读取 `.kdict`，在应用数据目录生成本机 SQLite 查询缓存；源包 `bundle_id` 变化时原子重建。这样压缩包不携带与源包重复的数据库，数据库也不会被误提交到 Git。
+
+上述列表描述当前 Insider 配置，不代表公开 v1.0 的许可结论。公开发布渠道必须使用独立资源清单，只包含许可和分发权已经确认的词典；研究词典不得因为存在于 Insider 包而自动进入正式发布包。
 
 ## schema v4 设计
 
