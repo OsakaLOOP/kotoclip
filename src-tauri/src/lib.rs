@@ -25,6 +25,7 @@ pub fn run() {
 
     // 构建并启动 Tauri 桌面应用
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
             let setup_entered = std::time::SystemTime::now()
@@ -96,7 +97,10 @@ pub fn run() {
                         analysis_cache.initialize(Ok(cache_value));
 
                         if let Ok(elapsed) = start_time.elapsed() {
-                            println!("[开发日志] 后台分析引擎与词典就绪，耗时: {}ms", elapsed.as_millis());
+                            println!(
+                                "[开发日志] 后台分析引擎与词典就绪，耗时: {}ms",
+                                elapsed.as_millis()
+                            );
                         }
                         Ok(())
                     })();
@@ -130,6 +134,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::log_ui_timestamps,
+            commands::import_epub_document,
             commands::open_document,
             commands::backend_status,
             commands::continue_document_analysis,

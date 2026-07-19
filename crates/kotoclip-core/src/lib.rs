@@ -4,6 +4,7 @@ pub mod dictionary;
 pub mod document;
 pub mod export;
 pub mod ffi;
+pub mod import;
 pub mod llm;
 pub mod models;
 pub mod performance;
@@ -14,9 +15,9 @@ pub mod transport;
 use analysis_progress::{AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryLookup, DictionaryLookupTiming, DictionarySettings, ExpressionAnnotation,
-    ExpressionRule,
-    ExpressionRulePreview, PosTag, SegmentationCandidate, SegmentationChoice,
+    AnnotatedToken, DictionaryLookup, DictionaryLookupTiming, DictionarySettings,
+    ExpressionAnnotation, ExpressionRule, ExpressionRulePreview, PosTag, SegmentationCandidate,
+    SegmentationChoice,
 };
 use performance::TimingCollector;
 use pipeline::Pipeline;
@@ -60,11 +61,7 @@ impl DictionaryService {
         })
     }
 
-    pub fn new_from_dictionary_sources<
-        P1: AsRef<Path>,
-        P2: AsRef<Path>,
-        P3: AsRef<Path>,
-    >(
+    pub fn new_from_dictionary_sources<P1: AsRef<Path>, P2: AsRef<Path>, P3: AsRef<Path>>(
         dictionary_source_dir: P1,
         dicts_dir: P2,
         user_db_path: P3,
@@ -103,10 +100,10 @@ impl DictionaryService {
     ) -> DictionaryLookup {
         let started = Instant::now();
         let query_key = dictionary_query_key(word, reading);
-        let (initial_entries, mut timing) = self
-            .dictionary
-            .lookup_profiled_with_pos(word, reading, pos);
-        let initial_entries = dictionary::aggregate::sort_definitions(initial_entries, priority_list);
+        let (initial_entries, mut timing) =
+            self.dictionary.lookup_profiled_with_pos(word, reading, pos);
+        let initial_entries =
+            dictionary::aggregate::sort_definitions(initial_entries, priority_list);
         let candidates = dictionary::lookup_state::collect_candidates(word, &initial_entries);
         let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
             candidates

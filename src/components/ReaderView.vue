@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
-import { AlertTriangle, BookMarked, BookOpen, BriefcaseBusiness, Link2, Library, Moon, Plus, Settings2, X } from "@lucide/vue";
+import { AlertTriangle, BookMarked, BookOpen, BriefcaseBusiness, FileUp, Link2, Library, Moon, Plus, Settings2, X } from "@lucide/vue";
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import type { ComponentPublicInstance } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { useTokenization } from "../composables/useTokenization";
@@ -27,6 +29,15 @@ import { useExplanationInteraction } from "../composables/useExplanationInteract
 // 状态定义
 const inputText = ref("");
 const showInput = ref(true);
+const isImportingEpub = ref(false);
+const epubImportError = ref<string | null>(null);
+const importedEpub = ref<{
+  sourceName: string;
+  title: string;
+  author: string;
+  chapterTitles: string[];
+  warnings: string[];
+} | null>(null);
 const einkMode = ref(false);
 const showDevMetrics = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_METRICS === "true";
 const analysisMetrics = ref<{
@@ -338,6 +349,40 @@ async function triggerAnalysis(recordExposure = true) {
   }
 }
 
+async function importEpub() {
+  epubImportError.value = null;
+  const selected = await open({
+    multiple: false,
+    directory: false,
+    filters: [{ name: "EPUB 电子书", extensions: ["epub"] }],
+  });
+  if (!selected || Array.isArray(selected)) return;
+
+  isImportingEpub.value = true;
+  try {
+    const imported = await invoke<{
+      sourceName: string;
+      title: string;
+      author: string;
+      markdown: string;
+      chapterTitles: string[];
+      warnings: string[];
+    }>("import_epub_document", { path: selected });
+    inputText.value = imported.markdown;
+    importedEpub.value = {
+      sourceName: imported.sourceName,
+      title: imported.title,
+      author: imported.author,
+      chapterTitles: imported.chapterTitles,
+      warnings: imported.warnings,
+    };
+  } catch (error) {
+    epubImportError.value = String(error);
+  } finally {
+    isImportingEpub.value = false;
+  }
+}
+
 // 事件委托：段落内的点击 (切换选中/已知)
 function handleParagraphClick(e: MouseEvent, paragraphId: number) {
   // 右键菜单显示或拖拽期间，不切换导出选择。
@@ -520,13 +565,36 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
     <div class="main-layout">
       <!-- 1. 文本输入模块 -->
       <div v-if="showInput" class="input-section">
+        <div class="input-source-bar">
+          <div>
+            <strong>{{ importedEpub?.title || 'Markdown 文本' }}</strong>
+            <span v-if="importedEpub">
+              {{ importedEpub.author }} · {{ importedEpub.chapterTitles.length }} 章 · {{ importedEpub.sourceName }}
+            </span>
+            <span v-else>可直接粘贴文本，或从 EPUB 转换后继续编辑。</span>
+          </div>
+          <button
+            class="icon-btn import-btn"
+            :disabled="isAnalyzing || isImportingEpub"
+            @click="importEpub"
+          >
+            <FileUp :size="16" aria-hidden="true" />
+            {{ isImportingEpub ? '正在转换…' : '导入 EPUB' }}
+          </button>
+        </div>
         <textarea
           v-model="inputText"
-          placeholder="在此粘贴整页日文文本..."
+          placeholder="在此粘贴日文文本，或点击“导入 EPUB”生成 Markdown..."
           class="raw-textarea"
-          :disabled="isAnalyzing"
-          :aria-busy="isAnalyzing"
+          :disabled="isAnalyzing || isImportingEpub"
+          :aria-busy="isAnalyzing || isImportingEpub"
         ></textarea>
+        <div v-if="epubImportError" class="error-message">
+          <AlertTriangle :size="16" aria-hidden="true" /> EPUB 导入失败: {{ epubImportError }}
+        </div>
+        <div v-else-if="importedEpub?.warnings.length" class="import-warning" role="status">
+          已生成 Markdown；另有 {{ importedEpub.warnings.length }} 个内容项未能完整读取，可先检查文本再解析。
+        </div>
         <div v-if="errorMsg" class="error-message">
           <AlertTriangle :size="16" aria-hidden="true" /> 分析出错: {{ errorMsg }}
         </div>
@@ -543,7 +611,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <div class="btn-group">
           <button
             class="analyze-btn"
-            :disabled="isAnalyzing || !backendReady"
+            :disabled="isAnalyzing || isImportingEpub || !backendReady"
             @click="triggerAnalysis()"
           >
             {{ isAnalyzing ? analysisProgress.message : backendReady ? '解析生词胶囊' : '正在启动分析引擎…' }}
@@ -856,6 +924,64 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   flex-direction: column;
   gap: 20px;
   height: 100%;
+}
+
+.input-source-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.input-source-bar > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.input-source-bar strong,
+.input-source-bar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.input-source-bar strong {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.input-source-bar span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.import-btn {
+  flex: 0 0 auto;
+}
+
+.import-btn:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.import-warning {
+  margin-top: -10px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .input-source-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .import-btn {
+    justify-content: center;
+  }
 }
 
 .raw-textarea {

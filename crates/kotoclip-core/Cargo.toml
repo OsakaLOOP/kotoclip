@@ -23,3 +23,5 @@ ammonia = "4"
 html5ever = "0.39"
 regex = "1"
 flate2 = "1"
+roxmltree = "0.21"
+zip = { version = "4", default-features = false, features = ["deflate"] }

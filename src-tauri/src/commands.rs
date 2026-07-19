@@ -4,8 +4,8 @@ use kotoclip_core::document::{
     propagate_stage_invalidation, AnalysisPatch, AnalysisStage, DocumentSession,
 };
 use kotoclip_core::models::{
-    AnnotatedToken, DictionaryLookup, DictionarySettings, ExportEntry, ExpressionRule,
-    PosTag, SegmentationCandidate,
+    AnnotatedToken, DictionaryLookup, DictionarySettings, ExportEntry, ExpressionRule, PosTag,
+    SegmentationCandidate,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
@@ -34,6 +34,16 @@ pub struct BackendStatus {
     pub ready: bool,
 }
 
+#[tauri::command]
+pub async fn import_epub_document(
+    path: String,
+) -> Result<kotoclip_core::import::epub::ImportedEpub, String> {
+    tauri::async_runtime::spawn_blocking(move || kotoclip_core::import::epub::import_epub(path))
+        .await
+        .map_err(|error| format!("EPUB 导入任务异常结束：{error}"))?
+        .map_err(|error| error.to_string())
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GrammarConceptBundle {
@@ -51,9 +61,8 @@ pub fn search_grammar_catalog(
     audit_status: Option<String>,
     source_ref: Option<String>,
 ) -> Result<Vec<kotoclip_core::pipeline::grammar::catalog::GrammarConcept>, String> {
-    let catalog =
-        kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()
-            .map_err(|error| error.to_string())?;
+    let catalog = kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()
+        .map_err(|error| error.to_string())?;
     Ok(catalog
         .search(
             query.as_deref(),
@@ -69,9 +78,8 @@ pub fn search_grammar_catalog(
 
 #[tauri::command]
 pub fn get_grammar_concept(concept_id: String) -> Result<GrammarConceptBundle, String> {
-    let catalog =
-        kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()
-            .map_err(|error| error.to_string())?;
+    let catalog = kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()
+        .map_err(|error| error.to_string())?;
     let concept = catalog
         .concept(&concept_id)
         .cloned()
@@ -414,7 +422,10 @@ pub async fn persist_document_cache(
         if !session.is_complete() || session.stable_tokens_for_cache().is_empty() {
             return Ok(false);
         }
-        (session.source.clone(), session.stable_tokens_for_cache().to_vec())
+        (
+            session.source.clone(),
+            session.stable_tokens_for_cache().to_vec(),
+        )
     };
     let cache = state
         .analysis_cache
@@ -572,7 +583,10 @@ pub async fn lookup_word(
 ) -> Result<DictionaryLookup, String> {
     let started = Instant::now();
     let dictionary = if background.unwrap_or(false) {
-        state.dictionary_background.lock().map_err(|e| e.to_string())?
+        state
+            .dictionary_background
+            .lock()
+            .map_err(|e| e.to_string())?
     } else {
         state.dictionary.lock().map_err(|e| e.to_string())?
     };
@@ -770,6 +784,14 @@ pub async fn export_selected(
 #[tauri::command]
 pub fn log_ui_timestamps(boot_time: u64, main_loaded: u64, app_mounted: u64) {
     println!("[时间戳] UI 端 - HTML 开始响应: {}", boot_time);
-    println!("[时间戳] UI 端 - main.ts 开始执行: {}, 距离 HTML 响应: {}ms", main_loaded, main_loaded.saturating_sub(boot_time));
-    println!("[时间戳] UI 端 - App.vue 挂载完成: {}, 距离 HTML 响应: {}ms", app_mounted, app_mounted.saturating_sub(boot_time));
+    println!(
+        "[时间戳] UI 端 - main.ts 开始执行: {}, 距离 HTML 响应: {}ms",
+        main_loaded,
+        main_loaded.saturating_sub(boot_time)
+    );
+    println!(
+        "[时间戳] UI 端 - App.vue 挂载完成: {}, 距离 HTML 响应: {}ms",
+        app_mounted,
+        app_mounted.saturating_sub(boot_time)
+    );
 }

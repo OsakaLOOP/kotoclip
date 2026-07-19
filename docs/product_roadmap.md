@@ -268,13 +268,14 @@ Document Core
 
 ### 7.1 文本入口
 
-核心只接收规范文档格式。外部插件、skill 或 agent 负责将 EPUB、网页和其他来源转换成该格式。
+核心只接收规范文档格式。内置 EPUB 适配器先转换为 Markdown 规范文本；网页和其他来源仍由外部插件、skill 或 agent 转换。
 
 1.0 正式入口：
 
 - 粘贴文本；
 - TXT；
 - Markdown；
+- EPUB（本地 Rust 适配器转换为 Markdown）；
 - SRT；
 - 基础文档库、章节和阅读位置。
 
