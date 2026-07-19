@@ -8,7 +8,7 @@
     "frontend:dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "insider": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_channel.ps1 -Channel insider",
-    "test:ui": "node --test --experimental-strip-types src/explanation/*.test.mjs",
+    "test:ui": "node --test --experimental-strip-types src/explanation/*.test.mjs src/utils/*.test.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

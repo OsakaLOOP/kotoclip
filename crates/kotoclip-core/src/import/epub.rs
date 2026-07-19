@@ -14,6 +14,8 @@ pub struct ImportedEpub {
     pub source_name: String,
     pub title: String,
     pub author: String,
+    pub date: String,
+    pub language: String,
     pub markdown: String,
     pub chapter_titles: Vec<String>,
     pub warnings: Vec<String>,
@@ -123,6 +125,8 @@ pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportErr
         source_name,
         title: metadata.title,
         author: metadata.author,
+        date: metadata.date,
+        language: metadata.language,
         markdown,
         chapter_titles,
         warnings,
@@ -173,10 +177,47 @@ fn read_metadata(document: &Document<'_>, fallback_title: &str) -> Metadata {
             .filter(|value| !value.is_empty())
             .map(str::to_string)
     };
+    let author_id = document
+        .descendants()
+        .find(|node| {
+            node.has_tag_name("meta")
+                && node.attribute("property") == Some("role")
+                && node.text().map(str::trim) == Some("aut")
+        })
+        .and_then(|node| node.attribute("refines"))
+        .map(|value| value.trim_start_matches('#'));
+    let author = document
+        .descendants()
+        .filter(|node| node.has_tag_name("creator"))
+        .find(|node| {
+            node.attribute("role") == Some("aut")
+                || author_id.is_some_and(|id| node.attribute("id") == Some(id))
+        })
+        .or_else(|| {
+            document
+                .descendants()
+                .find(|node| node.has_tag_name("creator"))
+        })
+        .and_then(|node| node.text())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| "未知".to_string());
+    let date = text("date").or_else(|| {
+        document
+            .descendants()
+            .find(|node| {
+                node.has_tag_name("meta") && node.attribute("property") == Some("dcterms:modified")
+            })
+            .and_then(|node| node.text())
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(|value| value.get(..10).unwrap_or(value).to_string())
+    });
     Metadata {
         title: text("title").unwrap_or_else(|| fallback_title.to_string()),
-        author: text("creator").unwrap_or_else(|| "未知".to_string()),
-        date: text("date").unwrap_or_else(|| "未知".to_string()),
+        author,
+        date: date.unwrap_or_else(|| "未知".to_string()),
         language: text("language").unwrap_or_else(|| "ja".to_string()),
     }
 }
@@ -255,14 +296,23 @@ fn zip_basename(path: &str) -> String {
 }
 
 fn strip_xml_declaration(input: &str) -> &str {
-    let trimmed = input.trim_start_matches('\u{feff}').trim_start();
-    if !trimmed.starts_with("<?xml") {
-        return trimmed;
+    let mut trimmed = input.trim_start_matches('\u{feff}').trim_start();
+    if trimmed.starts_with("<?xml") {
+        trimmed = trimmed
+            .find("?>")
+            .map(|end| trimmed[end + 2..].trim_start())
+            .unwrap_or(trimmed);
+    }
+    if trimmed
+        .get(..9)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("<!doctype"))
+    {
+        trimmed = trimmed
+            .find('>')
+            .map(|end| trimmed[end + 1..].trim_start())
+            .unwrap_or(trimmed);
     }
     trimmed
-        .find("?>")
-        .map(|end| trimmed[end + 2..].trim_start())
-        .unwrap_or(trimmed)
 }
 
 fn titlepage_markdown() -> &'static str {
@@ -307,13 +357,21 @@ fn render_node(node: Node<'_, '_>, filename: &str, in_paragraph: bool) -> String
     let content = render_children(node, filename, current_in_paragraph);
     match tag {
         "body" => content,
+        "script" | "style" | "noscript" => String::new(),
         "div" => node.attribute("class").map_or(content.clone(), |class| {
             format!("\n::: {class}\n{}\n:::\n", trim_layout_whitespace(&content))
         }),
         "p" => format!("\n{}\n", trim_layout_whitespace(&content)),
-        "span" => node
-            .attribute("class")
-            .map_or(content.clone(), |class| format!("[{content}]{{.{class}}}")),
+        "span" => node.attribute("class").map_or(content.clone(), |class| {
+            if class.split_whitespace().any(|value| value == "koboSpan") {
+                content.clone()
+            } else {
+                format!("[{content}]{{.{class}}}")
+            }
+        }),
+        "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
+            format!("\n## {}\n", trim_layout_whitespace(&content))
+        }
         "rt" | "rp" => String::new(),
         "a" => {
             let mut href = node.attribute("href").unwrap_or_default().to_string();
@@ -470,12 +528,18 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
             .replace_all(&content, replacement)
             .into_owned();
     }
-    for class in ["center", "right", "middle-block"] {
-        content = Regex::new(&format!(r"(?m)^::: {class}\s*$\n?"))
-            .unwrap()
-            .replace_all(&content, "")
-            .into_owned();
+    let span_class_pattern = Regex::new(r"\[([^\[\]]*)\]\{\.[^}\n]+\}").unwrap();
+    loop {
+        let cleaned = span_class_pattern.replace_all(&content, "$1").into_owned();
+        if cleaned == content {
+            break;
+        }
+        content = cleaned;
     }
+    content = Regex::new(r"(?m)^:::[ \t]+[^\r\n]+\s*$\n?")
+        .unwrap()
+        .replace_all(&content, "")
+        .into_owned();
     content = Regex::new(r"(?m)^:::\s*$\n?")
         .unwrap()
         .replace_all(&content, "")
@@ -528,10 +592,19 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
         .collect::<Vec<_>>()
         .join("\n");
     content = format!("{}\n", content.trim_start_matches('\n'));
-    let chapter_titles = chapters
-        .values()
-        .map(|chapter| chapter.title.clone())
-        .collect();
+    let chapter_titles = if chapters.is_empty() {
+        content
+            .lines()
+            .filter_map(|line| line.strip_prefix("## "))
+            .filter(|title| *title != "目次")
+            .map(str::to_string)
+            .collect()
+    } else {
+        chapters
+            .values()
+            .map(|chapter| chapter.title.clone())
+            .collect()
+    };
     (content, chapter_titles)
 }
 
@@ -593,7 +666,7 @@ mod tests {
         archive.start_file("OEBPS/content.opf", options).unwrap();
         archive
             .write_all(
-                r#"<?xml version="1.0"?><package xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata><dc:title>测试书</dc:title><dc:creator>测试作者</dc:creator><dc:date>2026-07-19</dc:date><dc:language>ja</dc:language></metadata><manifest><item id="chapter" href="text/chapter.xhtml"/></manifest><spine><itemref idref="chapter"/></spine></package>"#.as_bytes(),
+                r##"<?xml version="1.0"?><package xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata><dc:title>测试书</dc:title><dc:creator id="illustrator">插画者</dc:creator><dc:creator id="author">测试作者</dc:creator><meta property="role" refines="#illustrator">ill</meta><meta property="role" refines="#author">aut</meta><meta property="dcterms:modified">2026-07-19T00:00:00Z</meta><dc:language>ja</dc:language></metadata><manifest><item id="chapter" href="text/chapter.xhtml"/></manifest><spine><itemref idref="chapter"/></spine></package>"##.as_bytes(),
             )
             .unwrap();
         archive
@@ -601,7 +674,7 @@ mod tests {
             .unwrap();
         archive
             .write_all(
-                r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><p>彼は<ruby>本<rt>ほん</rt></ruby>を読む。</p></body></html>"#.as_bytes(),
+                r#"<?xml version="1.0"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><body><h1>第一章</h1><div class="main"><p><span class="koboSpan">彼は</span><ruby>本<rt>ほん</rt></ruby>を読む。</p></div></body></html>"#.as_bytes(),
             )
             .unwrap();
         archive.finish().unwrap();
@@ -610,7 +683,10 @@ mod tests {
         std::fs::remove_file(path).unwrap();
         assert_eq!(imported.title, "测试书");
         assert_eq!(imported.author, "测试作者");
+        assert!(imported.markdown.contains("date: \"2026-07-19\""));
+        assert_eq!(imported.chapter_titles, vec!["第一章"]);
         assert!(imported.markdown.contains("彼は本《ほん》を読む。"));
+        assert!(!imported.markdown.contains("koboSpan"));
         assert!(imported.warnings.is_empty());
     }
 }

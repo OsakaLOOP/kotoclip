@@ -23,6 +23,7 @@ import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionarySettingsPanel from "./dictionary/DictionarySettingsPanel.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
+import { prepareMarkdownDocument, type MarkdownMetadata } from "../utils/markdownDocument";
 import { useExplanationSession } from "../composables/useExplanationSession";
 import { useExplanationInteraction } from "../composables/useExplanationInteraction";
 
@@ -35,9 +36,13 @@ const importedEpub = ref<{
   sourceName: string;
   title: string;
   author: string;
+  date: string;
+  language: string;
   chapterTitles: string[];
   warnings: string[];
 } | null>(null);
+const currentDocumentMetadata = ref<MarkdownMetadata | null>(null);
+const inputMetadata = computed(() => prepareMarkdownDocument(inputText.value).metadata);
 const einkMode = ref(false);
 const showDevMetrics = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_METRICS === "true";
 const analysisMetrics = ref<{
@@ -315,10 +320,24 @@ onBeforeUnmount(() => {
 // 执行文本分析
 async function triggerAnalysis(recordExposure = true) {
   if (!inputText.value.trim()) return;
-  const sourceText = inputText.value;
+  const prepared = prepareMarkdownDocument(inputText.value);
+  const sourceText = prepared.body;
+  if (!sourceText.trim()) return;
+  const metadata = Object.keys(prepared.metadata).length > 0
+    ? prepared.metadata
+    : importedEpub.value
+      ? {
+          title: importedEpub.value.title,
+          author: importedEpub.value.author,
+          date: importedEpub.value.date,
+          language: importedEpub.value.language,
+        }
+      : {};
   const startedAt = performance.now();
   const succeeded = await analyzeText(sourceText, recordExposure);
   if (succeeded) {
+    inputText.value = sourceText;
+    currentDocumentMetadata.value = metadata;
     const renderSetupStartedAt = performance.now();
     showInput.value = false;
     await nextTick();
@@ -364,15 +383,21 @@ async function importEpub() {
       sourceName: string;
       title: string;
       author: string;
+      date: string;
+      language: string;
       markdown: string;
       chapterTitles: string[];
       warnings: string[];
     }>("import_epub_document", { path: selected });
-    inputText.value = imported.markdown;
+    const prepared = prepareMarkdownDocument(imported.markdown);
+    inputText.value = prepared.body;
+    currentDocumentMetadata.value = null;
     importedEpub.value = {
       sourceName: imported.sourceName,
       title: imported.title,
       author: imported.author,
+      date: imported.date,
+      language: imported.language,
       chapterTitles: imported.chapterTitles,
       warnings: imported.warnings,
     };
@@ -521,7 +546,11 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       <div class="logo-title">
         <BookOpen class="logo-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
         <span class="logo-text">Kotoclip</span>
-        <span class="logo-sub">日文生词胶囊阅读器</span>
+        <span v-if="showInput" class="logo-sub">日文生词胶囊阅读器</span>
+        <div v-else-if="currentDocumentMetadata" class="document-identity">
+          <strong>{{ currentDocumentMetadata.title || '未命名文本' }}</strong>
+          <span v-if="currentDocumentMetadata.author">{{ currentDocumentMetadata.author }}</span>
+        </div>
       </div>
       <div class="action-bar">
         <div
@@ -567,9 +596,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       <div v-if="showInput" class="input-section">
         <div class="input-source-bar">
           <div>
-            <strong>{{ importedEpub?.title || 'Markdown 文本' }}</strong>
+            <strong>{{ inputMetadata.title || importedEpub?.title || 'Markdown 文本' }}</strong>
             <span v-if="importedEpub">
-              {{ importedEpub.author }} · {{ importedEpub.chapterTitles.length }} 章 · {{ importedEpub.sourceName }}
+              {{ inputMetadata.author || importedEpub.author }} · {{ importedEpub.chapterTitles.length }} 章 · {{ importedEpub.sourceName }}
             </span>
             <span v-else>可直接粘贴文本，或从 EPUB 转换后继续编辑。</span>
           </div>
@@ -817,6 +846,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .logo-icon {
@@ -924,6 +954,33 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   flex-direction: column;
   gap: 20px;
   height: 100%;
+}
+
+.document-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: min(42vw, 560px);
+  border-left: 1px solid var(--border-color);
+  padding-left: 10px;
+  line-height: 1.25;
+}
+
+.document-identity strong,
+.document-identity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-identity strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.document-identity span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
 }
 
 .input-source-bar {
