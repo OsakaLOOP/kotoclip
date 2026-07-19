@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ChevronDown, ChevronUp, GripVertical, X } from "@lucide/vue";
 import type { DictionarySettings } from "../../types";
 import {
@@ -23,6 +23,7 @@ const emit = defineEmits<{
 const orderedDictionaries = ref<string[]>([]);
 const draggedDictionary = ref<string | null>(null);
 const dragInsertIndex = ref<number | null>(null);
+let dragPointerId: number | null = null;
 watch(
   () => props.settings,
   (settings) => {
@@ -56,29 +57,38 @@ function moveByOffset(dictionary: string, offset: number) {
 function resetDrag() {
   draggedDictionary.value = null;
   dragInsertIndex.value = null;
+  dragPointerId = null;
+  window.removeEventListener("pointermove", handlePointerMove);
+  window.removeEventListener("pointerup", handlePointerEnd);
+  window.removeEventListener("pointercancel", resetDrag);
 }
 
-function handleDragStart(dictionary: string, event: DragEvent) {
+function handlePointerDown(dictionary: string, index: number, event: PointerEvent) {
+  if (event.button !== 0) return;
   draggedDictionary.value = dictionary;
-  dragInsertIndex.value = orderedDictionaries.value.indexOf(dictionary);
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", dictionary);
-  }
+  dragInsertIndex.value = index;
+  dragPointerId = event.pointerId;
+  (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+  window.addEventListener("pointermove", handlePointerMove);
+  window.addEventListener("pointerup", handlePointerEnd);
+  window.addEventListener("pointercancel", resetDrag);
+  event.preventDefault();
 }
 
-function handleDragOver(index: number, event: DragEvent) {
-  if (!draggedDictionary.value) return;
-  const row = event.currentTarget as HTMLElement;
-  const bounds = row.getBoundingClientRect();
-  dragInsertIndex.value = event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
-  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+function handlePointerMove(event: PointerEvent) {
+  if (!draggedDictionary.value || event.pointerId !== dragPointerId) return;
+  const rows = Array.from(document.querySelectorAll<HTMLElement>(".dictionary-list [data-dictionary-index]"));
+  if (!rows.length) return;
+  const insertion = rows.findIndex((row) => {
+    const bounds = row.getBoundingClientRect();
+    return event.clientY < bounds.top + bounds.height / 2;
+  });
+  dragInsertIndex.value = insertion < 0 ? rows.length : insertion;
 }
 
-function handleListDragOver(event: DragEvent) {
-  if (!draggedDictionary.value || event.target !== event.currentTarget) return;
-  dragInsertIndex.value = orderedDictionaries.value.length;
-  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+function handlePointerEnd(event: PointerEvent) {
+  if (event.pointerId !== dragPointerId) return;
+  handleDrop();
 }
 
 function handleDrop() {
@@ -106,6 +116,8 @@ function handleDrop() {
 function updateShortcut(name: keyof DictionaryShortcutSettings, event: Event) {
   setDictionaryShortcut(name, (event.target as HTMLSelectElement).value);
 }
+
+onBeforeUnmount(resetDrag);
 </script>
 
 <template>
@@ -120,25 +132,22 @@ function updateShortcut(name: keyof DictionaryShortcutSettings, event: Event) {
           <button type="button" class="close-button" aria-label="关闭词典设置" @click="emit('close')"><X :size="19" aria-hidden="true" /></button>
         </header>
         <p v-if="!hasDictionaries" class="empty-state">尚未加载本地词典。</p>
-        <ol v-else class="dictionary-list" aria-label="词典优先级" @dragover.prevent="handleListDragOver" @drop.prevent="handleDrop">
+        <ol v-else class="dictionary-list" aria-label="词典优先级">
           <li
             v-for="(dictionary, index) in orderedDictionaries"
             :key="dictionary"
+            :data-dictionary-index="index"
             :class="{
               dragging: draggedDictionary === dictionary,
               'drop-before': draggedDictionary && dragInsertIndex === index,
               'drop-after': draggedDictionary && dragInsertIndex === orderedDictionaries.length && index === orderedDictionaries.length - 1,
             }"
-            @dragover.prevent.stop="handleDragOver(index, $event)"
-            @drop.prevent.stop="handleDrop"
           >
             <span
               class="drag-handle"
-              draggable="true"
               :title="`拖动 ${dictionary} 调整优先级`"
               aria-hidden="true"
-              @dragstart.stop="handleDragStart(dictionary, $event)"
-              @dragend="resetDrag"
+              @pointerdown="handlePointerDown(dictionary, index, $event)"
             ><GripVertical :size="17" aria-hidden="true" /></span>
             <span class="priority">{{ index + 1 }}</span>
             <span class="dictionary-name">
@@ -204,7 +213,7 @@ p { margin-top: 4px; color: var(--text-secondary); font-size: .82rem; }
 .dictionary-list li.drop-after::after { content: ""; position: absolute; z-index: 2; right: 8px; left: 8px; height: 2px; border-radius: 999px; background: var(--accent-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-light) 82%, transparent); }
 .dictionary-list li.drop-before::before { top: -5px; }
 .dictionary-list li.drop-after::after { bottom: -5px; }
-.drag-handle { display: grid; width: 24px; height: 30px; place-items: center; border-radius: 6px; color: var(--text-muted); cursor: grab; user-select: none; }
+.drag-handle { display: grid; width: 24px; height: 30px; place-items: center; border-radius: 6px; color: var(--text-muted); cursor: grab; touch-action: none; user-select: none; }
 .drag-handle:hover { background: var(--bg-secondary); color: var(--accent-color); }
 .drag-handle:active { cursor: grabbing; }
 .priority { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: var(--bg-secondary); color: var(--text-muted); font: 700 .68rem var(--font-ui); }
