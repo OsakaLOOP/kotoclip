@@ -97,7 +97,7 @@
 .example-browser__nav.is-visible.example-browser__nav--next,
 .example-browser__nav:hover:not(:disabled).example-browser__nav--next,
 .example-browser__nav:focus-visible.example-browser__nav--next { background: linear-gradient(270deg, color-mix(in srgb, var(--bg-card) 98%, transparent) 18%, transparent 100%); }
-.example-browser__nav:disabled { opacity: .3; pointer-events: none; color: color-mix(in srgb, #9a742c 68%, var(--text-muted)); }
+.example-browser__nav:disabled { opacity: 0; pointer-events: none; }
 .example-browser__controls { display: flex; justify-content: flex-end; align-items: center; margin-top: 6px; color: var(--text-muted); font: 0.68rem/1.3 var(--font-ui); }
 .example-browser__controls button { display: inline-flex; align-items: center; justify-content: center; min-height: 24px; border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent); border-radius: 999px; padding: 2px 8px; background: color-mix(in srgb, var(--bg-card) 78%, transparent); color: var(--text-secondary); cursor: pointer; }
 .example-browser__controls button:hover { border-color: var(--accent-color); background: var(--accent-light); color: var(--accent-color); }
