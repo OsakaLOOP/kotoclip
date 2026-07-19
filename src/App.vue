@@ -10,7 +10,10 @@ const onboardingStorageKey = "kotoclip:onboarding:v1";
 const onboardingPreview = new URLSearchParams(window.location.search).get("onboarding") === "1";
 
 function shouldShowOnboarding(): boolean {
+  // 如果 URL 参数中包含 onboarding=1，则强制展示欢迎引导页面，便于开发调试观察
   if (onboardingPreview) return true;
+  // 对于 insider 渠道的 package 版本，默认关闭欢迎引导页面
+  if (isInsider) return false;
   try {
     return window.localStorage.getItem(onboardingStorageKey) !== "completed";
   } catch {
