@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { AnnotatedToken, ExpressionBoundaryEffect, ExpressionRule, ExpressionRulePreview, ExpressionType, SegmentationCandidate } from "../types";
@@ -492,7 +492,7 @@ export function useTokenization() {
       const tokenId = patch.tokenIds[index];
       const existing = tokenCache.get(tokenId);
       if (existing) Object.assign(existing, token);
-      else tokenCache.set(tokenId, token);
+      else tokenCache.set(tokenId, reactive(token));
     });
     if (patch.orderedTokenIds.length > 0) {
       orderedTokenIds = patch.orderedTokenIds;
@@ -510,6 +510,15 @@ export function useTokenization() {
     documentCharRange.value = patch.documentCharRange;
     availableRanges.value = patch.availableRanges;
     return ordered as AnnotatedToken[];
+  }
+
+  function applyPatch(patch: AnalysisPatch): AnnotatedToken[] {
+    const allTokens = mergePatch(patch);
+    if (patch.kind !== "token_update" || paragraphs.value.length === 0) {
+      // TokenUpdate 原位更新响应式 token，不触碰段落数组和虚拟行结构。
+      paragraphs.value = buildParagraphs(allTokens);
+    }
+    return allTokens;
   }
 
   /**
@@ -615,7 +624,7 @@ export function useTokenization() {
         baseRevision: documentRevision.value,
         charRange,
       });
-      paragraphs.value = buildParagraphs(mergePatch(patch));
+      applyPatch(patch);
       return patch;
     });
   }
@@ -628,7 +637,7 @@ export function useTokenization() {
         baseRevision: documentRevision.value,
         mutation: { type: "replace_text", text, recordExposure },
       });
-      paragraphs.value = buildParagraphs(mergePatch(response.patch));
+      applyPatch(response.patch);
       return true;
     });
   }
@@ -648,8 +657,7 @@ export function useTokenization() {
             requestId,
           }));
         if (!patch || activeSessionId.value !== sessionId) return;
-        const allTokens = mergePatch(patch);
-        paragraphs.value = buildParagraphs(allTokens);
+        const allTokens = applyPatch(patch);
         const elapsed = performance.now() - batchStartedAt;
         console.log(
           `[Background Batch Complete] [${new Date().toISOString()}] (+${elapsed.toFixed(1)}ms) Session: ${sessionId}, Revision: ${documentRevision.value}, Tokens: ${allTokens.length}, Complete: ${documentComplete.value}`
@@ -687,7 +695,7 @@ export function useTokenization() {
         sessionId: activeSessionId.value,
         baseRevision: documentRevision.value,
       });
-      paragraphs.value = buildParagraphs(mergePatch(patch));
+      applyPatch(patch);
       return patch;
     });
   }
@@ -705,7 +713,7 @@ export function useTokenization() {
         reading,
         known,
       });
-      paragraphs.value = buildParagraphs(mergePatch(patch));
+      applyPatch(patch);
       return patch;
     });
   }
@@ -787,7 +795,7 @@ export function useTokenization() {
         source,
         candidate,
       });
-      paragraphs.value = buildParagraphs(mergePatch(patch));
+      applyPatch(patch);
     });
   }
 

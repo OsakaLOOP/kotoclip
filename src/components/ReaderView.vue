@@ -5,7 +5,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { ComponentPublicInstance } from "vue";
-import { useVirtualizer } from "@tanstack/vue-virtual";
+import { useVirtualizer, type Virtualizer } from "@tanstack/vue-virtual";
 import { useTokenization } from "../composables/useTokenization";
 import { useSelection } from "../composables/useSelection";
 import { useDictionary } from "../composables/useDictionary";
@@ -30,9 +30,10 @@ import ReaderNavigationPanel from "./reader/ReaderNavigationPanel.vue";
 import ReaderProgressBar from "./reader/ReaderProgressBar.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 import { compileReaderDocument, prepareMarkdownDocument, type MarkdownMetadata, type ReaderChapter, type ReaderDocument } from "../utils/markdownDocument";
-import { resourceKey, resourcePathMap, type LibraryBook, type LibraryBookSummary } from "../reader/library";
+import { resourceKey, resourceMap, type LibraryBook, type LibraryBookSummary, type LibraryResource } from "../reader/library";
 import { buildReaderRows, rowCharacterOffset, rowIndexForOffset } from "../reader/rows";
 import { DEFAULT_READER_APPEARANCE, formatReadingDuration, normalizeAppearance, readingEstimate, type ReaderAppearance } from "../reader/reading";
+import { estimateReaderRow, resolveReaderRowMeasurement } from "../reader/virtualization";
 import { useExplanationSession } from "../composables/useExplanationSession";
 import { useExplanationInteraction } from "../composables/useExplanationInteraction";
 
@@ -48,7 +49,7 @@ const libraryLoading = ref(true);
 const libraryError = ref<string | null>(null);
 const libraryPath = ref("");
 const activeLibraryBook = ref<LibraryBook | null>(null);
-const activeResourcePaths = ref<Map<string, string>>(new Map());
+const activeResources = ref<Map<string, LibraryResource>>(new Map());
 const readerDocument = ref<ReaderDocument | null>(null);
 const currentDocumentMetadata = ref<MarkdownMetadata | null>(null);
 const inputMetadata = computed(() => prepareMarkdownDocument(inputText.value).metadata);
@@ -135,10 +136,14 @@ function updateReaderAppearance(value: ReaderAppearance) {
   }
 }
 
-function resolveReaderImage(src: string): string | undefined {
-  if (src.startsWith("data:")) return src;
-  const path = activeResourcePaths.value.get(resourceKey(src));
-  return path ? convertFileSrc(path) : undefined;
+function resolveReaderImage(src: string) {
+  if (src.startsWith("data:")) return { src };
+  const resource = activeResources.value.get(resourceKey(src));
+  return resource ? {
+    src: convertFileSrc(resource.path),
+    width: resource.width,
+    height: resource.height,
+  } : undefined;
 }
 
 const readerRows = computed(() => buildReaderRows(
@@ -299,52 +304,143 @@ const {
   }
 });
 
-// 使用 @tanstack/vue-virtual 虚拟滚动
+function estimateVirtualRow(index: number): number {
+  const row = readerRows.value[index];
+  const viewportHeight = scrollContainerRef.value?.clientHeight ?? window.innerHeight;
+  return estimateReaderRow({
+    kind: row?.kind ?? "text",
+    heading: row?.kind === "text" && Boolean(row.heading),
+    viewportHeight,
+    fontSize: readerAppearance.value.fontSize,
+    lineHeight: readerAppearance.value.lineHeight,
+    contentWidth: Math.min(readerAppearance.value.contentWidth, Math.max(0, window.innerWidth - 40)),
+    imageWidth: row?.kind === "image" ? row.intrinsicWidth : undefined,
+    imageHeight: row?.kind === "image" ? row.intrinsicHeight : undefined,
+    hasCaption: row?.kind === "image" && Boolean(row.image.title || row.image.alt),
+  });
+}
+
+function measureReaderRow(
+  element: HTMLElement,
+  entry: ResizeObserverEntry | undefined,
+  instance: Virtualizer<HTMLElement, HTMLElement>,
+): number {
+  const index = Number(element.dataset.index);
+  const row = readerRows.value[index];
+  const observedSize = entry?.borderBoxSize?.[0]?.blockSize;
+  return resolveReaderRowMeasurement({
+    kind: row?.kind ?? "text",
+    imageState: element.querySelector<HTMLElement>("[data-image-state]")?.dataset.imageState,
+    cachedSize: row ? instance.itemSizeCache.get(row.key) : undefined,
+    estimatedSize: estimateVirtualRow(index),
+    observedSize,
+    elementSize: element.offsetHeight,
+  });
+}
+
+// 使用 @tanstack/vue-virtual 虚拟滚动；尺寸缓存按稳定正文 key 保留。
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: readerRows.value.length,
     getScrollElement: () => scrollContainerRef.value,
-    estimateSize: (index) => readerRows.value[index]?.kind === "image" ? 520 : 82,
+    estimateSize: estimateVirtualRow,
+    measureElement: measureReaderRow,
     overscan: 5,
+    gap: readerAppearance.value.paragraphGap,
     getItemKey: (index) => readerRows.value[index]?.key ?? index,
+    useAnimationFrameWithResizeObserver: true,
   }))
 );
+virtualizer.value.shouldAdjustScrollPositionOnItemSizeChange = (item) =>
+  item.end <= (scrollContainerRef.value?.scrollTop ?? 0) + 1;
 
-function measureVirtualRow(element: Element | ComponentPublicInstance | null) {
-  if (element instanceof Element) {
+const virtualRowElements = new Map<string, HTMLElement>();
+
+function measureVirtualRow(element: Element | ComponentPublicInstance | null, key: string) {
+  if (element instanceof HTMLElement) {
+    virtualRowElements.set(key, element);
     virtualizer.value.measureElement(element);
+  } else {
+    const previous = virtualRowElements.get(key);
+    if (previous && !previous.isConnected) virtualRowElements.delete(key);
+    virtualizer.value.measureElement(null);
   }
 }
 
-// 后台 Patch 只重新测量，不能打断用户滚动位置。
+async function measureSettledImage(key: string) {
+  await nextTick();
+  const element = virtualRowElements.get(key);
+  if (element?.isConnected) virtualizer.value.measureElement(element);
+}
+
+interface ViewportAnchor {
+  key: string;
+  inset: number;
+}
+
+function captureViewportAnchor(rows = readerRows.value): ViewportAnchor | null {
+  const container = scrollContainerRef.value;
+  if (!container) return null;
+  const item = virtualizer.value.getVirtualItems().find((candidate) => candidate.end > container.scrollTop);
+  const row = item ? rows[item.index] : undefined;
+  return item && row ? { key: row.key, inset: container.scrollTop - item.start } : null;
+}
+
+let anchorRestoreGeneration = 0;
+async function restoreViewportAnchor(anchor: ViewportAnchor | null) {
+  if (!anchor) return;
+  const generation = ++anchorRestoreGeneration;
+  await nextTick();
+  requestAnimationFrame(() => {
+    if (generation !== anchorRestoreGeneration) return;
+    const index = readerRows.value.findIndex((row) => row.key === anchor.key);
+    const offset = index >= 0 ? virtualizer.value.getOffsetForIndex(index, "start")?.[0] : undefined;
+    if (offset !== undefined) virtualizer.value.scrollToOffset(Math.max(0, offset + anchor.inset));
+  });
+}
+
+// 阅读态切换只处理交互状态；新文档在 triggerAnalysis 中执行一次完整测量。
 watch(
   isReading,
-  async (reading) => {
+  (reading) => {
     explanation.closeAll();
     if (!reading) return;
-    await nextTick();
-    virtualizer.value.measure();
     triggerUpdate();
   },
   { flush: "post" }
 );
 
 watch(
-  paragraphs,
-  async () => {
+  readerRows,
+  (rows, previousRows) => {
     if (!isReading.value) return;
-    await nextTick();
-    virtualizer.value.measure();
+    const anchor = captureViewportAnchor(previousRows);
+    if (anchor) {
+      const previousIndex = previousRows.findIndex((row) => row.key === anchor.key);
+      const nextIndex = rows.findIndex((row) => row.key === anchor.key);
+      if (nextIndex >= 0 && nextIndex !== previousIndex) void restoreViewportAnchor(anchor);
+    }
     triggerUpdate();
   },
-  { flush: "post" }
+  { flush: "pre" }
 );
 
-watch(readerAppearance, async () => {
+let remeasureFrame: number | undefined;
+let pendingRemeasureAnchor: ViewportAnchor | null = null;
+function scheduleReaderRemeasure() {
   if (!isReading.value) return;
-  await nextTick();
-  virtualizer.value.measure();
-}, { deep: true, flush: "post" });
+  pendingRemeasureAnchor ??= captureViewportAnchor();
+  if (remeasureFrame !== undefined) cancelAnimationFrame(remeasureFrame);
+  remeasureFrame = requestAnimationFrame(() => {
+    remeasureFrame = undefined;
+    const anchor = pendingRemeasureAnchor;
+    pendingRemeasureAnchor = null;
+    virtualizer.value.measure();
+    void restoreViewportAnchor(anchor);
+  });
+}
+
+watch(readerAppearance, scheduleReaderRemeasure, { deep: true, flush: "sync" });
 
 let rangePrefetchPending = false;
 
@@ -439,6 +535,7 @@ onMounted(() => {
   void loadLibrary();
   window.addEventListener("mouseup", handleMouseUp);
   window.addEventListener("resize", explanation.refreshAnchor);
+  window.addEventListener("resize", scheduleReaderRemeasure, { passive: true });
 });
 
 watch(backendReady, (ready) => {
@@ -464,6 +561,8 @@ onBeforeUnmount(() => {
   disposeBackendStatusListener();
   window.removeEventListener("mouseup", handleMouseUp);
   window.removeEventListener("resize", explanation.refreshAnchor);
+  window.removeEventListener("resize", scheduleReaderRemeasure);
+  if (remeasureFrame !== undefined) cancelAnimationFrame(remeasureFrame);
   explanation.closeAll();
 });
 
@@ -577,7 +676,7 @@ async function openLibraryBook(id: string) {
 
 async function openBookData(book: LibraryBook) {
   activeLibraryBook.value = book;
-  activeResourcePaths.value = resourcePathMap(book.resources);
+  activeResources.value = resourceMap(book.resources);
   inputText.value = book.markdown;
   currentDocumentMetadata.value = null;
   lastProgressPersistedAt = Date.now();
@@ -589,7 +688,7 @@ async function showMarkdownInput() {
   showLibrary.value = false;
   showInput.value = true;
   activeLibraryBook.value = null;
-  activeResourcePaths.value = new Map();
+  activeResources.value = new Map();
   readerDocument.value = null;
   inputText.value = "";
 }
@@ -928,7 +1027,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
               transform: `translateY(${virtualRow.start}px) translateX(-50%)`,
             }"
             :data-index="virtualRow.index"
-            :ref="measureVirtualRow"
+            :ref="(element) => measureVirtualRow(element, readerRows[virtualRow.index].key)"
             :class="[
               'reader-row',
               readerRows[virtualRow.index].kind === 'text' ? 'paragraph-block' : 'reader-image-row',
@@ -952,7 +1051,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
               :src="imageRowAt(virtualRow.index).resolvedSrc"
               :alt="imageRowAt(virtualRow.index).image.alt"
               :title="imageRowAt(virtualRow.index).image.title"
-              @load="virtualizer.measure()"
+              :width="imageRowAt(virtualRow.index).intrinsicWidth"
+              :height="imageRowAt(virtualRow.index).intrinsicHeight"
+              @settled="measureSettledImage(imageRowAt(virtualRow.index).key)"
             />
             <template v-else-if="textRowAt(virtualRow.index).paragraph.tokens.length > 0">
               <template v-for="(token, tokenIndex) in textRowAt(virtualRow.index).paragraph.tokens" :key="tokenIndex">
@@ -1497,15 +1598,16 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
 .reader-row {
   width: min(var(--reader-content-width, 760px), calc(100% - 40px));
+  box-sizing: border-box;
 }
 
 .reader-image-row {
-  margin-bottom: var(--reader-paragraph-gap, 24px);
+  padding: 10px 0;
 }
 
 .reader-heading-row {
-  margin-top: 42px;
-  margin-bottom: calc(var(--reader-paragraph-gap, 24px) * 1.35);
+  padding-top: 42px;
+  padding-bottom: calc(var(--reader-paragraph-gap, 24px) * 0.35);
   color: var(--text-primary);
   font-weight: 650;
   line-height: 1.55;

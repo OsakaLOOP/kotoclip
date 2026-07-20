@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-const LIBRARY_SCHEMA_VERSION: i64 = 1;
+const LIBRARY_SCHEMA_VERSION: i64 = 2;
 
 #[derive(Debug, Clone)]
 pub struct ReaderLibrary {
@@ -38,6 +38,8 @@ pub struct LibraryResource {
     pub href: String,
     pub path: String,
     pub media_type: String,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -60,6 +62,7 @@ impl ReaderLibrary {
         std::fs::create_dir_all(library.root.join("books"))?;
         let connection = library.connection()?;
         initialize_schema(&connection)?;
+        backfill_resource_dimensions(&connection, &library.root)?;
         Ok(library)
     }
 
@@ -285,14 +288,17 @@ impl ReaderLibrary {
         }
         for (index, (resource, relative_path)) in stored_resources.iter().enumerate() {
             transaction.execute(
-                "INSERT INTO resources (book_id, position, href, relative_path, media_type)
-                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                "INSERT INTO resources (
+                    book_id, position, href, relative_path, media_type, width, height
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                 params![
                     id,
                     index as i64,
                     resource.href,
                     relative_path.to_string_lossy(),
                     resource.media_type,
+                    resource.width,
+                    resource.height,
                 ],
             )?;
         }
@@ -318,7 +324,7 @@ impl ReaderLibrary {
         id: &str,
     ) -> Result<Vec<LibraryResource>, rusqlite::Error> {
         let mut statement = connection.prepare(
-            "SELECT href, relative_path, media_type
+            "SELECT href, relative_path, media_type, width, height
              FROM resources WHERE book_id = ?1 ORDER BY position",
         )?;
         let rows = statement.query_map([id], |row| {
@@ -327,6 +333,12 @@ impl ReaderLibrary {
                 href: row.get(0)?,
                 path: self.root.join(relative_path).to_string_lossy().into_owned(),
                 media_type: row.get(2)?,
+                width: row
+                    .get::<_, Option<i64>>(3)?
+                    .map(|value| value.max(0) as u32),
+                height: row
+                    .get::<_, Option<i64>>(4)?
+                    .map(|value| value.max(0) as u32),
             })
         })?;
         rows.collect()
@@ -365,12 +377,56 @@ fn initialize_schema(connection: &Connection) -> Result<(), rusqlite::Error> {
             href TEXT NOT NULL,
             relative_path TEXT NOT NULL,
             media_type TEXT NOT NULL,
+            width INTEGER,
+            height INTEGER,
             PRIMARY KEY (book_id, href),
             UNIQUE (book_id, position)
         );
         CREATE INDEX IF NOT EXISTS idx_books_last_opened ON books(last_opened_at DESC);",
     )?;
+    let columns = connection
+        .prepare("PRAGMA table_info(resources)")?
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?;
+    if !columns.iter().any(|column| column == "width") {
+        connection.execute("ALTER TABLE resources ADD COLUMN width INTEGER", [])?;
+    }
+    if !columns.iter().any(|column| column == "height") {
+        connection.execute("ALTER TABLE resources ADD COLUMN height INTEGER", [])?;
+    }
     connection.pragma_update(None, "user_version", LIBRARY_SCHEMA_VERSION)?;
+    Ok(())
+}
+
+fn backfill_resource_dimensions(
+    connection: &Connection,
+    root: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let missing = {
+        let mut statement = connection.prepare(
+            "SELECT book_id, href, relative_path FROM resources
+             WHERE width IS NULL OR height IS NULL",
+        )?;
+        let rows = statement
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        rows
+    };
+    for (book_id, href, relative_path) in missing {
+        let Ok(size) = imagesize::size(root.join(relative_path)) else {
+            continue;
+        };
+        connection.execute(
+            "UPDATE resources SET width = ?3, height = ?4 WHERE book_id = ?1 AND href = ?2",
+            params![book_id, href, size.width as i64, size.height as i64],
+        )?;
+    }
     Ok(())
 }
 
@@ -463,6 +519,8 @@ mod tests {
                     resources: vec![ImportedEpubResource {
                         href: "cover.jpeg".to_string(),
                         media_type: "image/jpeg".to_string(),
+                        width: Some(600),
+                        height: Some(800),
                         bytes: b"cover".to_vec(),
                     }],
                     warnings: Vec::new(),
@@ -476,6 +534,10 @@ mod tests {
         let book = library.open_book(&id).unwrap();
         assert_eq!(book.chapter_titles, vec!["第一章"]);
         assert_eq!(std::fs::read(&book.resources[0].path).unwrap(), b"cover");
+        assert_eq!(
+            (book.resources[0].width, book.resources[0].height),
+            (Some(600), Some(800))
+        );
         let updated = library
             .update_progress(&id, 50, 100, Some("第一章"), 120)
             .unwrap();

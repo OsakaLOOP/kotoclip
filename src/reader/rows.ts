@@ -13,19 +13,27 @@ export interface ReaderImageRow {
   kind: "image";
   image: ReaderImageBlock;
   resolvedSrc?: string;
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
 }
 
 export type ReaderRow = ReaderTextRow | ReaderImageRow;
 
+export interface ResolvedReaderImage {
+  src: string;
+  width?: number;
+  height?: number;
+}
+
 export function buildReaderRows(
   paragraphs: Paragraph[],
   document: ReaderDocument | null,
-  resolveImage: (src: string) => string | undefined,
+  resolveImage: (src: string) => ResolvedReaderImage | undefined,
   complete: boolean,
 ): ReaderRow[] {
   if (!document) {
     return paragraphs.map((paragraph) => ({
-      key: `paragraph-${paragraph.id}-${paragraph.charRange[0]}`,
+      key: paragraphKey(paragraph),
       kind: "text",
       paragraph,
     }));
@@ -33,22 +41,30 @@ export function buildReaderRows(
 
   const rows: ReaderRow[] = [];
   const images = [...document.images].sort((left, right) => left.charOffset - right.charOffset);
+  const chapters = [...document.chapters].sort((left, right) => left.charOffset - right.charOffset);
   let imageIndex = 0;
+  let chapterIndex = 0;
   for (const paragraph of paragraphs) {
     while (imageIndex < images.length && images[imageIndex].charOffset <= paragraph.charRange[0]) {
       const image = images[imageIndex++];
+      const resolved = resolveImage(image.src);
       rows.push({
         key: image.id,
         kind: "image",
         image,
-        resolvedSrc: resolveImage(image.src),
+        resolvedSrc: resolved?.src,
+        intrinsicWidth: resolved?.width,
+        intrinsicHeight: resolved?.height,
       });
     }
-    const heading = document.chapters.find((chapter) =>
-      chapter.charOffset >= paragraph.charRange[0] && chapter.charOffset < paragraph.charRange[1]
-    );
+    while (chapterIndex < chapters.length && chapters[chapterIndex].charOffset < paragraph.charRange[0]) {
+      chapterIndex++;
+    }
+    const chapter = chapters[chapterIndex];
+    const heading = chapter?.charOffset < paragraph.charRange[1] ? chapter : undefined;
+    if (heading) chapterIndex++;
     rows.push({
-      key: `paragraph-${paragraph.id}-${paragraph.charRange[0]}`,
+      key: paragraphKey(paragraph),
       kind: "text",
       paragraph,
       heading,
@@ -57,15 +73,23 @@ export function buildReaderRows(
   if (complete) {
     while (imageIndex < images.length) {
       const image = images[imageIndex++];
+      const resolved = resolveImage(image.src);
       rows.push({
         key: image.id,
         kind: "image",
         image,
-        resolvedSrc: resolveImage(image.src),
+        resolvedSrc: resolved?.src,
+        intrinsicWidth: resolved?.width,
+        intrinsicHeight: resolved?.height,
       });
     }
   }
   return rows;
+}
+
+function paragraphKey(paragraph: Paragraph): string {
+  // 渐进插入会改变数组下标和临时段落 ID，正文起点才是稳定身份。
+  return `paragraph-${paragraph.charRange[0]}`;
 }
 
 export function rowCharacterOffset(row: ReaderRow | undefined): number {

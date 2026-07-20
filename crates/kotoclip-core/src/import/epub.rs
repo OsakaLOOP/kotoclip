@@ -27,6 +27,8 @@ pub struct ImportedEpub {
 pub struct ImportedEpubResource {
     pub href: String,
     pub media_type: String,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
     #[serde(skip_serializing)]
     pub bytes: Vec<u8>,
 }
@@ -174,9 +176,12 @@ fn collect_image_resources<R: Read + Seek>(
         let mut bytes = Vec::with_capacity(file.size() as usize);
         file.read_to_end(&mut bytes)?;
         total_bytes += bytes.len() as u64;
+        let dimensions = imagesize::blob_size(&bytes).ok();
         resources.push(ImportedEpubResource {
             href,
             media_type: media_type.to_string(),
+            width: dimensions.map(|size| size.width as u32),
+            height: dimensions.map(|size| size.height as u32),
             bytes,
         });
     }

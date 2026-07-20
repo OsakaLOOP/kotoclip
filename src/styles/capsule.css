@@ -2,7 +2,7 @@
 
 .paragraph-block {
   font-family: var(--font-ja);
-  margin-bottom: var(--reader-paragraph-gap, 24px);
+  margin: 0;
   line-height: var(--reader-line-height, 2.2);
   font-size: var(--reader-font-size, 19px);
   word-break: break-word;

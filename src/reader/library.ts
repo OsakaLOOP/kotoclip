@@ -18,6 +18,8 @@ export interface LibraryResource {
   href: string;
   path: string;
   mediaType: string;
+  width?: number;
+  height?: number;
 }
 
 export interface LibraryBook extends LibraryBookSummary {
@@ -33,6 +35,6 @@ export function resourceKey(path: string): string {
   return decodeURIComponent(clean.slice(clean.lastIndexOf("/") + 1)).toLocaleLowerCase();
 }
 
-export function resourcePathMap(resources: LibraryResource[]): Map<string, string> {
-  return new Map(resources.map((resource) => [resourceKey(resource.href), resource.path]));
+export function resourceMap(resources: LibraryResource[]): Map<string, LibraryResource> {
+  return new Map(resources.map((resource) => [resourceKey(resource.href), resource]));
 }

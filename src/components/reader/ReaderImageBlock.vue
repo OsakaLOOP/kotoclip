@@ -1,11 +1,36 @@
 <script setup lang="ts">
-defineProps<{ src?: string; alt: string; title?: string }>();
-const emit = defineEmits<{ load: [] }>();
+import { ref, watch } from "vue";
+
+const props = defineProps<{ src?: string; alt: string; title?: string; width?: number; height?: number }>();
+const emit = defineEmits<{ settled: [] }>();
+const imageState = ref<"loading" | "ready" | "error">("loading");
+
+watch(() => props.src, () => {
+  imageState.value = "loading";
+});
+
+function handleLoad() {
+  imageState.value = "ready";
+  emit("settled");
+}
+
+function handleError() {
+  imageState.value = "error";
+  emit("settled");
+}
 </script>
 
 <template>
-  <figure class="reader-image-block">
-    <img v-if="src" :src="src" :alt="alt" @load="emit('load')" @error="emit('load')" />
+  <figure class="reader-image-block" :data-image-state="src ? imageState : 'missing'">
+    <img
+      v-if="src && imageState !== 'error'"
+      :src="src"
+      :alt="alt"
+      :width="width"
+      :height="height"
+      @load="handleLoad"
+      @error="handleError"
+    />
     <div v-else class="missing-image">图片资源不可用</div>
     <figcaption v-if="title || alt">{{ title || alt }}</figcaption>
   </figure>
@@ -16,7 +41,7 @@ const emit = defineEmits<{ load: [] }>();
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 10px 0 30px;
+  margin: 0;
 }
 
 img {
