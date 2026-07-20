@@ -682,9 +682,13 @@ async function navigateToOffset(offset: number) {
       Math.min(documentCharRange.value[1], offset + 4_000),
     ]);
   }
+
   await nextTick();
-  virtualizer.value.measure();
-  virtualizer.value.scrollToIndex(rowIndexForOffset(readerRows.value, offset), {
+  // Range patch 可能排队恢复旧视口锚点；主动跳转必须在下一布局帧取得最终控制权。
+  anchorRestoreGeneration++;
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  const targetIndex = rowIndexForOffset(readerRows.value, offset);
+  virtualizer.value.scrollToIndex(targetIndex, {
     align: "start",
   });
   currentCharOffset.value = offset;
@@ -1258,10 +1262,11 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <button
           class="icon-btn chapter-button"
           :class="{ active: showNavigation }"
+          :title="currentChapter?.title || '章节'"
           @click="showNavigation = !showNavigation"
         >
           <ListTree :size="16" aria-hidden="true" />
-          {{ currentChapter?.title || "章节" }}
+          <span class="chapter-button__label">{{ currentChapter?.title || "章节" }}</span>
         </button>
         <button
           class="icon-btn compact-tool"
@@ -1801,9 +1806,25 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 }
 
 .chapter-button {
-  max-width: 170px;
+  width: auto;
+  height: 36px;
+  min-width: 0;
+  max-width: min(320px, 34vw);
+  flex: 0 1 auto;
+  box-sizing: border-box;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.chapter-button svg {
+  flex: 0 0 auto;
+}
+
+.chapter-button__label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .icon-btn.compact-tool {
