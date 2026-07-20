@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from "vue";
-import { BookOpen, Clock3, FileText, FileUp, FolderOpen, Search, Trash2 } from "@lucide/vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { BookOpen, BookOpenText, Clock3, FileText, FileUp, FolderOpen, Search, Trash2 } from "@lucide/vue";
 import type { LibraryBookSummary } from "../../reader/library";
 
 const props = defineProps<{
@@ -32,6 +32,7 @@ interface CoverRipple {
 }
 
 const coverRipple = ref<CoverRipple | null>(null);
+const openingSurfaceTarget = ref<string | null>(null);
 let rippleKey = 0;
 let rippleTimer: number | undefined;
 
@@ -87,12 +88,18 @@ function startCoverRipple(
   rippleTimer = window.setTimeout(() => {
     coverRipple.value = null;
     rippleTimer = undefined;
-  }, 520);
+  }, 320);
 }
 
 function openBook(event: MouseEvent, bookId: string, surface: BookSurface) {
   if (event.detail === 0) startCoverRipple(event, bookId, surface, true);
+  openingSurfaceTarget.value = rippleTarget(surface, bookId);
   emit("open", bookId);
+}
+
+function isOpeningSurface(surface: BookSurface, bookId: string): boolean {
+  return props.openingBookId === bookId
+    && openingSurfaceTarget.value === rippleTarget(surface, bookId);
 }
 
 function rippleStyle(surface: BookSurface, bookId: string): Record<string, string> | undefined {
@@ -108,6 +115,10 @@ function rippleStyle(surface: BookSurface, bookId: string): Record<string, strin
 
 onBeforeUnmount(() => {
   if (rippleTimer !== undefined) window.clearTimeout(rippleTimer);
+});
+
+watch(() => props.openingBookId, (bookId) => {
+  if (!bookId) openingSurfaceTarget.value = null;
 });
 </script>
 
@@ -155,11 +166,14 @@ onBeforeUnmount(() => {
           class="continue-book"
           type="button"
           :disabled="Boolean(openingBookId)"
-          :aria-busy="openingBookId === books[0].id"
+          :aria-busy="isOpeningSurface('continue', books[0].id)"
           @pointerdown="startCoverRipple($event, books[0].id, 'continue')"
           @click="openBook($event, books[0].id, 'continue')"
         >
-          <div class="continue-cover">
+          <div
+            class="continue-cover"
+            :style="isOpeningSurface('continue', books[0].id) ? { viewTransitionName: 'book-cover' } : undefined"
+          >
             <img v-if="props.coverUrl(books[0])" :src="props.coverUrl(books[0])" alt="" />
             <BookOpen v-else :size="30" aria-hidden="true" />
             <span class="cover-state-layer" aria-hidden="true"></span>
@@ -170,8 +184,8 @@ onBeforeUnmount(() => {
               :style="rippleStyle('continue', books[0].id)"
               aria-hidden="true"
             ></span>
-            <span v-if="openingBookId === books[0].id" class="cover-opening" aria-hidden="true">
-              <BookOpen :size="25" stroke-width="1.8" />
+            <span v-if="isOpeningSurface('continue', books[0].id)" class="cover-opening" aria-hidden="true">
+              <span class="opening-mark"><BookOpenText :size="23" stroke-width="2.5" /></span>
             </span>
           </div>
           <div class="continue-copy">
@@ -205,11 +219,14 @@ onBeforeUnmount(() => {
               class="book-open"
               type="button"
               :disabled="Boolean(openingBookId)"
-              :aria-busy="openingBookId === book.id"
+              :aria-busy="isOpeningSurface('shelf', book.id)"
               @pointerdown="startCoverRipple($event, book.id, 'shelf')"
               @click="openBook($event, book.id, 'shelf')"
             >
-              <div class="book-cover">
+              <div
+                class="book-cover"
+                :style="isOpeningSurface('shelf', book.id) ? { viewTransitionName: 'book-cover' } : undefined"
+              >
                 <img v-if="props.coverUrl(book)" :src="props.coverUrl(book)" alt="" />
                 <BookOpen v-else :size="32" aria-hidden="true" />
                 <span class="cover-state-layer" aria-hidden="true"></span>
@@ -220,8 +237,8 @@ onBeforeUnmount(() => {
                   :style="rippleStyle('shelf', book.id)"
                   aria-hidden="true"
                 ></span>
-                <span v-if="openingBookId === book.id" class="cover-opening" aria-hidden="true">
-                  <BookOpen :size="32" stroke-width="1.8" />
+                <span v-if="isOpeningSurface('shelf', book.id)" class="cover-opening" aria-hidden="true">
+                  <span class="opening-mark"><BookOpenText :size="28" stroke-width="2.5" /></span>
                 </span>
               </div>
               <strong>{{ book.title }}</strong>
@@ -422,15 +439,11 @@ h1 {
   object-fit: cover;
 }
 
-.continue-book:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--bg-secondary) 94%, var(--accent-color));
-}
-
 .continue-book:hover:not(:disabled) .continue-cover,
 .continue-book:focus-visible .continue-cover,
 .book-open:hover:not(:disabled) .book-cover,
 .book-open:focus-visible .book-cover {
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--text-primary) 15%, transparent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--text-primary) 11%, transparent);
   transform: translateY(-6px);
 }
 
@@ -540,7 +553,7 @@ h1 {
 
 .continue-book:disabled,
 .book-open:disabled {
-  cursor: wait;
+  cursor: default;
 }
 
 .continue-book:disabled:not([aria-busy="true"]),
@@ -555,9 +568,7 @@ h1 {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
-  backdrop-filter: blur(2px);
-  color: var(--accent-color);
+  pointer-events: none;
 }
 
 .cover-state-layer {
@@ -574,44 +585,54 @@ h1 {
 .continue-book:focus-visible .cover-state-layer,
 .book-open:hover:not(:disabled) .cover-state-layer,
 .book-open:focus-visible .cover-state-layer {
-  opacity: 0.1;
+  opacity: 0.055;
 }
 
 .continue-book:active:not(:disabled) .cover-state-layer,
 .book-open:active:not(:disabled) .cover-state-layer {
-  opacity: 0.16;
+  opacity: 0.11;
 }
 
 .cover-ripple {
   position: absolute;
   z-index: 4;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--accent-color) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-color) 22%, transparent);
   opacity: 0;
   pointer-events: none;
   transform: scale(0);
-  animation: cover-ripple 500ms cubic-bezier(.4, 0, .2, 1);
+  animation: cover-ripple 300ms cubic-bezier(.4, 0, .2, 1);
 }
 
-.cover-opening::before,
-.cover-opening::after {
+.cover-opening::before {
   position: absolute;
   width: 22%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--accent-color) 22%, transparent);
+  z-index: 0;
+  background: color-mix(in srgb, var(--accent-color) 18%, transparent);
   content: "";
-  animation: cover-opening-wave 1.25s cubic-bezier(0, 0, .2, 1) infinite;
+  animation: cover-opening-wave 280ms cubic-bezier(0, 0, .2, 1) both;
 }
 
-.cover-opening::after {
-  animation-delay: 420ms;
-}
-
-.cover-opening svg {
+.opening-mark {
   position: relative;
   z-index: 1;
-  animation: cover-opening-icon 1.25s cubic-bezier(.4, 0, .2, 1) infinite;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--accent-color);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--text-primary) 20%, transparent);
+  color: #fff;
+  animation: cover-opening-icon 280ms cubic-bezier(.4, 0, .2, 1) both;
+}
+
+.continue-cover .opening-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
 }
 
 .book-open strong,
@@ -675,13 +696,15 @@ h1 {
 }
 
 @keyframes cover-opening-wave {
-  0% { opacity: 0.5; transform: scale(0.4); }
-  75%, 100% { opacity: 0; transform: scale(7.5); }
+  0% { opacity: 0; transform: scale(0.25); }
+  28% { opacity: 0.42; }
+  100% { opacity: 0; transform: scale(7.5); }
 }
 
 @keyframes cover-opening-icon {
-  0%, 100% { opacity: 0.72; transform: translateY(1px); }
-  50% { opacity: 1; transform: translateY(-2px); }
+  0% { opacity: 0; transform: translateY(8px) scale(0.86); }
+  62% { opacity: 1; transform: translateY(-2px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -694,12 +717,11 @@ h1 {
   }
 
   .cover-ripple,
-  .cover-opening::before,
-  .cover-opening::after {
+  .cover-opening::before {
     display: none;
   }
 
-  .cover-opening svg {
+  .opening-mark {
     animation: none;
   }
 }

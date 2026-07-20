@@ -48,6 +48,8 @@ const libraryBooks = ref<LibraryBookSummary[]>([]);
 const libraryLoading = ref(true);
 const libraryError = ref<string | null>(null);
 const openingLibraryBookId = ref<string | null>(null);
+const bookAnalysisTransitioning = ref(false);
+let bookAnalysisGeneration = 0;
 const libraryPath = ref("");
 const activeLibraryBook = ref<LibraryBook | null>(null);
 const activeResources = ref<Map<string, LibraryResource>>(new Map());
@@ -568,7 +570,11 @@ onBeforeUnmount(() => {
 });
 
 // 执行文本分析
-async function triggerAnalysis(recordExposure = true) {
+async function triggerAnalysis(
+  recordExposure = true,
+  beforeReader?: Promise<void>,
+  shouldPresentReader: () => boolean = () => true,
+) {
   if (!inputText.value.trim()) return;
   const compiled = compileReaderDocument(inputText.value);
   const sourceText = compiled.analysisText;
@@ -585,6 +591,8 @@ async function triggerAnalysis(recordExposure = true) {
   const startedAt = performance.now();
   const succeeded = await analyzeText(sourceText, recordExposure);
   if (succeeded) {
+    await beforeReader;
+    if (!shouldPresentReader()) return;
     inputText.value = compiled.markdown;
     readerDocument.value = compiled;
     currentDocumentMetadata.value = metadata;
@@ -671,7 +679,11 @@ async function openLibraryBook(id: string) {
   openingLibraryBookId.value = id;
   libraryError.value = null;
   try {
-    await openBookData(await invoke<LibraryBook>("open_library_book", { id }));
+    const [book] = await Promise.all([
+      invoke<LibraryBook>("open_library_book", { id }),
+      waitForBookOpeningAnimation(),
+    ]);
+    await openBookData(book);
   } catch (error) {
     libraryError.value = `无法打开书籍：${String(error)}`;
     showLibrary.value = true;
@@ -682,18 +694,63 @@ async function openLibraryBook(id: string) {
 }
 
 async function openBookData(book: LibraryBook) {
+  const generation = ++bookAnalysisGeneration;
   activeLibraryBook.value = book;
   activeResources.value = resourceMap(book.resources);
   inputText.value = book.markdown;
   currentDocumentMetadata.value = null;
   lastProgressPersistedAt = Date.now();
-  // 先进入既有分析页，使首批分析进度与错误在等待期间始终可见。
-  showLibrary.value = false;
-  showInput.value = true;
-  await triggerAnalysis();
+  let analysis: Promise<void> | undefined;
+  try {
+    await runReaderViewTransition(() => {
+      showLibrary.value = false;
+      showInput.value = true;
+      openingLibraryBookId.value = null;
+      bookAnalysisTransitioning.value = true;
+      analysis = triggerAnalysis(
+        true,
+        waitForBookAnalysisEntry(),
+        () => generation === bookAnalysisGeneration && !showLibrary.value,
+      );
+    });
+    await analysis;
+  } finally {
+    if (generation === bookAnalysisGeneration) bookAnalysisTransitioning.value = false;
+  }
+}
+
+function waitForBookOpeningAnimation(): Promise<void> {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
+  return new Promise((resolve) => window.setTimeout(resolve, 300));
+}
+
+function waitForBookAnalysisEntry(): Promise<void> {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
+  return new Promise((resolve) => window.setTimeout(resolve, 320));
+}
+
+async function runReaderViewTransition(update: () => void): Promise<void> {
+  const transitionDocument = document as Document & {
+    startViewTransition?: (callback: () => void | Promise<void>) => { updateCallbackDone: Promise<void> };
+  };
+  if (
+    !transitionDocument.startViewTransition
+    || window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    update();
+    await nextTick();
+    return;
+  }
+  const transition = transitionDocument.startViewTransition(async () => {
+    update();
+    await nextTick();
+  });
+  await transition.updateCallbackDone;
 }
 
 async function showMarkdownInput() {
+  bookAnalysisGeneration++;
+  bookAnalysisTransitioning.value = false;
   if (activeLibraryBook.value && isReading.value) await persistLibraryProgress();
   showLibrary.value = false;
   showInput.value = true;
@@ -704,6 +761,8 @@ async function showMarkdownInput() {
 }
 
 async function returnToLibrary() {
+  bookAnalysisGeneration++;
+  bookAnalysisTransitioning.value = false;
   if (activeLibraryBook.value) await persistLibraryProgress();
   showAppearance.value = false;
   showNavigation.value = false;
@@ -877,7 +936,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <BookOpen class="logo-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
         <span class="logo-text">Kotoclip</span>
         <span v-if="showLibrary" class="logo-sub">阅读与语言学习</span>
-        <span v-else-if="showInput" class="logo-sub">Markdown 文本</span>
+        <span v-else-if="showInput" class="logo-sub">{{ activeLibraryBook ? '正在分析书籍' : 'Markdown 文本' }}</span>
         <div v-else-if="currentDocumentMetadata" class="document-identity">
           <strong>{{ currentDocumentMetadata.title || '未命名文本' }}</strong>
           <span v-if="currentDocumentMetadata.author">{{ currentDocumentMetadata.author }}</span>
@@ -949,37 +1008,22 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         @remove="removeLibraryBook"
       />
 
-      <!-- 1. 文本输入模块 -->
-      <div v-if="showInput" class="input-section">
-        <div class="input-source-bar">
-          <div>
-            <strong>{{ inputMetadata.title || activeLibraryBook?.title || 'Markdown 文本' }}</strong>
-            <span v-if="activeLibraryBook">
-              {{ inputMetadata.author || activeLibraryBook.author }} · {{ activeLibraryBook.chapterTitles.length }} 章 · {{ activeLibraryBook.sourceName }}
-            </span>
-            <span v-else>可直接粘贴文本，或从 EPUB 转换后继续编辑。</span>
+      <!-- 1. 分析与文本输入模块 -->
+      <section
+        v-if="showInput && activeLibraryBook"
+        class="book-analysis-view"
+        :aria-busy="isAnalyzing || bookAnalysisTransitioning"
+      >
+        <div class="book-analysis-identity">
+          <div class="book-analysis-cover">
+            <img v-if="libraryCoverUrl(activeLibraryBook)" :src="libraryCoverUrl(activeLibraryBook)" alt="" />
+            <BookMarked v-else :size="34" stroke-width="1.8" aria-hidden="true" />
           </div>
-          <button
-            class="icon-btn import-btn"
-            :disabled="isAnalyzing || isImportingEpub"
-            @click="importEpub"
-          >
-            <FileUp :size="16" aria-hidden="true" />
-            {{ isImportingEpub ? '正在转换…' : '导入 EPUB' }}
-          </button>
-        </div>
-        <textarea
-          v-model="inputText"
-          placeholder="在此粘贴日文文本，或点击“导入 EPUB”生成 Markdown..."
-          class="raw-textarea"
-          :disabled="isAnalyzing || isImportingEpub"
-          :aria-busy="isAnalyzing || isImportingEpub"
-        ></textarea>
-        <div v-if="epubImportError" class="error-message">
-          <AlertTriangle :size="16" aria-hidden="true" /> EPUB 导入失败: {{ epubImportError }}
-        </div>
-        <div v-else-if="activeLibraryBook?.warnings.length" class="import-warning" role="status">
-          已生成 Markdown；另有 {{ activeLibraryBook.warnings.length }} 个内容项未能完整读取，可先检查文本再解析。
+          <div class="book-analysis-copy">
+            <strong>{{ activeLibraryBook.title }}</strong>
+            <span>{{ activeLibraryBook.author }}</span>
+            <small>{{ activeLibraryBook.chapterTitles.length }} 章 · {{ activeLibraryBook.sourceName }}</small>
+          </div>
         </div>
         <div v-if="errorMsg" class="error-message">
           <AlertTriangle :size="16" aria-hidden="true" /> 分析出错: {{ errorMsg }}
@@ -991,19 +1035,62 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           正在启动本地分析引擎，请稍候…
         </div>
         <AnalysisProgressPanel
+          class="book-analysis-progress"
           :progress="analysisProgress"
-          :active="isAnalyzing"
+          :active="isAnalyzing || bookAnalysisTransitioning"
         />
-        <div class="btn-group">
-          <button
-            class="analyze-btn"
-            :disabled="isAnalyzing || isImportingEpub || !backendReady"
-            @click="triggerAnalysis()"
-          >
-            {{ isAnalyzing ? analysisProgress.message : backendReady ? '解析生词胶囊' : '正在启动分析引擎…' }}
-          </button>
+      </section>
+
+      <Transition name="analysis-view">
+        <div v-if="showInput && !activeLibraryBook" class="input-section">
+          <div class="input-source-bar">
+            <div>
+              <strong>{{ inputMetadata.title || 'Markdown 文本' }}</strong>
+              <span>可直接粘贴文本，或从 EPUB 转换后继续编辑。</span>
+            </div>
+            <button
+              class="icon-btn import-btn"
+              :disabled="isAnalyzing || isImportingEpub"
+              @click="importEpub"
+            >
+              <FileUp :size="16" aria-hidden="true" />
+              {{ isImportingEpub ? '正在转换…' : '导入 EPUB' }}
+            </button>
+          </div>
+          <textarea
+            v-model="inputText"
+            placeholder="在此粘贴日文文本，或点击“导入 EPUB”生成 Markdown..."
+            class="raw-textarea"
+            :disabled="isAnalyzing || isImportingEpub"
+            :aria-busy="isAnalyzing || isImportingEpub"
+          ></textarea>
+          <div v-if="epubImportError" class="error-message">
+            <AlertTriangle :size="16" aria-hidden="true" /> EPUB 导入失败: {{ epubImportError }}
+          </div>
+          <div v-if="errorMsg" class="error-message">
+            <AlertTriangle :size="16" aria-hidden="true" /> 分析出错: {{ errorMsg }}
+          </div>
+          <div v-if="backendError" class="error-message">
+            <AlertTriangle :size="16" aria-hidden="true" /> 本地分析引擎启动失败: {{ backendError }}
+          </div>
+          <div v-else-if="!backendReady" class="backend-status" role="status">
+            正在启动本地分析引擎，请稍候…
+          </div>
+          <AnalysisProgressPanel
+            :progress="analysisProgress"
+            :active="isAnalyzing"
+          />
+          <div class="btn-group">
+            <button
+              class="analyze-btn"
+              :disabled="isAnalyzing || isImportingEpub || !backendReady"
+              @click="triggerAnalysis()"
+            >
+              {{ isAnalyzing ? analysisProgress.message : backendReady ? '解析生词胶囊' : '正在启动分析引擎…' }}
+            </button>
+          </div>
         </div>
-      </div>
+      </Transition>
 
       <AnalysisProgressPanel
         v-if="isReading"
@@ -1430,6 +1517,133 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   transform: translateX(-50%);
 }
 
+.book-analysis-view {
+  display: flex;
+  width: min(720px, calc(100% - 48px));
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  padding: 42px 0 72px;
+}
+
+.book-analysis-identity {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.book-analysis-cover {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: 86px;
+  aspect-ratio: 3 / 4;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--accent-light);
+  color: var(--accent-color);
+  view-transition-name: book-cover;
+}
+
+.book-analysis-cover::before {
+  position: absolute;
+  z-index: 0;
+  inset: -20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  content: "";
+  animation: analysis-cover-halo 360ms cubic-bezier(0, 0, .2, 1) both;
+}
+
+.book-analysis-cover img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.book-analysis-cover > svg {
+  position: relative;
+  z-index: 1;
+}
+
+.book-analysis-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  animation: analysis-content-enter 220ms 60ms cubic-bezier(0, 0, .2, 1) both;
+}
+
+.book-analysis-copy strong,
+.book-analysis-copy span,
+.book-analysis-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-analysis-copy strong {
+  color: var(--text-primary);
+  font-size: 1.08rem;
+}
+
+.book-analysis-copy span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.book-analysis-copy small {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.book-analysis-progress,
+.book-analysis-view > .error-message,
+.book-analysis-view > .backend-status {
+  animation: analysis-content-enter 240ms 90ms cubic-bezier(0, 0, .2, 1) both;
+}
+
+@keyframes analysis-cover-halo {
+  0% { opacity: 0.7; transform: scale(0.55); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+@keyframes analysis-content-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .book-analysis-view {
+    width: min(100% - 32px, 720px);
+    gap: 22px;
+    padding-block: 32px 56px;
+  }
+
+  .book-analysis-identity {
+    gap: 16px;
+  }
+
+  .book-analysis-cover {
+    width: 72px;
+  }
+}
+
+.analysis-view-enter-active {
+  transition: opacity 220ms ease, transform 260ms cubic-bezier(0, 0, .2, 1);
+}
+
+.analysis-view-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
 /* 输入模块样式 */
 .input-section {
   width: 100%;
@@ -1797,9 +2011,40 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 .fade-leave-to {
   opacity: 0;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .book-analysis-cover::before {
+    display: none;
+  }
+
+  .book-analysis-copy,
+  .book-analysis-progress,
+  .book-analysis-view > .error-message,
+  .book-analysis-view > .backend-status {
+    animation: none;
+  }
+
+  .analysis-view-enter-active {
+    transition: none;
+  }
+}
 </style>
 
 <style>
+::view-transition-group(book-cover) {
+  z-index: 40;
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+}
+
+::view-transition-old(book-cover),
+::view-transition-new(book-cover) {
+  height: 100%;
+  overflow: clip;
+  border-radius: 4px;
+  mix-blend-mode: normal;
+}
+
 /* MDict 渲染的富文本样式过滤 */
 .html-content span, .html-content div {
   background-color: transparent !important;
