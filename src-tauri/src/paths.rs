@@ -8,6 +8,7 @@ pub struct AppPaths {
     pub dictionary_dir: PathBuf,
     pub profile_db: PathBuf,
     pub data_dir: PathBuf,
+    pub library_dir: PathBuf,
 }
 
 impl AppPaths {
@@ -100,12 +101,14 @@ impl AppPaths {
         std::fs::create_dir_all(&dictionary_dir)?;
 
         let profile_db = data_dir.join("user_profile.db");
+        let library_dir = app.path().document_dir()?.join("Kotoclip Library");
         Ok(Self {
             system_dictionary,
             dictionary_source_dir,
             dictionary_dir,
             profile_db,
             data_dir,
+            library_dir,
         })
     }
 }

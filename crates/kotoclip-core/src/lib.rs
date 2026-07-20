@@ -5,6 +5,7 @@ pub mod document;
 pub mod export;
 pub mod ffi;
 pub mod import;
+pub mod library;
 pub mod llm;
 pub mod models;
 pub mod performance;

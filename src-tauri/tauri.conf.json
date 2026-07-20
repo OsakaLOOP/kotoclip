@@ -21,7 +21,7 @@
       "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost; img-src 'self' data: asset:; style-src 'self' 'unsafe-inline'; script-src 'self'",
       "assetProtocol": {
         "enable": true,
-        "scope": ["$TEMP/kotoclip-reader/**"]
+        "scope": ["$DOCUMENT/Kotoclip Library/**"]
       }
     }
   },

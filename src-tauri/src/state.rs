@@ -1,6 +1,7 @@
 use kotoclip_core::cache::AnalysisCache;
 use kotoclip_core::document::DocumentSession;
 use kotoclip_core::{DictionaryService, Engine};
+use kotoclip_core::library::ReaderLibrary;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{atomic::AtomicU64, Arc, Condvar, Mutex, MutexGuard};
@@ -105,4 +106,5 @@ pub struct AppState {
     pub sessions: Mutex<HashMap<String, DocumentSession>>,
     pub next_session_id: AtomicU64,
     pub analysis_cache: LazyResource<AnalysisCache>,
+    pub library: ReaderLibrary,
 }

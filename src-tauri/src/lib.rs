@@ -3,6 +3,7 @@ pub mod paths;
 pub mod state;
 
 use kotoclip_core::{cache::AnalysisCache, DictionaryService, Engine};
+use kotoclip_core::library::ReaderLibrary;
 use state::AppState;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicU64, Mutex};
@@ -38,6 +39,11 @@ pub fn run() {
                 setup_entered - run_started
             );
 
+            let paths = paths::AppPaths::resolve(app.handle())
+                .map_err(|error| error.to_string())?;
+            let library = ReaderLibrary::open(&paths.library_dir)
+                .map_err(|error| error.to_string())?;
+
             // 先注册可等待的资源，让 Tauri 能立即进入事件循环并绘制前端。
             let engine = state::LazyResource::pending();
             let dictionary = state::LazyResource::pending();
@@ -50,6 +56,7 @@ pub fn run() {
                 sessions: Mutex::new(HashMap::new()),
                 next_session_id: AtomicU64::new(1),
                 analysis_cache: analysis_cache.clone(),
+                library,
             });
 
             // 词典和 SQLite 初始化可能持续数百毫秒到数秒，不能阻塞 WebView 首次绘制。
@@ -135,6 +142,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::log_ui_timestamps,
             commands::import_epub_document,
+            commands::list_library_books,
+            commands::open_library_book,
+            commands::update_library_progress,
+            commands::remove_library_book,
+            commands::get_library_location,
             commands::open_document,
             commands::backend_status,
             commands::continue_document_analysis,
