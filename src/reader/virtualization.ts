@@ -39,5 +39,6 @@ export function resolveReaderRowMeasurement(input: ReaderRowMeasurementInput): n
   if (input.kind === "image" && input.imageState === "loading") {
     return input.cachedSize ?? input.estimatedSize;
   }
-  return Math.round(input.observedSize ?? input.elementSize);
+  // 虚拟行使用绝对定位；向下取整不足 1px 也可能让下一行侵入当前行的下沿。
+  return Math.ceil(input.observedSize ?? input.elementSize);
 }

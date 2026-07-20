@@ -26,7 +26,7 @@ test("图片完成解码后提交可测盒模型高度", () => {
     estimatedSize: 620,
     observedSize: 811.4,
     elementSize: 810,
-  }), 811);
+  }), 812);
 });
 
 test("图片估算受视口约束", () => {

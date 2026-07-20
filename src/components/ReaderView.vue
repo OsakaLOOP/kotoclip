@@ -97,6 +97,7 @@ const {
   backendError,
   initializeBackendStatus,
   disposeBackendStatusListener,
+  cancelAnalysis,
   addExpressionRule,
   previewExpressionRule,
   getExpressionRules,
@@ -337,7 +338,7 @@ function measureReaderRow(
     cachedSize: row ? instance.itemSizeCache.get(row.key) : undefined,
     estimatedSize: estimateVirtualRow(index),
     observedSize,
-    elementSize: element.offsetHeight,
+    elementSize: element.getBoundingClientRect().height,
   });
 }
 
@@ -373,7 +374,15 @@ function measureVirtualRow(element: Element | ComponentPublicInstance | null, ke
 async function measureSettledImage(key: string) {
   await nextTick();
   const element = virtualRowElements.get(key);
-  if (element?.isConnected) virtualizer.value.measureElement(element);
+  if (!element?.isConnected) return;
+  const index = Number(element.dataset.index);
+  if (!Number.isInteger(index) || readerRows.value[index]?.key !== key) return;
+  // 正常滚动期间 virtualizer 会跳过 measureElement 的同步读数；图片解码完成必须
+  // 直接提交真实 border-box，否则下方绝对定位行会暂时沿用旧估算高度。
+  virtualizer.value.resizeItem(
+    index,
+    measureReaderRow(element, undefined, virtualizer.value),
+  );
 }
 
 interface ViewportAnchor {
@@ -675,7 +684,8 @@ async function loadLibrary() {
 }
 
 async function openLibraryBook(id: string) {
-  if (openingLibraryBookId.value || isAnalyzing.value) return;
+  if (openingLibraryBookId.value) return;
+  const generation = ++bookAnalysisGeneration;
   openingLibraryBookId.value = id;
   libraryError.value = null;
   try {
@@ -683,18 +693,25 @@ async function openLibraryBook(id: string) {
       invoke<LibraryBook>("open_library_book", { id }),
       waitForBookOpeningAnimation(),
     ]);
-    await openBookData(book);
+    if (generation !== bookAnalysisGeneration) return;
+    await openBookData(book, generation);
   } catch (error) {
-    libraryError.value = `无法打开书籍：${String(error)}`;
-    showLibrary.value = true;
-    showInput.value = false;
+    if (generation === bookAnalysisGeneration) {
+      libraryError.value = `无法打开书籍：${String(error)}`;
+      showLibrary.value = true;
+      showInput.value = false;
+    }
   } finally {
-    openingLibraryBookId.value = null;
+    if (
+      generation === bookAnalysisGeneration &&
+      openingLibraryBookId.value === id
+    ) {
+      openingLibraryBookId.value = null;
+    }
   }
 }
 
-async function openBookData(book: LibraryBook) {
-  const generation = ++bookAnalysisGeneration;
+async function openBookData(book: LibraryBook, generation = ++bookAnalysisGeneration) {
   activeLibraryBook.value = book;
   activeResources.value = resourceMap(book.resources);
   inputText.value = book.markdown;
@@ -748,10 +765,12 @@ async function runReaderViewTransition(update: () => void): Promise<void> {
   await transition.updateCallbackDone;
 }
 
-async function showMarkdownInput() {
+function showMarkdownInput() {
   bookAnalysisGeneration++;
+  openingLibraryBookId.value = null;
   bookAnalysisTransitioning.value = false;
-  if (activeLibraryBook.value && isReading.value) await persistLibraryProgress();
+  cancelAnalysis();
+  if (activeLibraryBook.value && isReading.value) void persistLibraryProgress();
   showLibrary.value = false;
   showInput.value = true;
   activeLibraryBook.value = null;
@@ -760,15 +779,21 @@ async function showMarkdownInput() {
   inputText.value = "";
 }
 
-async function returnToLibrary() {
+function returnToLibrary() {
   bookAnalysisGeneration++;
+  openingLibraryBookId.value = null;
   bookAnalysisTransitioning.value = false;
-  if (activeLibraryBook.value) await persistLibraryProgress();
+  cancelAnalysis();
+  if (activeLibraryBook.value && isReading.value) void persistLibraryProgress();
   showAppearance.value = false;
   showNavigation.value = false;
   showInput.value = false;
   showLibrary.value = true;
-  await loadLibrary();
+  activeLibraryBook.value = null;
+  activeResources.value = new Map();
+  readerDocument.value = null;
+  inputText.value = "";
+  void loadLibrary();
 }
 
 async function revealLibrary() {
