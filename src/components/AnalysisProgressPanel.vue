@@ -1,35 +1,28 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { AnalysisPhase, AnalysisProgress } from "../composables/useTokenization";
+import {
+  isProgressIndeterminate,
+  progressCurrentLabel,
+  progressPhaseIndex,
+  progressStagesForMode,
+  type AnalysisProgress,
+} from "../reader/analysisProgress";
 
 const props = defineProps<{
   progress: AnalysisProgress;
   active: boolean;
 }>();
 
-const stages: Array<{ phase: AnalysisPhase; label: string }> = [
-  { phase: "preparing", label: "准备" },
-  { phase: "tokenizing", label: "形态素" },
-  { phase: "dictionary_matching", label: "词典" },
-  { phase: "chunking", label: "文节" },
-  { phase: "grammar_matching", label: "语法" },
-  { phase: "profile_scoring", label: "评分" },
-  { phase: "expression_matching", label: "表达" },
-  { phase: "recording_exposure", label: "记录" },
-];
-
-const phaseIndex = computed(() => {
-  if (props.progress.phase === "completed") return stages.length;
-  return stages.findIndex((stage) => stage.phase === props.progress.phase);
-});
-
-const currentLabel = computed(() => {
-  if (props.progress.phase === "completed") return "完成";
-  return stages.find((stage) => stage.phase === props.progress.phase)?.label ?? "分析";
-});
+const stages = computed(() => progressStagesForMode(props.progress.mode));
+const phaseIndex = computed(() => progressPhaseIndex(props.progress));
+const currentLabel = computed(() => progressCurrentLabel(props.progress));
+const indeterminate = computed(() => isProgressIndeterminate(props.progress));
+const stageListLabel = computed(() =>
+  props.progress.mode === "cache" ? "缓存恢复阶段" : "NLP 分析阶段",
+);
 
 const countText = computed(() => {
-  if (props.progress.total <= 0) return "";
+  if (indeterminate.value || props.progress.total <= 0) return "";
   return `${props.progress.completed.toLocaleString()} / ${props.progress.total.toLocaleString()}`;
 });
 </script>
@@ -47,21 +40,32 @@ const countText = computed(() => {
         <strong>{{ currentLabel }}</strong>
         <span class="progress-message">{{ progress.message }}</span>
         <span v-if="countText" class="progress-count">{{ countText }}</span>
-        <span class="progress-percent">{{ progress.percent }}%</span>
+        <span v-if="!indeterminate" class="progress-percent">{{ progress.percent }}%</span>
       </div>
 
       <div
         class="progress-track"
+        :class="{ indeterminate }"
         role="progressbar"
-        :aria-valuenow="progress.percent"
+        :aria-valuenow="indeterminate ? undefined : progress.percent"
         aria-valuemin="0"
         aria-valuemax="100"
         :aria-label="progress.message"
       >
-        <span class="progress-fill" :style="{ width: `${progress.percent}%` }"></span>
+        <span
+          class="progress-fill"
+          :style="indeterminate ? undefined : { width: `${progress.percent}%` }"
+        ></span>
       </div>
 
-      <ol class="stage-list" aria-label="NLP 分析阶段">
+      <ol
+        v-if="stages.length > 0"
+        class="stage-list"
+        :aria-label="stageListLabel"
+        :style="{
+          gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))`,
+        }"
+      >
         <li
           v-for="(stage, index) in stages"
           :key="stage.phase"
@@ -155,9 +159,17 @@ const countText = computed(() => {
   animation: progress-sheen 1.4s linear infinite;
 }
 
+.progress-track.indeterminate .progress-fill {
+  width: 32%;
+  animation: progress-indeterminate 1.1s ease-in-out infinite;
+}
+
+.progress-track.indeterminate .progress-fill::after {
+  animation: none;
+}
+
 .stage-list {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   margin-top: 10px;
   list-style: none;
@@ -214,6 +226,11 @@ const countText = computed(() => {
   to { transform: translateX(100%); }
 }
 
+@keyframes progress-indeterminate {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(320%); }
+}
+
 @media (max-width: 640px) {
   .progress-summary {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
@@ -230,8 +247,14 @@ const countText = computed(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .progress-pulse,
-  .progress-fill::after {
+  .progress-fill::after,
+  .progress-track.indeterminate .progress-fill {
     animation: none;
+  }
+
+  .progress-track.indeterminate .progress-fill {
+    width: 100%;
+    opacity: 0.45;
   }
 
   .progress-fill,

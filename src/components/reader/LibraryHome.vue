@@ -183,8 +183,7 @@ function openBook(event: MouseEvent, bookId: string, surface: BookSurface) {
 }
 
 function isOpeningSurface(surface: BookSurface, bookId: string): boolean {
-  return props.openingBookId === bookId
-    && openingSurfaceTarget.value === rippleTarget(surface, bookId);
+  return openingSurfaceTarget.value === rippleTarget(surface, bookId);
 }
 
 function rippleStyle(surface: BookSurface, bookId: string): Record<string, string> | undefined {

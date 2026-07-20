@@ -1,4 +1,4 @@
-use kotoclip_core::cache::AnalysisCache;
+use kotoclip_core::cache::{AnalysisCache, CacheLoadPhase};
 use kotoclip_core::dictionary::lookup::DictionaryEngine;
 use kotoclip_core::document::{AnalysisStage, DocumentSession, StageInvalidation};
 use kotoclip_core::pipeline::{ruby, Pipeline};
@@ -146,6 +146,13 @@ struct SessionBenchmarkReport {
     expression_patch_bytes: usize,
     cache_store_ms: u128,
     warm_open_ms: u128,
+    warm_cache_read_ms: u128,
+    warm_cache_decode_ms: u128,
+    warm_cache_validate_ms: u128,
+    warm_session_prepare_ms: u128,
+    warm_first_batch_select_ms: u128,
+    warm_first_state_restore_ms: u128,
+    warm_first_patch_ms: u128,
     warm_patch_bytes: usize,
     tokens: usize,
     progressive_reconstruction_ok: bool,
@@ -1415,12 +1422,37 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let cache_store_ms = cache_started.elapsed().as_millis();
 
     let warm_started = Instant::now();
-    let cached = cache.load(&text).ok_or("刚写入的缓存无法读取")?;
+    let cache_load_started = Instant::now();
+    let mut cache_decode_started_ms = None;
+    let mut cache_validate_started_ms = None;
+    let cached = cache
+        .load_with_progress(&text, |progress| match progress.phase {
+            CacheLoadPhase::Decoding if progress.completed == 0 => {
+                cache_decode_started_ms = Some(cache_load_started.elapsed().as_millis());
+            }
+            CacheLoadPhase::Validating if progress.completed == 0 => {
+                cache_validate_started_ms = Some(cache_load_started.elapsed().as_millis());
+            }
+            _ => {}
+        })
+        .ok_or("刚写入的缓存无法读取")?;
+    let cache_load_ms = cache_load_started.elapsed().as_millis();
+    let warm_cache_read_ms = cache_decode_started_ms.unwrap_or(cache_load_ms);
+    let warm_cache_decode_ms = cache_validate_started_ms
+        .unwrap_or(cache_load_ms)
+        .saturating_sub(warm_cache_read_ms);
+    let warm_cache_validate_ms = cache_load_ms
+        .saturating_sub(cache_validate_started_ms.unwrap_or(cache_load_ms));
+    let warm_session_started = Instant::now();
     let mut warm_session =
         DocumentSession::new_progressive("warm".to_string(), text.to_string(), false);
     warm_session.set_cached_stable_tokens(cached);
+    let warm_session_prepare_ms = warm_session_started.elapsed().as_millis();
     let mut warm_open_ms = 0;
     let mut warm_patch_bytes = 0;
+    let mut warm_first_batch_select_ms = 0;
+    let mut warm_first_state_restore_ms = 0;
+    let mut warm_first_patch_ms = 0;
     let mut warm_first = true;
     let mut warm_continuation = 0;
     while let Some(batch) = warm_session.next_batch(if warm_first {
@@ -1430,14 +1462,23 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     } else {
         8_000
     }) {
+        let batch_select_started = Instant::now();
         let stable = warm_session
             .take_cached_stable_tokens(&batch)
             .ok_or("缓存缺少对应批次 Token")?;
+        let batch_select_ms = batch_select_started.elapsed().as_millis();
+        let state_restore_started = Instant::now();
         let hydrated = engine.hydrate_stable_tokens_for_document_batch(stable)?;
+        let state_restore_ms = state_restore_started.elapsed().as_millis();
+        let patch_started = Instant::now();
         let patch = warm_session.append_analyzed_batch(warm_session.revision, &batch, hydrated)?;
+        let patch_ms = patch_started.elapsed().as_millis();
         if warm_first {
             warm_patch_bytes = serde_json::to_vec(&patch)?.len();
             warm_open_ms = warm_started.elapsed().as_millis();
+            warm_first_batch_select_ms = batch_select_ms;
+            warm_first_state_restore_ms = state_restore_ms;
+            warm_first_patch_ms = patch_ms;
             warm_first = false;
         } else {
             warm_continuation += 1;
@@ -1466,6 +1507,13 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         expression_patch_bytes,
         cache_store_ms,
         warm_open_ms,
+        warm_cache_read_ms,
+        warm_cache_decode_ms,
+        warm_cache_validate_ms,
+        warm_session_prepare_ms,
+        warm_first_batch_select_ms,
+        warm_first_state_restore_ms,
+        warm_first_patch_ms,
         warm_patch_bytes,
         tokens: session.tokens.len(),
         progressive_reconstruction_ok: reconstructed == expected,

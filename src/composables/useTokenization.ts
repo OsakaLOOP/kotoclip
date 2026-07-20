@@ -2,6 +2,11 @@ import { reactive, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { AnnotatedToken, ExpressionBoundaryEffect, ExpressionRule, ExpressionRulePreview, ExpressionType, SegmentationCandidate } from "../types";
+import type {
+  AnalysisProgress,
+  AnalysisProgressMode,
+  ProgressPhase,
+} from "../reader/analysisProgress";
 
 export interface Paragraph {
   id: number;
@@ -19,29 +24,10 @@ export interface FrontendAnalysisTiming {
   ipcAndParseMs: number;
 }
 
-export type AnalysisPhase =
-  | "preparing"
-  | "tokenizing"
-  | "chunking"
-  | "grammar_matching"
-  | "dictionary_matching"
-  | "profile_scoring"
-  | "expression_matching"
-  | "recording_exposure"
-  | "completed";
-
-export interface AnalysisProgress {
-  requestId: string;
-  phase: AnalysisPhase;
-  completed: number;
-  total: number;
-  percent: number;
-  message: string;
-}
-
 interface BackendAnalysisProgressEvent {
   requestId: string;
-  phase: AnalysisPhase;
+  mode: Exclude<AnalysisProgressMode, "starting">;
+  phase: ProgressPhase;
   completed: number;
   total: number;
   percent: number;
@@ -267,6 +253,7 @@ function decodeAnalysis(analysis: CompactAnalysis): AnnotatedToken[] {
 
 const initialProgress = (): AnalysisProgress => ({
   requestId: "",
+  mode: "starting",
   phase: "preparing",
   completed: 0,
   total: 0,
@@ -424,7 +411,7 @@ export function useTokenization() {
         }
         const elapsed = (performance.now() - startTime).toFixed(1);
         console.log(
-          `[Analysis Progress] [${new Date().toISOString()}] (+${elapsed}ms) [Req: ${payload.requestId}] Phase: ${payload.phase}, Percent: ${payload.percent}%, Message: ${payload.message}`
+          `[Analysis Progress] [${new Date().toISOString()}] (+${elapsed}ms) [Req: ${payload.requestId}] Mode: ${payload.mode}, Phase: ${payload.phase}, Percent: ${payload.percent}%, Message: ${payload.message}`
         );
         if (payload.phase === "completed" || payload.percent === 100) {
           progressStarts.delete(payload.requestId);
@@ -452,7 +439,10 @@ export function useTokenization() {
         ...analysisProgress.value,
         phase: "completed",
         percent: 100,
-        message: "分析完成",
+        message:
+          analysisProgress.value.mode === "cache"
+            ? "缓存恢复完成"
+            : "分析完成",
       };
     }
     unlistenAnalysisProgress?.();
@@ -564,7 +554,7 @@ export function useTokenization() {
     analysisProgress.value = {
       ...initialProgress(),
       requestId,
-      message: "准备分析",
+      message: "检查本地分析结果",
     };
     unlistenAnalysisProgress?.();
     unlistenAnalysisProgress = undefined;
@@ -580,6 +570,7 @@ export function useTokenization() {
         if (payload.requestId === activeRequestId.value) {
           analysisProgress.value = {
             requestId: payload.requestId,
+            mode: payload.mode,
             phase: payload.phase,
             completed: payload.completed,
             total: payload.total,
