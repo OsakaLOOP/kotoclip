@@ -1,9 +1,9 @@
 use kotoclip_core::cache::{AnalysisCache, CacheLoadPhase};
 use kotoclip_core::dictionary::lookup::DictionaryEngine;
 use kotoclip_core::document::{AnalysisStage, DocumentSession, StageInvalidation};
+use kotoclip_core::models::PosTag;
 use kotoclip_core::pipeline::{ruby, Pipeline};
 use kotoclip_core::transport::CompactAnalysis;
-use kotoclip_core::models::PosTag;
 use kotoclip_core::Engine;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -367,9 +367,8 @@ fn dict_bubble_html(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         Some(timing.clone()),
     );
 
-    let html_content = kotoclip_core::dictionary::bubble_html::generate_bubble_preview_html(
-        &lookup,
-    );
+    let html_content =
+        kotoclip_core::dictionary::bubble_html::generate_bubble_preview_html(&lookup);
 
     // JSON 与 HTML 使用同一份完整 Lookup，便于检查候选、活动 occurrence 和词典可用性。
     if let Some(json_path) = args.options.get("json") {
@@ -400,7 +399,10 @@ fn dict_bubble_html(args: &CliArgs) -> Result<(), Box<dyn Error>> {
                 .status();
 
             if let Err(e) = status {
-                eprintln!("自动打开浏览器失败：{}，您可以手动在浏览器中打开该文件。", e);
+                eprintln!(
+                    "自动打开浏览器失败：{}，您可以手动在浏览器中打开该文件。",
+                    e
+                );
             }
         }
     }
@@ -447,11 +449,19 @@ fn grammar_scan(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         .iter()
         .flat_map(|token| &token.bunsetsu.grammar_occurrences)
         .filter(|occurrence| {
-            matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Accepted)
-                || (include_pending
-                    && matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Pending))
+            matches!(
+                occurrence.status,
+                kotoclip_core::models::GrammarOccurrenceStatus::Accepted
+            ) || (include_pending
+                && matches!(
+                    occurrence.status,
+                    kotoclip_core::models::GrammarOccurrenceStatus::Pending
+                ))
                 || (include_rejected
-                    && matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Rejected))
+                    && matches!(
+                        occurrence.status,
+                        kotoclip_core::models::GrammarOccurrenceStatus::Rejected
+                    ))
         })
         .cloned()
         .collect::<Vec<_>>();
@@ -495,7 +505,10 @@ fn grammar_residual(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 
 fn grammar_catalog(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let catalog = kotoclip_core::pipeline::grammar::catalog::GrammarCatalog::load_embedded()?;
-    let jlpt = args.options.get("jlpt").and_then(|value| value.parse::<u8>().ok());
+    let jlpt = args
+        .options
+        .get("jlpt")
+        .and_then(|value| value.parse::<u8>().ok());
     let concepts = catalog.search(
         args.options.get("query").map(String::as_str),
         args.options.get("family").map(String::as_str),
@@ -527,7 +540,10 @@ fn grammar_explain(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let explanation = catalog
         .explanation(&concept.default_explanation_id)
         .ok_or_else(|| io::Error::other("concept 缺少讲解"))?;
-    output_json(args, &(concept, catalog.senses_for(concept_id), explanation))
+    output_json(
+        args,
+        &(concept, catalog.senses_for(concept_id), explanation),
+    )
 }
 
 fn grammar_library_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
@@ -561,20 +577,39 @@ fn grammar_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         "crates/kotoclip-core/tests/fixtures/grammar_representative_cases.json",
         String::as_str,
     );
-    let cases: Vec<GrammarRepresentativeCase> = serde_json::from_str(&std::fs::read_to_string(path)?)?;
+    let cases: Vec<GrammarRepresentativeCase> =
+        serde_json::from_str(&std::fs::read_to_string(path)?)?;
     let pipeline = pipeline(args)?;
     let mut results = Vec::new();
     for case in cases {
         let tokens = pipeline.process(&case.text, &[]);
-        let reconstructed = tokens.iter().map(|token| token.bunsetsu.surface.as_str()).collect::<String>();
+        let reconstructed = tokens
+            .iter()
+            .map(|token| token.bunsetsu.surface.as_str())
+            .collect::<String>();
         let found = tokens
             .iter()
             .flat_map(|token| &token.bunsetsu.grammar_occurrences)
-            .filter(|occurrence| matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Accepted))
+            .filter(|occurrence| {
+                matches!(
+                    occurrence.status,
+                    kotoclip_core::models::GrammarOccurrenceStatus::Accepted
+                )
+            })
             .map(|occurrence| occurrence.concept_id.clone())
             .collect::<HashSet<_>>();
-        let missing_concepts = case.expected_concepts.iter().filter(|item| !found.contains(*item)).cloned().collect::<Vec<_>>();
-        let forbidden_hits = case.forbidden_concepts.iter().filter(|item| found.contains(*item)).cloned().collect::<Vec<_>>();
+        let missing_concepts = case
+            .expected_concepts
+            .iter()
+            .filter(|item| !found.contains(*item))
+            .cloned()
+            .collect::<Vec<_>>();
+        let forbidden_hits = case
+            .forbidden_concepts
+            .iter()
+            .filter(|item| found.contains(*item))
+            .cloned()
+            .collect::<Vec<_>>();
         let explanation_resolution_ok = tokens
             .iter()
             .flat_map(|token| &token.bunsetsu.grammar_tags)
@@ -583,7 +618,10 @@ fn grammar_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
         results.push(GrammarCaseResult {
             id: case.id,
             text: case.text,
-            passed: missing_concepts.is_empty() && forbidden_hits.is_empty() && reconstruction_ok && explanation_resolution_ok,
+            passed: missing_concepts.is_empty()
+                && forbidden_hits.is_empty()
+                && reconstruction_ok
+                && explanation_resolution_ok,
             found_concepts: found.into_iter().collect(),
             missing_concepts,
             forbidden_hits,
@@ -609,10 +647,18 @@ struct GrammarCompareReport {
 fn grammar_compare(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let before_path = args.required("before").map_err(io::Error::other)?;
     let after_path = args.required("after").map_err(io::Error::other)?;
-    let before: Vec<kotoclip_core::models::GrammarOccurrence> = serde_json::from_str(&std::fs::read_to_string(before_path)?)?;
-    let after: Vec<kotoclip_core::models::GrammarOccurrence> = serde_json::from_str(&std::fs::read_to_string(after_path)?)?;
-    let before_ids = before.into_iter().map(|item| item.occurrence_id).collect::<HashSet<_>>();
-    let after_ids = after.into_iter().map(|item| item.occurrence_id).collect::<HashSet<_>>();
+    let before: Vec<kotoclip_core::models::GrammarOccurrence> =
+        serde_json::from_str(&std::fs::read_to_string(before_path)?)?;
+    let after: Vec<kotoclip_core::models::GrammarOccurrence> =
+        serde_json::from_str(&std::fs::read_to_string(after_path)?)?;
+    let before_ids = before
+        .into_iter()
+        .map(|item| item.occurrence_id)
+        .collect::<HashSet<_>>();
+    let after_ids = after
+        .into_iter()
+        .map(|item| item.occurrence_id)
+        .collect::<HashSet<_>>();
     let report = GrammarCompareReport {
         added: after_ids.difference(&before_ids).cloned().collect(),
         removed: before_ids.difference(&after_ids).cloned().collect(),
@@ -720,7 +766,12 @@ fn grammar_review(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     for (index, line) in text.split_inclusive('\n').enumerate() {
         let prepared = ruby::prepare_text(line).text;
         let length = prepared.chars().count();
-        line_ranges.push((index + 1, offset, offset + length, line.trim_end_matches(['\r', '\n']).to_string()));
+        line_ranges.push((
+            index + 1,
+            offset,
+            offset + length,
+            line.trim_end_matches(['\r', '\n']).to_string(),
+        ));
         offset += length;
     }
     if line_ranges.is_empty() && !text.is_empty() {
@@ -730,53 +781,69 @@ fn grammar_review(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let mut grouped: BTreeMap<usize, GrammarReviewItem> = BTreeMap::new();
     for token in &tokens {
         for occurrence in &token.bunsetsu.grammar_occurrences {
-            if matches!(occurrence.status, kotoclip_core::models::GrammarOccurrenceStatus::Accepted)
-                && !occurrence.show_badge
+            if matches!(
+                occurrence.status,
+                kotoclip_core::models::GrammarOccurrenceStatus::Accepted
+            ) && !occurrence.show_badge
                 && !args.flags.contains("include-atoms")
             {
                 continue;
             }
             let family_matches = family.as_ref().is_none_or(|requested| {
-                catalog.concept(&occurrence.concept_id).is_some_and(|concept| {
-                    concept.kind == *requested
-                        || concept.semantic_domains.iter().any(|item| item == requested)
-                        || concept.function_tags.iter().any(|item| item == requested)
-                })
+                catalog
+                    .concept(&occurrence.concept_id)
+                    .is_some_and(|concept| {
+                        concept.kind == *requested
+                            || concept
+                                .semantic_domains
+                                .iter()
+                                .any(|item| item == requested)
+                            || concept.function_tags.iter().any(|item| item == requested)
+                    })
             });
             if !family_matches {
                 continue;
             }
-            let Some((line_number, _, _, line_text)) = line_ranges
-                .iter()
-                .find(|(_, start, end, _)| occurrence.anchor_range.0 >= *start && occurrence.anchor_range.0 < *end)
+            let Some((line_number, _, _, line_text)) =
+                line_ranges.iter().find(|(_, start, end, _)| {
+                    occurrence.anchor_range.0 >= *start && occurrence.anchor_range.0 < *end
+                })
             else {
                 continue;
             };
-            let item = grouped.entry(*line_number).or_insert_with(|| GrammarReviewItem {
-                review_id: format!("line-{line_number}"),
-                line_number: *line_number,
-                text: line_text.clone(),
-                issue_score: 0,
-                accepted: Vec::new(),
-                pending: Vec::new(),
-                rejected: Vec::new(),
-                residuals: Vec::new(),
-                morphemes: Vec::new(),
-            });
+            let item = grouped
+                .entry(*line_number)
+                .or_insert_with(|| GrammarReviewItem {
+                    review_id: format!("line-{line_number}"),
+                    line_number: *line_number,
+                    text: line_text.clone(),
+                    issue_score: 0,
+                    accepted: Vec::new(),
+                    pending: Vec::new(),
+                    rejected: Vec::new(),
+                    residuals: Vec::new(),
+                    morphemes: Vec::new(),
+                });
             let view = GrammarReviewOccurrence {
                 occurrence_id: occurrence.occurrence_id.clone(),
                 concept_id: occurrence.concept_id.clone(),
                 rule_id: occurrence.rule_id.clone(),
                 status: format!("{:?}", occurrence.status).to_ascii_lowercase(),
                 char_range: occurrence.anchor_range,
-                actual_form: occurrence.captures.iter().map(|capture| capture.surface.as_str()).collect(),
+                actual_form: occurrence
+                    .captures
+                    .iter()
+                    .map(|capture| capture.surface.as_str())
+                    .collect(),
                 explanation_ready: catalog
                     .concept(&occurrence.concept_id)
                     .and_then(|concept| catalog.explanation(&concept.default_explanation_id))
                     .is_some(),
             };
             match occurrence.status {
-                kotoclip_core::models::GrammarOccurrenceStatus::Accepted => item.accepted.push(view),
+                kotoclip_core::models::GrammarOccurrenceStatus::Accepted => {
+                    item.accepted.push(view)
+                }
                 kotoclip_core::models::GrammarOccurrenceStatus::Pending => {
                     item.issue_score += 3;
                     item.pending.push(view);
@@ -792,23 +859,26 @@ fn grammar_review(args: &CliArgs) -> Result<(), Box<dyn Error>> {
             }
         }
         for residual in &token.bunsetsu.functional_residuals {
-            let Some((line_number, _, _, line_text)) = line_ranges
-                .iter()
-                .find(|(_, start, end, _)| residual.char_range.0 >= *start && residual.char_range.0 < *end)
+            let Some((line_number, _, _, line_text)) =
+                line_ranges.iter().find(|(_, start, end, _)| {
+                    residual.char_range.0 >= *start && residual.char_range.0 < *end
+                })
             else {
                 continue;
             };
-            let item = grouped.entry(*line_number).or_insert_with(|| GrammarReviewItem {
-                review_id: format!("line-{line_number}"),
-                line_number: *line_number,
-                text: line_text.clone(),
-                issue_score: 0,
-                accepted: Vec::new(),
-                pending: Vec::new(),
-                rejected: Vec::new(),
-                residuals: Vec::new(),
-                morphemes: Vec::new(),
-            });
+            let item = grouped
+                .entry(*line_number)
+                .or_insert_with(|| GrammarReviewItem {
+                    review_id: format!("line-{line_number}"),
+                    line_number: *line_number,
+                    text: line_text.clone(),
+                    issue_score: 0,
+                    accepted: Vec::new(),
+                    pending: Vec::new(),
+                    rejected: Vec::new(),
+                    residuals: Vec::new(),
+                    morphemes: Vec::new(),
+                });
             item.issue_score += 5;
             item.residuals.push(residual.clone());
         }
@@ -816,12 +886,9 @@ fn grammar_review(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     if args.flags.contains("include-morphemes") {
         for token in &tokens {
             for morpheme in &token.bunsetsu.morphemes {
-                let Some((line_number, _, _, _)) = line_ranges
-                    .iter()
-                    .find(|(_, start, end, _)| {
-                        morpheme.char_range.0 >= *start && morpheme.char_range.0 < *end
-                    })
-                else {
+                let Some((line_number, _, _, _)) = line_ranges.iter().find(|(_, start, end, _)| {
+                    morpheme.char_range.0 >= *start && morpheme.char_range.0 < *end
+                }) else {
                     continue;
                 };
                 let Some(item) = grouped.get_mut(line_number) else {
@@ -922,9 +989,8 @@ fn grammar_review_residual_candidates(
             if aggregate.samples.len() >= sample_count {
                 continue;
             }
-            let Some((line_number, _, _, line_text)) = line_ranges
-                .iter()
-                .find(|(_, start, end, _)| {
+            let Some((line_number, _, _, line_text)) =
+                line_ranges.iter().find(|(_, start, end, _)| {
                     residual.char_range.0 >= *start && residual.char_range.0 < *end
                 })
             else {
@@ -1353,8 +1419,8 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     } else {
         8_000
     }) {
-        let (stable_tokens, tokens) =
-            engine.analyze_document_batch_with_stable(&batch.source, session.document_readings())?;
+        let (stable_tokens, tokens) = engine
+            .analyze_document_batch_with_stable(&batch.source, session.document_readings())?;
         session.record_stable_batch(&batch, stable_tokens);
         let patch = session.append_analyzed_batch(session.revision, &batch, tokens)?;
         let payload = serde_json::to_vec(&patch)?;
@@ -1441,8 +1507,8 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let warm_cache_decode_ms = cache_validate_started_ms
         .unwrap_or(cache_load_ms)
         .saturating_sub(warm_cache_read_ms);
-    let warm_cache_validate_ms = cache_load_ms
-        .saturating_sub(cache_validate_started_ms.unwrap_or(cache_load_ms));
+    let warm_cache_validate_ms =
+        cache_load_ms.saturating_sub(cache_validate_started_ms.unwrap_or(cache_load_ms));
     let warm_session_started = Instant::now();
     let mut warm_session =
         DocumentSession::new_progressive("warm".to_string(), text.to_string(), false);

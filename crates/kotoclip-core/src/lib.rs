@@ -402,14 +402,14 @@ impl Engine {
         let annotated = self.profile.annotate_tokens_with_progress_cancellable(
             tokens,
             |completed, total| {
-                    let percent = 86 + ((completed * 13 / total.max(1)) as u8);
-                    report(AnalysisProgress::counted(
-                        AnalysisPhase::ProfileScoring,
-                        completed,
-                        total,
-                        percent.min(99),
-                        "计算词汇熟悉度",
-                    ));
+                let percent = 86 + ((completed * 13 / total.max(1)) as u8);
+                report(AnalysisProgress::counted(
+                    AnalysisPhase::ProfileScoring,
+                    completed,
+                    total,
+                    percent.min(99),
+                    "计算词汇熟悉度",
+                ));
             },
             is_cancelled,
         )?;

@@ -115,18 +115,8 @@ fn emit_cache_load_progress(window: &Window, request_id: &str, progress: CacheLo
             "读取分析缓存",
             DocumentProgressPhase::CacheReading,
         ),
-        CacheLoadPhase::Decoding => (
-            0,
-            0,
-            "解析缓存内容",
-            DocumentProgressPhase::CacheDecoding,
-        ),
-        CacheLoadPhase::Validating => (
-            0,
-            0,
-            "校验缓存版本",
-            DocumentProgressPhase::CacheRestoring,
-        ),
+        CacheLoadPhase::Decoding => (0, 0, "解析缓存内容", DocumentProgressPhase::CacheDecoding),
+        CacheLoadPhase::Validating => (0, 0, "校验缓存版本", DocumentProgressPhase::CacheRestoring),
     };
     emit_document_progress(
         window,
@@ -185,7 +175,10 @@ pub async fn import_epub_document(
 pub fn list_library_books(
     state: State<'_, AppState>,
 ) -> Result<Vec<kotoclip_core::library::LibraryBookSummary>, String> {
-    state.library.list_books().map_err(|error| error.to_string())
+    state
+        .library
+        .list_books()
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -193,7 +186,10 @@ pub fn open_library_book(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<kotoclip_core::library::LibraryBook, String> {
-    state.library.open_book(&id).map_err(|error| error.to_string())
+    state
+        .library
+        .open_book(&id)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -219,7 +215,10 @@ pub fn update_library_progress(
 
 #[tauri::command]
 pub fn remove_library_book(state: State<'_, AppState>, id: String) -> Result<bool, String> {
-    state.library.remove_book(&id).map_err(|error| error.to_string())
+    state
+        .library
+        .remove_book(&id)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -297,10 +296,7 @@ pub async fn backend_status(state: State<'_, AppState>) -> Result<BackendStatus,
 }
 
 #[tauri::command]
-pub fn cancel_document_analysis(
-    state: State<'_, AppState>,
-    request_id: String,
-) -> bool {
+pub fn cancel_document_analysis(state: State<'_, AppState>, request_id: String) -> bool {
     state.analysis_cancellations.cancel(&request_id)
 }
 

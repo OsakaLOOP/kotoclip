@@ -55,11 +55,7 @@ impl AnalysisCache {
         self.load_with_progress(source, |_| {})
     }
 
-    pub fn load_with_progress<F>(
-        &self,
-        source: &str,
-        mut report: F,
-    ) -> Option<Vec<AnnotatedToken>>
+    pub fn load_with_progress<F>(&self, source: &str, mut report: F) -> Option<Vec<AnnotatedToken>>
     where
         F: FnMut(CacheLoadProgress),
     {
@@ -159,9 +155,7 @@ impl AnalysisCache {
     fn prune(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut entries: Vec<_> = std::fs::read_dir(&self.directory)?
             .flatten()
-            .filter(|entry| {
-                is_cache_file(&entry.path())
-            })
+            .filter(|entry| is_cache_file(&entry.path()))
             .map(|entry| {
                 let modified = entry
                     .metadata()
@@ -180,7 +174,10 @@ impl AnalysisCache {
 }
 
 fn is_cache_file(path: &Path) -> bool {
-    matches!(path.extension().and_then(|value| value.to_str()), Some("bin" | "json"))
+    matches!(
+        path.extension().and_then(|value| value.to_str()),
+        Some("bin" | "json")
+    )
 }
 
 fn source_hash(source: &str) -> String {
