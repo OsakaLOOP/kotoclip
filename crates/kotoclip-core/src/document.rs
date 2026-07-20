@@ -301,6 +301,7 @@ impl DocumentSession {
             return None;
         }
         localize_tokens(&mut selected, batch.char_range.0);
+        crate::pipeline::grammar::canonicalize_document_coordinates(&mut selected);
         Some(selected)
     }
 

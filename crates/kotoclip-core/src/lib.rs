@@ -281,17 +281,20 @@ impl Engine {
         &self,
         tokens: Vec<AnnotatedToken>,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
-        let mut tokens = self.hydrate_stable_tokens_for_document_batch(tokens)?;
+        let mut tokens = self.hydrate_stable_tokens_for_document_batch(tokens, &HashMap::new())?;
         self.refresh_expression_annotations_in_place(&mut tokens)?;
         Ok(tokens)
     }
 
-    /// 为渐进文档批次重放会影响正文基本呈现的用户态阶段。
+    /// 为渐进文档批次重放全文 ruby 读音及影响正文基本呈现的用户态阶段。
+    /// 稳定缓存不保存文档 ruby 覆盖；暖启动必须与冷分析使用同一份全文读音表。
     /// Expression 在首帧和范围补全后统一执行，避免阻断首屏或重复扫描各批次。
     pub fn hydrate_stable_tokens_for_document_batch(
         &self,
         mut tokens: Vec<AnnotatedToken>,
+        document_readings: &HashMap<String, String>,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>> {
+        pipeline::ruby::override_token_readings_with_document_map(&mut tokens, document_readings);
         let choices = self.profile.get_segmentation_choices()?;
         self.pipeline
             .apply_segmentation_choices(&mut tokens, &choices);
@@ -316,9 +319,8 @@ impl Engine {
         document_readings: &HashMap<String, String>,
     ) -> Result<(Vec<AnnotatedToken>, Vec<AnnotatedToken>), Box<dyn std::error::Error>> {
         let stable_tokens = self.analyze_stable_text(text);
-        let mut tokens = stable_tokens.clone();
-        pipeline::ruby::override_token_readings_with_document_map(&mut tokens, document_readings);
-        let tokens = self.hydrate_stable_tokens_for_document_batch(tokens)?;
+        let tokens = self
+            .hydrate_stable_tokens_for_document_batch(stable_tokens.clone(), document_readings)?;
         Ok((stable_tokens, tokens))
     }
 
@@ -1006,6 +1008,45 @@ mod progress_tests {
     use super::*;
     use std::time::{SystemTime, UNIX_EPOCH};
 
+    fn first_json_difference(
+        left: &serde_json::Value,
+        right: &serde_json::Value,
+        path: &str,
+    ) -> Option<String> {
+        match (left, right) {
+            (serde_json::Value::Array(left), serde_json::Value::Array(right)) => {
+                if left.len() != right.len() {
+                    return Some(format!("{path}.length: {} != {}", left.len(), right.len()));
+                }
+                left.iter()
+                    .zip(right)
+                    .enumerate()
+                    .find_map(|(index, (left, right))| {
+                        first_json_difference(left, right, &format!("{path}[{index}]"))
+                    })
+            }
+            (serde_json::Value::Object(left), serde_json::Value::Object(right)) => {
+                for key in left.keys().chain(right.keys()) {
+                    match (left.get(key), right.get(key)) {
+                        (Some(left), Some(right)) => {
+                            if let Some(difference) =
+                                first_json_difference(left, right, &format!("{path}.{key}"))
+                            {
+                                return Some(difference);
+                            }
+                        }
+                        (left, right) => {
+                            return Some(format!("{path}.{key}: {left:?} != {right:?}"));
+                        }
+                    }
+                }
+                None
+            }
+            _ if left == right => None,
+            _ => Some(format!("{path}: {left:?} != {right:?}")),
+        }
+    }
+
     #[test]
     fn reports_monotonic_real_pipeline_phases() {
         let dict_path = [
@@ -1215,6 +1256,90 @@ mod progress_tests {
         assert_eq!(
             serde_json::to_value(hydrated).unwrap(),
             serde_json::to_value(full).unwrap()
+        );
+        drop(engine);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn cached_progressive_ruby_tokens_equal_cold_analysis() {
+        let dict_path = [
+            "../../ipadic/system.dic",
+            "../ipadic/system.dic",
+            "ipadic/system.dic",
+        ]
+        .into_iter()
+        .find(|path| std::path::Path::new(path).is_file());
+        let Some(dict_path) = dict_path else {
+            println!("测试跳过：未找到 IPADIC system.dic 字典文件。");
+            return;
+        };
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-ruby-cache-{nonce}"));
+        let dictionary_directory = directory.join("dicts");
+        std::fs::create_dir_all(&dictionary_directory).unwrap();
+        let engine = Engine::new(
+            dict_path,
+            &dictionary_directory,
+            directory.join("profile.sqlite"),
+        )
+        .unwrap();
+        let text = "七《なの》日《か》は警察署へ向かった。\n七日は何があっても諦めない。";
+
+        let mut cold = crate::document::DocumentSession::new_progressive(
+            "cold".to_string(),
+            text.to_string(),
+            false,
+        );
+        while let Some(batch) = cold.next_batch(1) {
+            let (stable, tokens) = engine
+                .analyze_document_batch_with_stable(&batch.source, cold.document_readings())
+                .unwrap();
+            cold.record_stable_batch(&batch, stable);
+            cold.append_analyzed_batch(cold.revision, &batch, tokens)
+                .unwrap();
+        }
+        engine
+            .refresh_expression_annotations_in_place(&mut cold.tokens)
+            .unwrap();
+
+        let cache = crate::cache::AnalysisCache::new(
+            directory.join("cache"),
+            std::path::Path::new(dict_path),
+            &dictionary_directory,
+        )
+        .unwrap();
+        cache.store(text, cold.stable_tokens_for_cache()).unwrap();
+        let cached = cache.load(text).expect("刚写入的缓存应可读取");
+        let mut warm = crate::document::DocumentSession::new_progressive(
+            "warm".to_string(),
+            text.to_string(),
+            false,
+        );
+        warm.set_cached_stable_tokens(cached);
+        while let Some(batch) = warm.next_batch(1) {
+            let stable = warm
+                .take_cached_stable_tokens(&batch)
+                .expect("缓存应覆盖每个文档批次");
+            let tokens = engine
+                .hydrate_stable_tokens_for_document_batch(stable, warm.document_readings())
+                .unwrap();
+            warm.append_analyzed_batch(warm.revision, &batch, tokens)
+                .unwrap();
+        }
+        engine
+            .refresh_expression_annotations_in_place(&mut warm.tokens)
+            .unwrap();
+
+        let warm_tokens = serde_json::to_value(&warm.tokens).unwrap();
+        let cold_tokens = serde_json::to_value(&cold.tokens).unwrap();
+        assert_eq!(
+            first_json_difference(&warm_tokens, &cold_tokens, "tokens"),
+            None,
+            "含跨批次 ruby 读音传播的暖缓存必须与冷分析一致"
         );
         drop(engine);
         std::fs::remove_dir_all(directory).unwrap();
