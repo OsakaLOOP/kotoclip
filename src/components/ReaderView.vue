@@ -19,7 +19,6 @@ import {
   Library,
   ListTree,
   Moon,
-  Plus,
   Settings2,
   Type,
   X,
@@ -1322,14 +1321,6 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         >
           <Moon :size="16" aria-hidden="true" />
         </button>
-        <button
-          class="icon-btn compact-tool highlight"
-          title="新建 Markdown 文本"
-          aria-label="新建 Markdown 文本"
-          @click="showMarkdownInput"
-        >
-          <Plus :size="16" aria-hidden="true" />
-        </button>
       </div>
     </header>
 
@@ -1921,16 +1912,6 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   background: var(--accent-light);
   border-color: var(--accent-color);
   color: var(--accent-color);
-}
-
-.icon-btn.highlight {
-  background: var(--accent-color);
-  color: white;
-  border: none;
-}
-
-.icon-btn.highlight:hover {
-  background: var(--accent-hover);
 }
 
 .main-layout {
