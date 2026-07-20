@@ -132,32 +132,14 @@ watch(() => props.openingBookId, (bookId) => {
           <span>{{ libraryPath || '正在读取书库位置…' }}</span>
         </button>
       </div>
-      <div class="library-actions">
-        <button class="secondary-command" type="button" @click="emit('input')">
-          <FileText :size="17" aria-hidden="true" /> 粘贴 Markdown
-        </button>
-        <button class="primary-command" type="button" :disabled="importing" @click="emit('import')">
-          <FileUp :size="17" aria-hidden="true" />
-          {{ importing ? '正在导入…' : '导入 EPUB' }}
-        </button>
-      </div>
     </div>
 
     <p v-if="error" class="library-error" role="alert">{{ error }}</p>
 
     <div v-if="loading" class="library-loading" role="status">正在读取书架…</div>
 
-    <section v-else-if="books.length === 0" class="empty-library">
-      <BookOpen :size="42" stroke-width="1.4" aria-hidden="true" />
-      <h2>书架还是空的</h2>
-      <p>导入 EPUB 后，原书、清理后的 Markdown、图片和阅读进度会统一保存在上方书库目录。</p>
-      <button class="primary-command" type="button" @click="emit('import')">
-        <FileUp :size="17" aria-hidden="true" /> 导入第一本书
-      </button>
-    </section>
-
     <template v-else>
-      <section v-if="books[0].lastOpenedAt" class="continue-section" aria-labelledby="continue-title">
+      <section v-if="books[0]?.lastOpenedAt" class="continue-section" aria-labelledby="continue-title">
         <div class="section-heading">
           <h2 id="continue-title">继续阅读</h2>
           <span>{{ books.length }} 本书</span>
@@ -208,9 +190,6 @@ watch(() => props.openingBookId, (bookId) => {
               <Search :size="15" aria-hidden="true" />
               <input v-model="searchQuery" type="search" placeholder="搜索书名或作者" />
             </label>
-            <button type="button" class="icon-command" title="导入 EPUB" @click="emit('import')">
-              <FileUp :size="17" aria-hidden="true" />
-            </button>
           </div>
         </div>
         <div class="book-grid">
@@ -260,8 +239,26 @@ watch(() => props.openingBookId, (bookId) => {
               <span class="sr-only">移除 {{ book.title }}</span>
             </button>
           </article>
+          <article class="shelf-import-card" aria-label="添加阅读内容">
+            <button
+              type="button"
+              :disabled="importing || Boolean(openingBookId)"
+              @click="emit('input')"
+            >
+              <FileText :size="22" stroke-width="1.7" aria-hidden="true" />
+              <span>粘贴 Markdown</span>
+            </button>
+            <button
+              type="button"
+              :disabled="importing || Boolean(openingBookId)"
+              @click="emit('import')"
+            >
+              <FileUp :size="22" stroke-width="1.7" aria-hidden="true" />
+              <span>{{ importing ? '正在导入…' : '导入 EPUB' }}</span>
+            </button>
+          </article>
         </div>
-        <p v-if="filteredBooks.length === 0" class="no-search-results">没有匹配的书籍</p>
+        <p v-if="searchQuery && filteredBooks.length === 0" class="no-search-results">没有匹配的书籍</p>
       </section>
     </template>
   </main>
@@ -278,7 +275,6 @@ watch(() => props.openingBookId, (bookId) => {
 
 .library-toolbar,
 .section-heading,
-.library-actions,
 .shelf-tools,
 .shelf-search,
 .book-meta,
@@ -319,10 +315,6 @@ h1 {
   white-space: nowrap;
 }
 
-.library-actions {
-  gap: 10px;
-}
-
 .shelf-tools,
 .shelf-search {
   gap: 7px;
@@ -344,38 +336,6 @@ h1 {
   background: transparent;
   color: var(--text-primary);
   font-size: 0.78rem;
-}
-
-.primary-command,
-.secondary-command,
-.icon-command {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 38px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.primary-command {
-  padding: 8px 15px;
-  border: 1px solid var(--accent-color);
-  background: var(--accent-color);
-  color: white;
-}
-
-.secondary-command,
-.icon-command {
-  padding: 8px 13px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-}
-
-.icon-command {
-  width: 36px;
-  padding: 0;
 }
 
 .section-heading {
@@ -502,6 +462,52 @@ h1 {
 .book-card {
   position: relative;
   min-width: 0;
+}
+
+.shelf-import-card {
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 3 / 4;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+}
+
+.shelf-import-card button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.shelf-import-card button + button {
+  border-top: 1px solid var(--border-color);
+}
+
+.shelf-import-card button:hover:not(:disabled),
+.shelf-import-card button:focus-visible {
+  background: color-mix(in srgb, var(--accent-color) 7%, transparent);
+  color: var(--accent-color);
+}
+
+.shelf-import-card button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-color) 72%, transparent);
+  outline-offset: -2px;
+}
+
+.shelf-import-card button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .book-open {
@@ -726,7 +732,6 @@ h1 {
   }
 }
 
-.empty-library,
 .library-loading {
   display: flex;
   min-height: 52vh;
@@ -735,18 +740,6 @@ h1 {
   justify-content: center;
   color: var(--text-muted);
   text-align: center;
-}
-
-.empty-library h2 {
-  margin-top: 16px;
-  color: var(--text-primary);
-  font-size: 1.1rem;
-}
-
-.empty-library p {
-  max-width: 520px;
-  margin: 7px 0 18px;
-  font-size: 0.84rem;
 }
 
 .library-error {
@@ -775,10 +768,6 @@ h1 {
   .library-toolbar {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .library-actions > * {
-    flex: 1;
   }
 
   .continue-progress {
