@@ -46,8 +46,12 @@ const filteredBooks = computed(() => {
 });
 
 function progressLabel(book: LibraryBookSummary): string {
-  const percent = Math.round(book.progressPercent * 100);
+  const percent = progressPercent(book);
   return percent > 0 ? `${percent}%` : "未开始";
+}
+
+function progressPercent(book: LibraryBookSummary): number {
+  return Math.round(Math.min(1, Math.max(0, book.progressPercent)) * 100);
 }
 
 function dateLabel(value?: string | null): string {
@@ -142,7 +146,6 @@ watch(() => props.openingBookId, (bookId) => {
       <section v-if="books[0]?.lastOpenedAt" class="continue-section" aria-labelledby="continue-title">
         <div class="section-heading">
           <h2 id="continue-title">继续阅读</h2>
-          <span>{{ books.length }} 本书</span>
         </div>
         <button
           class="continue-book"
@@ -175,16 +178,19 @@ watch(() => props.openingBookId, (bookId) => {
             <span>{{ books[0].author }}</span>
             <span v-if="books[0].currentChapter" class="continue-chapter">{{ books[0].currentChapter }}</span>
           </div>
-          <div class="continue-progress">
-            <span>{{ progressLabel(books[0]) }}</span>
-            <div><i :style="{ width: `${books[0].progressPercent * 100}%` }"></i></div>
+          <div
+            class="continue-progress"
+            :style="{ '--reading-progress': `${progressPercent(books[0]) * 3.6}deg` }"
+            :aria-label="progressLabel(books[0])"
+          >
+            <span>{{ progressPercent(books[0]) }}%</span>
           </div>
         </button>
       </section>
 
       <section class="all-books" aria-labelledby="all-books-title">
         <div class="section-heading">
-          <h2 id="all-books-title">全部书籍</h2>
+          <h2 id="all-books-title">全部书籍 <span>({{ books.length }})</span></h2>
           <div class="shelf-tools">
             <label class="shelf-search">
               <Search :size="15" aria-hidden="true" />
@@ -412,13 +418,17 @@ h1 {
   flex: 1;
   min-width: 0;
   flex-direction: column;
+  justify-content: center;
 }
 
 .continue-copy strong {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
   font-size: 1rem;
+  line-height: 1.45;
 }
 
 .continue-copy span {
@@ -432,13 +442,37 @@ h1 {
 }
 
 .continue-progress {
-  width: min(220px, 24vw);
+  position: relative;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--accent-color) var(--reading-progress),
+    var(--border-color) 0
+  );
   color: var(--text-secondary);
-  text-align: right;
   font-size: 0.8rem;
 }
 
-.continue-progress div,
+.continue-progress::before {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  content: "";
+}
+
+.continue-progress span {
+  position: relative;
+  z-index: 1;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .book-progress {
   height: 3px;
   overflow: hidden;
@@ -446,7 +480,6 @@ h1 {
   background: var(--border-color);
 }
 
-.continue-progress i,
 .book-progress i {
   display: block;
   height: 100%;
@@ -768,10 +801,6 @@ h1 {
   .library-toolbar {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .continue-progress {
-    display: none;
   }
 
   .book-grid {

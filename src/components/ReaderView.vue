@@ -964,7 +964,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 <template>
   <div class="reader-container">
     <!-- 顶部导航栏 -->
-    <header class="app-header">
+    <header class="app-header" :class="{ 'library-header': showLibrary }">
       <div class="logo-title">
         <button v-if="!showLibrary" class="header-back" type="button" title="返回书架" @click="returnToLibrary">
           <ArrowLeft :size="19" aria-hidden="true" />
@@ -1058,7 +1058,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           <div class="book-analysis-copy">
             <strong>{{ activeLibraryBook.title }}</strong>
             <span>{{ activeLibraryBook.author }}</span>
-            <small>{{ activeLibraryBook.chapterTitles.length }} 章 · {{ activeLibraryBook.sourceName }}</small>
+            <small>
+              {{ activeLibraryBook.chapterCount }} 章 ·
+              {{ activeLibraryBook.totalCharacters.toLocaleString('zh-CN') }} 字
+            </small>
           </div>
         </div>
         <div v-if="errorMsg" class="error-message">
@@ -1935,6 +1938,14 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   }
 
   .logo-text {
+    display: none;
+  }
+
+  .library-header .logo-text {
+    display: inline;
+  }
+
+  .library-header .logo-sub {
     display: none;
   }
 
