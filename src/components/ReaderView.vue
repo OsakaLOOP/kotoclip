@@ -1158,7 +1158,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 <template>
   <div class="reader-container">
     <!-- 顶部导航栏 -->
-    <header class="app-header" :class="{ 'library-header': showLibrary }">
+    <header
+      class="app-header"
+      :class="{ 'library-header': showLibrary, 'analysis-header': showInput }"
+    >
       <div class="logo-title">
         <button
           v-if="!showLibrary"
@@ -2359,8 +2362,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
     display: inline;
   }
 
-  .library-header .logo-sub {
-    display: none;
+  .analysis-header .logo-text,
+  .library-header .logo-sub,
+  .analysis-header .logo-sub {
+    display: inline;
   }
 
   .document-identity {
