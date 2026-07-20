@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { BookOpen, Clock3, FileText, FileUp, FolderOpen, Search, Trash2 } from "@lucide/vue";
+import { BookOpen, Clock3, FileText, FileUp, FolderOpen, LoaderCircle, Search, Trash2 } from "@lucide/vue";
 import type { LibraryBookSummary } from "../../reader/library";
 
 const props = defineProps<{
   books: LibraryBookSummary[];
   loading: boolean;
   importing: boolean;
+  openingBookId: string | null;
   error: string | null;
   libraryPath: string;
   coverUrl: (book: LibraryBookSummary) => string | undefined;
@@ -83,10 +84,19 @@ function dateLabel(value?: string | null): string {
           <h2 id="continue-title">继续阅读</h2>
           <span>{{ books.length }} 本书</span>
         </div>
-        <button class="continue-book" type="button" @click="emit('open', books[0].id)">
+        <button
+          class="continue-book"
+          type="button"
+          :disabled="Boolean(openingBookId)"
+          :aria-busy="openingBookId === books[0].id"
+          @click="emit('open', books[0].id)"
+        >
           <div class="continue-cover">
             <img v-if="props.coverUrl(books[0])" :src="props.coverUrl(books[0])" alt="" />
             <BookOpen v-else :size="30" aria-hidden="true" />
+            <span v-if="openingBookId === books[0].id" class="cover-opening" aria-hidden="true">
+              <LoaderCircle :size="22" />
+            </span>
           </div>
           <div class="continue-copy">
             <strong>{{ books[0].title }}</strong>
@@ -115,10 +125,19 @@ function dateLabel(value?: string | null): string {
         </div>
         <div class="book-grid">
           <article v-for="book in filteredBooks" :key="book.id" class="book-card">
-            <button class="book-open" type="button" @click="emit('open', book.id)">
+            <button
+              class="book-open"
+              type="button"
+              :disabled="Boolean(openingBookId)"
+              :aria-busy="openingBookId === book.id"
+              @click="emit('open', book.id)"
+            >
               <div class="book-cover">
                 <img v-if="props.coverUrl(book)" :src="props.coverUrl(book)" alt="" />
                 <BookOpen v-else :size="32" aria-hidden="true" />
+                <span v-if="openingBookId === book.id" class="cover-opening" aria-hidden="true">
+                  <LoaderCircle :size="24" />
+                </span>
               </div>
               <strong>{{ book.title }}</strong>
               <span class="book-author">{{ book.author }}</span>
@@ -128,7 +147,13 @@ function dateLabel(value?: string | null): string {
               </div>
               <div class="book-progress"><i :style="{ width: `${book.progressPercent * 100}%` }"></i></div>
             </button>
-            <button class="book-menu" type="button" title="从书架移除" @click="emit('remove', book)">
+            <button
+              class="book-menu"
+              type="button"
+              title="从书架移除"
+              :disabled="Boolean(openingBookId)"
+              @click="emit('remove', book)"
+            >
               <Trash2 :size="16" aria-hidden="true" />
               <span class="sr-only">移除 {{ book.title }}</span>
             </button>
@@ -282,10 +307,12 @@ h1 {
   color: inherit;
   cursor: pointer;
   text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .continue-cover,
 .book-cover {
+  position: relative;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -293,6 +320,7 @@ h1 {
   background: var(--accent-light);
   color: var(--accent-color);
   border: 1px solid var(--border-color);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .continue-cover {
@@ -305,6 +333,21 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 180ms ease;
+}
+
+.continue-book:hover:not(:disabled),
+.continue-book:focus-visible {
+  border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.continue-book:hover:not(:disabled) .continue-cover img,
+.continue-book:focus-visible .continue-cover img,
+.book-open:hover:not(:disabled) .book-cover img,
+.book-open:focus-visible .book-cover img {
+  transform: scale(1.025);
 }
 
 .continue-copy {
@@ -377,11 +420,56 @@ h1 {
   text-align: left;
 }
 
+.book-open strong {
+  transition: color 160ms ease;
+}
+
 .book-cover {
   width: 100%;
   aspect-ratio: 3 / 4;
   margin-bottom: 10px;
   border-radius: 4px;
+}
+
+.book-open:hover:not(:disabled) .book-cover,
+.book-open:focus-visible .book-cover {
+  border-color: color-mix(in srgb, var(--accent-color) 58%, var(--border-color));
+  box-shadow: 0 8px 20px rgba(32, 38, 44, 0.16);
+  transform: translateY(-4px);
+}
+
+.book-open:hover:not(:disabled) strong,
+.book-open:focus-visible strong {
+  color: var(--accent-color);
+}
+
+.continue-book:active:not(:disabled),
+.book-open:active:not(:disabled) .book-cover {
+  transform: translateY(-1px) scale(0.99);
+  transition-duration: 70ms;
+}
+
+.continue-book:disabled,
+.book-open:disabled {
+  cursor: wait;
+}
+
+.continue-book:disabled:not([aria-busy="true"]),
+.book-open:disabled:not([aria-busy="true"]) {
+  opacity: 0.62;
+}
+
+.cover-opening {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  color: var(--accent-color);
+}
+
+.cover-opening svg {
+  animation: cover-opening-spin 700ms linear infinite;
 }
 
 .book-open strong,
@@ -431,6 +519,30 @@ h1 {
 
 .book-menu:hover {
   color: var(--novelty-high-text);
+}
+
+.book-menu:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@keyframes cover-opening-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .continue-book,
+  .continue-cover,
+  .continue-cover img,
+  .book-cover,
+  .book-cover img,
+  .book-open strong {
+    transition: none;
+  }
+
+  .cover-opening svg {
+    animation: none;
+  }
 }
 
 .empty-library,

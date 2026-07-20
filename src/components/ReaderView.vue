@@ -47,6 +47,7 @@ const epubImportError = ref<string | null>(null);
 const libraryBooks = ref<LibraryBookSummary[]>([]);
 const libraryLoading = ref(true);
 const libraryError = ref<string | null>(null);
+const openingLibraryBookId = ref<string | null>(null);
 const libraryPath = ref("");
 const activeLibraryBook = ref<LibraryBook | null>(null);
 const activeResources = ref<Map<string, LibraryResource>>(new Map());
@@ -666,11 +667,17 @@ async function loadLibrary() {
 }
 
 async function openLibraryBook(id: string) {
+  if (openingLibraryBookId.value || isAnalyzing.value) return;
+  openingLibraryBookId.value = id;
   libraryError.value = null;
   try {
     await openBookData(await invoke<LibraryBook>("open_library_book", { id }));
   } catch (error) {
     libraryError.value = `无法打开书籍：${String(error)}`;
+    showLibrary.value = true;
+    showInput.value = false;
+  } finally {
+    openingLibraryBookId.value = null;
   }
 }
 
@@ -680,6 +687,9 @@ async function openBookData(book: LibraryBook) {
   inputText.value = book.markdown;
   currentDocumentMetadata.value = null;
   lastProgressPersistedAt = Date.now();
+  // 先进入既有分析页，使首批分析进度与错误在等待期间始终可见。
+  showLibrary.value = false;
+  showInput.value = true;
   await triggerAnalysis();
 }
 
@@ -928,6 +938,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         :books="libraryBooks"
         :loading="libraryLoading"
         :importing="isImportingEpub"
+        :opening-book-id="openingLibraryBookId"
         :error="libraryError"
         :library-path="libraryPath"
         :cover-url="libraryCoverUrl"
