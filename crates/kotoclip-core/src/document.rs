@@ -702,12 +702,17 @@ fn offset_tokens(tokens: &mut [AnnotatedToken], char_offset: usize, token_offset
             }
         }
         for chain in &mut token.bunsetsu.morphology.chains {
+            offset_range(&mut chain.anchor_range);
+            offset_range(&mut chain.char_range);
             for range in &mut chain.source_ranges {
                 offset_range(range);
             }
             for operator in &mut chain.operators {
                 offset_range(&mut operator.char_range);
             }
+        }
+        for range in &mut token.bunsetsu.morphology.unclassified {
+            offset_range(range);
         }
         for occurrence in &mut token.bunsetsu.grammar_occurrences {
             for range in &mut occurrence.matched_ranges {
@@ -769,12 +774,17 @@ fn localize_tokens(tokens: &mut [AnnotatedToken], char_offset: usize) {
             }
         }
         for chain in &mut token.bunsetsu.morphology.chains {
+            localize_range(&mut chain.anchor_range);
+            localize_range(&mut chain.char_range);
             for range in &mut chain.source_ranges {
                 localize_range(range);
             }
             for operator in &mut chain.operators {
                 localize_range(&mut operator.char_range);
             }
+        }
+        for range in &mut token.bunsetsu.morphology.unclassified {
+            localize_range(range);
         }
         for occurrence in &mut token.bunsetsu.grammar_occurrences {
             for range in &mut occurrence.matched_ranges {

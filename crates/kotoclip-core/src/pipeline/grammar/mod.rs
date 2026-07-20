@@ -130,6 +130,41 @@ pub fn offset_document_coordinates(
                 offset_range(&mut capture.morpheme_range, morpheme_offset);
             }
         }
+        refresh_coordinate_derived_ids(token);
+    }
+}
+
+fn refresh_coordinate_derived_ids(token: &mut AnnotatedToken) {
+    for chain in &mut token.bunsetsu.morphology.chains {
+        chain.chain_id = format!("morph:{}:{}", chain.char_range.0, chain.char_range.1);
+        for operator in &mut chain.operators {
+            operator.operator_id = format!("{}:{}", operator.concept_id, operator.char_range.0);
+        }
+    }
+    let mut occurrence_id_map = HashMap::new();
+    for occurrence in &mut token.bunsetsu.grammar_occurrences {
+        if occurrence.kind == GrammarOccurrenceKind::MorphologyFeature
+            && occurrence.concept_id != "morphology.chain"
+        {
+            occurrence.rule_id = format!("{}:{}", occurrence.concept_id, occurrence.anchor_range.0);
+        }
+        let previous_id = occurrence.occurrence_id.clone();
+        occurrence.occurrence_id = occurrence_id(
+            &occurrence.concept_id,
+            &occurrence.rule_id,
+            &occurrence.matched_ranges,
+        );
+        occurrence_id_map.insert(previous_id, occurrence.occurrence_id.clone());
+    }
+    for occurrence in &mut token.bunsetsu.grammar_occurrences {
+        for component_id in &mut occurrence.component_occurrence_ids {
+            if let Some(canonical_id) = occurrence_id_map.get(component_id) {
+                *component_id = canonical_id.clone();
+            }
+        }
+    }
+    for tag in &mut token.bunsetsu.grammar_tags {
+        tag.occurrence_id = occurrence_id(&tag.concept_id, &tag.pattern_id, &tag.display_ranges);
     }
 }
 
