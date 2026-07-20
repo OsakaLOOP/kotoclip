@@ -1534,7 +1534,8 @@ fn session_benchmark(args: &CliArgs) -> Result<(), Box<dyn Error>> {
             .ok_or("缓存缺少对应批次 Token")?;
         let batch_select_ms = batch_select_started.elapsed().as_millis();
         let state_restore_started = Instant::now();
-        let hydrated = engine.hydrate_stable_tokens_for_document_batch(stable)?;
+        let hydrated = engine
+            .hydrate_stable_tokens_for_document_batch(stable, warm_session.document_readings())?;
         let state_restore_ms = state_restore_started.elapsed().as_millis();
         let patch_started = Instant::now();
         let patch = warm_session.append_analyzed_batch(warm_session.revision, &batch, hydrated)?;

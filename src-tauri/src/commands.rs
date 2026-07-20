@@ -378,7 +378,7 @@ pub async fn open_document(
             "应用当前用户状态",
         );
         let tokens = engine
-            .hydrate_stable_tokens_for_document_batch(stable_batch)
+            .hydrate_stable_tokens_for_document_batch(stable_batch, session.document_readings())
             .map_err(|error| error.to_string())?;
         ensure_analysis_active(&cancellation)?;
         emit_cache_progress(
@@ -480,7 +480,7 @@ pub async fn continue_document_analysis(
     };
     let tokens = if let Some(stable) = session.take_cached_stable_tokens(&batch) {
         let tokens = engine
-            .hydrate_stable_tokens_for_document_batch(stable)
+            .hydrate_stable_tokens_for_document_batch(stable, session.document_readings())
             .map_err(|error| error.to_string())?;
         ensure_analysis_active(&cancellation)?;
         tokens
@@ -528,7 +528,7 @@ pub async fn request_document_range(
     if let Some(batch) = session.batch_for_range(char_range, 4_000) {
         let tokens = if let Some(stable) = session.take_cached_stable_tokens(&batch) {
             engine
-                .hydrate_stable_tokens_for_document_batch(stable)
+                .hydrate_stable_tokens_for_document_batch(stable, session.document_readings())
                 .map_err(|error| error.to_string())?
         } else {
             let (stable_tokens, tokens) = engine
