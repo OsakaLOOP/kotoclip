@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { BookOpen, BookOpenText, Clock3, FileText, FileUp, FolderOpen, Search, Trash2 } from "@lucide/vue";
+import {
+  BookOpen,
+  BookOpenText,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  FileText,
+  FileUp,
+  FolderOpen,
+  Search,
+  Trash2,
+} from "@lucide/vue";
 import type { LibraryBookSummary } from "../../reader/library";
 
 const props = defineProps<{
@@ -22,6 +33,19 @@ const emit = defineEmits<{
 }>();
 const searchQuery = ref("");
 type BookSurface = "continue" | "shelf";
+type PageDirection = "next" | "previous";
+
+interface PaginationPageItem {
+  type: "page";
+  page: number;
+}
+
+interface PaginationEllipsisItem {
+  type: "ellipsis";
+  key: string;
+}
+
+type PaginationItem = PaginationPageItem | PaginationEllipsisItem;
 
 interface CoverRipple {
   key: number;
@@ -33,8 +57,31 @@ interface CoverRipple {
 
 const coverRipple = ref<CoverRipple | null>(null);
 const openingSurfaceTarget = ref<string | null>(null);
+const recentPageSize = 2;
+const recentPage = ref(0);
+const recentDirection = ref<PageDirection>("next");
+const recentNavigationSide = ref<PageDirection | null>(null);
+const shelfPageSizes = [12, 24, 48] as const;
+const shelfPageSize = ref<number>(shelfPageSizes[0]);
+const shelfPage = ref(0);
 let rippleKey = 0;
 let rippleTimer: number | undefined;
+
+function openedAtTimestamp(book: LibraryBookSummary): number {
+  if (!book.lastOpenedAt) return 0;
+  const timestamp = new Date(book.lastOpenedAt).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+const recentBooks = computed(() => [...props.books]
+  .filter((book) => Boolean(book.lastOpenedAt))
+  .sort((left, right) => openedAtTimestamp(right) - openedAtTimestamp(left)));
+
+const recentTotalPages = computed(() => Math.max(1, Math.ceil(recentBooks.value.length / recentPageSize)));
+const visibleRecentBooks = computed(() => {
+  const start = recentPage.value * recentPageSize;
+  return recentBooks.value.slice(start, start + recentPageSize);
+});
 
 const filteredBooks = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase();
@@ -43,6 +90,40 @@ const filteredBooks = computed(() => {
     [book.title, book.author, book.currentChapter, book.sourceName]
       .some((value) => value?.toLocaleLowerCase().includes(query))
   );
+});
+
+const shelfTotalPages = computed(() => Math.max(1, Math.ceil(filteredBooks.value.length / shelfPageSize.value)));
+const visibleShelfBooks = computed(() => {
+  const start = shelfPage.value * shelfPageSize.value;
+  const end = Math.min(start + shelfPageSize.value, filteredBooks.value.length);
+  return filteredBooks.value.slice(start, end);
+});
+const showImportCard = computed(() => {
+  return shelfPage.value === 0;
+});
+const shelfPaginationItems = computed<PaginationItem[]>(() => {
+  const pageCount = shelfTotalPages.value;
+  if (pageCount <= 7) {
+    return Array.from({ length: pageCount }, (_, page) => ({ type: "page", page }));
+  }
+
+  const pages = [...new Set([
+    0,
+    pageCount - 1,
+    shelfPage.value - 1,
+    shelfPage.value,
+    shelfPage.value + 1,
+  ].filter((page) => page >= 0 && page < pageCount))].sort((left, right) => left - right);
+
+  const items: PaginationItem[] = [];
+  pages.forEach((page, index) => {
+    const previous = pages[index - 1];
+    if (index > 0 && page - previous > 1) {
+      items.push({ type: "ellipsis", key: `ellipsis-${previous}-${page}` });
+    }
+    items.push({ type: "page", page });
+  });
+  return items;
 });
 
 function progressLabel(book: LibraryBookSummary): string {
@@ -117,12 +198,64 @@ function rippleStyle(surface: BookSurface, bookId: string): Record<string, strin
   };
 }
 
+function showRecentPrevious() {
+  if (recentPage.value <= 0) return;
+  recentDirection.value = "previous";
+  recentPage.value -= 1;
+  recentNavigationSide.value = null;
+}
+
+function showRecentNext() {
+  if (recentPage.value >= recentTotalPages.value - 1) return;
+  recentDirection.value = "next";
+  recentPage.value += 1;
+  recentNavigationSide.value = null;
+}
+
+function updateRecentNavigationSide(event: PointerEvent) {
+  if (recentBooks.value.length <= recentPageSize || event.pointerType === "touch") {
+    recentNavigationSide.value = null;
+    return;
+  }
+
+  const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const activationWidth = Math.min(84, Math.max(52, bounds.width * 0.12));
+  const offset = event.clientX - bounds.left;
+  if (offset <= activationWidth && recentPage.value > 0) {
+    recentNavigationSide.value = "previous";
+  } else if (offset >= bounds.width - activationWidth && recentPage.value < recentTotalPages.value - 1) {
+    recentNavigationSide.value = "next";
+  } else {
+    recentNavigationSide.value = null;
+  }
+}
+
+function goToShelfPage(page: number) {
+  shelfPage.value = Math.min(Math.max(0, page), shelfTotalPages.value - 1);
+}
+
 onBeforeUnmount(() => {
   if (rippleTimer !== undefined) window.clearTimeout(rippleTimer);
 });
 
 watch(() => props.openingBookId, (bookId) => {
   if (!bookId) openingSurfaceTarget.value = null;
+});
+
+watch(recentTotalPages, (pageCount) => {
+  recentPage.value = Math.min(recentPage.value, pageCount - 1);
+});
+
+watch(searchQuery, () => {
+  shelfPage.value = 0;
+});
+
+watch(shelfPageSize, () => {
+  shelfPage.value = 0;
+});
+
+watch(shelfTotalPages, (pageCount) => {
+  shelfPage.value = Math.min(shelfPage.value, pageCount - 1);
 });
 </script>
 
@@ -143,49 +276,104 @@ watch(() => props.openingBookId, (bookId) => {
     <div v-if="loading" class="library-loading" role="status">正在读取书架…</div>
 
     <template v-else>
-      <section v-if="books[0]?.lastOpenedAt" class="continue-section" aria-labelledby="continue-title">
+      <section class="continue-section" aria-labelledby="continue-title">
         <div class="section-heading">
           <h2 id="continue-title">继续阅读</h2>
+          <span v-if="recentBooks.length > recentPageSize" class="recent-page-status" aria-live="polite">
+            {{ recentPage + 1 }}/{{ recentTotalPages }}
+          </span>
         </div>
-        <button
-          class="continue-book"
-          type="button"
-          :disabled="Boolean(openingBookId)"
-          :aria-busy="isOpeningSurface('continue', books[0].id)"
-          @pointerdown="startCoverRipple($event, books[0].id, 'continue')"
-          @click="openBook($event, books[0].id, 'continue')"
+        <div v-if="recentBooks.length === 0" class="continue-skeleton" role="status" aria-label="暂无继续阅读的书籍">
+          <span class="continue-skeleton__cover"></span>
+          <span class="continue-skeleton__copy">
+            <i></i>
+            <i></i>
+            <i></i>
+          </span>
+          <span class="continue-skeleton__progress"></span>
+        </div>
+        <div
+          v-else
+          class="recent-browser"
+          @pointermove="updateRecentNavigationSide"
+          @pointerleave="recentNavigationSide = null"
         >
-          <div
-            class="continue-cover"
-            :style="isOpeningSurface('continue', books[0].id) ? { viewTransitionName: 'book-cover' } : undefined"
+          <Transition
+            :name="recentDirection === 'next' ? 'recent-page-next' : 'recent-page-previous'"
+            mode="out-in"
           >
-            <img v-if="props.coverUrl(books[0])" :src="props.coverUrl(books[0])" alt="" />
-            <BookOpen v-else :size="30" aria-hidden="true" />
-            <span class="cover-state-layer" aria-hidden="true"></span>
-            <span
-              v-if="coverRipple?.target === rippleTarget('continue', books[0].id)"
-              :key="coverRipple.key"
-              class="cover-ripple"
-              :style="rippleStyle('continue', books[0].id)"
-              aria-hidden="true"
-            ></span>
-            <span v-if="isOpeningSurface('continue', books[0].id)" class="cover-opening" aria-hidden="true">
-              <span class="opening-mark"><BookOpenText :size="23" stroke-width="2.5" /></span>
-            </span>
-          </div>
-          <div class="continue-copy">
-            <strong>{{ books[0].title }}</strong>
-            <span>{{ books[0].author }}</span>
-            <span v-if="books[0].currentChapter" class="continue-chapter">{{ books[0].currentChapter }}</span>
-          </div>
-          <div
-            class="continue-progress"
-            :style="{ '--reading-progress': `${progressPercent(books[0]) * 3.6}deg` }"
-            :aria-label="progressLabel(books[0])"
-          >
-            <span>{{ progressPercent(books[0]) }}%</span>
-          </div>
-        </button>
+            <div
+              :key="`recent-${recentPage}`"
+              class="continue-page"
+              :class="{ 'is-single': visibleRecentBooks.length === 1 }"
+            >
+              <button
+                v-for="book in visibleRecentBooks"
+                :key="book.id"
+                class="continue-book"
+                type="button"
+                :disabled="Boolean(openingBookId)"
+                :aria-busy="isOpeningSurface('continue', book.id)"
+                @pointerdown="startCoverRipple($event, book.id, 'continue')"
+                @click="openBook($event, book.id, 'continue')"
+              >
+                <div
+                  class="continue-cover"
+                  :style="isOpeningSurface('continue', book.id) ? { viewTransitionName: 'book-cover' } : undefined"
+                >
+                  <img v-if="props.coverUrl(book)" :src="props.coverUrl(book)" alt="" />
+                  <BookOpen v-else :size="30" aria-hidden="true" />
+                  <span class="cover-state-layer" aria-hidden="true"></span>
+                  <span
+                    v-if="coverRipple?.target === rippleTarget('continue', book.id)"
+                    :key="coverRipple.key"
+                    class="cover-ripple"
+                    :style="rippleStyle('continue', book.id)"
+                    aria-hidden="true"
+                  ></span>
+                  <span v-if="isOpeningSurface('continue', book.id)" class="cover-opening" aria-hidden="true">
+                    <span class="opening-mark"><BookOpenText :size="23" stroke-width="2.5" /></span>
+                  </span>
+                </div>
+                <div class="continue-copy">
+                  <strong>{{ book.title }}</strong>
+                  <span>{{ book.author }}</span>
+                  <span v-if="book.currentChapter" class="continue-chapter">{{ book.currentChapter }}</span>
+                </div>
+                <div
+                  class="continue-progress"
+                  :style="{ '--reading-progress': `${progressPercent(book) * 3.6}deg` }"
+                  :aria-label="progressLabel(book)"
+                >
+                  <span>{{ progressPercent(book) }}%</span>
+                </div>
+              </button>
+            </div>
+          </Transition>
+
+          <template v-if="recentBooks.length > recentPageSize">
+            <button
+              type="button"
+              class="recent-browser__nav recent-browser__nav--previous"
+              :class="{ 'is-visible': recentNavigationSide === 'previous' }"
+              :disabled="recentPage === 0"
+              aria-label="上一组继续阅读"
+              @click="showRecentPrevious"
+            >
+              <ChevronLeft :size="24" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="recent-browser__nav recent-browser__nav--next"
+              :class="{ 'is-visible': recentNavigationSide === 'next' }"
+              :disabled="recentPage === recentTotalPages - 1"
+              aria-label="下一组继续阅读"
+              @click="showRecentNext"
+            >
+              <ChevronRight :size="24" aria-hidden="true" />
+            </button>
+          </template>
+        </div>
       </section>
 
       <section class="all-books" aria-labelledby="all-books-title">
@@ -196,10 +384,34 @@ watch(() => props.openingBookId, (bookId) => {
               <Search :size="15" aria-hidden="true" />
               <input v-model="searchQuery" type="search" placeholder="搜索书名或作者" />
             </label>
+            <label class="shelf-page-size">
+              <span>每页</span>
+              <select v-model.number="shelfPageSize" aria-label="每页显示数量">
+                <option v-for="size in shelfPageSizes" :key="size" :value="size">{{ size }} 本</option>
+              </select>
+            </label>
           </div>
         </div>
         <div class="book-grid">
-          <article v-for="book in filteredBooks" :key="book.id" class="book-card">
+          <article v-if="showImportCard" class="shelf-import-card" aria-label="添加阅读内容">
+            <button
+              type="button"
+              :disabled="importing || Boolean(openingBookId)"
+              @click="emit('input')"
+            >
+              <FileText :size="22" stroke-width="1.7" aria-hidden="true" />
+              <span>粘贴 Markdown</span>
+            </button>
+            <button
+              type="button"
+              :disabled="importing || Boolean(openingBookId)"
+              @click="emit('import')"
+            >
+              <FileUp :size="22" stroke-width="1.7" aria-hidden="true" />
+              <span>{{ importing ? '正在导入…' : '导入 EPUB' }}</span>
+            </button>
+          </article>
+          <article v-for="book in visibleShelfBooks" :key="book.id" class="book-card">
             <button
               class="book-open"
               type="button"
@@ -245,26 +457,39 @@ watch(() => props.openingBookId, (bookId) => {
               <span class="sr-only">移除 {{ book.title }}</span>
             </button>
           </article>
-          <article class="shelf-import-card" aria-label="添加阅读内容">
-            <button
-              type="button"
-              :disabled="importing || Boolean(openingBookId)"
-              @click="emit('input')"
-            >
-              <FileText :size="22" stroke-width="1.7" aria-hidden="true" />
-              <span>粘贴 Markdown</span>
-            </button>
-            <button
-              type="button"
-              :disabled="importing || Boolean(openingBookId)"
-              @click="emit('import')"
-            >
-              <FileUp :size="22" stroke-width="1.7" aria-hidden="true" />
-              <span>{{ importing ? '正在导入…' : '导入 EPUB' }}</span>
-            </button>
-          </article>
         </div>
         <p v-if="searchQuery && filteredBooks.length === 0" class="no-search-results">没有匹配的书籍</p>
+        <nav v-if="shelfTotalPages > 1" class="shelf-pagination" aria-label="书库分页">
+          <button
+            type="button"
+            :disabled="shelfPage === 0"
+            aria-label="上一页"
+            @click="goToShelfPage(shelfPage - 1)"
+          >
+            <ChevronLeft :size="17" aria-hidden="true" />
+          </button>
+          <template v-for="item in shelfPaginationItems" :key="item.type === 'page' ? `page-${item.page}` : item.key">
+            <button
+              v-if="item.type === 'page'"
+              type="button"
+              :class="{ 'is-current': item.page === shelfPage }"
+              :aria-current="item.page === shelfPage ? 'page' : undefined"
+              :aria-label="`第 ${item.page + 1} 页`"
+              @click="goToShelfPage(item.page)"
+            >
+              {{ item.page + 1 }}
+            </button>
+            <span v-else class="shelf-pagination__ellipsis" aria-hidden="true">…</span>
+          </template>
+          <button
+            type="button"
+            :disabled="shelfPage === shelfTotalPages - 1"
+            aria-label="下一页"
+            @click="goToShelfPage(shelfPage + 1)"
+          >
+            <ChevronRight :size="17" aria-hidden="true" />
+          </button>
+        </nav>
       </section>
     </template>
   </main>
@@ -283,6 +508,7 @@ watch(() => props.openingBookId, (bookId) => {
 .section-heading,
 .shelf-tools,
 .shelf-search,
+.shelf-page-size,
 .book-meta,
 .continue-book,
 .library-location {
@@ -322,8 +548,14 @@ h1 {
 }
 
 .shelf-tools,
-.shelf-search {
+.shelf-search,
+.shelf-page-size {
   gap: 7px;
+}
+
+.shelf-tools {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .shelf-search {
@@ -365,6 +597,27 @@ h1 {
   margin: 0 auto 34px;
 }
 
+.recent-page-status {
+  font-variant-numeric: tabular-nums;
+}
+
+.recent-browser {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.continue-page {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.continue-page.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .continue-book {
   width: 100%;
   gap: 18px;
@@ -376,6 +629,106 @@ h1 {
   cursor: pointer;
   text-align: left;
   transition: background-color 180ms cubic-bezier(.4, 0, .2, 1);
+}
+
+.recent-browser__nav {
+  position: absolute;
+  z-index: 5;
+  inset-block: 0;
+  display: flex;
+  width: clamp(52px, 12%, 84px);
+  align-items: center;
+  border: 0;
+  padding: 0 9px;
+  color: color-mix(in srgb, var(--accent-color) 76%, var(--text-muted));
+  opacity: 0.62;
+  cursor: pointer;
+  transition: color 140ms ease, opacity 140ms ease, background 160ms ease;
+}
+
+.recent-browser__nav--previous {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bg-secondary) 96%, transparent) 16%, transparent 100%);
+}
+
+.recent-browser__nav--next {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(270deg, color-mix(in srgb, var(--bg-secondary) 96%, transparent) 16%, transparent 100%);
+}
+
+.recent-browser__nav.is-visible:not(:disabled),
+.recent-browser__nav:hover:not(:disabled),
+.recent-browser__nav:focus-visible {
+  color: var(--accent-color);
+  opacity: 1;
+}
+
+.recent-browser__nav:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.continue-skeleton {
+  display: flex;
+  width: 100%;
+  min-height: 122px;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+}
+
+.continue-skeleton__cover,
+.continue-skeleton__copy i,
+.continue-skeleton__progress {
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--border-color) 80%, transparent) 30%,
+    color-mix(in srgb, var(--text-muted) 13%, transparent) 46%,
+    color-mix(in srgb, var(--border-color) 80%, transparent) 62%
+  );
+  background-size: 240% 100%;
+  animation: library-skeleton 1.8s ease-in-out infinite;
+}
+
+.continue-skeleton__cover {
+  width: 66px;
+  flex: 0 0 auto;
+  aspect-ratio: 3 / 4;
+  border-radius: 3px;
+}
+
+.continue-skeleton__copy {
+  display: grid;
+  flex: 1;
+  gap: 9px;
+}
+
+.continue-skeleton__copy i {
+  width: min(330px, 78%);
+  height: 10px;
+  border-radius: 2px;
+}
+
+.continue-skeleton__copy i:nth-child(2) {
+  width: min(220px, 56%);
+  height: 8px;
+}
+
+.continue-skeleton__copy i:nth-child(3) {
+  width: min(280px, 68%);
+  height: 8px;
+}
+
+.continue-skeleton__progress {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  border-radius: 50%;
 }
 
 .continue-cover,
@@ -488,8 +841,9 @@ h1 {
 
 .book-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(162px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 176px));
   gap: 22px 18px;
+  justify-content: start;
 }
 
 .book-card {
@@ -521,6 +875,26 @@ h1 {
   cursor: pointer;
   font: inherit;
   font-size: 0.78rem;
+}
+
+.shelf-page-size {
+  height: 34px;
+  padding: 0 8px 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.shelf-page-size select {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
 }
 
 .shelf-import-card button + button {
@@ -728,6 +1102,30 @@ h1 {
   cursor: default;
 }
 
+.recent-page-next-enter-active,
+.recent-page-next-leave-active,
+.recent-page-previous-enter-active,
+.recent-page-previous-leave-active {
+  transition: opacity 160ms ease, transform 180ms cubic-bezier(.2, .7, .2, 1);
+}
+
+.recent-page-next-enter-from,
+.recent-page-previous-leave-to {
+  opacity: 0;
+  transform: translateX(14px);
+}
+
+.recent-page-next-leave-to,
+.recent-page-previous-enter-from {
+  opacity: 0;
+  transform: translateX(-14px);
+}
+
+@keyframes library-skeleton {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
 @keyframes cover-ripple {
   0% { opacity: 0.85; transform: scale(0); }
   70% { opacity: 0.25; }
@@ -763,6 +1161,25 @@ h1 {
   .opening-mark {
     animation: none;
   }
+
+  .continue-skeleton__cover,
+  .continue-skeleton__copy i,
+  .continue-skeleton__progress {
+    animation: none;
+  }
+
+  .recent-page-next-enter-active,
+  .recent-page-next-leave-active,
+  .recent-page-previous-enter-active,
+  .recent-page-previous-leave-active {
+    transition-duration: 1ms;
+  }
+}
+
+@media (hover: none) {
+  .recent-browser__nav:not(:disabled) {
+    opacity: 0.8;
+  }
 }
 
 .library-loading {
@@ -789,6 +1206,54 @@ h1 {
   font-size: 0.82rem;
 }
 
+.shelf-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 30px;
+}
+
+.shelf-pagination button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: 0.75rem/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.shelf-pagination button:hover:not(:disabled),
+.shelf-pagination button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent-color) 58%, var(--border-color));
+  color: var(--accent-color);
+}
+
+.shelf-pagination button.is-current {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.shelf-pagination button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.shelf-pagination__ellipsis {
+  display: grid;
+  width: 24px;
+  height: 32px;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -803,8 +1268,51 @@ h1 {
     flex-direction: column;
   }
 
+  .all-books .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .shelf-tools {
+    justify-content: stretch;
+  }
+
+  .shelf-search {
+    flex: 1;
+  }
+
+  .shelf-search input {
+    width: 100%;
+  }
+
+  .continue-book {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .continue-cover {
+    width: 54px;
+  }
+
+  .continue-progress {
+    width: 46px;
+    height: 46px;
+  }
+
+  .recent-browser__nav {
+    width: 48px;
+    padding: 0 6px;
+  }
+
   .book-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .continue-page {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>
