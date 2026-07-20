@@ -8,6 +8,8 @@ use kotoclip_core::models::{
     SegmentationCandidate,
 };
 use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
+use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 use tauri::{Emitter, Manager, State, Window};
@@ -35,13 +37,83 @@ pub struct BackendStatus {
 }
 
 #[tauri::command]
-pub async fn import_epub_document(
-    path: String,
-) -> Result<kotoclip_core::import::epub::ImportedEpub, String> {
-    tauri::async_runtime::spawn_blocking(move || kotoclip_core::import::epub::import_epub(path))
-        .await
-        .map_err(|error| format!("EPUB 导入任务异常结束：{error}"))?
-        .map_err(|error| error.to_string())
+pub async fn import_epub_document(path: String) -> Result<ImportedEpubResponse, String> {
+    let source_path = path.clone();
+    let imported = tauri::async_runtime::spawn_blocking(move || {
+        kotoclip_core::import::epub::import_epub(path)
+    })
+    .await
+    .map_err(|error| format!("EPUB 导入任务异常结束：{error}"))?
+    .map_err(|error| error.to_string())?;
+    materialize_epub(imported, &source_path)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedEpubResourceResponse {
+    pub href: String,
+    pub path: String,
+    pub media_type: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedEpubResponse {
+    pub source_name: String,
+    pub title: String,
+    pub author: String,
+    pub date: String,
+    pub language: String,
+    pub markdown: String,
+    pub chapter_titles: Vec<String>,
+    pub resources: Vec<ImportedEpubResourceResponse>,
+    pub warnings: Vec<String>,
+}
+
+fn materialize_epub(
+    imported: kotoclip_core::import::epub::ImportedEpub,
+    source_path: &str,
+) -> Result<ImportedEpubResponse, String> {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    source_path.hash(&mut hasher);
+    if let Ok(metadata) = std::fs::metadata(source_path) {
+        metadata.len().hash(&mut hasher);
+        metadata.modified().ok().hash(&mut hasher);
+    }
+    let resource_dir = std::env::temp_dir()
+        .join("kotoclip-reader")
+        .join(format!("{:016x}", hasher.finish()));
+    std::fs::create_dir_all(&resource_dir)
+        .map_err(|error| format!("无法创建 EPUB 图片缓存：{error}"))?;
+
+    let mut resources = Vec::with_capacity(imported.resources.len());
+    for (index, resource) in imported.resources.into_iter().enumerate() {
+        let extension = Path::new(&resource.href)
+            .extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or("bin")
+            .to_ascii_lowercase();
+        let output = resource_dir.join(format!("{index:04}.{extension}"));
+        std::fs::write(&output, resource.bytes)
+            .map_err(|error| format!("无法写入 EPUB 图片缓存：{error}"))?;
+        resources.push(ImportedEpubResourceResponse {
+            href: resource.href,
+            path: output.to_string_lossy().into_owned(),
+            media_type: resource.media_type,
+        });
+    }
+
+    Ok(ImportedEpubResponse {
+        source_name: imported.source_name,
+        title: imported.title,
+        author: imported.author,
+        date: imported.date,
+        language: imported.language,
+        markdown: imported.markdown,
+        chapter_titles: imported.chapter_titles,
+        resources,
+        warnings: imported.warnings,
+    })
 }
 
 #[derive(Serialize)]

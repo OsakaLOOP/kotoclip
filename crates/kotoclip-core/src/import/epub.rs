@@ -18,7 +18,17 @@ pub struct ImportedEpub {
     pub language: String,
     pub markdown: String,
     pub chapter_titles: Vec<String>,
+    pub resources: Vec<ImportedEpubResource>,
     pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedEpubResource {
+    pub href: String,
+    pub media_type: String,
+    #[serde(skip_serializing)]
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Debug, Error)]
@@ -121,6 +131,7 @@ pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportErr
         .join("\n")
         .replace('…', "...");
     let (markdown, chapter_titles) = transform_content(&input);
+    let resources = collect_image_resources(&mut archive, &mut warnings)?;
     Ok(ImportedEpub {
         source_name,
         title: metadata.title,
@@ -129,8 +140,75 @@ pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportErr
         language: metadata.language,
         markdown,
         chapter_titles,
+        resources,
         warnings,
     })
+}
+
+fn collect_image_resources<R: Read + Seek>(
+    archive: &mut ZipArchive<R>,
+    warnings: &mut Vec<String>,
+) -> Result<Vec<ImportedEpubResource>, EpubImportError> {
+    const MAX_RESOURCE_BYTES: u64 = 32 * 1024 * 1024;
+    const MAX_TOTAL_BYTES: u64 = 256 * 1024 * 1024;
+    let mut resources = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    let mut total_bytes = 0_u64;
+
+    for index in 0..archive.len() {
+        let mut file = archive.by_index(index)?;
+        let name = file.name().replace('\\', "/");
+        let Some(media_type) = image_media_type(&name) else {
+            continue;
+        };
+        let href = zip_basename(&name);
+        let normalized = href.to_ascii_lowercase();
+        if !seen.insert(normalized) {
+            warnings.push(format!("图片文件名重复，已忽略后出现的资源：{href}"));
+            continue;
+        }
+        if file.size() > MAX_RESOURCE_BYTES || total_bytes + file.size() > MAX_TOTAL_BYTES {
+            warnings.push(format!("图片资源过大，已跳过：{href}"));
+            continue;
+        }
+        let mut bytes = Vec::with_capacity(file.size() as usize);
+        file.read_to_end(&mut bytes)?;
+        total_bytes += bytes.len() as u64;
+        resources.push(ImportedEpubResource {
+            href,
+            media_type: media_type.to_string(),
+            bytes,
+        });
+    }
+
+    if !resources
+        .iter()
+        .any(|resource| resource.href.eq_ignore_ascii_case("cover.jpeg"))
+    {
+        if let Some(cover) = resources
+            .iter()
+            .find(|resource| resource.href.to_ascii_lowercase().contains("cover"))
+            .cloned()
+        {
+            resources.push(ImportedEpubResource {
+                href: "cover.jpeg".to_string(),
+                ..cover
+            });
+        }
+    }
+    Ok(resources)
+}
+
+fn image_media_type(path: &str) -> Option<&'static str> {
+    let extension = path.rsplit('.').next()?.to_ascii_lowercase();
+    match extension.as_str() {
+        "jpeg" | "jpg" => Some("image/jpeg"),
+        "png" => Some("image/png"),
+        "gif" => Some("image/gif"),
+        "webp" => Some("image/webp"),
+        "svg" => Some("image/svg+xml"),
+        _ => None,
+    }
 }
 
 fn locate_opf<R: Read + Seek>(archive: &mut ZipArchive<R>) -> Result<String, EpubImportError> {
@@ -444,6 +522,8 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
         );
     }
 
+    content = strip_epub_navigation(&content);
+
     let yaml_pattern = Regex::new(r"(?s)\A---\n(.*?)\n---").unwrap();
     if let Some(captures) = yaml_pattern.captures(&content) {
         let body = &captures[1];
@@ -548,6 +628,18 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
         .unwrap()
         .replace_all(&content, "\n")
         .into_owned();
+    content = Regex::new(r"\[([^\]]+)\]\([^)]+\)(?:\{[^}]*\})?")
+        .unwrap()
+        .replace_all(&content, "$1")
+        .into_owned();
+    content = Regex::new(r"\{(?:[.#][^}\n]*|[^}\n]*=[^}\n]*)\}")
+        .unwrap()
+        .replace_all(&content, "")
+        .into_owned();
+    content = Regex::new(r"(?m)^\s*<[^>]+>\s*$\n?")
+        .unwrap()
+        .replace_all(&content, "")
+        .into_owned();
 
     for chapter in chapters.values() {
         let Some(image) = &chapter.image else {
@@ -606,6 +698,47 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
             .collect()
     };
     (content, chapter_titles)
+}
+
+fn strip_epub_navigation(input: &str) -> String {
+    let markdown_link = Regex::new(r"\[[^\]]+\]\([^)]+\)").unwrap();
+    let epub_target = Regex::new(r"(?i)(?:x?html?|toc[-_#]|[ab]_m\d+)").unwrap();
+    let toc_title = Regex::new(r"(?i)^(?:目次|もくじ|contents?|table of contents)$").unwrap();
+    let mut output = Vec::new();
+    let mut in_navigation = false;
+
+    for line in input.lines() {
+        let trimmed = line.trim();
+        if toc_title.is_match(trimmed) {
+            in_navigation = true;
+            continue;
+        }
+        let link_count = markdown_link.find_iter(trimmed).count();
+        let target_count = epub_target.find_iter(trimmed).count();
+        let navigation_line = (trimmed.to_ascii_lowercase().starts_with("contents")
+            && link_count > 0)
+            || (link_count >= 2 && target_count >= 2);
+        if navigation_line {
+            in_navigation = true;
+            continue;
+        }
+        if in_navigation {
+            let is_navigation_item = trimmed.is_empty()
+                || (link_count > 0 && target_count > 0)
+                || trimmed.starts_with("- [[#");
+            if is_navigation_item {
+                continue;
+            }
+            in_navigation = false;
+        }
+        if trimmed.contains("この本は縦書きでレイアウトされています")
+            || trimmed.contains("ご覧になる機種により、表示の差が認められることがあります")
+        {
+            continue;
+        }
+        output.push(line);
+    }
+    output.join("\n")
 }
 
 #[cfg(test)]
@@ -674,9 +807,11 @@ mod tests {
             .unwrap();
         archive
             .write_all(
-                r#"<?xml version="1.0"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><body><h1>第一章</h1><div class="main"><p><span class="koboSpan">彼は</span><ruby>本<rt>ほん</rt></ruby>を読む。</p></div></body></html>"#.as_bytes(),
+                r#"<?xml version="1.0"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><body><h1>第一章</h1><div class="main"><img src="../images/scene.png"/><p><span class="koboSpan">彼は</span><ruby>本<rt>ほん</rt></ruby>を読む。</p></div></body></html>"#.as_bytes(),
             )
             .unwrap();
+        archive.start_file("OEBPS/images/scene.png", options).unwrap();
+        archive.write_all(b"not-a-real-png").unwrap();
         archive.finish().unwrap();
 
         let imported = import_epub(&path).unwrap();
@@ -687,6 +822,30 @@ mod tests {
         assert_eq!(imported.chapter_titles, vec!["第一章"]);
         assert!(imported.markdown.contains("彼は本《ほん》を読む。"));
         assert!(!imported.markdown.contains("koboSpan"));
+        assert_eq!(imported.resources.len(), 1);
+        assert_eq!(imported.resources[0].href, "scene.png");
+        assert_eq!(imported.resources[0].media_type, "image/png");
+        assert_eq!(imported.resources[0].bytes, b"not-a-real-png");
         assert!(imported.warnings.is_empty());
+    }
+
+    #[test]
+    fn strips_epub_navigation_and_presentation_residue() {
+        let source = r#"---
+title: 本
+---
+{.fit} この本は縦書きでレイアウトされています。
+CONTENTS [序章](#p-001.xhtml#toc-001) [第一章](#p-002.xhtml#toc-002)
+[]{#p-001.xhtml}
+## 序章
+[本文]{.font-080-per-gfont}"#;
+        let (markdown, chapters) = transform_content(source);
+        assert_eq!(chapters, vec!["序章"]);
+        assert!(markdown.contains("## 序章"));
+        assert!(markdown.contains("本文"));
+        assert!(!markdown.contains("縦書き"));
+        assert!(!markdown.contains("CONTENTS"));
+        assert!(!markdown.contains("xhtml"));
+        assert!(!markdown.contains("{."));
     }
 }
