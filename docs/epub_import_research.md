@@ -1,6 +1,6 @@
 # EPUB 导入通用解析研究与阶段记录
 
-状态：研究与重构进行中（2026-07-20）
+状态：前置解析器重构与当前书架验收已完成（2026-07-20）
 
 本文档固化 Kotoclip EPUB 导入的原始样本、失败事实、中间结论、协议决策、实现阶段和逐书验收。权威产品边界仍见 `reader_library_and_scroll_reader.md`；本文档是 EPUB 包结构、XHTML 清洗和规范 Markdown 输出的专项记录。
 
@@ -119,8 +119,44 @@ EPUB ZIP
 - 完成：确认所有图片文件已物化，图片不可用由 Windows asset CSP 缺失导致；提交 `0084827`。
 - 完成：确认章节失败来自 nav/NCX 未接入，旧规则绑定 `.html#a_mNN` 与章节头图。
 - 完成：确认《涼宮ハルヒの憂鬱》断句来自多组 ruby DOM 被错误序列化。
-- 进行中：逐本固化 spine 前置页角色、XHTML 图片节点和标题目标。
-- 未开始：通用解析器实现、前端契约收紧、全书架临时重导入验收。
+- 完成：逐本固化 spine 前置页角色、XHTML 图片节点和标题目标。
+- 完成：通用解析器实现、前端职责边界核对、全书架临时重导入验收。
+
+### 2026-07-20 阶段 B：规范解析器实现
+
+- 用 `PackageDocument` 保留 manifest、spine、linear、guide 和资源相对路径，不再先生成 Pandoc 形态 Markdown。
+- 同时读取 EPUB3 `nav[epub:type~=toc]`、EPUB2 NCX 和 spine 内显式 XHTML 目录；分别全局去重后选择较完整大纲，并用另一大纲补缺。
+- 以第一个有效正文导航目标作为前置边界：边界前跳过标题页、目录、设备提示和底本文字，仅保留可解析图片；边界后按正文、插图和 backmatter 角色渲染。
+- XHTML DOM 直接生成 `CanonicalBlock::Heading/Paragraph/Image`；普通 XML 排版空白与显式 `<br>` 分离，避免 ruby 标签周围换行泄漏到段落。
+- ruby 按子节点顺序支持一个 `<ruby>` 内的多组基底/读音；无 `src`/`href` 图片不生成块，SVG `<image href>` 与 `xlink:href` 统一解析。
+- 对无 `alt` 且有 `gaiji-line`、`keep-space`、`spacer` 或 `separator` 明确排版角色的图片执行保守丢弃；有 `alt` 的外字转为文本，其他图片保持原样。
+- 图片身份使用相对 XHTML 解析后的规范 ZIP 路径，资源仍完整提取，避免不同目录同名文件互相覆盖。
+- 连续 colophon 文档只生成一个“奥付”章节；文档级、root、body 和内部元素锚点均可直接命中。
+
+### 2026-07-20 阶段 C：当前书架重导入验收
+
+使用生产 `import_epub` 对书库保留的 `source.epub` 临时重导入，结果写入被忽略的 `target/epub-audit`，未覆盖书库。按要求排除中日双语正文的《この素晴らしい世界に祝福を！ 15》。
+
+| 书籍 | 规范章节 | Markdown 图片引用 | 提取图片资源 | 首章前文字污染 | 无效图片标记 | warning |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| わたしが恋人になれるわけないじゃん、ムリムリ！ | 8 | 18 | 19 | 0 | 0 | 0 |
+| SとSの不埒な同盟 | 5 | 18 | 16 | 0 | 0 | 0 |
+| 幼女戦記 2 Plus Ultra | 11 | 31 | 33 | 0 | 0 | 0 |
+| 涼宮ハルヒの憂鬱 | 12 | 14 | 17 | 0 | 0 | 0 |
+| 文学少女シリーズ01 | 9 | 17 | 17 | 0 | 0 | 0 |
+| Re：ゼロから始める異世界生活 短編集4 | 5 | 21 | 28 | 0 | 0 | 0 |
+| 組織の宿敵と結婚したらめちゃ甘い | 18 | 19 | 21 | 0 | 0 | 0 |
+
+补充核对：
+
+- 7 本输出的 raw HTML 行、Pandoc `{=html}`/属性/锚点残留和 `![]`/`![]()` 均为 0。
+- 《涼宮ハルヒの憂鬱》通过书内 XHTML 目录补齐 NCX 缺少的プロローグ、エピローグ、あとがき和解説；原先 32 个 ruby 换行短尾消失，剩余两条短行是原文合法台词「！」与「あ」。
+- 《文学少女シリーズ01》的“底本データ”、版式说明和前置宣传文字不再进入分析正文，前置插图仍保留。
+- 《幼女戦記 2 Plus Ultra》的章节扉页是纯图片 spine 文档；现在先发出章节标题再保留扉页图片，9 个伪回退 warning 清零。
+- 所有书首个正文标题前只包含目录列表和有效图片，不包含设备提示、版权说明、标题页作者文字或目录正文。
+- 当前提交只修改 Rust EPUB 到规范 Markdown 的前置层；`src/reader/document.ts` 继续只编译规范 Markdown，未加入 OPF/nav/NCX 或 EPUB 角色推断。
+- 验证通过：`cargo check -p kotoclip-core`、`cargo fmt --all -- --check`、`git diff --check`、5 项 EPUB 定向测试。
+- 全量 `cargo test -p kotoclip-core` 为 64/66；失败的 `structured_forms_readings_aliases_and_variants_resolve` 与 `test_representative_cases` 单独复跑仍失败，分别属于本地词典内容和既有表达 pending 基线，不在 EPUB 代码路径。
 
 ## 6. 验收矩阵
 

@@ -1,12 +1,15 @@
 use regex::Regex;
 use roxmltree::{Document, Node};
 use serde::Serialize;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Seek};
 use std::path::Path;
+use std::sync::OnceLock;
 use thiserror::Error;
 use zip::ZipArchive;
+
+const OPS_NAMESPACE: &str = "http://www.idpf.org/2007/ops";
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -58,9 +61,73 @@ struct Metadata {
 }
 
 #[derive(Debug, Clone)]
-struct Chapter {
+struct ManifestItem {
+    id: String,
+    href: String,
+    media_type: String,
+    properties: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct SpineItem {
+    manifest: ManifestItem,
+    linear: bool,
+}
+
+#[derive(Debug, Clone)]
+struct PackageDocument {
+    manifest: HashMap<String, ManifestItem>,
+    spine: Vec<SpineItem>,
+    role_hints: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NavigationEntry {
     title: String,
-    image: Option<String>,
+    path: String,
+    fragment: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DocumentRole {
+    Cover,
+    Illustration,
+    Toc,
+    Notice,
+    TitlePage,
+    Backmatter,
+    Content,
+}
+
+#[derive(Debug, Clone)]
+struct DocumentMetrics {
+    text_chars: usize,
+    links: usize,
+    images: usize,
+    headings: usize,
+}
+
+#[derive(Debug, Clone)]
+struct SpineDocument {
+    path: String,
+    xhtml: String,
+    role: DocumentRole,
+    metrics: DocumentMetrics,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum CanonicalBlock {
+    Heading(String),
+    Paragraph(String),
+    Image { href: String, alt: String },
+}
+
+#[derive(Debug, Clone)]
+enum InlinePart {
+    Text(String),
+    Break,
+    Heading(String),
+    Image { href: String, alt: String },
 }
 
 pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportError> {
@@ -80,60 +147,73 @@ pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportErr
     let opf = read_zip_text(&mut archive, &opf_path)?;
     let opf_document = Document::parse(&opf)?;
     let metadata = read_metadata(&opf_document, &fallback_title);
-    let (manifest, spine) = read_spine(&opf_document)?;
+    let package = read_package(&opf_document, &opf_path)?;
     let mut warnings = Vec::new();
-    let mut input = build_frontmatter(&metadata);
-
-    for idref in spine {
-        let Some(href) = manifest.get(&idref) else {
-            warnings.push(format!("spine 项 {idref} 未出现在 manifest 中"));
-            continue;
-        };
-        let requested = resolve_zip_path(&opf_path, href);
-        let Some(zip_path) = find_zip_entry(&mut archive, &requested, href) else {
-            warnings.push(format!("未找到正文文件：{href}"));
-            continue;
-        };
-        let basename = zip_basename(href);
-        if basename.eq_ignore_ascii_case("titlepage.xhtml") {
-            input.push_str(titlepage_markdown());
-            continue;
-        }
-        let xhtml = match read_zip_text(&mut archive, &zip_path) {
-            Ok(text) => text,
-            Err(error) => {
-                warnings.push(format!("读取正文 {href} 失败：{error}"));
-                continue;
-            }
-        };
-        let document = match Document::parse(strip_xml_declaration(&xhtml)) {
-            Ok(document) => document,
-            Err(error) => {
-                warnings.push(format!("解析正文 {href} 失败：{error}"));
-                continue;
-            }
-        };
-        let Some(body) = document
-            .descendants()
-            .find(|node| node.has_tag_name("body"))
-        else {
-            warnings.push(format!("正文 {href} 缺少 body"));
-            continue;
-        };
-        input.push_str("\n[]{#");
-        input.push_str(&basename);
-        input.push_str("}\n");
-        input.push_str(&render_children(body, &basename, false));
+    let known_images = image_entries(&mut archive)?;
+    let primary_navigation = read_navigation(&mut archive, &package, &opf_path, &mut warnings)?;
+    let documents = read_spine_documents(
+        &mut archive,
+        &package,
+        &opf_path,
+        &primary_navigation,
+        &mut warnings,
+    )?;
+    let navigation = merge_navigation(
+        primary_navigation,
+        read_spine_navigation(&documents),
+        &documents,
+    );
+    if navigation.is_empty() {
+        warnings.push("EPUB 未提供可用 nav/NCX/XHTML 目录，将使用正文结构标题".to_string());
     }
+    let chapters = select_chapters(&navigation, &documents);
+    let entries_by_path = chapters.iter().cloned().fold(
+        HashMap::<String, Vec<NavigationEntry>>::new(),
+        |mut grouped, entry| {
+            grouped.entry(entry.path.clone()).or_default().push(entry);
+            grouped
+        },
+    );
 
-    let input = input
-        .split('\n')
-        .map(str::trim_end)
-        .collect::<Vec<_>>()
-        .join("\n")
-        .replace('…', "...");
-    let (markdown, chapter_titles) = transform_content(&input);
-    let resources = collect_image_resources(&mut archive, &mut warnings)?;
+    let mut blocks = Vec::new();
+    let mut referenced_images = Vec::new();
+    let first_body_path = chapters.first().map(|chapter| chapter.path.as_str());
+    let mut body_started = first_body_path.is_none();
+    for document in &documents {
+        if first_body_path.is_some_and(|path| document.path == path) {
+            body_started = true;
+        }
+        let targets = entries_by_path
+            .get(&document.path)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
+        render_spine_document(
+            document,
+            targets,
+            &known_images,
+            &mut blocks,
+            &mut referenced_images,
+            &mut warnings,
+            body_started,
+        )?;
+    }
+    normalize_blocks(&mut blocks);
+
+    let chapter_titles = blocks
+        .iter()
+        .filter_map(|block| match block {
+            CanonicalBlock::Heading(title) if !is_toc_title(title) => Some(title.clone()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let markdown = serialize_markdown(&metadata, &chapter_titles, &blocks);
+    let resources = collect_image_resources(
+        &mut archive,
+        &known_images,
+        &referenced_images,
+        &mut warnings,
+    )?;
+
     Ok(ImportedEpub {
         source_name,
         title: metadata.title,
@@ -147,75 +227,6 @@ pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportErr
     })
 }
 
-fn collect_image_resources<R: Read + Seek>(
-    archive: &mut ZipArchive<R>,
-    warnings: &mut Vec<String>,
-) -> Result<Vec<ImportedEpubResource>, EpubImportError> {
-    const MAX_RESOURCE_BYTES: u64 = 32 * 1024 * 1024;
-    const MAX_TOTAL_BYTES: u64 = 256 * 1024 * 1024;
-    let mut resources = Vec::new();
-    let mut seen = std::collections::HashSet::new();
-    let mut total_bytes = 0_u64;
-
-    for index in 0..archive.len() {
-        let mut file = archive.by_index(index)?;
-        let name = file.name().replace('\\', "/");
-        let Some(media_type) = image_media_type(&name) else {
-            continue;
-        };
-        let href = zip_basename(&name);
-        let normalized = href.to_ascii_lowercase();
-        if !seen.insert(normalized) {
-            warnings.push(format!("图片文件名重复，已忽略后出现的资源：{href}"));
-            continue;
-        }
-        if file.size() > MAX_RESOURCE_BYTES || total_bytes + file.size() > MAX_TOTAL_BYTES {
-            warnings.push(format!("图片资源过大，已跳过：{href}"));
-            continue;
-        }
-        let mut bytes = Vec::with_capacity(file.size() as usize);
-        file.read_to_end(&mut bytes)?;
-        total_bytes += bytes.len() as u64;
-        let dimensions = imagesize::blob_size(&bytes).ok();
-        resources.push(ImportedEpubResource {
-            href,
-            media_type: media_type.to_string(),
-            width: dimensions.map(|size| size.width as u32),
-            height: dimensions.map(|size| size.height as u32),
-            bytes,
-        });
-    }
-
-    if !resources
-        .iter()
-        .any(|resource| resource.href.eq_ignore_ascii_case("cover.jpeg"))
-    {
-        if let Some(cover) = resources
-            .iter()
-            .find(|resource| resource.href.to_ascii_lowercase().contains("cover"))
-            .cloned()
-        {
-            resources.push(ImportedEpubResource {
-                href: "cover.jpeg".to_string(),
-                ..cover
-            });
-        }
-    }
-    Ok(resources)
-}
-
-fn image_media_type(path: &str) -> Option<&'static str> {
-    let extension = path.rsplit('.').next()?.to_ascii_lowercase();
-    match extension.as_str() {
-        "jpeg" | "jpg" => Some("image/jpeg"),
-        "png" => Some("image/png"),
-        "gif" => Some("image/gif"),
-        "webp" => Some("image/webp"),
-        "svg" => Some("image/svg+xml"),
-        _ => None,
-    }
-}
-
 fn locate_opf<R: Read + Seek>(archive: &mut ZipArchive<R>) -> Result<String, EpubImportError> {
     if let Ok(container) = read_zip_text(archive, "META-INF/container.xml") {
         if let Ok(document) = Document::parse(&container) {
@@ -224,14 +235,14 @@ fn locate_opf<R: Read + Seek>(archive: &mut ZipArchive<R>) -> Result<String, Epu
                 .find(|node| node.has_tag_name("rootfile"))
                 .and_then(|node| node.attribute("full-path"))
             {
-                return Ok(path.to_string());
+                return Ok(normalize_archive_path(path));
             }
         }
     }
     for index in 0..archive.len() {
         let file = archive.by_index(index)?;
         if file.name().to_ascii_lowercase().ends_with(".opf") {
-            return Ok(file.name().to_string());
+            return Ok(normalize_archive_path(file.name()));
         }
     }
     Err(EpubImportError::MissingOpf)
@@ -241,7 +252,8 @@ fn read_zip_text<R: Read + Seek>(
     archive: &mut ZipArchive<R>,
     name: &str,
 ) -> Result<String, EpubImportError> {
-    let mut file = archive.by_name(name)?;
+    let actual = find_zip_entry(archive, name, name).unwrap_or_else(|| name.to_string());
+    let mut file = archive.by_name(&actual)?;
     let mut bytes = Vec::with_capacity(file.size() as usize);
     file.read_to_end(&mut bytes)?;
     if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
@@ -255,10 +267,9 @@ fn read_metadata(document: &Document<'_>, fallback_title: &str) -> Metadata {
         document
             .descendants()
             .find(|node| node.is_element() && node.tag_name().name() == name)
-            .and_then(|node| node.text())
-            .map(str::trim)
+            .map(node_text)
+            .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
-            .map(str::to_string)
     };
     let author_id = document
         .descendants()
@@ -281,10 +292,9 @@ fn read_metadata(document: &Document<'_>, fallback_title: &str) -> Metadata {
                 .descendants()
                 .find(|node| node.has_tag_name("creator"))
         })
-        .and_then(|node| node.text())
-        .map(str::trim)
+        .map(node_text)
+        .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
-        .map(str::to_string)
         .unwrap_or_else(|| "未知".to_string());
     let date = text("date").or_else(|| {
         document
@@ -292,10 +302,10 @@ fn read_metadata(document: &Document<'_>, fallback_title: &str) -> Metadata {
             .find(|node| {
                 node.has_tag_name("meta") && node.attribute("property") == Some("dcterms:modified")
             })
-            .and_then(|node| node.text())
-            .map(str::trim)
+            .map(node_text)
+            .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
-            .map(|value| value.get(..10).unwrap_or(value).to_string())
+            .map(|value| value.get(..10).unwrap_or(&value).to_string())
     });
     Metadata {
         title: normalize_spaced_title(&text("title").unwrap_or_else(|| fallback_title.to_string())),
@@ -305,9 +315,10 @@ fn read_metadata(document: &Document<'_>, fallback_title: &str) -> Metadata {
     }
 }
 
-fn read_spine(
+fn read_package(
     document: &Document<'_>,
-) -> Result<(HashMap<String, String>, Vec<String>), EpubImportError> {
+    opf_path: &str,
+) -> Result<PackageDocument, EpubImportError> {
     let manifest_node = document
         .descendants()
         .find(|node| node.has_tag_name("manifest"))
@@ -319,36 +330,870 @@ fn read_spine(
     let manifest = manifest_node
         .children()
         .filter(|node| node.has_tag_name("item"))
-        .filter_map(|node| Some((node.attribute("id")?, node.attribute("href")?)))
-        .map(|(id, href)| (id.to_string(), href.to_string()))
-        .collect();
+        .filter_map(|node| {
+            let id = node.attribute("id")?;
+            let href = node.attribute("href")?;
+            Some((
+                id.to_string(),
+                ManifestItem {
+                    id: id.to_string(),
+                    href: href.to_string(),
+                    media_type: node.attribute("media-type").unwrap_or_default().to_string(),
+                    properties: token_list(node.attribute("properties")),
+                },
+            ))
+        })
+        .collect::<HashMap<_, _>>();
     let spine = spine_node
         .children()
         .filter(|node| node.has_tag_name("itemref"))
-        .filter_map(|node| node.attribute("idref"))
-        .map(str::to_string)
-        .collect();
-    Ok((manifest, spine))
+        .filter_map(|node| {
+            let item = manifest.get(node.attribute("idref")?)?.clone();
+            Some(SpineItem {
+                manifest: item,
+                linear: node.attribute("linear") != Some("no"),
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut role_hints = HashMap::<String, Vec<String>>::new();
+    for reference in document
+        .descendants()
+        .filter(|node| node.has_tag_name("reference"))
+    {
+        let Some(href) = reference.attribute("href") else {
+            continue;
+        };
+        let path = resolve_zip_path(opf_path, href);
+        let hints = role_hints.entry(path).or_default();
+        hints.extend(token_list(reference.attribute("type")));
+        hints.extend(token_list(reference.attribute("title")));
+    }
+    Ok(PackageDocument {
+        manifest,
+        spine,
+        role_hints,
+    })
 }
 
-fn build_frontmatter(metadata: &Metadata) -> String {
-    format!(
-        "---\nauthor: {}\ncontributor: kotoclip EPUB importer\ndate: \"{}\"\nidentifier:\n- kotoclip-epub-import\nlanguage: {}\ntitle: {}\n---\n",
-        metadata.author, metadata.date, metadata.language, metadata.title
+fn read_navigation<R: Read + Seek>(
+    archive: &mut ZipArchive<R>,
+    package: &PackageDocument,
+    opf_path: &str,
+    warnings: &mut Vec<String>,
+) -> Result<Vec<NavigationEntry>, EpubImportError> {
+    if let Some(item) = package
+        .manifest
+        .values()
+        .find(|item| item.properties.iter().any(|value| value == "nav"))
+    {
+        let nav_path = resolve_zip_path(opf_path, &item.href);
+        match read_zip_text(archive, &nav_path) {
+            Ok(text) => match Document::parse(strip_xml_declaration(&text)) {
+                Ok(document) => {
+                    let result = parse_epub3_navigation(&document, &nav_path);
+                    if !result.is_empty() {
+                        return Ok(result);
+                    }
+                    warnings.push("EPUB3 nav 不包含可用 toc，尝试 NCX".to_string());
+                }
+                Err(error) => warnings.push(format!("EPUB3 nav 解析失败，尝试 NCX：{error}")),
+            },
+            Err(error) => warnings.push(format!("EPUB3 nav 读取失败，尝试 NCX：{error}")),
+        }
+    }
+    if let Some(item) = package
+        .manifest
+        .values()
+        .find(|item| item.media_type == "application/x-dtbncx+xml")
+    {
+        let ncx_path = resolve_zip_path(opf_path, &item.href);
+        let text = read_zip_text(archive, &ncx_path)?;
+        let document = Document::parse(strip_xml_declaration(&text))?;
+        let result = parse_ncx_navigation(&document, &ncx_path);
+        if !result.is_empty() {
+            return Ok(result);
+        }
+    }
+    Ok(Vec::new())
+}
+
+fn parse_epub3_navigation(document: &Document<'_>, nav_path: &str) -> Vec<NavigationEntry> {
+    let toc = document
+        .descendants()
+        .filter(|node| node.has_tag_name("nav"))
+        .find(|node| {
+            token_list(epub_type(*node))
+                .iter()
+                .any(|value| value == "toc")
+                || token_list(node.attribute("role"))
+                    .iter()
+                    .any(|value| value == "doc-toc")
+        })
+        .or_else(|| document.descendants().find(|node| node.has_tag_name("nav")));
+    toc.into_iter()
+        .flat_map(|node| node.descendants())
+        .filter(|node| node.has_tag_name("a"))
+        .filter_map(|node| navigation_entry(nav_path, node.attribute("href")?, &node_text(node)))
+        .collect()
+}
+
+fn parse_ncx_navigation(document: &Document<'_>, ncx_path: &str) -> Vec<NavigationEntry> {
+    document
+        .descendants()
+        .filter(|node| node.has_tag_name("navPoint"))
+        .filter_map(|point| {
+            let href = point
+                .children()
+                .find(|node| node.has_tag_name("content"))?
+                .attribute("src")?;
+            let title = point
+                .children()
+                .find(|node| node.has_tag_name("navLabel"))
+                .map(node_text)
+                .unwrap_or_default();
+            navigation_entry(ncx_path, href, &title)
+        })
+        .collect()
+}
+
+fn navigation_entry(base_path: &str, href: &str, title: &str) -> Option<NavigationEntry> {
+    let title = normalize_spaced_title(&normalize_inline_text(title));
+    if title.is_empty() || is_external_reference(href) {
+        return None;
+    }
+    let (path, fragment) = resolve_reference(base_path, href);
+    Some(NavigationEntry {
+        title,
+        path,
+        fragment,
+    })
+}
+
+fn read_spine_navigation(documents: &[SpineDocument]) -> Vec<NavigationEntry> {
+    let mut entries = Vec::new();
+    for source in documents {
+        let Ok(document) = Document::parse(strip_xml_declaration(&source.xhtml)) else {
+            continue;
+        };
+        let Some(body) = document
+            .descendants()
+            .find(|node| node.has_tag_name("body"))
+        else {
+            continue;
+        };
+        let toc_roots = if source.role == DocumentRole::Toc {
+            vec![body]
+        } else {
+            document
+                .descendants()
+                .filter(|node| node.has_tag_name("nav") && is_toc_navigation_node(*node))
+                .collect::<Vec<_>>()
+        };
+        for root in toc_roots {
+            entries.extend(
+                root.descendants()
+                    .filter(|node| node.has_tag_name("a"))
+                    .filter_map(|node| {
+                        navigation_entry(&source.path, node.attribute("href")?, &node_text(node))
+                    }),
+            );
+        }
+    }
+    entries
+}
+
+fn merge_navigation(
+    primary: Vec<NavigationEntry>,
+    secondary: Vec<NavigationEntry>,
+    documents: &[SpineDocument],
+) -> Vec<NavigationEntry> {
+    let primary = deduplicate_navigation(primary);
+    let secondary = deduplicate_navigation(secondary);
+    let (preferred, fallback) = if secondary.len() > primary.len() {
+        (secondary, primary)
+    } else {
+        (primary, secondary)
+    };
+    let mut merged = preferred.into_iter().chain(fallback).collect::<Vec<_>>();
+    for entry in &mut merged {
+        if let Some(document) = documents
+            .iter()
+            .find(|document| document.path.eq_ignore_ascii_case(&entry.path))
+        {
+            entry.path.clone_from(&document.path);
+        }
+    }
+    deduplicate_navigation(merged)
+}
+
+fn deduplicate_navigation(entries: Vec<NavigationEntry>) -> Vec<NavigationEntry> {
+    entries.into_iter().fold(Vec::new(), |mut unique, entry| {
+        if !unique
+            .iter()
+            .any(|existing| navigation_equivalent(existing, &entry))
+        {
+            unique.push(entry);
+        }
+        unique
+    })
+}
+
+fn navigation_equivalent(left: &NavigationEntry, right: &NavigationEntry) -> bool {
+    left.path.eq_ignore_ascii_case(&right.path)
+        && (left.fragment == right.fragment || heading_equivalent(&left.title, &right.title))
+}
+
+fn is_toc_navigation_node(node: Node<'_, '_>) -> bool {
+    token_list(epub_type(node))
+        .iter()
+        .any(|value| value == "toc")
+        || token_list(node.attribute("role"))
+            .iter()
+            .any(|value| value == "doc-toc")
+        || token_list(node.attribute("id"))
+            .iter()
+            .any(|value| value == "toc")
+        || token_list(node.attribute("class"))
+            .iter()
+            .any(|value| value == "toc")
+}
+
+fn read_spine_documents<R: Read + Seek>(
+    archive: &mut ZipArchive<R>,
+    package: &PackageDocument,
+    opf_path: &str,
+    navigation: &[NavigationEntry],
+    warnings: &mut Vec<String>,
+) -> Result<Vec<SpineDocument>, EpubImportError> {
+    let navigation_paths = navigation
+        .iter()
+        .map(|entry| entry.path.as_str())
+        .collect::<HashSet<_>>();
+    let nav_manifest_paths = package
+        .manifest
+        .values()
+        .filter(|item| item.properties.iter().any(|value| value == "nav"))
+        .map(|item| resolve_zip_path(opf_path, &item.href))
+        .collect::<HashSet<_>>();
+    let mut result = Vec::new();
+    for spine in &package.spine {
+        if !spine.linear
+            && !navigation_paths.contains(resolve_zip_path(opf_path, &spine.manifest.href).as_str())
+        {
+            continue;
+        }
+        let requested = resolve_zip_path(opf_path, &spine.manifest.href);
+        if nav_manifest_paths.contains(&requested) {
+            continue;
+        }
+        let Some(path) = find_zip_entry(archive, &requested, &spine.manifest.href) else {
+            warnings.push(format!("未找到正文文件：{}", spine.manifest.href));
+            continue;
+        };
+        let xhtml = match read_zip_text(archive, &path) {
+            Ok(text) => text,
+            Err(error) => {
+                warnings.push(format!("读取正文 {} 失败：{error}", spine.manifest.href));
+                continue;
+            }
+        };
+        let document = match Document::parse(strip_xml_declaration(&xhtml)) {
+            Ok(document) => document,
+            Err(error) => {
+                warnings.push(format!("解析正文 {} 失败：{error}", spine.manifest.href));
+                continue;
+            }
+        };
+        let Some(body) = document
+            .descendants()
+            .find(|node| node.has_tag_name("body"))
+        else {
+            warnings.push(format!("正文 {} 缺少 body", spine.manifest.href));
+            continue;
+        };
+        let metrics = document_metrics(body);
+        let role = classify_document(
+            body,
+            &spine.manifest,
+            package
+                .role_hints
+                .get(&requested)
+                .map(Vec::as_slice)
+                .unwrap_or_default(),
+            &metrics,
+        );
+        drop(document);
+        result.push(SpineDocument {
+            path: normalize_archive_path(&path),
+            xhtml,
+            role,
+            metrics,
+        });
+    }
+    Ok(result)
+}
+
+fn document_metrics(body: Node<'_, '_>) -> DocumentMetrics {
+    DocumentMetrics {
+        text_chars: normalize_inline_text(&node_text(body)).chars().count(),
+        links: body
+            .descendants()
+            .filter(|node| node.has_tag_name("a"))
+            .count(),
+        images: body
+            .descendants()
+            .filter(|node| node.has_tag_name("img") || node.has_tag_name("image"))
+            .count(),
+        headings: body
+            .descendants()
+            .filter(|node| heading_level(*node).is_some())
+            .count(),
+    }
+}
+
+fn classify_document(
+    body: Node<'_, '_>,
+    item: &ManifestItem,
+    role_hints: &[String],
+    metrics: &DocumentMetrics,
+) -> DocumentRole {
+    let mut signals = Vec::new();
+    signals.extend(item.properties.iter().cloned());
+    signals.extend(role_hints.iter().cloned());
+    signals.extend(token_list(epub_type(body)));
+    signals.extend(token_list(body.attribute("class")));
+    signals.extend(token_list(Some(&item.id)));
+    signals.extend(token_list(Some(&item.href)));
+    let joined = signals.join(" ").to_ascii_lowercase();
+    let has = |values: &[&str]| values.iter().any(|value| joined.contains(value));
+
+    if has(&["cover", "表紙"]) && metrics.images > 0 {
+        return DocumentRole::Cover;
+    }
+    if (has(&["toc", "contents", "目次"]) && metrics.links >= 2)
+        || (metrics.links >= 3 && metrics.text_chars < 2_000)
+    {
+        return DocumentRole::Toc;
+    }
+    if has(&["caution", "notice", "copyright"]) && metrics.text_chars < 2_000 {
+        return DocumentRole::Notice;
+    }
+    if has(&["titlepage", "title-page"]) && metrics.text_chars < 800 {
+        return DocumentRole::TitlePage;
+    }
+    if has(&["colophon", "奥付"]) {
+        return DocumentRole::Backmatter;
+    }
+    if metrics.images > 0 && metrics.text_chars == 0 {
+        return DocumentRole::Illustration;
+    }
+    DocumentRole::Content
+}
+
+fn select_chapters(
+    navigation: &[NavigationEntry],
+    documents: &[SpineDocument],
+) -> Vec<NavigationEntry> {
+    let documents = documents
+        .iter()
+        .map(|document| (document.path.as_str(), document))
+        .collect::<HashMap<_, _>>();
+    let mut started = false;
+    navigation
+        .iter()
+        .filter_map(|entry| {
+            let document = documents.get(entry.path.as_str())?;
+            if matches!(
+                document.role,
+                DocumentRole::Cover
+                    | DocumentRole::Toc
+                    | DocumentRole::Notice
+                    | DocumentRole::TitlePage
+            ) || is_structural_navigation_title(&entry.title)
+            {
+                return None;
+            }
+            let body_seed = document.metrics.text_chars >= 500
+                || document.metrics.headings > 0
+                || looks_like_chapter_title(&entry.title);
+            if !started && !body_seed {
+                return None;
+            }
+            started = true;
+            Some(entry.clone())
+        })
+        .collect()
+}
+
+fn render_spine_document(
+    source: &SpineDocument,
+    targets: &[NavigationEntry],
+    known_images: &HashSet<String>,
+    blocks: &mut Vec<CanonicalBlock>,
+    referenced_images: &mut Vec<String>,
+    warnings: &mut Vec<String>,
+    render_text: bool,
+) -> Result<(), EpubImportError> {
+    if matches!(
+        source.role,
+        DocumentRole::Toc | DocumentRole::Notice | DocumentRole::TitlePage
+    ) {
+        return Ok(());
+    }
+    let document = Document::parse(strip_xml_declaration(&source.xhtml))?;
+    let Some(body) = document
+        .descendants()
+        .find(|node| node.has_tag_name("body"))
+    else {
+        return Ok(());
+    };
+    let start = blocks.len();
+    let mut renderer = DocumentRenderer {
+        document_path: &source.path,
+        targets,
+        emitted_targets: vec![false; targets.len()],
+        known_images,
+        referenced_images,
+        warnings,
+    };
+    if render_text {
+        renderer.emit_document_targets(blocks);
+        append_inline_parts(blocks, renderer.target_parts(document.root_element()));
+        append_inline_parts(blocks, renderer.target_parts(body));
+    }
+    if !render_text
+        || matches!(
+            source.role,
+            DocumentRole::Cover | DocumentRole::Illustration
+        )
+    {
+        for image in body
+            .descendants()
+            .filter(|node| node.has_tag_name("img") || node.has_tag_name("image"))
+        {
+            let parts = renderer.render_image(image);
+            append_inline_parts(blocks, parts);
+        }
+    } else {
+        for child in body.children() {
+            renderer.render_block(child, blocks);
+        }
+        if source.role == DocumentRole::Backmatter
+            && !blocks.iter().any(
+                |block| matches!(block, CanonicalBlock::Heading(title) if is_colophon_title(title)),
+            )
+        {
+            blocks.insert(start, CanonicalBlock::Heading("奥付".to_string()));
+        }
+    }
+    let missing = renderer
+        .targets
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| !renderer.emitted_targets[*index])
+        .map(|(_, target)| target.title.clone())
+        .collect::<Vec<_>>();
+    for title in missing.into_iter().rev() {
+        warnings.push(format!(
+            "章节锚点未找到，已回退到文档开头：{}#{title}",
+            source.path
+        ));
+        blocks.insert(start, CanonicalBlock::Heading(title));
+    }
+    Ok(())
+}
+
+struct DocumentRenderer<'a> {
+    document_path: &'a str,
+    targets: &'a [NavigationEntry],
+    emitted_targets: Vec<bool>,
+    known_images: &'a HashSet<String>,
+    referenced_images: &'a mut Vec<String>,
+    warnings: &'a mut Vec<String>,
+}
+
+impl DocumentRenderer<'_> {
+    fn emit_document_targets(&mut self, blocks: &mut Vec<CanonicalBlock>) {
+        for index in 0..self.targets.len() {
+            if self.targets[index].fragment.is_none() {
+                self.emitted_targets[index] = true;
+                push_heading(blocks, self.targets[index].title.clone());
+            }
+        }
+    }
+
+    fn target_parts(&mut self, node: Node<'_, '_>) -> Vec<InlinePart> {
+        let Some(id) = node.attribute("id") else {
+            return Vec::new();
+        };
+        let mut result = Vec::new();
+        for index in 0..self.targets.len() {
+            if !self.emitted_targets[index] && self.targets[index].fragment.as_deref() == Some(id) {
+                self.emitted_targets[index] = true;
+                result.push(InlinePart::Heading(self.targets[index].title.clone()));
+            }
+        }
+        result
+    }
+
+    fn render_block(&mut self, node: Node<'_, '_>, blocks: &mut Vec<CanonicalBlock>) {
+        if node.is_text() {
+            let text = normalize_paragraph(node.text().unwrap_or_default());
+            if !text.is_empty() {
+                push_paragraph(blocks, text);
+            }
+            return;
+        }
+        if !node.is_element() {
+            return;
+        }
+        let tag = node.tag_name().name();
+        if matches!(tag, "script" | "style" | "noscript" | "nav") {
+            return;
+        }
+        if let Some(level) = heading_level(node) {
+            let mut parts = self.target_parts(node);
+            let title = normalize_spaced_title(&parts_text(&self.render_inline_children(node)));
+            if !title.is_empty() {
+                parts.push(InlinePart::Heading(title));
+            }
+            append_inline_parts(blocks, parts);
+            let _ = level;
+            return;
+        }
+        if matches!(tag, "p" | "li" | "blockquote" | "dt" | "dd" | "pre") {
+            let mut parts = self.target_parts(node);
+            parts.extend(self.render_inline_children(node));
+            append_inline_parts(blocks, parts);
+            return;
+        }
+        if tag == "img" || tag == "image" {
+            let mut parts = self.target_parts(node);
+            parts.extend(self.render_image(node));
+            append_inline_parts(blocks, parts);
+            return;
+        }
+        let targets = self.target_parts(node);
+        append_inline_parts(blocks, targets);
+        for child in node.children() {
+            self.render_block(child, blocks);
+        }
+    }
+
+    fn render_inline_children(&mut self, node: Node<'_, '_>) -> Vec<InlinePart> {
+        node.children()
+            .flat_map(|child| self.render_inline(child))
+            .collect()
+    }
+
+    fn render_inline(&mut self, node: Node<'_, '_>) -> Vec<InlinePart> {
+        if node.is_text() {
+            return vec![InlinePart::Text(
+                node.text().unwrap_or_default().to_string(),
+            )];
+        }
+        if !node.is_element() {
+            return Vec::new();
+        }
+        let mut result = self.target_parts(node);
+        match node.tag_name().name() {
+            "script" | "style" | "noscript" | "rp" | "rt" => result,
+            "br" => {
+                result.push(InlinePart::Break);
+                result
+            }
+            "ruby" => {
+                result.push(InlinePart::Text(render_ruby(node)));
+                result
+            }
+            "img" | "image" => {
+                result.extend(self.render_image(node));
+                result
+            }
+            _ => {
+                result.extend(self.render_inline_children(node));
+                result
+            }
+        }
+    }
+
+    fn render_image(&mut self, node: Node<'_, '_>) -> Vec<InlinePart> {
+        let alt = node
+            .attribute("alt")
+            .or_else(|| node.attribute("aria-label"))
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let classes = token_list(node.attribute("class"));
+        if classes.iter().any(|value| value == "gaiji") && !alt.is_empty() {
+            return vec![InlinePart::Text(alt)];
+        }
+        if alt.is_empty() && is_presentation_image(&classes) {
+            return Vec::new();
+        }
+        let Some(reference) = node
+            .attribute("src")
+            .or_else(|| attribute_by_local_name(node, "href"))
+            .filter(|value| !value.trim().is_empty())
+        else {
+            return Vec::new();
+        };
+        if is_external_reference(reference) {
+            self.warnings.push(format!("已跳过外部图片：{reference}"));
+            return Vec::new();
+        }
+        let (href, _) = resolve_reference(self.document_path, reference);
+        let key = href.to_ascii_lowercase();
+        if !self.known_images.contains(&key) {
+            self.warnings.push(format!("图片资源不存在：{href}"));
+            return Vec::new();
+        }
+        if !self
+            .referenced_images
+            .iter()
+            .any(|value| value.eq_ignore_ascii_case(&href))
+        {
+            self.referenced_images.push(href.clone());
+        }
+        vec![InlinePart::Image { href, alt }]
+    }
+}
+
+fn render_ruby(node: Node<'_, '_>) -> String {
+    let mut output = String::new();
+    let mut base = String::new();
+    for child in node.children() {
+        if child.has_tag_name("rt") {
+            let reading = normalize_inline_text(&node_text(child));
+            let base_text = normalize_ruby_segment(&base);
+            if !base_text.is_empty() {
+                output.push_str(&base_text);
+                if !reading.is_empty() {
+                    output.push('《');
+                    output.push_str(reading.trim());
+                    output.push('》');
+                }
+            }
+            base.clear();
+        } else if !child.has_tag_name("rp") && !child.has_tag_name("rtc") {
+            base.push_str(&plain_inline_text(child));
+        }
+    }
+    output.push_str(&normalize_ruby_segment(&base));
+    output
+}
+
+fn plain_inline_text(node: Node<'_, '_>) -> String {
+    if node.is_text() {
+        return node.text().unwrap_or_default().to_string();
+    }
+    if !node.is_element() || matches!(node.tag_name().name(), "rt" | "rp" | "script" | "style") {
+        return String::new();
+    }
+    if node.has_tag_name("ruby") {
+        return render_ruby(node);
+    }
+    node.children().map(plain_inline_text).collect()
+}
+
+fn append_inline_parts(blocks: &mut Vec<CanonicalBlock>, parts: Vec<InlinePart>) {
+    let mut text = String::new();
+    let flush = |blocks: &mut Vec<CanonicalBlock>, text: &mut String| {
+        let paragraph = normalize_paragraph(text);
+        text.clear();
+        if !paragraph.is_empty() {
+            push_paragraph(blocks, paragraph);
+        }
+    };
+    for part in parts {
+        match part {
+            InlinePart::Text(value) => text.push_str(&value),
+            InlinePart::Break => flush(blocks, &mut text),
+            InlinePart::Heading(title) => {
+                flush(blocks, &mut text);
+                push_heading(blocks, title);
+            }
+            InlinePart::Image { href, alt } => {
+                flush(blocks, &mut text);
+                blocks.push(CanonicalBlock::Image { href, alt });
+            }
+        }
+    }
+    flush(blocks, &mut text);
+}
+
+fn push_heading(blocks: &mut Vec<CanonicalBlock>, title: String) {
+    let title = normalize_spaced_title(&normalize_paragraph(&title));
+    if title.is_empty() {
+        return;
+    }
+    if blocks.last().is_some_and(|block| match block {
+        CanonicalBlock::Heading(previous) => heading_equivalent(previous, &title),
+        _ => false,
+    }) {
+        return;
+    }
+    blocks.push(CanonicalBlock::Heading(title));
+}
+
+fn push_paragraph(blocks: &mut Vec<CanonicalBlock>, paragraph: String) {
+    if blocks.last().is_some_and(|block| match block {
+        CanonicalBlock::Heading(title) => heading_equivalent(title, &paragraph),
+        _ => false,
+    }) {
+        return;
+    }
+    blocks.push(CanonicalBlock::Paragraph(paragraph));
+}
+
+fn normalize_blocks(blocks: &mut Vec<CanonicalBlock>) {
+    blocks.dedup_by(|right, left| match (&*left, &*right) {
+        (CanonicalBlock::Heading(a), CanonicalBlock::Heading(b)) => heading_equivalent(a, b),
+        (CanonicalBlock::Image { href: a, .. }, CanonicalBlock::Image { href: b, .. }) => {
+            a.eq_ignore_ascii_case(b)
+        }
+        _ => false,
+    });
+}
+
+fn serialize_markdown(
+    metadata: &Metadata,
+    chapter_titles: &[String],
+    blocks: &[CanonicalBlock],
+) -> String {
+    let mut sections = vec![format!(
+        "---\ntitle: \"{}\"\nauthor: \"{}\"\ndate: \"{}\"\nlanguage: \"{}\"\n---",
+        escape_yaml(&metadata.title),
+        escape_yaml(&metadata.author),
+        escape_yaml(&metadata.date),
+        escape_yaml(&metadata.language)
+    )];
+    if !chapter_titles.is_empty() {
+        let mut toc = vec!["## 目次".to_string()];
+        toc.extend(chapter_titles.iter().map(|title| format!("- [[#{title}]]")));
+        sections.push(toc.join("\n"));
+    }
+    sections.extend(blocks.iter().map(|block| match block {
+        CanonicalBlock::Heading(title) => format!("## {title}"),
+        CanonicalBlock::Paragraph(text) => text.clone(),
+        CanonicalBlock::Image { href, alt } => {
+            let href = if href
+                .chars()
+                .any(|value| value.is_whitespace() || matches!(value, '(' | ')'))
+            {
+                format!("<{href}>")
+            } else {
+                href.clone()
+            };
+            format!("![{}]({href})", escape_markdown_alt(alt))
+        }
+    }));
+    format!("{}\n", sections.join("\n\n"))
+}
+
+fn image_entries<R: Read + Seek>(
+    archive: &mut ZipArchive<R>,
+) -> Result<HashSet<String>, EpubImportError> {
+    let mut result = HashSet::new();
+    for index in 0..archive.len() {
+        let file = archive.by_index(index)?;
+        let name = normalize_archive_path(file.name());
+        if image_media_type(&name).is_some() {
+            result.insert(name.to_ascii_lowercase());
+        }
+    }
+    Ok(result)
+}
+
+fn collect_image_resources<R: Read + Seek>(
+    archive: &mut ZipArchive<R>,
+    known_images: &HashSet<String>,
+    referenced_images: &[String],
+    warnings: &mut Vec<String>,
+) -> Result<Vec<ImportedEpubResource>, EpubImportError> {
+    const MAX_RESOURCE_BYTES: u64 = 32 * 1024 * 1024;
+    const MAX_TOTAL_BYTES: u64 = 256 * 1024 * 1024;
+    let mut order = referenced_images.to_vec();
+    let mut all = Vec::new();
+    for index in 0..archive.len() {
+        let file = archive.by_index(index)?;
+        let name = normalize_archive_path(file.name());
+        if known_images.contains(&name.to_ascii_lowercase()) {
+            all.push(name);
+        }
+    }
+    for name in all {
+        if !order.iter().any(|value| value.eq_ignore_ascii_case(&name)) {
+            order.push(name);
+        }
+    }
+    let mut resources = Vec::new();
+    let mut total_bytes = 0_u64;
+    for href in order {
+        let Some(actual) = find_zip_entry(archive, &href, &href) else {
+            continue;
+        };
+        let mut file = archive.by_name(&actual)?;
+        let Some(media_type) = image_media_type(&href) else {
+            continue;
+        };
+        if file.size() > MAX_RESOURCE_BYTES || total_bytes + file.size() > MAX_TOTAL_BYTES {
+            warnings.push(format!("图片资源过大，已跳过：{href}"));
+            continue;
+        }
+        let mut bytes = Vec::with_capacity(file.size() as usize);
+        file.read_to_end(&mut bytes)?;
+        total_bytes += bytes.len() as u64;
+        let dimensions = imagesize::blob_size(&bytes).ok();
+        resources.push(ImportedEpubResource {
+            href,
+            media_type: media_type.to_string(),
+            width: dimensions.map(|size| size.width as u32),
+            height: dimensions.map(|size| size.height as u32),
+            bytes,
+        });
+    }
+    Ok(resources)
+}
+
+fn image_media_type(path: &str) -> Option<&'static str> {
+    let extension = path.rsplit('.').next()?.to_ascii_lowercase();
+    match extension.as_str() {
+        "jpeg" | "jpg" => Some("image/jpeg"),
+        "png" => Some("image/png"),
+        "gif" => Some("image/gif"),
+        "webp" => Some("image/webp"),
+        "svg" => Some("image/svg+xml"),
+        _ => None,
+    }
+}
+
+fn resolve_reference(base_path: &str, reference: &str) -> (String, Option<String>) {
+    let reference = reference.trim();
+    let (path, fragment) = reference
+        .split_once('#')
+        .map(|(path, fragment)| (path, Some(percent_decode(fragment))))
+        .unwrap_or((reference, None));
+    let path = path.split('?').next().unwrap_or(path);
+    (
+        resolve_zip_path(base_path, path),
+        fragment.filter(|value| !value.is_empty()),
     )
 }
 
-fn resolve_zip_path(opf_path: &str, href: &str) -> String {
-    let mut segments = opf_path.split('/').collect::<Vec<_>>();
+fn resolve_zip_path(base_path: &str, href: &str) -> String {
+    let mut segments = normalize_archive_path(base_path)
+        .split('/')
+        .map(str::to_string)
+        .collect::<Vec<_>>();
     segments.pop();
-    let normalized_href = href.replace('\\', "/");
-    for segment in normalized_href.split('/') {
+    for segment in href.replace('\\', "/").split('/') {
         match segment {
             "" | "." => {}
             ".." => {
                 segments.pop();
             }
-            value => segments.push(value),
+            value => segments.push(percent_decode(value)),
         }
     }
     segments.join("/")
@@ -362,20 +1207,50 @@ fn find_zip_entry<R: Read + Seek>(
     if archive.by_name(requested).is_ok() {
         return Some(requested.to_string());
     }
-    let normalized_href = href.replace('\\', "/");
+    let requested = normalize_archive_path(requested);
+    let normalized_href = normalize_archive_path(href);
     for index in 0..archive.len() {
         let Ok(file) = archive.by_index(index) else {
             continue;
         };
-        if file.name().replace('\\', "/").ends_with(&normalized_href) {
+        let name = normalize_archive_path(file.name());
+        if name.eq_ignore_ascii_case(&requested)
+            || name
+                .to_ascii_lowercase()
+                .ends_with(&normalized_href.to_ascii_lowercase())
+        {
             return Some(file.name().to_string());
         }
     }
     None
 }
 
-fn zip_basename(path: &str) -> String {
-    path.rsplit(['/', '\\']).next().unwrap_or(path).to_string()
+fn normalize_archive_path(path: &str) -> String {
+    path.replace('\\', "/").trim_start_matches('/').to_string()
+}
+
+fn percent_decode(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' && index + 2 < bytes.len() {
+            let hex = |byte: u8| match byte {
+                b'0'..=b'9' => Some(byte - b'0'),
+                b'a'..=b'f' => Some(byte - b'a' + 10),
+                b'A'..=b'F' => Some(byte - b'A' + 10),
+                _ => None,
+            };
+            if let (Some(high), Some(low)) = (hex(bytes[index + 1]), hex(bytes[index + 2])) {
+                decoded.push(high * 16 + low);
+                index += 3;
+                continue;
+            }
+        }
+        decoded.push(bytes[index]);
+        index += 1;
+    }
+    String::from_utf8(decoded).unwrap_or_else(|_| value.to_string())
 }
 
 fn strip_xml_declaration(input: &str) -> &str {
@@ -398,115 +1273,46 @@ fn strip_xml_declaration(input: &str) -> &str {
     trimmed
 }
 
-fn titlepage_markdown() -> &'static str {
-    "\n![](./cover.jpeg)\n\n[]{#titlepage.xhtml}\n\n<div>\n\n```{=html}\n<svg xmlns=\"http://www.w3.org/2000/svg\">\n```\n`<image xlink:href=\"cover.jpeg\">`{=html}`</image>`{=html}\n```{=html}\n</svg>\n```\n\n</div>\n"
-}
-
-fn render_children(node: Node<'_, '_>, filename: &str, in_paragraph: bool) -> String {
-    node.children()
-        .map(|child| render_node(child, filename, in_paragraph))
+fn node_text(node: Node<'_, '_>) -> String {
+    node.descendants()
+        .filter(|descendant| descendant.is_text())
+        .filter_map(|descendant| descendant.text())
         .collect()
 }
 
-fn render_node(node: Node<'_, '_>, filename: &str, in_paragraph: bool) -> String {
-    if node.is_text() {
-        let text = node.text().unwrap_or_default();
-        return if in_paragraph || !trim_layout_whitespace(text).is_empty() {
-            text.to_string()
-        } else {
-            String::new()
-        };
-    }
-    if !node.is_element() {
-        return String::new();
-    }
-    let tag = node.tag_name().name();
-    let current_in_paragraph = in_paragraph || tag == "p";
-    if tag == "ruby" {
-        let reading = node
-            .children()
-            .find(|child| child.has_tag_name("rt"))
-            .and_then(|child| child.text())
-            .unwrap_or_default();
-        let base = node
-            .children()
-            .filter(|child| !child.has_tag_name("rt") && !child.has_tag_name("rp"))
-            .map(|child| render_node(child, filename, current_in_paragraph))
-            .collect::<String>();
-        return format!(
-            "`<ruby>`{{=html}}{base}`<rt>`{{=html}}{reading}`</rt>`{{=html}}`</ruby>`{{=html}}"
-        );
-    }
-    let content = render_children(node, filename, current_in_paragraph);
-    match tag {
-        "body" => content,
-        "script" | "style" | "noscript" => String::new(),
-        "div" => node.attribute("class").map_or(content.clone(), |class| {
-            format!("\n::: {class}\n{}\n:::\n", trim_layout_whitespace(&content))
-        }),
-        "p" => format!("\n{}\n", trim_layout_whitespace(&content)),
-        "span" => node.attribute("class").map_or(content.clone(), |class| {
-            if class.split_whitespace().any(|value| value == "koboSpan") {
-                content.clone()
-            } else {
-                format!("[{content}]{{.{class}}}")
-            }
-        }),
-        "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => format!(
-            "\n## {}\n",
-            normalize_spaced_title(trim_layout_whitespace(&content))
-        ),
-        "rt" | "rp" => String::new(),
-        "a" => {
-            let mut href = node.attribute("href").unwrap_or_default().to_string();
-            if !href.starts_with('#') && (href.contains(".html") || href.contains(".xhtml")) {
-                href.insert(0, '#');
-            }
-            let id = node
-                .attribute("id")
-                .map(|id| format!("#{filename}#{id}"))
-                .unwrap_or_default();
-            let classes = node
-                .attribute("class")
-                .unwrap_or_default()
-                .split_whitespace()
-                .map(|class| format!(".{class}"))
-                .collect::<Vec<_>>()
-                .join(" ");
-            let attributes = match (id.is_empty(), classes.is_empty()) {
-                (false, false) => format!("{id}\n{classes}"),
-                (false, true) => id,
-                (true, false) => classes,
-                (true, true) => String::new(),
-            };
-            if attributes.is_empty() {
-                format!("[{content}]({href})")
-            } else {
-                format!("[{content}]({href}){{{attributes}}}")
-            }
-        }
-        "img" => {
-            let image = zip_basename(node.attribute("src").unwrap_or_default());
-            let alt = node.attribute("alt").unwrap_or_default().trim();
-            let is_gaiji = node
-                .attribute("class")
-                .is_some_and(|class| class.split_whitespace().any(|value| value == "gaiji"));
-            if is_gaiji && !alt.is_empty() {
-                return alt.to_string();
-            }
-            let escaped_alt = alt.replace('\\', "\\\\").replace(']', "\\]");
-            node.attribute("class").map_or_else(
-                || format!("![{escaped_alt}](./{image})"),
-                |class| format!("![{escaped_alt}](./{image}){{.{class}}}"),
-            )
-        }
-        "br" => "\\\n".to_string(),
-        _ => content,
-    }
+fn attribute_by_local_name<'input>(node: Node<'input, 'input>, name: &str) -> Option<&'input str> {
+    node.attributes()
+        .find(|attribute| attribute.name() == name)
+        .map(|attribute| attribute.value())
 }
 
-fn trim_layout_whitespace(input: &str) -> &str {
-    input.trim_matches(['\r', '\n', '\t', ' '])
+fn epub_type<'input>(node: Node<'input, 'input>) -> Option<&'input str> {
+    node.attribute((OPS_NAMESPACE, "type"))
+        .or_else(|| node.attribute("epub:type"))
+        .or_else(|| attribute_by_local_name(node, "type"))
+}
+
+fn token_list(value: Option<&str>) -> Vec<String> {
+    value
+        .unwrap_or_default()
+        .split(|character: char| {
+            character.is_whitespace() || matches!(character, '/' | '\\' | '.' | '_' | '-')
+        })
+        .filter(|value| !value.is_empty())
+        .map(|value| value.to_ascii_lowercase())
+        .collect()
+}
+
+fn heading_level(node: Node<'_, '_>) -> Option<usize> {
+    match node.tag_name().name() {
+        "h1" => Some(1),
+        "h2" => Some(2),
+        "h3" => Some(3),
+        "h4" => Some(4),
+        "h5" => Some(5),
+        "h6" => Some(6),
+        _ => None,
+    }
 }
 
 fn normalize_spaced_title(input: &str) -> String {
@@ -539,252 +1345,117 @@ fn normalize_spaced_title(input: &str) -> String {
     }
 }
 
-fn normalize_markdown_headings(input: &str) -> String {
-    input
-        .lines()
-        .map(|line| {
-            line.strip_prefix("## ")
-                .map(|title| format!("## {}", normalize_spaced_title(title)))
-                .unwrap_or_else(|| line.to_string())
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-fn transform_content(input: &str) -> (String, Vec<String>) {
-    let mut content = input.replace("\r\n", "\n").replace('\r', "\n");
-    let chapter_image_pattern =
-        Regex::new(r"\[(!\[\]\(([^)]+)\))\{[^}]*\}\]\(#([^)]+\.html#(a_m\d+))\)").unwrap();
-    let image_by_anchor = chapter_image_pattern
-        .captures_iter(&content)
-        .map(|captures| (captures[4].to_string(), captures[2].to_string()))
-        .collect::<HashMap<_, _>>();
-    let toc_entry_pattern = Regex::new(r"\[(.+?)\]\([^)]+\)\{#([^}]+)\.html#(a_m\d+)").unwrap();
-    let chapter_number_pattern = Regex::new(r"a_m0*(\d+)").unwrap();
-    let mut chapters = BTreeMap::new();
-    for captures in toc_entry_pattern.captures_iter(&content) {
-        let Some(number) = chapter_number_pattern
-            .captures(&captures[3])
-            .and_then(|value| value[1].parse::<usize>().ok())
-        else {
-            continue;
-        };
-        chapters.insert(
-            number,
-            Chapter {
-                title: normalize_spaced_title(captures[1].trim()),
-                image: image_by_anchor.get(&captures[3]).cloned(),
-            },
-        );
-    }
-
-    content = strip_epub_navigation(&content);
-
-    let yaml_pattern = Regex::new(r"(?s)\A---\n(.*?)\n---").unwrap();
-    if let Some(captures) = yaml_pattern.captures(&content) {
-        let body = &captures[1];
-        let field = |pattern: &str, fallback: &str| {
-            Regex::new(pattern)
-                .unwrap()
-                .captures(body)
-                .map(|value| value[1].trim().to_string())
-                .unwrap_or_else(|| fallback.to_string())
-        };
-        let title = field(r"(?m)^title:\s*(.+)$", "未知");
-        let author = field(r"(?m)^author:\s*(.+)$", "未知");
-        let date = field(r#"(?m)^date:\s*"(\d{4}-\d{2}-\d{2})"#, "未知");
-        let language = field(r"(?m)^language:\s*(.+)$", "ja");
-        let replacement = format!(
-            "---\ntitle: \"{title}\"\nauthor: \"{author}\"\ndate: \"{date}\"\nlanguage: \"{language}\"\n---"
-        );
-        content.replace_range(captures.get(0).unwrap().range(), &replacement);
-    }
-
-    content = Regex::new(r"(?s)```\{=html\}\n.*?\n```\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = Regex::new(r"`<image[^>]*>`\{=html\}`</image>`\{=html\}\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = Regex::new(r"(?m)^</?div>\s*$\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = Regex::new(r"\[\]\{#.*?\}\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content =
-        Regex::new(r"(?m)\[(!\[\]\([^)]+\))\{[^}]*\}\]\([^)]+\)\{#[^\n]*\n\.[^\n]*calibre[^\n]*\}")
-            .unwrap()
-            .replace_all(&content, "$1")
-            .into_owned();
-    content = Regex::new(r"(?m)\[(.+?)\]\([^)]+\)\{#[^\n]*\n\.[^\n]*calibre[^\n]*\}")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = Regex::new(r"(?m)^目次\s*$\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-
-    if let Some(cover_pos) = content.find("![](./cover.jpeg)") {
-        let image_pattern = Regex::new(r"!\[\]\(\./00001\.jpeg\)").unwrap();
-        if let Some(first_image) = image_pattern.find(&content[cover_pos..]) {
-            let start = cover_pos + "![](./cover.jpeg)".len();
-            let end = cover_pos + first_image.start();
-            let cleaned = content[start..end]
-                .lines()
-                .filter(|line| line.trim().is_empty() || line.trim().starts_with('!'))
-                .collect::<Vec<_>>()
-                .join("\n");
-            content.replace_range(start..end, &cleaned);
-        }
-    }
-
-    content =
-        Regex::new(r"`<ruby>`\{=html\}(.+?)`<rt>`\{=html\}(.+?)`</rt>`\{=html\}`</ruby>`\{=html\}")
-            .unwrap()
-            .replace_all(&content, "$1《$2》")
-            .into_owned();
-    content = content.replace("{=html}", "");
-    for (pattern, replacement) in [
-        (r"\[([^\]]+)\]\{\.em-sesame_f\}", "$1"),
-        (r"\[([^\]]+)\]\{\.tcy\}", "$1"),
-        (r"\[([^\]]+)\]\{\.font-size80per\}", "$1"),
-        (r"\[([^\]]+)\]\{\.text-upright\}", "$1"),
-        (r"\[([^\]]+)\]\{\.text-sideways\}", "$1"),
-        (r"\{\.img-fit\}", ""),
-        (r"\{\.gaiji\}", ""),
-    ] {
-        content = Regex::new(pattern)
-            .unwrap()
-            .replace_all(&content, replacement)
-            .into_owned();
-    }
-    let span_class_pattern = Regex::new(r"\[([^\[\]]*)\]\{\.[^}\n]+\}").unwrap();
-    loop {
-        let cleaned = span_class_pattern.replace_all(&content, "$1").into_owned();
-        if cleaned == content {
-            break;
-        }
-        content = cleaned;
-    }
-    content = Regex::new(r"(?m)^:::[ \t]+[^\r\n]+\s*$\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = Regex::new(r"(?m)^:::\s*$\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = Regex::new(r"(?m)^\\\s*$\n?")
-        .unwrap()
-        .replace_all(&content, "\n")
-        .into_owned();
-    content = Regex::new(r"\[([^\]]+)\]\([^)]+\)(?:\{[^}]*\})?")
-        .unwrap()
-        .replace_all(&content, "$1")
-        .into_owned();
-    content = Regex::new(r"\{(?:[.#][^}\n]*|[^}\n]*=[^}\n]*)\}")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = Regex::new(r"(?m)^\s*<[^>]+>\s*$\n?")
-        .unwrap()
-        .replace_all(&content, "")
-        .into_owned();
-    content = normalize_markdown_headings(&content);
-
-    for chapter in chapters.values() {
-        let Some(image) = &chapter.image else {
-            continue;
-        };
-        let image_reference = format!("![]({image})");
-        if let Some(position) = content.find(&image_reference) {
-            content.insert_str(position, &format!("\n## {}\n\n", chapter.title));
-        }
-    }
-    content = content.replace("\n了\n", "\n了\n\n---\n");
-    if let Some(position) = content.find("\nカミツキレイニー\n\nKamitsuki rainy") {
-        content.insert_str(position, "\n## あとがき\n\n");
-    }
-    let colophon_position = content.find("\n小学館ｅＢｏｏｋｓ\n").or_else(|| {
-        Regex::new(r"\n２０１５年")
-            .unwrap()
-            .find(&content)
-            .map(|item| item.start())
-    });
-    if let Some(position) = colophon_position {
-        content.insert_str(position, "\n## 奥付\n\n");
-    }
-
-    content = Regex::new(r"\n{4,}")
-        .unwrap()
-        .replace_all(&content, "\n\n\n")
-        .into_owned();
-    content = content
-        .split('\n')
-        .map(str::trim_end)
-        .collect::<Vec<_>>()
-        .join("\n");
-    content = format!("{}\n", content.trim_start_matches('\n'));
-    let chapter_titles = if chapters.is_empty() {
-        content
-            .lines()
-            .filter_map(|line| line.strip_prefix("## "))
-            .filter(|title| *title != "目次")
-            .map(str::to_string)
-            .collect()
-    } else {
-        chapters
-            .values()
-            .map(|chapter| chapter.title.clone())
-            .collect()
-    };
-    (content, chapter_titles)
-}
-
-fn strip_epub_navigation(input: &str) -> String {
-    let markdown_link = Regex::new(r"\[[^\]]+\]\([^)]+\)").unwrap();
-    let epub_target = Regex::new(r"(?i)(?:x?html?|toc[-_#]|[ab]_m\d+)").unwrap();
-    let toc_title = Regex::new(r"(?i)^(?:目次|もくじ|contents?|table of contents)$").unwrap();
-    let mut output = Vec::new();
-    let mut in_navigation = false;
-
-    for line in input.lines() {
-        let trimmed = line.trim();
-        let normalized = normalize_spaced_title(trimmed);
-        if toc_title.is_match(&normalized) {
-            in_navigation = true;
+fn normalize_inline_text(input: &str) -> String {
+    let mut collapsed = String::new();
+    let mut pending_space = false;
+    for character in input.replace('…', "...").chars() {
+        if character.is_ascii_whitespace() {
+            pending_space = !collapsed.is_empty();
             continue;
         }
-        let link_count = markdown_link.find_iter(trimmed).count();
-        let target_count = epub_target.find_iter(trimmed).count();
-        let navigation_line = (normalized.to_ascii_lowercase().starts_with("contents")
-            && link_count > 0)
-            || (link_count >= 2 && target_count >= 2);
-        if navigation_line {
-            in_navigation = true;
-            continue;
-        }
-        if in_navigation {
-            let starts_document = trimmed.starts_with("[]{#") || trimmed.starts_with('#');
-            if !starts_document {
-                continue;
+        if pending_space {
+            let previous = collapsed.chars().next_back();
+            if previous.is_some_and(|value| value.is_ascii_alphanumeric())
+                && character.is_ascii_alphanumeric()
+            {
+                collapsed.push(' ');
             }
-            in_navigation = false;
+            pending_space = false;
         }
-        if trimmed.contains("この本は縦書きでレイアウトされています")
-            || trimmed.contains("ご覧になる機種により、表示の差が認められることがあります")
-        {
-            continue;
-        }
-        output.push(line);
+        collapsed.push(character);
     }
-    output.join("\n")
+    collapsed
+}
+
+fn normalize_ruby_segment(input: &str) -> String {
+    normalize_inline_text(input).trim().to_string()
+}
+
+fn normalize_paragraph(input: &str) -> String {
+    normalize_inline_text(input)
+        .trim_matches(|character: char| character.is_ascii_whitespace())
+        .to_string()
+}
+
+fn parts_text(parts: &[InlinePart]) -> String {
+    parts
+        .iter()
+        .filter_map(|part| match part {
+            InlinePart::Text(value) => Some(value.as_str()),
+            _ => None,
+        })
+        .collect()
+}
+
+fn heading_equivalent(left: &str, right: &str) -> bool {
+    normalize_heading_key(left) == normalize_heading_key(right)
+}
+
+fn normalize_heading_key(value: &str) -> String {
+    static RUBY: OnceLock<Regex> = OnceLock::new();
+    RUBY.get_or_init(|| Regex::new(r"《[^》]+》").unwrap())
+        .replace_all(value, "")
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect::<String>()
+        .to_lowercase()
+}
+
+fn looks_like_chapter_title(title: &str) -> bool {
+    static PATTERN: OnceLock<Regex> = OnceLock::new();
+    PATTERN
+        .get_or_init(|| {
+            Regex::new(
+                r"(?i)(序章|終章|間章|外伝|付録|おまけ|あとがき|プロローグ|エピローグ|最終話|第[0-9０-９一二三四五六七八九十百]+[章話部]|^[0-9０-９一二三四五六七八九十百]+章|chapter|prologue|epilogue|afterword)",
+            )
+            .unwrap()
+        })
+        .is_match(title)
+}
+
+fn is_structural_navigation_title(title: &str) -> bool {
+    matches!(
+        normalize_heading_key(title).as_str(),
+        "目次" | "もくじ" | "contents" | "tableofcontents" | "表紙" | "cover"
+    )
+}
+
+fn is_toc_title(title: &str) -> bool {
+    matches!(
+        normalize_heading_key(title).as_str(),
+        "目次" | "もくじ" | "contents"
+    )
+}
+
+fn is_colophon_title(title: &str) -> bool {
+    matches!(normalize_heading_key(title).as_str(), "奥付" | "colophon")
+}
+
+fn is_presentation_image(classes: &[String]) -> bool {
+    let has = |value: &str| classes.iter().any(|class| class == value);
+    (has("gaiji") && has("line"))
+        || (has("keep") && has("space"))
+        || has("spacer")
+        || has("separator")
+}
+
+fn is_external_reference(reference: &str) -> bool {
+    let lower = reference.trim().to_ascii_lowercase();
+    lower.starts_with("http:")
+        || lower.starts_with("https:")
+        || lower.starts_with("data:")
+        || lower.starts_with("javascript:")
+}
+
+fn escape_yaml(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace(['\r', '\n'], " ")
+}
+
+fn escape_markdown_alt(value: &str) -> String {
+    value.replace('\\', "\\\\").replace(']', "\\]")
 }
 
 #[cfg(test)]
@@ -796,34 +1467,16 @@ mod tests {
     use zip::ZipWriter;
 
     #[test]
-    fn renders_ruby_as_kotoclip_markdown() {
+    fn renders_grouped_ruby_without_xml_layout_breaks() {
         let document = Document::parse(
-            r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><p>彼は<ruby>本<rt>ほん</rt></ruby>を読む。</p></body></html>"#,
+            "<html><body><p>自己<ruby>紹<rt>しょう</rt>\n 介<rt>かい</rt></ruby>をする。</p></body></html>",
         )
         .unwrap();
-        let body = document
+        let ruby = document
             .descendants()
-            .find(|node| node.has_tag_name("body"))
+            .find(|node| node.has_tag_name("ruby"))
             .unwrap();
-        let rendered = render_children(body, "chapter.xhtml", false);
-        let (markdown, _) = transform_content(&format!(
-            "---\nauthor: 著者\ndate: \"2026-07-19\"\nlanguage: ja\ntitle: 本\n---\n{rendered}"
-        ));
-        assert!(markdown.contains("彼は本《ほん》を読む。"));
-    }
-
-    #[test]
-    fn renders_gaiji_alt_as_text_instead_of_a_block_image() {
-        let document = Document::parse(
-            r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><p>長い<img class="gaiji" src="wave.png" alt="～"/>声</p></body></html>"#,
-        )
-        .unwrap();
-        let body = document
-            .descendants()
-            .find(|node| node.has_tag_name("body"))
-            .unwrap();
-
-        assert!(render_children(body, "chapter.xhtml", false).contains("長い～声"));
+        assert_eq!(render_ruby(ruby), "紹《しょう》介《かい》");
     }
 
     #[test]
@@ -837,90 +1490,185 @@ mod tests {
     }
 
     #[test]
-    fn resolves_manifest_paths_relative_to_opf() {
+    fn resolves_references_relative_to_the_containing_document() {
         assert_eq!(
             resolve_zip_path("OEBPS/content.opf", "text/chapter.xhtml"),
             "OEBPS/text/chapter.xhtml"
         );
         assert_eq!(
-            resolve_zip_path("OPS/package/content.opf", "../text/chapter.xhtml"),
-            "OPS/text/chapter.xhtml"
+            resolve_reference("OEBPS/text/chapter.xhtml", "../images/scene%201.png#view").0,
+            "OEBPS/images/scene 1.png"
         );
     }
 
     #[test]
-    fn imports_minimal_epub_archive() {
+    fn imports_epub3_navigation_clean_blocks_and_images() {
+        let path = fixture_path("epub3");
+        write_epub3_fixture(&path);
+        let imported = import_epub(&path).unwrap();
+        std::fs::remove_file(path).unwrap();
+
+        assert_eq!(imported.title, "测试书");
+        assert_eq!(imported.author, "测试作者");
+        assert_eq!(imported.chapter_titles, vec!["第一章"]);
+        assert!(imported.markdown.contains("## 目次\n- [[#第一章]]"));
+        assert!(imported.markdown.contains("## 第一章"));
+        assert!(imported
+            .markdown
+            .contains("彼は紹介《しょうかい》ではなく紹《しょう》介《かい》を読む。"));
+        assert!(!imported.markdown.contains("line.png"));
+        assert!(!imported.markdown.contains("space.png"));
+        assert!(imported
+            .markdown
+            .contains("![场景](OEBPS/images/scene.png)"));
+        assert!(!imported.markdown.contains("纵排提示"));
+        assert!(!imported.markdown.contains("![]()"));
+        assert!(imported
+            .resources
+            .iter()
+            .any(|resource| resource.href == "OEBPS/images/cover.jpg"));
+        assert!(imported
+            .resources
+            .iter()
+            .any(|resource| resource.href == "OEBPS/images/scene.png"));
+    }
+
+    #[test]
+    fn imports_epub2_ncx_chapters() {
+        let path = fixture_path("epub2");
+        write_epub2_fixture(&path);
+        let imported = import_epub(&path).unwrap();
+        std::fs::remove_file(path).unwrap();
+
+        assert_eq!(imported.chapter_titles, vec!["序章", "第一章"]);
+        assert!(imported.markdown.contains("## 序章"));
+        assert!(imported.markdown.contains("## 第一章"));
+        assert!(imported.markdown.contains("![](front.png)"));
+        assert!(!imported.markdown.contains("底本データ"));
+        assert!(!imported.markdown.contains("版权提示"));
+        assert!(imported.warnings.is_empty());
+    }
+
+    fn fixture_path(name: &str) -> std::path::PathBuf {
         let suffix = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let path = std::env::temp_dir().join(format!("kotoclip-epub-{suffix}.epub"));
-        let file = File::create(&path).unwrap();
-        let mut archive = ZipWriter::new(file);
-        let options = SimpleFileOptions::default();
-        archive
-            .start_file("META-INF/container.xml", options)
-            .unwrap();
-        archive
-            .write_all(
-                br#"<?xml version="1.0"?><container><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>"#,
-            )
-            .unwrap();
-        archive.start_file("OEBPS/content.opf", options).unwrap();
-        archive
-            .write_all(
-                r##"<?xml version="1.0"?><package xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata><dc:title>测试书</dc:title><dc:creator id="illustrator">插画者</dc:creator><dc:creator id="author">测试作者</dc:creator><meta property="role" refines="#illustrator">ill</meta><meta property="role" refines="#author">aut</meta><meta property="dcterms:modified">2026-07-19T00:00:00Z</meta><dc:language>ja</dc:language></metadata><manifest><item id="chapter" href="text/chapter.xhtml"/></manifest><spine><itemref idref="chapter"/></spine></package>"##.as_bytes(),
-            )
-            .unwrap();
-        archive
-            .start_file("OEBPS/text/chapter.xhtml", options)
-            .unwrap();
-        archive
-            .write_all(
-                r#"<?xml version="1.0"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><body><h1>第一章</h1><div class="main"><img src="../images/scene.png"/><p><span class="koboSpan">彼は</span><ruby>本<rt>ほん</rt></ruby>を読む。</p></div></body></html>"#.as_bytes(),
-            )
-            .unwrap();
-        archive
-            .start_file("OEBPS/images/scene.png", options)
-            .unwrap();
-        archive.write_all(b"not-a-real-png").unwrap();
-        archive.finish().unwrap();
-
-        let imported = import_epub(&path).unwrap();
-        std::fs::remove_file(path).unwrap();
-        assert_eq!(imported.title, "测试书");
-        assert_eq!(imported.author, "测试作者");
-        assert!(imported.markdown.contains("date: \"2026-07-19\""));
-        assert_eq!(imported.chapter_titles, vec!["第一章"]);
-        assert!(imported.markdown.contains("彼は本《ほん》を読む。"));
-        assert!(!imported.markdown.contains("koboSpan"));
-        assert_eq!(imported.resources.len(), 1);
-        assert_eq!(imported.resources[0].href, "scene.png");
-        assert_eq!(imported.resources[0].media_type, "image/png");
-        assert_eq!(imported.resources[0].bytes, b"not-a-real-png");
-        assert!(imported.warnings.is_empty());
+        std::env::temp_dir().join(format!("kotoclip-{name}-{suffix}.epub"))
     }
 
-    #[test]
-    fn strips_epub_navigation_and_presentation_residue() {
-        let source = r#"---
-title: 本
----
-{.fit} この本は縦書きでレイアウトされています。
-C O N T E N T S
-序章
-第一章
-[]{#p-001.xhtml}
-## プ ロ ロ ー グ
-[本文]{.font-080-per-gfont}"#;
-        let (markdown, chapters) = transform_content(source);
-        assert_eq!(chapters, vec!["プロローグ"]);
-        assert!(markdown.contains("## プロローグ"));
-        assert!(markdown.contains("本文"));
-        assert!(!markdown.contains("縦書き"));
-        assert!(!markdown.contains("C O N T E N T S"));
-        assert!(!markdown.contains("第一章"));
-        assert!(!markdown.contains("xhtml"));
-        assert!(!markdown.contains("{."));
+    fn start_file(writer: &mut ZipWriter<File>, name: &str, content: &str) {
+        writer
+            .start_file(name, SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(content.as_bytes()).unwrap();
+    }
+
+    fn write_epub3_fixture(path: &Path) {
+        let mut writer = ZipWriter::new(File::create(path).unwrap());
+        start_file(
+            &mut writer,
+            "META-INF/container.xml",
+            r#"<container><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>"#,
+        );
+        start_file(
+            &mut writer,
+            "OEBPS/content.opf",
+            r##"<package xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata><dc:title>测试书</dc:title><dc:creator role="aut">测试作者</dc:creator><dc:date>2026-07-20</dc:date><dc:language>ja</dc:language></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/><item id="notice" href="notice.xhtml" media-type="application/xhtml+xml"/><item id="toc" href="toc.xhtml" media-type="application/xhtml+xml"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="cover"/><itemref idref="notice"/><itemref idref="toc"/><itemref idref="chapter"/></spine><guide><reference type="cover" href="cover.xhtml"/></guide></package>"##,
+        );
+        start_file(
+            &mut writer,
+            "OEBPS/nav.xhtml",
+            r##"<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#start">第一章</a></li></ol></nav></body></html>"##,
+        );
+        start_file(
+            &mut writer,
+            "OEBPS/cover.xhtml",
+            r#"<html><body class="cover"><svg><image href="images/cover.jpg"/></svg></body></html>"#,
+        );
+        start_file(
+            &mut writer,
+            "OEBPS/notice.xhtml",
+            r#"<html><body class="p-caution"><p>纵排提示</p></body></html>"#,
+        );
+        start_file(
+            &mut writer,
+            "OEBPS/toc.xhtml",
+            r#"<html><body class="p-toc"><p><a href="text/chapter.xhtml">第一章</a></p><p><a href="text/chapter.xhtml">重复</a></p></body></html>"#,
+        );
+        start_file(
+            &mut writer,
+            "OEBPS/text/chapter.xhtml",
+            "<html><body><h1 id=\"start\">第一章</h1><p>彼は<ruby>紹介<rt>しょうかい</rt></ruby>ではなく<ruby>紹<rt>しょう</rt>\n 介<rt>かい</rt></ruby>\n を読む。</p><p><img class=\"gaiji-line\" src=\"../images/line.png\"/><img src=\"../images/scene.png\" alt=\"场景\"/><img class=\"keep-space\" src=\"../images/space.png\"/><img alt=\"无源\"/></p></body></html>",
+        );
+        writer
+            .start_file("OEBPS/images/cover.jpg", SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"cover").unwrap();
+        writer
+            .start_file("OEBPS/images/scene.png", SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"scene").unwrap();
+        writer
+            .start_file("OEBPS/images/line.png", SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"line").unwrap();
+        writer
+            .start_file("OEBPS/images/space.png", SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"space").unwrap();
+        writer.finish().unwrap();
+    }
+
+    fn write_epub2_fixture(path: &Path) {
+        let mut writer = ZipWriter::new(File::create(path).unwrap());
+        start_file(
+            &mut writer,
+            "META-INF/container.xml",
+            r#"<container><rootfiles><rootfile full-path="content.opf"/></rootfiles></container>"#,
+        );
+        start_file(
+            &mut writer,
+            "content.opf",
+            r#"<package><metadata><title>本</title><creator>著者</creator></metadata><manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/><item id="front" href="front.html"/><item id="toc-page" href="toc.html"/><item id="notice" href="notice.html"/><item id="prologue" href="prologue.html"/><item id="chapter" href="chapter.html"/></manifest><spine><itemref idref="front"/><itemref idref="toc-page"/><itemref idref="notice"/><itemref idref="prologue"/><itemref idref="chapter"/></spine></package>"#,
+        );
+        start_file(
+            &mut writer,
+            "toc.ncx",
+            r#"<ncx><navMap><navPoint><navLabel><text>第一章</text></navLabel><content src="chapter.html#c1"/></navPoint></navMap></ncx>"#,
+        );
+        start_file(
+            &mut writer,
+            "front.html",
+            r#"<html><body><p>底本データ</p><p><img src="front.png"/></p></body></html>"#,
+        );
+        start_file(
+            &mut writer,
+            "toc.html",
+            r#"<html><body class="p-toc"><p><a href="prologue.html">序章</a></p><p><a href="chapter.html#c1">第一章</a></p></body></html>"#,
+        );
+        start_file(
+            &mut writer,
+            "notice.html",
+            r#"<html><body class="copyright-notice"><p>版权提示</p></body></html>"#,
+        );
+        start_file(
+            &mut writer,
+            "prologue.html",
+            &format!(
+                "<html><body><p>{}</p></body></html>",
+                "序章正文。".repeat(100)
+            ),
+        );
+        start_file(
+            &mut writer,
+            "chapter.html",
+            r#"<html><body id="c1"><p>第一章正文。</p></body></html>"#,
+        );
+        writer
+            .start_file("front.png", SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"front").unwrap();
+        writer.finish().unwrap();
     }
 }
