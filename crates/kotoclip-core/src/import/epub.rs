@@ -298,7 +298,7 @@ fn read_metadata(document: &Document<'_>, fallback_title: &str) -> Metadata {
             .map(|value| value.get(..10).unwrap_or(value).to_string())
     });
     Metadata {
-        title: text("title").unwrap_or_else(|| fallback_title.to_string()),
+        title: normalize_spaced_title(&text("title").unwrap_or_else(|| fallback_title.to_string())),
         author,
         date: date.unwrap_or_else(|| "未知".to_string()),
         language: text("language").unwrap_or_else(|| "ja".to_string()),
@@ -452,9 +452,10 @@ fn render_node(node: Node<'_, '_>, filename: &str, in_paragraph: bool) -> String
                 format!("[{content}]{{.{class}}}")
             }
         }),
-        "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-            format!("\n## {}\n", trim_layout_whitespace(&content))
-        }
+        "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => format!(
+            "\n## {}\n",
+            normalize_spaced_title(trim_layout_whitespace(&content))
+        ),
         "rt" | "rp" => String::new(),
         "a" => {
             let mut href = node.attribute("href").unwrap_or_default().to_string();
@@ -486,9 +487,17 @@ fn render_node(node: Node<'_, '_>, filename: &str, in_paragraph: bool) -> String
         }
         "img" => {
             let image = zip_basename(node.attribute("src").unwrap_or_default());
+            let alt = node.attribute("alt").unwrap_or_default().trim();
+            let is_gaiji = node
+                .attribute("class")
+                .is_some_and(|class| class.split_whitespace().any(|value| value == "gaiji"));
+            if is_gaiji && !alt.is_empty() {
+                return alt.to_string();
+            }
+            let escaped_alt = alt.replace('\\', "\\\\").replace(']', "\\]");
             node.attribute("class").map_or_else(
-                || format!("![](./{image})"),
-                |class| format!("![](./{image}){{.{class}}}"),
+                || format!("![{escaped_alt}](./{image})"),
+                |class| format!("![{escaped_alt}](./{image}){{.{class}}}"),
             )
         }
         "br" => "\\\n".to_string(),
@@ -498,6 +507,48 @@ fn render_node(node: Node<'_, '_>, filename: &str, in_paragraph: bool) -> String
 
 fn trim_layout_whitespace(input: &str) -> &str {
     input.trim_matches(['\r', '\n', '\t', ' '])
+}
+
+fn normalize_spaced_title(input: &str) -> String {
+    let trimmed = input.trim();
+    let characters = trimmed.chars().collect::<Vec<_>>();
+    let visible = characters
+        .iter()
+        .enumerate()
+        .filter(|(_, character)| !character.is_whitespace())
+        .collect::<Vec<_>>();
+    if visible.len() < 3 {
+        return trimmed.to_string();
+    }
+    let spaced_boundaries = visible
+        .windows(2)
+        .filter(|pair| {
+            characters[pair[0].0 + 1..pair[1].0]
+                .iter()
+                .all(|value| value.is_whitespace())
+        })
+        .filter(|pair| pair[1].0 > pair[0].0 + 1)
+        .count();
+    if spaced_boundaries >= 2 && spaced_boundaries * 2 >= visible.len() - 1 {
+        visible
+            .into_iter()
+            .map(|(_, character)| *character)
+            .collect()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn normalize_markdown_headings(input: &str) -> String {
+    input
+        .lines()
+        .map(|line| {
+            line.strip_prefix("## ")
+                .map(|title| format!("## {}", normalize_spaced_title(title)))
+                .unwrap_or_else(|| line.to_string())
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn transform_content(input: &str) -> (String, Vec<String>) {
@@ -521,7 +572,7 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
         chapters.insert(
             number,
             Chapter {
-                title: captures[1].trim().to_string(),
+                title: normalize_spaced_title(captures[1].trim()),
                 image: image_by_anchor.get(&captures[3]).cloned(),
             },
         );
@@ -645,6 +696,7 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
         .unwrap()
         .replace_all(&content, "")
         .into_owned();
+    content = normalize_markdown_headings(&content);
 
     for chapter in chapters.values() {
         let Some(image) = &chapter.image else {
@@ -669,16 +721,6 @@ fn transform_content(input: &str) -> (String, Vec<String>) {
         content.insert_str(position, "\n## 奥付\n\n");
     }
 
-    if let Some(cover_pos) = content.find("![](./cover.jpeg)") {
-        let mut toc = String::from("## 目次\n\n");
-        for chapter in chapters.values() {
-            toc.push_str(&format!("- [[#{}]]\n", chapter.title));
-        }
-        if !chapters.is_empty() {
-            toc.push('\n');
-            content.insert_str(cover_pos, &toc);
-        }
-    }
     content = Regex::new(r"\n{4,}")
         .unwrap()
         .replace_all(&content, "\n\n\n")
@@ -714,13 +756,14 @@ fn strip_epub_navigation(input: &str) -> String {
 
     for line in input.lines() {
         let trimmed = line.trim();
-        if toc_title.is_match(trimmed) {
+        let normalized = normalize_spaced_title(trimmed);
+        if toc_title.is_match(&normalized) {
             in_navigation = true;
             continue;
         }
         let link_count = markdown_link.find_iter(trimmed).count();
         let target_count = epub_target.find_iter(trimmed).count();
-        let navigation_line = (trimmed.to_ascii_lowercase().starts_with("contents")
+        let navigation_line = (normalized.to_ascii_lowercase().starts_with("contents")
             && link_count > 0)
             || (link_count >= 2 && target_count >= 2);
         if navigation_line {
@@ -728,10 +771,8 @@ fn strip_epub_navigation(input: &str) -> String {
             continue;
         }
         if in_navigation {
-            let is_navigation_item = trimmed.is_empty()
-                || (link_count > 0 && target_count > 0)
-                || trimmed.starts_with("- [[#");
-            if is_navigation_item {
+            let starts_document = trimmed.starts_with("[]{#") || trimmed.starts_with('#');
+            if !starts_document {
                 continue;
             }
             in_navigation = false;
@@ -769,6 +810,30 @@ mod tests {
             "---\nauthor: 著者\ndate: \"2026-07-19\"\nlanguage: ja\ntitle: 本\n---\n{rendered}"
         ));
         assert!(markdown.contains("彼は本《ほん》を読む。"));
+    }
+
+    #[test]
+    fn renders_gaiji_alt_as_text_instead_of_a_block_image() {
+        let document = Document::parse(
+            r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><p>長い<img class="gaiji" src="wave.png" alt="～"/>声</p></body></html>"#,
+        )
+        .unwrap();
+        let body = document
+            .descendants()
+            .find(|node| node.has_tag_name("body"))
+            .unwrap();
+
+        assert!(render_children(body, "chapter.xhtml", false).contains("長い～声"));
+    }
+
+    #[test]
+    fn normalizes_only_titles_with_repeated_inter_character_spacing() {
+        assert_eq!(normalize_spaced_title("　プ ロ ロ ー グ　"), "プロローグ");
+        assert_eq!(normalize_spaced_title("C O N T E N T S"), "CONTENTS");
+        assert_eq!(
+            normalize_spaced_title("第一章　恋人とか、ぜったいにムリ！"),
+            "第一章　恋人とか、ぜったいにムリ！"
+        );
     }
 
     #[test]
@@ -815,7 +880,9 @@ mod tests {
                 r#"<?xml version="1.0"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><body><h1>第一章</h1><div class="main"><img src="../images/scene.png"/><p><span class="koboSpan">彼は</span><ruby>本<rt>ほん</rt></ruby>を読む。</p></div></body></html>"#.as_bytes(),
             )
             .unwrap();
-        archive.start_file("OEBPS/images/scene.png", options).unwrap();
+        archive
+            .start_file("OEBPS/images/scene.png", options)
+            .unwrap();
         archive.write_all(b"not-a-real-png").unwrap();
         archive.finish().unwrap();
 
@@ -840,16 +907,19 @@ mod tests {
 title: 本
 ---
 {.fit} この本は縦書きでレイアウトされています。
-CONTENTS [序章](#p-001.xhtml#toc-001) [第一章](#p-002.xhtml#toc-002)
+C O N T E N T S
+序章
+第一章
 []{#p-001.xhtml}
-## 序章
+## プ ロ ロ ー グ
 [本文]{.font-080-per-gfont}"#;
         let (markdown, chapters) = transform_content(source);
-        assert_eq!(chapters, vec!["序章"]);
-        assert!(markdown.contains("## 序章"));
+        assert_eq!(chapters, vec!["プロローグ"]);
+        assert!(markdown.contains("## プロローグ"));
         assert!(markdown.contains("本文"));
         assert!(!markdown.contains("縦書き"));
-        assert!(!markdown.contains("CONTENTS"));
+        assert!(!markdown.contains("C O N T E N T S"));
+        assert!(!markdown.contains("第一章"));
         assert!(!markdown.contains("xhtml"));
         assert!(!markdown.contains("{."));
     }

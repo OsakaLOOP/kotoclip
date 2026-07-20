@@ -87,6 +87,22 @@ function parseScalar(value: string): string {
   return trimmed;
 }
 
+function normalizeSpacedTitle(value: string): string {
+  const characters = Array.from(value.trim());
+  const visible = characters
+    .map((character, index) => ({ character, index }))
+    .filter(({ character }) => !/\s/u.test(character));
+  if (visible.length < 3) return value.trim();
+  const spacedBoundaries = visible.slice(1).filter((current, index) => {
+    const previous = visible[index];
+    return current.index > previous.index + 1
+      && characters.slice(previous.index + 1, current.index).every((character) => /\s/u.test(character));
+  }).length;
+  return spacedBoundaries >= 2 && spacedBoundaries * 2 >= visible.length - 1
+    ? visible.map(({ character }) => character).join("")
+    : value.trim();
+}
+
 function extractFrontmatter(source: string): { body: string; metadata: MarkdownMetadata } {
   const match = FRONTMATTER_PATTERN.exec(source);
   if (!match) {
@@ -102,7 +118,8 @@ function extractFrontmatter(source: string): { body: string; metadata: MarkdownM
     if (separator <= 0) continue;
     const key = line.slice(0, separator).trim() as keyof MarkdownMetadata;
     if (!SUPPORTED_KEYS.has(key)) continue;
-    const value = parseScalar(line.slice(separator + 1));
+    const parsed = parseScalar(line.slice(separator + 1));
+    const value = key === "title" ? normalizeSpacedTitle(parsed) : parsed;
     if (value) metadata[key] = value;
   }
 
@@ -188,9 +205,11 @@ function cleanInline(source: string, stats: ReaderCleanupStats): string {
 }
 
 function looksLikeNavigationLine(line: string): boolean {
+  const normalized = normalizeSpacedTitle(line);
   const markdownLinks = line.match(/\[[^\]]+\]\([^)]+\)/g)?.length ?? 0;
   const epubTargets = line.match(/(?:x?html?|toc[-_#]|a_m\d+|b_m\d+)/gi)?.length ?? 0;
-  return (/^\s*contents?\b/i.test(line) && markdownLinks > 0)
+  return TOC_TITLE_PATTERN.test(normalized)
+    || (/^\s*contents?\b/i.test(normalized) && markdownLinks > 0)
     || (markdownLinks >= 2 && epubTargets >= 2)
     || /^\s*[-*]\s+\[\[#/.test(line);
 }
@@ -279,7 +298,7 @@ export function compileReaderDocument(source: string): ReaderDocument {
     const heading = HEADING_PATTERN.exec(trimmed);
     if (heading) {
       flushParagraph();
-      const title = cleanInline(heading[2], stats);
+      const title = normalizeSpacedTitle(cleanInline(heading[2], stats));
       if (!title) continue;
       if (TOC_TITLE_PATTERN.test(title)) {
         skippingNavigation = true;
