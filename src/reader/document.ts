@@ -129,8 +129,63 @@ function extractFrontmatter(source: string): { body: string; metadata: MarkdownM
   };
 }
 
-function codePointLength(value: string): number {
-  return Array.from(value).length;
+function isKanji(character: string): boolean {
+  const codePoint = character.codePointAt(0) ?? 0;
+  return (codePoint >= 0x3400 && codePoint <= 0x4dbf)
+    || (codePoint >= 0x4e00 && codePoint <= 0x9fff)
+    || (codePoint >= 0xf900 && codePoint <= 0xfaff)
+    || (codePoint >= 0x20000 && codePoint <= 0x2fa1f);
+}
+
+function isKana(character: string): boolean {
+  const codePoint = character.codePointAt(0) ?? 0;
+  return (codePoint >= 0x3041 && codePoint <= 0x3096)
+    || (codePoint >= 0x309d && codePoint <= 0x309f)
+    || (codePoint >= 0x30a1 && codePoint <= 0x30fa)
+    || (codePoint >= 0x30fd && codePoint <= 0x30ff)
+    || character === "ー";
+}
+
+// 必须与 Rust ruby::prepare_text 的坐标规则一致，同时保留原始标记供后端提取读音。
+function preparedCharacterLength(value: string): number {
+  const characters = Array.from(value);
+  const prepared: string[] = [];
+  let baseBoundary = 0;
+  let index = 0;
+
+  while (index < characters.length) {
+    if (characters[index] !== "《") {
+      prepared.push(characters[index]);
+      if (!isKanji(characters[index])) baseBoundary = prepared.length;
+      index++;
+      continue;
+    }
+
+    const annotationEnd = characters.indexOf("》", index + 1);
+    if (annotationEnd < 0) {
+      prepared.push(characters[index]);
+      baseBoundary = prepared.length;
+      index++;
+      continue;
+    }
+
+    const reading = characters.slice(index + 1, annotationEnd);
+    const validReading = reading.length > 0 && reading.every(isKana);
+    let baseStart = prepared.length;
+    while (baseStart > baseBoundary && isKanji(prepared[baseStart - 1])) baseStart--;
+
+    if (validReading && baseStart < prepared.length) {
+      baseBoundary = prepared.length;
+      index = annotationEnd + 1;
+      continue;
+    }
+
+    prepared.push(...characters.slice(index, annotationEnd + 1));
+    baseBoundary = prepared.length;
+    index = annotationEnd + 1;
+  }
+
+  return prepared.length;
 }
 
 function decodeHtmlEntities(value: string): string {
@@ -383,7 +438,7 @@ export function compileReaderDocument(source: string): ReaderDocument {
     }
     const start = charOffset;
     analysisParts.push(draft.text);
-    charOffset += codePointLength(draft.text);
+    charOffset += preparedCharacterLength(draft.text);
     const block: ReaderTextBlock = {
       id: `text-${++textIndex}`,
       kind: draft.kind,

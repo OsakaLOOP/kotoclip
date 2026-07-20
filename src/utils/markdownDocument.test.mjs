@@ -54,6 +54,28 @@ author: 著者
   assert.match(document.markdown, /!\[插图\]\(\.\/images\/01\.jpeg "场景"\)/);
 });
 
+test("ruby 标记不计入章节和图片的后端字符坐标", () => {
+  const document = compileReaderDocument(`## 序章
+
+七《なの》日。
+
+![插图](./images/01.jpeg)
+
+## 第一章
+
+本文。`);
+
+  assert.equal(document.analysisText, "序章\n\n七《なの》日。\n\n第一章\n\n本文。");
+  assert.deepEqual(document.chapters.map(({ title, charOffset }) => ({ title, charOffset })), [
+    { title: "序章", charOffset: 0 },
+    { title: "第一章", charOffset: 9 },
+  ]);
+  assert.equal(document.images[0].charOffset, 7);
+  assert.deepEqual(document.blocks
+    .filter((block) => block.kind !== "image")
+    .map((block) => block.charRange), [[0, 2], [4, 7], [9, 12], [14, 17]]);
+});
+
 test("防御性清理截图中的 EPUB 锚点、TOC 和 Pandoc 属性", () => {
   const document = compileReaderDocument(`{.fit} この本は縦書きでレイアウトされています。
 
