@@ -10,6 +10,7 @@ use thiserror::Error;
 use zip::ZipArchive;
 
 const OPS_NAMESPACE: &str = "http://www.idpf.org/2007/ops";
+const XLINK_NAMESPACE: &str = "http://www.w3.org/1999/xlink";
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -144,8 +145,8 @@ pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportErr
         .to_string();
     let mut archive = ZipArchive::new(File::open(path)?)?;
     let opf_path = locate_opf(&mut archive)?;
-    let opf = read_zip_text(&mut archive, &opf_path)?;
-    let opf_document = Document::parse(&opf)?;
+    let opf = normalize_xml_source(&read_zip_text(&mut archive, &opf_path)?);
+    let opf_document = Document::parse(strip_xml_declaration(&opf))?;
     let metadata = read_metadata(&opf_document, &fallback_title);
     let package = read_package(&opf_document, &opf_path)?;
     let mut warnings = Vec::new();
@@ -229,7 +230,8 @@ pub fn import_epub(path: impl AsRef<Path>) -> Result<ImportedEpub, EpubImportErr
 
 fn locate_opf<R: Read + Seek>(archive: &mut ZipArchive<R>) -> Result<String, EpubImportError> {
     if let Ok(container) = read_zip_text(archive, "META-INF/container.xml") {
-        if let Ok(document) = Document::parse(&container) {
+        let container = normalize_xml_source(&container);
+        if let Ok(document) = Document::parse(strip_xml_declaration(&container)) {
             if let Some(path) = document
                 .descendants()
                 .find(|node| node.has_tag_name("rootfile"))
@@ -388,16 +390,19 @@ fn read_navigation<R: Read + Seek>(
     {
         let nav_path = resolve_zip_path(opf_path, &item.href);
         match read_zip_text(archive, &nav_path) {
-            Ok(text) => match Document::parse(strip_xml_declaration(&text)) {
-                Ok(document) => {
-                    let result = parse_epub3_navigation(&document, &nav_path);
-                    if !result.is_empty() {
-                        return Ok(result);
+            Ok(text) => {
+                let text = normalize_xml_source(&text);
+                match Document::parse(strip_xml_declaration(&text)) {
+                    Ok(document) => {
+                        let result = parse_epub3_navigation(&document, &nav_path);
+                        if !result.is_empty() {
+                            return Ok(result);
+                        }
+                        warnings.push("EPUB3 nav 不包含可用 toc，尝试 NCX".to_string());
                     }
-                    warnings.push("EPUB3 nav 不包含可用 toc，尝试 NCX".to_string());
+                    Err(error) => warnings.push(format!("EPUB3 nav 解析失败，尝试 NCX：{error}")),
                 }
-                Err(error) => warnings.push(format!("EPUB3 nav 解析失败，尝试 NCX：{error}")),
-            },
+            }
             Err(error) => warnings.push(format!("EPUB3 nav 读取失败，尝试 NCX：{error}")),
         }
     }
@@ -407,7 +412,7 @@ fn read_navigation<R: Read + Seek>(
         .find(|item| item.media_type == "application/x-dtbncx+xml")
     {
         let ncx_path = resolve_zip_path(opf_path, &item.href);
-        let text = read_zip_text(archive, &ncx_path)?;
+        let text = normalize_xml_source(&read_zip_text(archive, &ncx_path)?);
         let document = Document::parse(strip_xml_declaration(&text))?;
         let result = parse_ncx_navigation(&document, &ncx_path);
         if !result.is_empty() {
@@ -528,10 +533,16 @@ fn merge_navigation(
 
 fn deduplicate_navigation(entries: Vec<NavigationEntry>) -> Vec<NavigationEntry> {
     entries.into_iter().fold(Vec::new(), |mut unique, entry| {
-        if !unique
+        if let Some(index) = unique
             .iter()
-            .any(|existing| navigation_equivalent(existing, &entry))
+            .position(|existing| navigation_equivalent(existing, &entry))
         {
+            if is_structural_navigation_title(&unique[index].title)
+                && !is_structural_navigation_title(&entry.title)
+            {
+                unique[index] = entry;
+            }
+        } else {
             unique.push(entry);
         }
         unique
@@ -591,7 +602,7 @@ fn read_spine_documents<R: Read + Seek>(
             continue;
         };
         let xhtml = match read_zip_text(archive, &path) {
-            Ok(text) => text,
+            Ok(text) => normalize_xml_source(&text),
             Err(error) => {
                 warnings.push(format!("读取正文 {} 失败：{error}", spine.manifest.href));
                 continue;
@@ -698,23 +709,37 @@ fn select_chapters(
         .iter()
         .map(|document| (document.path.as_str(), document))
         .collect::<HashMap<_, _>>();
+    let illustration_targets = navigation
+        .iter()
+        .filter(|entry| {
+            documents
+                .get(entry.path.as_str())
+                .is_some_and(|document| document.role == DocumentRole::Illustration)
+                && !is_structural_navigation_title(&entry.title)
+        })
+        .count();
+    let has_explicit_chapter_titles = navigation
+        .iter()
+        .any(|entry| looks_like_chapter_title(&entry.title));
     let mut started = false;
     navigation
         .iter()
         .filter_map(|entry| {
             let document = documents.get(entry.path.as_str())?;
+            let visual_heading_seed = !has_explicit_chapter_titles
+                && navigation_target_has_structural_heading(entry, document);
             if matches!(
                 document.role,
-                DocumentRole::Cover
-                    | DocumentRole::Toc
-                    | DocumentRole::Notice
-                    | DocumentRole::TitlePage
+                DocumentRole::Cover | DocumentRole::Toc | DocumentRole::Notice
             ) || is_structural_navigation_title(&entry.title)
+                || (document.role == DocumentRole::TitlePage && !visual_heading_seed)
             {
                 return None;
             }
             let body_seed = document.metrics.text_chars >= 500
                 || document.metrics.headings > 0
+                || (document.role == DocumentRole::Illustration && illustration_targets >= 2)
+                || visual_heading_seed
                 || looks_like_chapter_title(&entry.title);
             if !started && !body_seed {
                 return None;
@@ -723,6 +748,53 @@ fn select_chapters(
             Some(entry.clone())
         })
         .collect()
+}
+
+fn navigation_target_has_structural_heading(
+    entry: &NavigationEntry,
+    document: &SpineDocument,
+) -> bool {
+    let Ok(parsed) = Document::parse(strip_xml_declaration(&document.xhtml)) else {
+        return false;
+    };
+    let Some(body) = parsed.descendants().find(|node| node.has_tag_name("body")) else {
+        return false;
+    };
+    let target = entry
+        .fragment
+        .as_deref()
+        .and_then(|fragment| {
+            body.descendants()
+                .find(|node| node.attribute("id") == Some(fragment))
+        })
+        .unwrap_or(body);
+
+    std::iter::once(target)
+        .chain(target.descendants())
+        .filter(|node| node.is_element() && is_structural_heading(*node))
+        .any(|node| heading_equivalent(&structural_heading_text(node), &entry.title))
+}
+
+fn structural_heading_text(node: Node<'_, '_>) -> String {
+    normalize_inline_text(
+        &node
+            .descendants()
+            .filter_map(|descendant| {
+                if !descendant.is_text()
+                    || descendant
+                        .ancestors()
+                        .take_while(|ancestor| *ancestor != node)
+                        .any(|ancestor| {
+                            ancestor.is_element()
+                                && matches!(ancestor.tag_name().name(), "rt" | "rp")
+                        })
+                {
+                    return None;
+                }
+                descendant.text()
+            })
+            .collect::<String>(),
+    )
 }
 
 fn render_spine_document(
@@ -734,10 +806,9 @@ fn render_spine_document(
     warnings: &mut Vec<String>,
     render_text: bool,
 ) -> Result<(), EpubImportError> {
-    if matches!(
-        source.role,
-        DocumentRole::Toc | DocumentRole::Notice | DocumentRole::TitlePage
-    ) {
+    if matches!(source.role, DocumentRole::Toc | DocumentRole::Notice)
+        || (source.role == DocumentRole::TitlePage && targets.is_empty())
+    {
         return Ok(());
     }
     let document = Document::parse(strip_xml_declaration(&source.xhtml))?;
@@ -1225,6 +1296,51 @@ fn find_zip_entry<R: Read + Seek>(
     None
 }
 
+fn normalize_xml_source(input: &str) -> String {
+    static NAMED_ENTITY: OnceLock<Regex> = OnceLock::new();
+    let mut output = NAMED_ENTITY
+        .get_or_init(|| Regex::new(r"&([A-Za-z][A-Za-z0-9]+);").unwrap())
+        .replace_all(input, |captures: &regex::Captures<'_>| {
+            let key = format!("{};", &captures[1]);
+            let Some(&(first, second)) = html5ever::data::NAMED_ENTITIES.get(key.as_str()) else {
+                return captures[0].to_string();
+            };
+            let mut replacement = format!("&#x{first:X};");
+            if second != 0 {
+                replacement.push_str(&format!("&#x{second:X};"));
+            }
+            replacement
+        })
+        .into_owned();
+    for (prefix, namespace) in [
+        ("epub", OPS_NAMESPACE),
+        ("xlink", XLINK_NAMESPACE),
+        ("opf", "http://www.idpf.org/2007/opf"),
+        ("dc", "http://purl.org/dc/elements/1.1/"),
+    ] {
+        ensure_namespace_declaration(&mut output, prefix, namespace);
+    }
+    output
+}
+
+fn ensure_namespace_declaration(source: &mut String, prefix: &str, namespace: &str) {
+    static ROOT: OnceLock<Regex> = OnceLock::new();
+    let lower = source.to_ascii_lowercase();
+    if !lower.contains(&format!("{prefix}:")) || lower.contains(&format!("xmlns:{prefix}")) {
+        return;
+    }
+    let Some(root) = ROOT
+        .get_or_init(|| {
+            Regex::new(r"(?i)<(?:[A-Za-z_][A-Za-z0-9_.-]*:)?(?:html|package|ncx|container|svg)\b")
+                .unwrap()
+        })
+        .find(source)
+    else {
+        return;
+    };
+    source.insert_str(root.end(), &format!(" xmlns:{prefix}=\"{namespace}\""));
+}
+
 fn normalize_archive_path(path: &str) -> String {
     path.replace('\\', "/").trim_start_matches('/').to_string()
 }
@@ -1313,6 +1429,25 @@ fn heading_level(node: Node<'_, '_>) -> Option<usize> {
         "h6" => Some(6),
         _ => None,
     }
+}
+
+fn is_structural_heading(node: Node<'_, '_>) -> bool {
+    if heading_level(node).is_some() {
+        return true;
+    }
+    if node.attribute("role") == Some("heading") {
+        return true;
+    }
+    let epub_types = token_list(epub_type(node));
+    if epub_types
+        .iter()
+        .any(|value| matches!(value.as_str(), "chapter" | "part" | "heading" | "title"))
+    {
+        return true;
+    }
+    token_list(node.attribute("class"))
+        .iter()
+        .any(|value| matches!(value.as_str(), "chapter" | "heading" | "headline" | "title"))
 }
 
 fn normalize_spaced_title(input: &str) -> String {
@@ -1416,7 +1551,19 @@ fn looks_like_chapter_title(title: &str) -> bool {
 fn is_structural_navigation_title(title: &str) -> bool {
     matches!(
         normalize_heading_key(title).as_str(),
-        "目次" | "もくじ" | "contents" | "tableofcontents" | "表紙" | "cover"
+        "目次"
+            | "もくじ"
+            | "contents"
+            | "tableofcontents"
+            | "表紙"
+            | "cover"
+            | "扉"
+            | "扉絵"
+            | "titlepage"
+            | "frontispiece"
+            | "本文"
+            | "start"
+            | "beginreading"
     )
 }
 
@@ -1499,6 +1646,142 @@ mod tests {
             resolve_reference("OEBPS/text/chapter.xhtml", "../images/scene%201.png#view").0,
             "OEBPS/images/scene 1.png"
         );
+    }
+
+    #[test]
+    fn normalizes_legacy_html_entities_and_missing_epub_namespace() {
+        let source = normalize_xml_source(
+            r#"<html><body><nav epub:type="toc"><p>A&nbsp;B</p></nav></body></html>"#,
+        );
+        let document = Document::parse(&source).unwrap();
+        let nav = document
+            .descendants()
+            .find(|node| node.has_tag_name("nav"))
+            .unwrap();
+        assert_eq!(epub_type(nav), Some("toc"));
+        assert_eq!(normalize_inline_text(&node_text(nav)), "A\u{a0}B");
+    }
+
+    #[test]
+    fn accepts_authoritative_navigation_for_image_only_publications() {
+        let navigation = vec![
+            NavigationEntry {
+                title: "笔ペンの種類と選び方".to_string(),
+                path: "page-1.xhtml".to_string(),
+                fragment: None,
+            },
+            NavigationEntry {
+                title: "正しい姿勢と持ち方".to_string(),
+                path: "page-2.xhtml".to_string(),
+                fragment: None,
+            },
+        ];
+        let documents = ["page-1.xhtml", "page-2.xhtml"]
+            .into_iter()
+            .map(|path| SpineDocument {
+                path: path.to_string(),
+                xhtml: String::new(),
+                role: DocumentRole::Illustration,
+                metrics: DocumentMetrics {
+                    text_chars: 0,
+                    links: 0,
+                    images: 1,
+                    headings: 0,
+                },
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(select_chapters(&navigation, &documents), navigation);
+    }
+
+    #[test]
+    fn accepts_matching_visual_heading_when_navigation_has_no_chapter_labels() {
+        let navigation = vec![NavigationEntry {
+            title: "俺がまだ中学生だった頃の話である。".to_string(),
+            path: "chapter.xhtml".to_string(),
+            fragment: Some("start".to_string()),
+        }];
+        let documents = vec![SpineDocument {
+            path: "chapter.xhtml".to_string(),
+            xhtml: r#"<html><body id="start"><div><div class="title">俺がまだ中学生だった<ruby>頃<rt>ころ</rt></ruby>の話である。</div></div></body></html>"#.to_string(),
+            role: DocumentRole::TitlePage,
+            metrics: DocumentMetrics {
+                text_chars: 16,
+                links: 0,
+                images: 0,
+                headings: 0,
+            },
+        }];
+
+        assert_eq!(select_chapters(&navigation, &documents), navigation);
+    }
+
+    #[test]
+    fn keeps_descriptive_title_when_navigation_sources_share_a_target() {
+        let entries = vec![
+            NavigationEntry {
+                title: "扉".to_string(),
+                path: "chapter.xhtml".to_string(),
+                fragment: Some("start".to_string()),
+            },
+            NavigationEntry {
+                title: "俺がまだ中学生だった頃の話である。".to_string(),
+                path: "chapter.xhtml".to_string(),
+                fragment: Some("start".to_string()),
+            },
+        ];
+
+        assert_eq!(
+            deduplicate_navigation(entries)[0].title,
+            "俺がまだ中学生だった頃の話である。"
+        );
+    }
+
+    #[test]
+    fn explicit_chapter_labels_keep_visual_frontmatter_outside_body() {
+        let navigation = vec![
+            NavigationEntry {
+                title: "書名".to_string(),
+                path: "title.xhtml".to_string(),
+                fragment: Some("title".to_string()),
+            },
+            NavigationEntry {
+                title: "底本データ".to_string(),
+                path: "source.xhtml".to_string(),
+                fragment: None,
+            },
+            NavigationEntry {
+                title: "プロローグ　本文".to_string(),
+                path: "prologue.xhtml".to_string(),
+                fragment: None,
+            },
+        ];
+        let documents = [
+            (
+                "title.xhtml",
+                r#"<html><body id="title"><div class="title">書名</div></body></html>"#,
+            ),
+            (
+                "source.xhtml",
+                "<html><body><p>底本データ</p></body></html>",
+            ),
+            ("prologue.xhtml", "<html><body><p>本文</p></body></html>"),
+        ]
+        .into_iter()
+        .map(|(path, xhtml)| SpineDocument {
+            path: path.to_string(),
+            xhtml: xhtml.to_string(),
+            role: DocumentRole::Content,
+            metrics: DocumentMetrics {
+                text_chars: 10,
+                links: 0,
+                images: 0,
+                headings: 0,
+            },
+        })
+        .collect::<Vec<_>>();
+
+        assert_eq!(select_chapters(&navigation, &documents), navigation[2..]);
     }
 
     #[test]
