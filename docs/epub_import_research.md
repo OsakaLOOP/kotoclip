@@ -1,6 +1,6 @@
 # EPUB 导入通用解析研究与阶段记录
 
-状态：前置解析器重构与当前书架验收已完成（2026-07-20）
+状态：前置解析器重构、当前书架验收与全机兼容审计已完成（2026-07-20）
 
 本文档固化 Kotoclip EPUB 导入的原始样本、失败事实、中间结论、协议决策、实现阶段和逐书验收。权威产品边界仍见 `reader_library_and_scroll_reader.md`；本文档是 EPUB 包结构、XHTML 清洗和规范 Markdown 输出的专项记录。
 
@@ -157,6 +157,42 @@ EPUB ZIP
 - 当前提交只修改 Rust EPUB 到规范 Markdown 的前置层；`src/reader/document.ts` 继续只编译规范 Markdown，未加入 OPF/nav/NCX 或 EPUB 角色推断。
 - 验证通过：`cargo check -p kotoclip-core`、`cargo fmt --all -- --check`、`git diff --check`、5 项 EPUB 定向测试。
 - 全量 `cargo test -p kotoclip-core` 为 64/66；失败的 `structured_forms_readings_aliases_and_variants_resolve` 与 `test_representative_cases` 单独复跑仍失败，分别属于本地词典内容和既有表达 pending 基线，不在 EPUB 代码路径。
+
+### 2026-07-20 阶段 D：Everything 全机兼容审计
+
+使用 Everything 桌面索引与官方 ES CLI 查询本机全部 `.epub`，原始索引暂存于被忽略的 `target/everything-audit/epubs.json`。共发现 76 个路径；按 SHA-256 内容哈希去重后为 69 个唯一可读 EPUB、6 个重复文件和 1 个 136 字节无效旧测试残件。语言元数据分布为：en 28、ja 22、zh 8、zh-TW 5、en-US 3，en-GB、eng、it 各 1。
+
+本阶段新增兼容规则及中间结论：
+
+- 在 XML DOM 解析前使用完整 HTML5 命名实体表转换旧 XHTML 实体，并只在前缀被实际使用且声明缺失时补齐 `epub`、`xlink`、`opf`、`dc` namespace。
+- 图片型出版物在至少两个非功能性权威导航目标指向纯图片文档时，可直接建立章节；不再以正文字符数否定练习册或漫画页面。
+- CSS/ARIA/`epub:type` 视觉标题只能在导航目标范围内使用，且文字必须与导航标题等价。文档内任意 `.title` 不能作为正文起点。
+- 若大纲后续已有“第 X 章／プロローグ／Chapter”等显式章节标题，视觉书名页不得提前启动正文。该限制使《文学少女》第一卷保持 9 章、第二卷保持 12 章，消除了宽泛 CSS 标题信号造成的 14/17 章回归。
+- 多个导航源指向同一锚点时，`扉`、`Title Page`、`Start` 等功能标签不得覆盖 NCX/nav 中信息量更高的正文标题。《涼宮ハルヒの秘話》因此从 0 章恢复为 2 个权威导航章节。
+
+代表性改善：
+
+| 样本 | 兼容前 | 兼容后 |
+| --- | ---: | ---: |
+| Flowers for Algernon | 3 章／33 行 | 25 章／4247 行 |
+| Iron Sunrise | 14 章／310 行 | 42 章／5798 行 |
+| Lectures on Literature | 1 章／17 行 | 22 章／3710 行 |
+| handlecsv | 13 章／139 行 | 30 章／392 行 |
+| 7 日笔字练习册 | 0 章 | 33 章 |
+| A Study in Emerald 图像漫画 | 0 章 | 8 章 |
+| 涼宮ハルヒの秘話 | 0 章 | 2 章 |
+
+69 个可读结果的 `![]`、`![]()`、raw HTML 和 Pandoc 残留全部为 0。当前书架排除指定中日双语样本后仍严格为 `8/5/11/12/9/5/18` 章，未因全机兼容规则发生回归。
+
+剩余边界均保留可审计 warning 或保守结果：
+
+- 《Ulysses》NCX 只有指向 title page 的 `Start`，正文以 CSS 视觉标题表达章节；当前为 0 个规范章节，不使用弱规则猜测。
+- `epub-mkiv-demo` 为工具链示例，缺少可用正文大纲，当前为 0 个规范章节。
+- `handlecsv` 有一个 XHTML 包含真实非法 XML name token；只跳过该文档并继续处理全书。
+- `Lectures on Literature` 的包内确实缺失 `OEBPS/Images/download.jpeg`；不生成失效 Markdown 图片。
+- `Elementary Mathematics...` 与 `Empire Games` 仍有少量目标锚点回退；无 nav 的 Hitchhiker 合集使用结构标题并产生降级 warning。
+
+验证通过：10 项 EPUB 定向测试、`cargo check -p kotoclip-core`、全机 69 个唯一可读 EPUB 复测、`cargo fmt --all` 与 `git diff --check`。全机审计 example 已在验证后删除，不进入生产代码或仓库。
 
 ## 6. 验收矩阵
 

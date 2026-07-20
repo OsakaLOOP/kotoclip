@@ -98,3 +98,12 @@
 # EPUB 导入入口
 
 - Tauri Dialog 插件文档：<https://v2.tauri.app/plugin/dialog/>。用于确认 Tauri 2 桌面端文件选择器的安装、初始化与 `open` 接口。
+
+## EPUB 全机审计与保真渲染
+
+- Everything 官方下载页：<https://www.voidtools.com/downloads/>。用于确认本机文件索引工具及 ES 命令行客户端的官方发布入口。
+- ES 1.1.0.37 x64：<https://www.voidtools.com/ES-1.1.0.37.x64.zip>。本次通过该官方命令行客户端查询 Everything 索引中的全部 `.epub` 路径。
+- W3C EPUB 3.3：<https://www.w3.org/TR/epub-33/>。用于核对 package、spine、navigation、content document、资源和 rendition 的标准边界。
+- W3C EPUB 3.3 Reading Systems：<https://www.w3.org/TR/epub-rs-33/>。用于后续保真模式中回流、固定版式、脚本与阅读系统行为的设计参照。
+- MDN `getComputedStyle()`：<https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle>。用于视觉对象计算样式指纹和浏览器布局测量的接口参照。
+- MDN iframe sandbox：<https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/iframe#sandbox>。用于未知 EPUB XHTML 隔离渲染的权限边界参照。
