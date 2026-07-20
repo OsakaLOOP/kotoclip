@@ -199,10 +199,7 @@ fn database_bundle_id(path: &Path) -> Option<String> {
         .flatten()
 }
 
-pub fn build_database(
-    source: &Path,
-    target: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn build_database(source: &Path, target: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let mut bundle = BundleReader::open(source)?;
     let parent = target
         .parent()
@@ -248,9 +245,8 @@ pub fn build_database(
                 id, headword, definition_block_id, definition_offset, definition_length
              ) VALUES(?1, ?2, ?3, ?4, ?5)",
         )?;
-        let mut alias_statement = transaction.prepare(
-            "INSERT INTO aliases(alias, normalized_alias, target) VALUES(?1, ?2, ?3)",
-        )?;
+        let mut alias_statement = transaction
+            .prepare("INSERT INTO aliases(alias, normalized_alias, target) VALUES(?1, ?2, ?3)")?;
         let mut alias_key_statement = transaction.prepare(
             "INSERT INTO alias_keys(
                 alias, target, kind, normalized_value
@@ -287,20 +283,8 @@ pub fn build_database(
                     let normalized_alias = cursor.read_optional_text()?;
                     let target = cursor.read_text()?;
                     alias_statement.execute(params![&alias, normalized_alias, &target])?;
-                    insert_alias_keys(
-                        &mut cursor,
-                        &mut alias_key_statement,
-                        &alias,
-                        &target,
-                        0,
-                    )?;
-                    insert_alias_keys(
-                        &mut cursor,
-                        &mut alias_key_statement,
-                        &alias,
-                        &target,
-                        1,
-                    )?;
+                    insert_alias_keys(&mut cursor, &mut alias_key_statement, &alias, &target, 0)?;
+                    insert_alias_keys(&mut cursor, &mut alias_key_statement, &alias, &target, 1)?;
                 }
                 tag => return Err(format!("未知词典 metadata 记录类型：{tag}").into()),
             }
@@ -378,12 +362,7 @@ fn insert_alias_keys(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let count = cursor.read_u16()? as usize;
     for _ in 0..count {
-            statement.execute(params![
-                alias,
-                target,
-                kind,
-                cursor.read_text()?,
-            ])?;
+        statement.execute(params![alias, target, kind, cursor.read_text()?,])?;
     }
     Ok(())
 }

@@ -31,11 +31,26 @@ pub fn adapt(
     definition: &str,
 ) -> Vec<AdaptedOccurrence> {
     if dict_name.contains("大辞林") {
-        daijirin::adapt(indexed_headword, raw_headword, structured_reading, definition)
+        daijirin::adapt(
+            indexed_headword,
+            raw_headword,
+            structured_reading,
+            definition,
+        )
     } else if dict_name.contains("小学館") || dict_name.contains("小学馆") {
-        shogakukan::adapt(indexed_headword, raw_headword, structured_reading, definition)
+        shogakukan::adapt(
+            indexed_headword,
+            raw_headword,
+            structured_reading,
+            definition,
+        )
     } else if dict_name.contains("CROWN") || dict_name.contains("Crown") {
-        crown::adapt(indexed_headword, raw_headword, structured_reading, definition)
+        crown::adapt(
+            indexed_headword,
+            raw_headword,
+            structured_reading,
+            definition,
+        )
     } else {
         vec![common::fallback(
             "generic",

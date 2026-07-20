@@ -771,10 +771,8 @@ mod tests {
             "三省堂Super大辞林3.1\u{1f}128321",
             "座ったり横になったりしていた人が足を伸ばして自分の体を垂直の姿勢にする。",
         );
-        let second = daijirin_occurrence(
-            "三省堂Super大辞林3.1\u{1f}128322",
-            "和船で，各種の柱の称。",
-        );
+        let second =
+            daijirin_occurrence("三省堂Super大辞林3.1\u{1f}128322", "和船で，各種の柱の称。");
         let peers = vec![&first, &second];
 
         let first_label = occurrence_label(&first, &peers);

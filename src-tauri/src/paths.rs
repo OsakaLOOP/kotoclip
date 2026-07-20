@@ -25,9 +25,7 @@ impl AppPaths {
                 path.join("ipadic").join("system.dic").is_file()
                     && path.join("dict-sources").is_dir()
             });
-        let data_dir = env_data_dir
-            .clone()
-            .unwrap_or(app.path().app_data_dir()?);
+        let data_dir = env_data_dir.clone().unwrap_or(app.path().app_data_dir()?);
 
         let system_dictionary = env_data_dir
             .as_ref()
@@ -45,18 +43,14 @@ impl AppPaths {
                     .then_some(repository_dictionary)
             })
             .or_else(|| {
-                [
-                    "../ipadic/system.dic",
-                    "ipadic/system.dic",
-                    "system.dic",
-                ]
-                .into_iter()
-                .find_map(|candidate| {
-                    app.path()
-                        .resolve(candidate, BaseDirectory::Resource)
-                        .ok()
-                        .filter(|path| path.is_file())
-                })
+                ["../ipadic/system.dic", "ipadic/system.dic", "system.dic"]
+                    .into_iter()
+                    .find_map(|candidate| {
+                        app.path()
+                            .resolve(candidate, BaseDirectory::Resource)
+                            .ok()
+                            .filter(|path| path.is_file())
+                    })
             })
             .ok_or("未找到 ipadic/system.dic")?;
 

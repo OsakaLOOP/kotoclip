@@ -7,9 +7,9 @@
 use crate::models::{
     AnnotatedToken, Bunsetsu, BunsetsuFunctionAnnotation, DictionaryEntryRef,
     DictionaryLexicalUnitAnnotation, ExpressionAnnotation, GrammarCapture, GrammarContentBlock,
-    GrammarDictionaryTarget, GrammarSenseCandidate, GrammarTag, HeadWord, Morpheme, PosTag,
-    MorphologyChain, MorphologyOperator, ResolvedGrammarExplanation, WordFormationAnnotation,
-    WordFormationCapture,
+    GrammarDictionaryTarget, GrammarSenseCandidate, GrammarTag, HeadWord, Morpheme,
+    MorphologyChain, MorphologyOperator, PosTag, ResolvedGrammarExplanation,
+    WordFormationAnnotation, WordFormationCapture,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -439,7 +439,10 @@ impl StringTable {
             }),
             b: value.show_badge,
             z: value.display_ranges.clone(),
-            y: value.selected_sense_id.as_ref().map(|item| self.intern(item)),
+            y: value
+                .selected_sense_id
+                .as_ref()
+                .map(|item| self.intern(item)),
             a: value
                 .sense_candidates
                 .iter()
@@ -452,12 +455,19 @@ impl StringTable {
         }
     }
 
-    fn grammar_sense_candidate(&mut self, value: &GrammarSenseCandidate) -> CompactGrammarSenseCandidate {
+    fn grammar_sense_candidate(
+        &mut self,
+        value: &GrammarSenseCandidate,
+    ) -> CompactGrammarSenseCandidate {
         CompactGrammarSenseCandidate {
             i: self.intern(&value.sense_id),
             l: self.intern(&value.label),
             c: value.confidence,
-            e: value.evidence.iter().map(|item| self.intern(item)).collect(),
+            e: value
+                .evidence
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
         }
     }
 
@@ -479,7 +489,10 @@ impl StringTable {
         }
     }
 
-    fn grammar_dictionary_target(&mut self, value: &GrammarDictionaryTarget) -> CompactGrammarDictionaryTarget {
+    fn grammar_dictionary_target(
+        &mut self,
+        value: &GrammarDictionaryTarget,
+    ) -> CompactGrammarDictionaryTarget {
         CompactGrammarDictionaryTarget {
             l: self.intern(&value.label),
             b: self.intern(&value.base_form),
@@ -488,7 +501,10 @@ impl StringTable {
         }
     }
 
-    fn grammar_explanation(&mut self, value: &ResolvedGrammarExplanation) -> CompactGrammarExplanation {
+    fn grammar_explanation(
+        &mut self,
+        value: &ResolvedGrammarExplanation,
+    ) -> CompactGrammarExplanation {
         CompactGrammarExplanation {
             s: self.intern(&value.status),
             o: self.intern(&value.occurrence_summary),
@@ -498,17 +514,60 @@ impl StringTable {
             f: self.intern(&value.function_summary),
             n: self.intern(&value.connection),
             a: self.intern(&value.actual_form),
-            y: value.selected_sense.as_ref().map(|item| self.grammar_sense_candidate(item)),
-            v: value.alternative_senses.iter().map(|item| self.grammar_sense_candidate(item)).collect(),
-            p: value.bound_captures.iter().map(|item| self.grammar_capture(item)).collect(),
-            h: value.morphology_chain.iter().map(|item| self.intern(item)).collect(),
-            d: value.content_blocks.iter().map(|item| self.grammar_block(item)).collect(),
-            e: value.evidence.iter().map(|item| self.intern(item)).collect(),
-            g: value.related_concept_ids.iter().map(|item| self.intern(item)).collect(),
-            j: value.contrast_concept_ids.iter().map(|item| self.intern(item)).collect(),
-            w: value.dictionary_targets.iter().map(|item| self.grammar_dictionary_target(item)).collect(),
-            i: value.available_depths.iter().map(|item| self.intern(item)).collect(),
-            q: value.source_refs.iter().map(|item| self.intern(item)).collect(),
+            y: value
+                .selected_sense
+                .as_ref()
+                .map(|item| self.grammar_sense_candidate(item)),
+            v: value
+                .alternative_senses
+                .iter()
+                .map(|item| self.grammar_sense_candidate(item))
+                .collect(),
+            p: value
+                .bound_captures
+                .iter()
+                .map(|item| self.grammar_capture(item))
+                .collect(),
+            h: value
+                .morphology_chain
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            d: value
+                .content_blocks
+                .iter()
+                .map(|item| self.grammar_block(item))
+                .collect(),
+            e: value
+                .evidence
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            g: value
+                .related_concept_ids
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            j: value
+                .contrast_concept_ids
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            w: value
+                .dictionary_targets
+                .iter()
+                .map(|item| self.grammar_dictionary_target(item))
+                .collect(),
+            i: value
+                .available_depths
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
+            q: value
+                .source_refs
+                .iter()
+                .map(|item| self.intern(item))
+                .collect(),
             po: self.intern(&value.provenance.origin),
             pa: self.intern(&value.provenance.author),
             pd: self.intern(&value.provenance.date),

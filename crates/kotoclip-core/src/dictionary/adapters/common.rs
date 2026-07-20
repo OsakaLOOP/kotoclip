@@ -510,7 +510,8 @@ fn render_examples(examples: &[DictionaryExample], output: &mut String) {
     if examples.len() > 2 {
         output.push_str("<div class=\"example-browser__status\" aria-live=\"polite\"><span data-example-counter></span><span data-example-total hidden></span></div>");
     }
-    output.push_str("<div class=\"example-browser__viewport\"><div class=\"example-browser__page\">");
+    output
+        .push_str("<div class=\"example-browser__viewport\"><div class=\"example-browser__page\">");
     for (index, example) in examples.iter().enumerate() {
         output.push_str("<div data-example-index=\"");
         output.push_str(&index.to_string());

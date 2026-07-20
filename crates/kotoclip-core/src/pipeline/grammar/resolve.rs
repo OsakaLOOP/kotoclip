@@ -24,12 +24,19 @@ impl<'a> GrammarExplanationResolver<'a> {
         let selected_sense = occurrence
             .selected_sense_id
             .as_deref()
-            .and_then(|sense_id| occurrence.sense_candidates.iter().find(|item| item.sense_id == sense_id))
+            .and_then(|sense_id| {
+                occurrence
+                    .sense_candidates
+                    .iter()
+                    .find(|item| item.sense_id == sense_id)
+            })
             .cloned();
         let alternative_senses = occurrence
             .sense_candidates
             .iter()
-            .filter(|candidate| Some(candidate.sense_id.as_str()) != occurrence.selected_sense_id.as_deref())
+            .filter(|candidate| {
+                Some(candidate.sense_id.as_str()) != occurrence.selected_sense_id.as_deref()
+            })
             .cloned()
             .collect::<Vec<_>>();
         let explanation = self
@@ -89,7 +96,9 @@ impl<'a> GrammarExplanationResolver<'a> {
             })
             .collect();
         Some(ResolvedGrammarExplanation {
-            status: if occurrence.selected_sense_id.is_some() || occurrence.sense_candidates.len() <= 1 {
+            status: if occurrence.selected_sense_id.is_some()
+                || occurrence.sense_candidates.len() <= 1
+            {
                 "resolved".to_string()
             } else {
                 "partial".to_string()
@@ -97,12 +106,8 @@ impl<'a> GrammarExplanationResolver<'a> {
             occurrence_summary: format!("{}：{}", concept.canonical_label, actual_form),
             concept_id: concept.concept_id.clone(),
             title: concept.canonical_label.clone(),
-            compact_summary: bind_template(
-                &explanation.compact_summary,
-                occurrence,
-                &actual_form,
-            )
-            .unwrap_or_default(),
+            compact_summary: bind_template(&explanation.compact_summary, occurrence, &actual_form)
+                .unwrap_or_default(),
             function_summary: selected_sense
                 .as_ref()
                 .map(|sense| sense.label.clone())
@@ -125,7 +130,11 @@ impl<'a> GrammarExplanationResolver<'a> {
             source_refs: explanation.source_refs.clone(),
             provenance: explanation.provenance.clone(),
             review_status: explanation.review_status.clone(),
-            available_depths: vec!["compact".to_string(), "standard".to_string(), "deep".to_string()],
+            available_depths: vec![
+                "compact".to_string(),
+                "standard".to_string(),
+                "deep".to_string(),
+            ],
             content_version: explanation.content_version,
             audit_status: concept.audit_status.clone(),
         })
@@ -203,7 +212,11 @@ pub fn sense_candidates(
             } else {
                 sense.function_summary.clone()
             },
-            confidence: if count == 1 { confidence } else { confidence.saturating_sub((count - 1) * 4) },
+            confidence: if count == 1 {
+                confidence
+            } else {
+                confidence.saturating_sub((count - 1) * 4)
+            },
             evidence: sense.context_requirements.clone(),
         })
         .collect()

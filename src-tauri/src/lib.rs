@@ -50,10 +50,10 @@ pub fn run() {
                 setup_entered - run_started
             );
 
-            let paths = paths::AppPaths::resolve(app.handle())
-                .map_err(|error| error.to_string())?;
-            let library = ReaderLibrary::open(&paths.library_dir)
-                .map_err(|error| error.to_string())?;
+            let paths =
+                paths::AppPaths::resolve(app.handle()).map_err(|error| error.to_string())?;
+            let library =
+                ReaderLibrary::open(&paths.library_dir).map_err(|error| error.to_string())?;
 
             // 先注册可等待的资源，让 Tauri 能立即进入事件循环并绘制前端。
             let engine = state::LazyResource::pending();
@@ -64,10 +64,7 @@ pub fn run() {
                 engine: engine.clone(),
                 dictionary: dictionary.clone(),
                 dictionary_background: dictionary_background.clone(),
-                sessions: state::RecoveringMutex::new(
-                    HashMap::new(),
-                    "document sessions",
-                ),
+                sessions: state::RecoveringMutex::new(HashMap::new(), "document sessions"),
                 analysis_cancellations: state::AnalysisCancellationRegistry::new(),
                 next_session_id: AtomicU64::new(1),
                 analysis_cache: analysis_cache.clone(),

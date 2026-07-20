@@ -66,12 +66,7 @@ pub fn analyze_morphemes(morphemes: &[Morpheme], global_offset: usize) -> Morpho
             }
         ));
 
-        push_anchor_form_operator(
-            &mut operators,
-            morphemes,
-            &root,
-            global_offset,
-        );
+        push_anchor_form_operator(&mut operators, morphemes, &root, global_offset);
 
         for local in root.end..end {
             let morpheme = &morphemes[local];
@@ -166,14 +161,22 @@ pub fn analyze_morphemes(morphemes: &[Morpheme], global_offset: usize) -> Morpho
                         global,
                         morpheme.char_range,
                         "modality",
-                        if conjectural { "conjectural" } else { "volitional" },
+                        if conjectural {
+                            "conjectural"
+                        } else {
+                            "volitional"
+                        },
                         if conjectural {
                             "morphology.modality.conjectural"
                         } else {
                             "morphology.mood.volitional"
                         },
                         98,
-                        if conjectural { "推量助动词" } else { "意向助动词" },
+                        if conjectural {
+                            "推量助动词"
+                        } else {
+                            "意向助动词"
+                        },
                         &[],
                     );
                 }
@@ -322,9 +325,10 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
     let current = morphemes.get(index)?;
 
     if is_sahen_stem(current) {
-        if let Some(verb) = morphemes.get(index + 1).filter(|item| {
-            item.pos.major == "動詞" && item.base_form == "する"
-        }) {
+        if let Some(verb) = morphemes
+            .get(index + 1)
+            .filter(|item| item.pos.major == "動詞" && item.base_form == "する")
+        {
             let lookup_form = normalized_base(current);
             let dictionary_form = format!("{lookup_form}する");
             return Some(ChainRoot {
@@ -343,9 +347,12 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
     }
 
     if current.pos.major == "名詞" {
-        if let (Some(suffix), Some(auxiliary)) = (morphemes.get(index + 1), morphemes.get(index + 2)) {
+        if let (Some(suffix), Some(auxiliary)) =
+            (morphemes.get(index + 1), morphemes.get(index + 2))
+        {
             if is_na_adjective_suffix(suffix) && is_copular_auxiliary(auxiliary) {
-                let lookup_form = format!("{}{}", normalized_base(current), normalized_base(suffix));
+                let lookup_form =
+                    format!("{}{}", normalized_base(current), normalized_base(suffix));
                 let dictionary_form = format!("{lookup_form}だ");
                 let lemma_form = format!("{lookup_form}な");
                 return Some(ChainRoot {
@@ -362,7 +369,8 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
                 });
             }
             if suffix.pos.major == "形容詞" && suffix.pos.sub1 == "接尾" {
-                let lookup_form = format!("{}{}", normalized_base(current), normalized_base(suffix));
+                let lookup_form =
+                    format!("{}{}", normalized_base(current), normalized_base(suffix));
                 return Some(ChainRoot {
                     kind: RootKind::DerivedAdjective,
                     start: index,
@@ -378,10 +386,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
             }
         }
         if current.pos.sub1 == "形容動詞語幹" {
-            if morphemes
-                .get(index + 1)
-                .is_some_and(is_copular_auxiliary)
-            {
+            if morphemes.get(index + 1).is_some_and(is_copular_auxiliary) {
                 let lookup_form = normalized_base(current);
                 let dictionary_form = format!("{lookup_form}だ");
                 let lemma_form = format!("{lookup_form}な");
@@ -405,8 +410,7 @@ fn detect_root(morphemes: &[Morpheme], index: usize) -> Option<ChainRoot> {
         return None;
     }
     let role = if current.pos.major == "助動詞"
-        || (current.pos.major == "動詞"
-            && matches!(current.pos.sub1.as_str(), "非自立" | "接尾"))
+        || (current.pos.major == "動詞" && matches!(current.pos.sub1.as_str(), "非自立" | "接尾"))
     {
         MorphologyChainRole::Functional
     } else {
@@ -699,7 +703,13 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(
             states,
-            vec!["imperfective", "causative", "passive_potential", "negative", "past"]
+            vec![
+                "imperfective",
+                "causative",
+                "passive_potential",
+                "negative",
+                "past"
+            ]
         );
         assert_eq!(artifact.chains[0].role, MorphologyChainRole::Lexical);
         assert_eq!(artifact.chains[0].surface_form, "行かせられなかった");
@@ -753,7 +763,15 @@ mod tests {
         let morphemes = vec![
             morpheme("読ん", "読む", "動詞", "自立", "*", "連用タ接続", 0),
             morpheme("で", "で", "助詞", "接続助詞", "*", "*", 2),
-            morpheme("くださっ", "くださる", "動詞", "非自立", "*", "連用タ接続", 3),
+            morpheme(
+                "くださっ",
+                "くださる",
+                "動詞",
+                "非自立",
+                "*",
+                "連用タ接続",
+                3,
+            ),
             morpheme("た", "た", "助動詞", "*", "*", "基本形", 7),
         ];
         let artifact = analyze_morphemes(&morphemes, 0);

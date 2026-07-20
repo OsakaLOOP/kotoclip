@@ -1,8 +1,8 @@
-use html5ever::tokenizer::{
-    BufferQueue, CharacterTokens, EndTag, StartTag, TagToken, Token, TokenSink,
-    TokenSinkResult, Tokenizer,
-};
 use html5ever::tendril::StrTendril;
+use html5ever::tokenizer::{
+    BufferQueue, CharacterTokens, EndTag, StartTag, TagToken, Token, TokenSink, TokenSinkResult,
+    Tokenizer,
+};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 
@@ -40,7 +40,9 @@ impl TokenSink for Collector {
         match token {
             CharacterTokens(text) => {
                 if !text.is_empty() {
-                    self.0.borrow_mut().push(SimpleToken::Text(text.to_string()));
+                    self.0
+                        .borrow_mut()
+                        .push(SimpleToken::Text(text.to_string()));
                 }
             }
             TagToken(tag) => match tag.kind {
@@ -142,7 +144,23 @@ fn close_top(stack: &mut Vec<HtmlElement>) {
 }
 
 fn is_void_element(name: &str) -> bool {
-    matches!(name, "area" | "base" | "br" | "col" | "embed" | "hr" | "img" | "input" | "link" | "meta" | "param" | "source" | "track" | "wbr")
+    matches!(
+        name,
+        "area"
+            | "base"
+            | "br"
+            | "col"
+            | "embed"
+            | "hr"
+            | "img"
+            | "input"
+            | "link"
+            | "meta"
+            | "param"
+            | "source"
+            | "track"
+            | "wbr"
+    )
 }
 
 impl HtmlElement {

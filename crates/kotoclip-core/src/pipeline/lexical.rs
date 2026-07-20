@@ -448,27 +448,35 @@ mod tests {
         std::fs::create_dir_all(&directory).unwrap();
         let connection = Connection::open(directory.join("test.sqlite")).unwrap();
         connection.execute_batch(BASE_SCHEMA).unwrap();
-        connection.execute(
-            "INSERT INTO metadata VALUES(1, 4, 1, 'test', 'test', 2, 0, 2)",
-            [],
-        ).unwrap();
+        connection
+            .execute(
+                "INSERT INTO metadata VALUES(1, 4, 1, 'test', 'test', 2, 0, 2)",
+                [],
+            )
+            .unwrap();
         for (id, headword, definition) in [(1, "血飛沫", "definition"), (2, "一和", "wrong")] {
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
             encoder.write_all(definition.as_bytes()).unwrap();
-            connection.execute(
-                "INSERT INTO definition_blocks VALUES(?1, ?2, ?3)",
-                params![id, definition.len(), encoder.finish().unwrap()],
-            ).unwrap();
-            connection.execute(
-                "INSERT INTO entries VALUES(?1, ?2, ?1, 0, ?3)",
-                params![id, headword, definition.len()],
-            ).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO definition_blocks VALUES(?1, ?2, ?3)",
+                    params![id, definition.len(), encoder.finish().unwrap()],
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO entries VALUES(?1, ?2, ?1, 0, ?3)",
+                    params![id, headword, definition.len()],
+                )
+                .unwrap();
         }
-        connection.execute_batch(
-            "INSERT INTO entry_keys VALUES(1, 0, '血飛沫', NULL, 0);
+        connection
+            .execute_batch(
+                "INSERT INTO entry_keys VALUES(1, 0, '血飛沫', NULL, 0);
              INSERT INTO entry_keys VALUES(2, 0, '一和', NULL, 0);
-             INSERT INTO entry_keys VALUES(2, 1, 'イチワ', 'いちわ', 0);"
-        ).unwrap();
+             INSERT INTO entry_keys VALUES(2, 1, 'イチワ', 'いちわ', 0);",
+            )
+            .unwrap();
         drop(connection);
         let dictionary = DictionaryEngine::new(&directory).unwrap();
         let blood = vec![

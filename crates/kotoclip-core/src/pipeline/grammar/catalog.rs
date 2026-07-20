@@ -1,6 +1,6 @@
+use crate::models::GrammarProvenance;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::models::GrammarProvenance;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GrammarConcept {
@@ -415,7 +415,10 @@ impl GrammarCatalog {
             .filter(|concept| jlpt_level.is_none_or(|value| concept.jlpt_level == Some(value)))
             .filter(|concept| {
                 source_ref.is_none_or(|value| {
-                    concept.source_refs.iter().any(|source| source.contains(value))
+                    concept
+                        .source_refs
+                        .iter()
+                        .any(|source| source.contains(value))
                 })
             })
             .filter(|concept| {
@@ -507,14 +510,14 @@ impl GrammarCatalog {
             .iter()
             .filter(|realization| {
                 self.concept(&realization.concept_id).is_none()
-                    || !self.rules.iter().any(|rule| rule.rule_id == realization.rule_id)
-                    || realization
-                        .possible_sense_ids
+                    || !self
+                        .rules
                         .iter()
-                        .any(|sense_id| {
-                            self.sense(sense_id)
-                                .is_none_or(|sense| sense.concept_id != realization.concept_id)
-                        })
+                        .any(|rule| rule.rule_id == realization.rule_id)
+                    || realization.possible_sense_ids.iter().any(|sense_id| {
+                        self.sense(sense_id)
+                            .is_none_or(|sense| sense.concept_id != realization.concept_id)
+                    })
             })
             .map(|realization| realization.realization_id.clone())
             .collect::<Vec<_>>();
@@ -562,14 +565,18 @@ impl GrammarCatalog {
             .chain(
                 self.explanations
                     .iter()
-                    .filter(|item| item.authoring_status == "verified" && item.source_refs.is_empty())
+                    .filter(|item| {
+                        item.authoring_status == "verified" && item.source_refs.is_empty()
+                    })
                     .map(|item| format!("explanation:{}", item.explanation_id)),
             )
             .collect::<Vec<_>>();
         let missing_search_entries = self
             .concepts
             .iter()
-            .filter(|concept| concept.enabled && !self.search_index.contains_key(&concept.concept_id))
+            .filter(|concept| {
+                concept.enabled && !self.search_index.contains_key(&concept.concept_id)
+            })
             .map(|concept| concept.concept_id.clone())
             .collect::<Vec<_>>();
         GrammarCatalogAudit {

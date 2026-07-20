@@ -1,6 +1,4 @@
-use crate::models::{
-    DictEntry, DictionaryCandidate, DictionaryLookup, DictionaryLookupTiming,
-};
+use crate::models::{DictEntry, DictionaryCandidate, DictionaryLookup, DictionaryLookupTiming};
 
 /// 将查询结果装配为前端与 CLI 共用的完整 Lookup 状态。
 /// `initial_entries` 始终指原查询结果，用于保留词典内候选；`entries` 可以是用户已选择候选后的正文。
@@ -32,7 +30,11 @@ pub fn collect_candidates(query: &str, entries: &[DictEntry]) -> Vec<DictionaryC
     }
     let mut candidates = Vec::<DictionaryCandidate>::new();
     for entry in entries.iter().filter(|entry| entry.headword == query) {
-        for link in entry.links.iter().filter(|link| link.relation == "candidate") {
+        for link in entry
+            .links
+            .iter()
+            .filter(|link| link.relation == "candidate")
+        {
             if let Some(candidate) = candidates
                 .iter_mut()
                 .find(|candidate| candidate.target == link.target)

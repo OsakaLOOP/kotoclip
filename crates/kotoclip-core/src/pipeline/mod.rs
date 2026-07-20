@@ -3,8 +3,8 @@ pub mod candidates;
 pub mod expressions;
 pub mod grammar;
 pub mod lexical;
-pub mod morphology;
 pub mod morpheme;
+pub mod morphology;
 pub mod restore;
 pub mod ruby;
 pub mod word_formation;
@@ -245,14 +245,7 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         dictionary: &crate::dictionary::lookup::DictionaryEngine,
     ) -> Vec<AnnotatedToken> {
-        self.process_internal(
-            text,
-            merge_rules,
-            &mut |_| {},
-            None,
-            Some(dictionary),
-            None,
-        )
+        self.process_internal(text, merge_rules, &mut |_| {}, None, Some(dictionary), None)
     }
 
     pub fn inspect_dictionary_lexical_units(
@@ -484,14 +477,7 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         timings: &mut TimingCollector,
     ) -> Vec<AnnotatedToken> {
-        self.process_internal(
-            text,
-            merge_rules,
-            &mut |_| {},
-            Some(timings),
-            None,
-            None,
-        )
+        self.process_internal(text, merge_rules, &mut |_| {}, Some(timings), None, None)
     }
 
     pub fn process_profiled_with_dictionary(
@@ -870,9 +856,18 @@ mod tests {
             .iter()
             .map(|occurrence| occurrence.concept_id.as_str())
             .collect::<std::collections::HashSet<_>>();
-        assert!(concepts.contains("morphology.voice.causative"), "未识别出使役");
-        assert!(concepts.contains("morphology.voice.passive_potential"), "未保留られる候选");
-        assert!(concepts.contains("morphology.polarity.negative"), "未识别出否定");
+        assert!(
+            concepts.contains("morphology.voice.causative"),
+            "未识别出使役"
+        );
+        assert!(
+            concepts.contains("morphology.voice.passive_potential"),
+            "未保留られる候选"
+        );
+        assert!(
+            concepts.contains("morphology.polarity.negative"),
+            "未识别出否定"
+        );
         assert!(concepts.contains("morphology.tense.past"), "未识别出过去");
     }
 
@@ -928,9 +923,10 @@ mod tests {
             .char_range;
         assert!(benefactive.bunsetsu.grammar_tags.iter().any(|tag| {
             tag.concept_id == "grammar.benefactive.te_kudasaru"
-                && tag.display_ranges.iter().any(|range| {
-                    functional_range.0 >= range.0 && functional_range.1 <= range.1
-                })
+                && tag
+                    .display_ranges
+                    .iter()
+                    .any(|range| functional_range.0 >= range.0 && functional_range.1 <= range.1)
         }));
 
         let terminal = token("行くな");

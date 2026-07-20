@@ -128,7 +128,8 @@ impl ReaderLibrary {
             .cover_path
             .take()
             .map(|path| self.root.join(path).to_string_lossy().into_owned());
-        let markdown = std::fs::read_to_string(self.root.join("books").join(id).join("content.md"))?;
+        let markdown =
+            std::fs::read_to_string(self.root.join("books").join(id).join("content.md"))?;
         let chapter_titles = self.chapter_titles(&connection, id)?;
         let resources = self.resources(&connection, id)?;
         Ok(LibraryBook {
@@ -311,9 +312,8 @@ impl ReaderLibrary {
         connection: &Connection,
         id: &str,
     ) -> Result<Vec<String>, rusqlite::Error> {
-        let mut statement = connection.prepare(
-            "SELECT title FROM chapters WHERE book_id = ?1 ORDER BY position",
-        )?;
+        let mut statement = connection
+            .prepare("SELECT title FROM chapters WHERE book_id = ?1 ORDER BY position")?;
         let rows = statement.query_map([id], |row| row.get(0))?;
         rows.collect()
     }

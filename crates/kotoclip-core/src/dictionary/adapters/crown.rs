@@ -30,7 +30,9 @@ pub fn adapt(
         .filter(|value| !value.is_empty())
         .or_else(|| structured_reading.map(common::normalize_reading));
     let reading = match (base_reading.clone(), suffix.as_deref()) {
-        (Some(reading), Some(suffix)) if display_form.ends_with(suffix) && !reading.ends_with(suffix) => {
+        (Some(reading), Some(suffix))
+            if display_form.ends_with(suffix) && !reading.ends_with(suffix) =>
+        {
             Some(format!("{reading}{suffix}"))
         }
         (reading, _) => reading,
@@ -74,8 +76,8 @@ pub fn adapt(
     root.all_by_class("mean_gogi", &mut sense_elements);
     for (index, element) in sense_elements.into_iter().enumerate() {
         let marker = class_text(element, "kg_gogi");
-        let heading = class_text(element, "mean_kubun")
-            .or_else(|| class_text(element, "mean_eiyaku_kubun"));
+        let heading =
+            class_text(element, "mean_kubun").or_else(|| class_text(element, "mean_eiyaku_kubun"));
         let glosses = crown_glosses(element);
         let mut examples = Vec::new();
         let mut example_elements = Vec::new();
@@ -87,9 +89,9 @@ pub fn adapt(
                 .map(|element| element.text_excluding_classes(&["pinyin_box"]))
                 .map(|value| common::normalize_visible_text(&value))
                 .filter(|value| !value.is_empty());
-            if let Some(example) = source.and_then(|source| {
-                crown_example(source, translation.as_deref())
-            }) {
+            if let Some(example) =
+                source.and_then(|source| crown_example(source, translation.as_deref()))
+            {
                 examples.push(example);
             }
         }
@@ -133,12 +135,13 @@ pub fn adapt(
     }
     let mut english = Vec::new();
     root.all_by_class("mean_eiyaku", &mut english);
-    let is_explicit_prefix = english.iter().any(|element| {
-        common::normalize_visible_text(&element.text()).ends_with('-')
-    }) && occurrence
-        .senses
+    let is_explicit_prefix = english
         .iter()
-        .all(|sense| sense.glosses.is_empty() && sense.definitions.is_empty());
+        .any(|element| common::normalize_visible_text(&element.text()).ends_with('-'))
+        && occurrence
+            .senses
+            .iter()
+            .all(|sense| sense.glosses.is_empty() && sense.definitions.is_empty());
     if is_explicit_prefix {
         occurrence.entry_kind = "prefix".to_string();
         occurrence
@@ -156,9 +159,27 @@ pub fn adapt(
     }
 
     for (class, kind, label, item_class, label_class) in [
-        ("group_hukugo", "compounds", "复合词", "item_sub_hukugo", "shw_hukugo"),
-        ("group_kanyo", "idioms", "惯用语", "item_sub_kanyo", "midashi_sub_kanyo"),
-        ("group_kotowaza", "proverbs", "谚语", "item_sub_kotowaza", "shw_kotowaza"),
+        (
+            "group_hukugo",
+            "compounds",
+            "复合词",
+            "item_sub_hukugo",
+            "shw_hukugo",
+        ),
+        (
+            "group_kanyo",
+            "idioms",
+            "惯用语",
+            "item_sub_kanyo",
+            "midashi_sub_kanyo",
+        ),
+        (
+            "group_kotowaza",
+            "proverbs",
+            "谚语",
+            "item_sub_kotowaza",
+            "shw_kotowaza",
+        ),
     ] {
         let section = parse_section(&root, class, kind, label, item_class, label_class);
         if let Some(section) = section {
@@ -190,7 +211,10 @@ pub fn adapt(
     let all_text = root.text();
     if all_text.contains("姓氏") || all_text.contains("姓の一") {
         occurrence.entry_kind = "surname".to_string();
-        occurrence.header.usage_tags.push(common::tag("proper", "姓氏"));
+        occurrence
+            .header
+            .usage_tags
+            .push(common::tag("proper", "姓氏"));
     }
     occurrence.links = common::extract_links(&root, "reference");
     if occurrence.senses.is_empty() && occurrence.sections.is_empty() {
@@ -226,9 +250,8 @@ fn crown_glosses(element: &HtmlElement) -> Vec<DictionaryText> {
         let mut values = Vec::new();
         box_element.all_by_class("mean_yakugo", &mut values);
         for value in values {
-            let value = common::normalize_visible_text(
-                &value.text_excluding_classes(&["pinyin_box"]),
-            );
+            let value =
+                common::normalize_visible_text(&value.text_excluding_classes(&["pinyin_box"]));
             if value.is_empty() {
                 continue;
             }
@@ -247,9 +270,8 @@ fn crown_glosses(element: &HtmlElement) -> Vec<DictionaryText> {
         let mut values = Vec::new();
         element.all_by_class("mean_yakugo", &mut values);
         for value in values {
-            let value = common::normalize_visible_text(
-                &value.text_excluding_classes(&["pinyin_box"]),
-            );
+            let value =
+                common::normalize_visible_text(&value.text_excluding_classes(&["pinyin_box"]));
             if !value.is_empty() {
                 glosses.push(common::text("zh-CN", value));
             }
@@ -298,9 +320,9 @@ fn parse_section(
                     .map(|element| element.text_excluding_classes(&["pinyin_box"]))
                     .map(|value| common::normalize_visible_text(&value))
                     .filter(|value| !value.is_empty());
-                if let Some(example) = source.and_then(|source| {
-                    crown_example(source, translation.as_deref())
-                }) {
+                if let Some(example) =
+                    source.and_then(|source| crown_example(source, translation.as_deref()))
+                {
                     examples.push(example);
                 }
             }
@@ -343,10 +365,7 @@ fn parse_section(
     })
 }
 
-fn crown_example(
-    source: &HtmlElement,
-    translation: Option<&str>,
-) -> Option<DictionaryExample> {
+fn crown_example(source: &HtmlElement, translation: Option<&str>) -> Option<DictionaryExample> {
     let mut source_html = String::new();
     render_crown_inline(&source.children, &mut source_html);
     let source_html = common::normalize_visible_text(&source_html);

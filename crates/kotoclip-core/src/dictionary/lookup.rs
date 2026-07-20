@@ -133,7 +133,8 @@ impl DictionaryEngine {
                 .and_then(|value| value.to_str())
                 .unwrap_or("unknown.db")
                 .to_string();
-            let connection = Connection::open_with_flags(&file_path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+            let connection =
+                Connection::open_with_flags(&file_path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
             let Ok(schema_version) = connection.query_row(
                 "SELECT schema_version FROM metadata WHERE id = 1",
                 [],
@@ -458,12 +459,8 @@ impl DictionaryEngine {
         let mut direct = Vec::new();
         let mut seen = HashSet::new();
         for database_index in 0..self.databases.len() {
-            let direct_in_database = self.lookup_exact_in_database(
-                database_index,
-                headword,
-                "exact_form",
-                &mut timing,
-            );
+            let direct_in_database =
+                self.lookup_exact_in_database(database_index, headword, "exact_form", &mut timing);
             let has_content = direct_in_database.iter().any(|entry| {
                 !matches!(entry.entry_kind.as_str(), "navigation" | "redirect")
                     && (!entry.senses.is_empty() || !entry.sections.is_empty())
@@ -476,7 +473,8 @@ impl DictionaryEngine {
             if has_content {
                 continue;
             }
-            let mut targets = self.redirect_targets_in_database(database_index, headword, &mut timing);
+            let mut targets =
+                self.redirect_targets_in_database(database_index, headword, &mut timing);
             for target in direct_in_database
                 .iter()
                 .flat_map(|entry| &entry.links)
@@ -501,12 +499,7 @@ impl DictionaryEngine {
             }
         }
         if !direct.is_empty() {
-            rank_entries(
-                &mut direct,
-                headword,
-                normalized_reading.as_deref(),
-                pos,
-            );
+            rank_entries(&mut direct, headword, normalized_reading.as_deref(), pos);
             timing.entries = direct.len();
             timing.service_ms = started.elapsed().as_millis() as u64;
             return (direct, timing);
@@ -523,29 +516,21 @@ impl DictionaryEngine {
         if direct.is_empty() {
             if let Some(reading) = reading.filter(|value| !value.is_empty() && *value != "*") {
                 for candidate in reading_candidates(headword, reading) {
-                    direct = self.query_key(READING_KEY, &candidate, "reading_fallback", &mut timing);
+                    direct =
+                        self.query_key(READING_KEY, &candidate, "reading_fallback", &mut timing);
                     if !direct.is_empty() {
                         break;
                     }
                 }
             }
         }
-        rank_entries(
-            &mut direct,
-            headword,
-            normalized_reading.as_deref(),
-            pos,
-        );
+        rank_entries(&mut direct, headword, normalized_reading.as_deref(), pos);
         timing.entries = direct.len();
         timing.service_ms = started.elapsed().as_millis() as u64;
         (direct, timing)
     }
 
-    fn lookup_exact(
-        &self,
-        headword: &str,
-        timing: &mut DictionaryLookupTiming,
-    ) -> Vec<DictEntry> {
+    fn lookup_exact(&self, headword: &str, timing: &mut DictionaryLookupTiming) -> Vec<DictEntry> {
         let mut results = self.query_key(FORM_KEY, &normalize_form(headword), "exact_form", timing);
         if results.is_empty() {
             results = self.query_exact_headword(headword, timing);
@@ -660,7 +645,11 @@ impl DictionaryEngine {
         self.materialize(database_index, rows.into_iter(), match_type, timing)
     }
 
-    fn query_exact_headword(&self, value: &str, timing: &mut DictionaryLookupTiming) -> Vec<DictEntry> {
+    fn query_exact_headword(
+        &self,
+        value: &str,
+        timing: &mut DictionaryLookupTiming,
+    ) -> Vec<DictEntry> {
         let mut results = Vec::new();
         for database_index in 0..self.databases.len() {
             results.extend(self.query_exact_headword_in_database(
@@ -720,12 +709,8 @@ impl DictionaryEngine {
             timing,
         );
         if results.is_empty() {
-            results = self.query_exact_headword_in_database(
-                database_index,
-                headword,
-                match_type,
-                timing,
-            );
+            results =
+                self.query_exact_headword_in_database(database_index, headword, match_type, timing);
         }
         results
     }
@@ -1012,13 +997,11 @@ fn rank_entries(
             }
             _ => {}
         }
-        if entry
-            .reading
-            .as_deref()
-            .is_some_and(|reading| (reading.starts_with('-') || reading.ends_with('-'))
+        if entry.reading.as_deref().is_some_and(|reading| {
+            (reading.starts_with('-') || reading.ends_with('-'))
                 && !query.starts_with('-')
-                && !query.ends_with('-'))
-        {
+                && !query.ends_with('-')
+        }) {
             score -= 60;
             if !penalties.iter().any(|penalty| penalty == "bound_morpheme") {
                 penalties.push("bound_morpheme".to_string());
@@ -1105,7 +1088,11 @@ fn pos_compatibility(requested: Option<&PosTag>, entry: &DictEntry) -> &'static 
     if labels.is_empty() {
         return match entry.entry_kind.as_str() {
             "surname" if requested.major == "名詞" => "compatible",
-            "prefix" | "suffix" | "bound_morpheme" if requested.sub1.contains("接尾") || requested.sub1.contains("接頭") => "compatible",
+            "prefix" | "suffix" | "bound_morpheme"
+                if requested.sub1.contains("接尾") || requested.sub1.contains("接頭") =>
+            {
+                "compatible"
+            }
             "surname" | "kanji" | "prefix" | "suffix" | "bound_morpheme" => "conflict",
             _ => "unknown",
         };
@@ -1254,10 +1241,12 @@ mod tests {
         let database = directory.join("test.sqlite");
         let connection = Connection::open(&database).unwrap();
         connection.execute_batch(BASE_SCHEMA).unwrap();
-        connection.execute(
-            "INSERT INTO metadata VALUES(1, 4, 1, '三省堂Super大辞林3.1', 'test', 6, 1, 6)",
-            [],
-        ).unwrap();
+        connection
+            .execute(
+                "INSERT INTO metadata VALUES(1, 4, 1, '三省堂Super大辞林3.1', 'test', 6, 1, 6)",
+                [],
+            )
+            .unwrap();
         let entries = [
             (1, "けいさつしょ【警察署】", "<p>警察署释义</p>"),
             (2, "つなぐ【繫ぐ】", "<p>繫ぐ释义</p>"),
@@ -1270,32 +1259,46 @@ mod tests {
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
             encoder.write_all(definition.as_bytes()).unwrap();
             let compressed = encoder.finish().unwrap();
-            connection.execute(
-                "INSERT INTO definition_blocks VALUES(?1, ?2, ?3)",
-                params![id, definition.len(), compressed],
-            ).unwrap();
-            connection.execute(
-                "INSERT INTO entries VALUES(?1, ?2, ?1, 0, ?3)",
-                params![id, headword, definition.len()],
-            ).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO definition_blocks VALUES(?1, ?2, ?3)",
+                    params![id, definition.len(), compressed],
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO entries VALUES(?1, ?2, ?1, 0, ?3)",
+                    params![id, headword, definition.len()],
+                )
+                .unwrap();
         }
-        connection.execute(
-            "INSERT INTO aliases VALUES('けいさつしょ', NULL, 'けいさつしょ【警察署】')",
-            [],
-        ).unwrap();
+        connection
+            .execute(
+                "INSERT INTO aliases VALUES('けいさつしょ', NULL, 'けいさつしょ【警察署】')",
+                [],
+            )
+            .unwrap();
         let keys = [
-            (1, 0, "警察署", None, 0), (1, 1, "ケイサツショ", Some("けいさつしょ"), 0),
-            (2, 0, "繫ぐ", None, 0), (2, 1, "ツナグ", Some("つなぐ"), 0),
-            (3, 0, "いる", None, 0), (3, 1, "イル", Some("いる"), 0),
-            (4, 0, "入る", None, 0), (4, 1, "イル", Some("いる"), 0),
-            (5, 0, "子", None, 0), (5, 1, "コ", Some("こ"), 0),
-            (6, 0, "ダサい", None, 0), (6, 1, "ダサイ", Some("ださい"), 0),
+            (1, 0, "警察署", None, 0),
+            (1, 1, "ケイサツショ", Some("けいさつしょ"), 0),
+            (2, 0, "繫ぐ", None, 0),
+            (2, 1, "ツナグ", Some("つなぐ"), 0),
+            (3, 0, "いる", None, 0),
+            (3, 1, "イル", Some("いる"), 0),
+            (4, 0, "入る", None, 0),
+            (4, 1, "イル", Some("いる"), 0),
+            (5, 0, "子", None, 0),
+            (5, 1, "コ", Some("こ"), 0),
+            (6, 0, "ダサい", None, 0),
+            (6, 1, "ダサイ", Some("ださい"), 0),
         ];
         for key in keys {
-            connection.execute(
-                "INSERT INTO entry_keys VALUES(?1, ?2, ?3, ?4, ?5)",
-                params![key.0, key.1, key.2, key.3, key.4],
-            ).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO entry_keys VALUES(?1, ?2, ?3, ?4, ?5)",
+                    params![key.0, key.1, key.2, key.3, key.4],
+                )
+                .unwrap();
         }
         connection.execute_batch(SEARCH_SCHEMA).unwrap();
         drop(connection);

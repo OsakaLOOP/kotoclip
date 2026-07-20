@@ -24,12 +24,17 @@ pub fn canonicalize_document_coordinates(tokens: &mut [AnnotatedToken]) {
         .collect::<Vec<_>>();
     let morpheme_ranges = tokens
         .iter()
-        .flat_map(|token| token.bunsetsu.morphemes.iter().map(|morpheme| morpheme.char_range))
+        .flat_map(|token| {
+            token
+                .bunsetsu
+                .morphemes
+                .iter()
+                .map(|morpheme| morpheme.char_range)
+        })
         .collect::<Vec<_>>();
 
-    let morpheme_range_for = |char_range: (usize, usize)| {
-        range_bounds(&morpheme_ranges, char_range).unwrap_or((0, 0))
-    };
+    let morpheme_range_for =
+        |char_range: (usize, usize)| range_bounds(&morpheme_ranges, char_range).unwrap_or((0, 0));
     let token_range_for = |ranges: &[(usize, usize)]| {
         let mut first = None;
         let mut last = None;
@@ -57,8 +62,7 @@ pub fn canonicalize_document_coordinates(tokens: &mut [AnnotatedToken]) {
             chain.chain_id = format!("morph:{}:{}", chain.char_range.0, chain.char_range.1);
             for operator in &mut chain.operators {
                 operator.source_morpheme_range = morpheme_range_for(operator.char_range);
-                operator.operator_id =
-                    format!("{}:{}", operator.concept_id, operator.char_range.0);
+                operator.operator_id = format!("{}:{}", operator.concept_id, operator.char_range.0);
             }
         }
         let mut occurrence_id_map = HashMap::new();
@@ -280,17 +284,25 @@ impl GrammarMatcher {
         }
     }
 
-    fn morphology_candidates(&self, bunsetsus: &[Bunsetsu], flat: &[FlatMorpheme]) -> Vec<Candidate> {
+    fn morphology_candidates(
+        &self,
+        bunsetsus: &[Bunsetsu],
+        flat: &[FlatMorpheme],
+    ) -> Vec<Candidate> {
         let mut result = Vec::new();
         for (bunsetsu_index, bunsetsu) in bunsetsus.iter().enumerate() {
             for chain in &bunsetsu.morphology.chains {
                 let mut component_ids = Vec::new();
                 for operator in &chain.operators {
-                    let canonical_concept_id = self.catalog.normalize_concept_id(&operator.concept_id).to_string();
+                    let canonical_concept_id = self
+                        .catalog
+                        .normalize_concept_id(&operator.concept_id)
+                        .to_string();
                     let Some(concept) = self.catalog.concept(&canonical_concept_id) else {
                         continue;
                     };
-                    let candidates = sense_candidates(&self.catalog, &canonical_concept_id, operator.confidence);
+                    let candidates =
+                        sense_candidates(&self.catalog, &canonical_concept_id, operator.confidence);
                     let selected = (candidates.len() == 1).then(|| candidates[0].sense_id.clone());
                     let explanation_ref = selected
                         .as_deref()
@@ -298,7 +310,11 @@ impl GrammarMatcher {
                         .map(|sense| sense.explanation_id.clone())
                         .unwrap_or_else(|| concept.default_explanation_id.clone());
                     let status = published_status(&self.catalog, concept, &explanation_ref);
-                    let occurrence_id = occurrence_id(&canonical_concept_id, &operator.operator_id, &[operator.char_range]);
+                    let occurrence_id = occurrence_id(
+                        &canonical_concept_id,
+                        &operator.operator_id,
+                        &[operator.char_range],
+                    );
                     component_ids.push(occurrence_id.clone());
                     result.push(Candidate {
                         occurrence: GrammarOccurrence {
@@ -312,7 +328,11 @@ impl GrammarMatcher {
                             display_ranges: vec![operator.char_range],
                             anchor_range: operator.char_range,
                             component_occurrence_ids: Vec::new(),
-                            captures: capture_from_range("operator", flat, operator.source_morpheme_range),
+                            captures: capture_from_range(
+                                "operator",
+                                flat,
+                                operator.source_morpheme_range,
+                            ),
                             selected_sense_id: selected,
                             sense_candidates: candidates,
                             confidence: operator.confidence,
@@ -343,14 +363,18 @@ impl GrammarMatcher {
                     chain
                         .operators
                         .iter()
-                        .filter(|operator| operator.source_morpheme_range.0 != chain.anchor_morpheme)
+                        .filter(|operator| {
+                            operator.source_morpheme_range.0 != chain.anchor_morpheme
+                        })
                         .map(|operator| operator.char_range)
                         .collect(),
                 );
                 let mut captures = chain
                     .operators
                     .iter()
-                    .flat_map(|operator| capture_from_range("operator", flat, operator.source_morpheme_range))
+                    .flat_map(|operator| {
+                        capture_from_range("operator", flat, operator.source_morpheme_range)
+                    })
                     .collect::<Vec<_>>();
                 captures.sort_by_key(|capture| capture.char_range);
                 captures.dedup_by_key(|capture| capture.char_range);
@@ -375,7 +399,11 @@ impl GrammarMatcher {
                         .unwrap_or(bunsetsu.char_range);
                     result.push(Candidate {
                         occurrence: GrammarOccurrence {
-                            occurrence_id: occurrence_id("morphology.chain", &chain.chain_id, &display_ranges),
+                            occurrence_id: occurrence_id(
+                                "morphology.chain",
+                                &chain.chain_id,
+                                &display_ranges,
+                            ),
                             concept_id: "morphology.chain".to_string(),
                             rule_id: "morphology.chain.aggregate".to_string(),
                             kind: GrammarOccurrenceKind::MorphologyFeature,
@@ -423,20 +451,33 @@ impl GrammarMatcher {
                 if indices.is_empty() {
                     continue;
                 }
-                let matched_ranges = merge_ranges(indices.iter().map(|index| flat[*index].morpheme.char_range).collect());
-                let display_end = rule.display_to.unwrap_or(rule.atoms.len()).min(rule.atoms.len());
+                let matched_ranges = merge_ranges(
+                    indices
+                        .iter()
+                        .map(|index| flat[*index].morpheme.char_range)
+                        .collect(),
+                );
+                let display_end = rule
+                    .display_to
+                    .unwrap_or(rule.atoms.len())
+                    .min(rule.atoms.len());
                 let display_ranges = merge_ranges(
                     matched
                         .iter()
                         .enumerate()
-                        .filter(|(atom_index, _)| *atom_index >= rule.display_from && *atom_index < display_end)
+                        .filter(|(atom_index, _)| {
+                            *atom_index >= rule.display_from && *atom_index < display_end
+                        })
                         .filter_map(|(_, index)| index.map(|value| flat[value].morpheme.char_range))
                         .collect(),
                 );
                 if display_ranges.is_empty() {
                     continue;
                 }
-                let canonical_concept_id = self.catalog.normalize_concept_id(&rule.concept_id).to_string();
+                let canonical_concept_id = self
+                    .catalog
+                    .normalize_concept_id(&rule.concept_id)
+                    .to_string();
                 let Some(concept) = self.catalog.concept(&canonical_concept_id) else {
                     continue;
                 };
@@ -516,13 +557,20 @@ impl GrammarMatcher {
                     GrammarOccurrenceStatus::Pending
                 };
                 let occurrence = GrammarOccurrence {
-                    occurrence_id: occurrence_id(&canonical_concept_id, &rule.rule_id, &matched_ranges),
+                    occurrence_id: occurrence_id(
+                        &canonical_concept_id,
+                        &rule.rule_id,
+                        &matched_ranges,
+                    ),
                     concept_id: canonical_concept_id.clone(),
                     rule_id: rule.rule_id.clone(),
                     kind: parse_kind(&rule.kind),
                     status,
                     matched_ranges,
-                    covered_token_range: (flat[first].bunsetsu_index, flat[last].bunsetsu_index + 1),
+                    covered_token_range: (
+                        flat[first].bunsetsu_index,
+                        flat[last].bunsetsu_index + 1,
+                    ),
                     display_ranges: display_ranges.clone(),
                     anchor_range: (display_ranges[0].0, display_ranges.last().unwrap().1),
                     component_occurrence_ids: Vec::new(),
@@ -581,26 +629,53 @@ impl GrammarMatcher {
             }
             let formal_noun = morpheme.pos.major == "名詞"
                 && morpheme.pos.sub1 == "非自立"
-                && matches!(morpheme.base_form.as_str(), "こと" | "もの" | "ところ" | "わけ" | "はず" | "つもり" | "ため" | "まま" | "の" | "ん");
+                && matches!(
+                    morpheme.base_form.as_str(),
+                    "こと"
+                        | "もの"
+                        | "ところ"
+                        | "わけ"
+                        | "はず"
+                        | "つもり"
+                        | "ため"
+                        | "まま"
+                        | "の"
+                        | "ん"
+                );
             let previous = item
                 .global_index
                 .checked_sub(1)
                 .and_then(|index| flat.get(index))
                 .map(|item| &item.morpheme);
-            let functional_verb_context = if morpheme.pos.major == "動詞" && morpheme.pos.sub1 == "非自立" {
-                if morpheme.base_form == "てる" {
-                    previous.is_some_and(|item| item.pos.major == "動詞")
-                } else if matches!(
-                    morpheme.base_form.as_str(),
-                    "いる" | "ある" | "おく" | "みる" | "見る" | "しまう" | "いく" | "行く" | "くる" | "来る" | "やる" | "あげる" | "くれる" | "くださる" | "もらう"
-                ) {
-                    previous.is_some_and(|item| matches!(item.base_form.as_str(), "て" | "で"))
+            let functional_verb_context =
+                if morpheme.pos.major == "動詞" && morpheme.pos.sub1 == "非自立" {
+                    if morpheme.base_form == "てる" {
+                        previous.is_some_and(|item| item.pos.major == "動詞")
+                    } else if matches!(
+                        morpheme.base_form.as_str(),
+                        "いる"
+                            | "ある"
+                            | "おく"
+                            | "みる"
+                            | "見る"
+                            | "しまう"
+                            | "いく"
+                            | "行く"
+                            | "くる"
+                            | "来る"
+                            | "やる"
+                            | "あげる"
+                            | "くれる"
+                            | "くださる"
+                            | "もらう"
+                    ) {
+                        previous.is_some_and(|item| matches!(item.base_form.as_str(), "て" | "で"))
+                    } else {
+                        false
+                    }
                 } else {
                     false
-                }
-            } else {
-                false
-            };
+                };
             let grammatical_suffix = morpheme.pos.major == "動詞"
                 && morpheme.pos.sub1 == "接尾"
                 && matches!(
@@ -610,7 +685,9 @@ impl GrammarMatcher {
             let lexical = match morpheme.pos.major.as_str() {
                 "名詞" => !formal_noun,
                 "動詞" => !functional_verb_context && !grammatical_suffix,
-                "形容詞" | "副詞" | "連体詞" | "接続詞" | "感動詞" | "接頭詞" => true,
+                "形容詞" | "副詞" | "連体詞" | "接続詞" | "感動詞" | "接頭詞" => {
+                    true
+                }
                 "フィラー" => true,
                 _ => false,
             };
@@ -662,7 +739,8 @@ impl GrammarMatcher {
                 && occurrence.kind != GrammarOccurrenceKind::MorphologyFeature
                 && !absorbed_by_lexical_inflection(&occurrence, bunsetsus)
             {
-                let label = self.catalog
+                let label = self
+                    .catalog
                     .concept(&occurrence.concept_id)
                     .map(|item| item.canonical_label.clone())
                     .unwrap_or_else(|| occurrence.concept_id.clone());
@@ -670,15 +748,23 @@ impl GrammarMatcher {
                     .as_ref()
                     .map(|item| item.compact_summary.clone())
                     .unwrap_or_default();
-                let morpheme_range = occurrence
-                    .captures
-                    .iter()
-                    .fold((usize::MAX, 0), |range, capture| {
-                        (range.0.min(capture.morpheme_range.0), range.1.max(capture.morpheme_range.1))
-                    });
+                let morpheme_range =
+                    occurrence
+                        .captures
+                        .iter()
+                        .fold((usize::MAX, 0), |range, capture| {
+                            (
+                                range.0.min(capture.morpheme_range.0),
+                                range.1.max(capture.morpheme_range.1),
+                            )
+                        });
                 let morpheme_range = if morpheme_range.0 == usize::MAX {
-                    let first = flat.iter().find(|item| contains_range(occurrence.anchor_range, item.morpheme.char_range));
-                    first.map(|item| (item.global_index, item.global_index + 1)).unwrap_or((0, 0))
+                    let first = flat.iter().find(|item| {
+                        contains_range(occurrence.anchor_range, item.morpheme.char_range)
+                    });
+                    first
+                        .map(|item| (item.global_index, item.global_index + 1))
+                        .unwrap_or((0, 0))
                 } else {
                     morpheme_range
                 };
@@ -686,7 +772,10 @@ impl GrammarMatcher {
                     pattern_id: occurrence.rule_id.clone(),
                     name_ja: label,
                     name_en: occurrence.concept_id.clone(),
-                    jlpt_level: self.catalog.concept(&occurrence.concept_id).and_then(|item| item.jlpt_level),
+                    jlpt_level: self
+                        .catalog
+                        .concept(&occurrence.concept_id)
+                        .and_then(|item| item.jlpt_level),
                     description,
                     morpheme_range,
                     char_range: occurrence.anchor_range,
@@ -734,16 +823,17 @@ impl GrammarMatcher {
             bunsetsus[target].grammar_occurrences.push(occurrence);
         }
         for bunsetsu in bunsetsus {
-            bunsetsu.grammar_tags.sort_by_key(|tag| (tag.char_range.0, !tag.show_badge, tag.char_range.1));
-            bunsetsu.grammar_occurrences.sort_by_key(|item| (item.anchor_range.0, item.anchor_range.1));
+            bunsetsu
+                .grammar_tags
+                .sort_by_key(|tag| (tag.char_range.0, !tag.show_badge, tag.char_range.1));
+            bunsetsu
+                .grammar_occurrences
+                .sort_by_key(|item| (item.anchor_range.0, item.anchor_range.1));
         }
     }
 }
 
-fn expand_functional_inflection(
-    occurrence: &mut GrammarOccurrence,
-    bunsetsus: &[Bunsetsu],
-) {
+fn expand_functional_inflection(occurrence: &mut GrammarOccurrence, bunsetsus: &[Bunsetsu]) {
     if occurrence.kind == GrammarOccurrenceKind::MorphologyFeature {
         return;
     }
@@ -782,10 +872,7 @@ fn expand_functional_inflection(
     occurrence.display_ranges = merge_ranges(std::mem::take(&mut occurrence.display_ranges));
 }
 
-fn absorbed_by_lexical_inflection(
-    occurrence: &GrammarOccurrence,
-    bunsetsus: &[Bunsetsu],
-) -> bool {
+fn absorbed_by_lexical_inflection(occurrence: &GrammarOccurrence, bunsetsus: &[Bunsetsu]) -> bool {
     if occurrence.kind != GrammarOccurrenceKind::FunctionalMorpheme
         || occurrence.display_ranges.is_empty()
     {
@@ -819,9 +906,7 @@ fn flatten(bunsetsus: &[Bunsetsu]) -> Vec<FlatMorpheme> {
                     global_index >= operator.source_morpheme_range.0
                         && global_index < operator.source_morpheme_range.1
                 })
-                .flat_map(|operator| {
-                    [operator.output_state.clone(), operator.concept_id.clone()]
-                })
+                .flat_map(|operator| [operator.output_state.clone(), operator.concept_id.clone()])
                 .collect::<Vec<_>>();
             morphology_features.sort();
             morphology_features.dedup();
@@ -837,12 +922,18 @@ fn flatten(bunsetsus: &[Bunsetsu]) -> Vec<FlatMorpheme> {
     result
 }
 
-fn match_rule_at(rule: &GrammarRule, flat: &[FlatMorpheme], start: usize) -> Option<Vec<Option<usize>>> {
+fn match_rule_at(
+    rule: &GrammarRule,
+    flat: &[FlatMorpheme],
+    start: usize,
+) -> Option<Vec<Option<usize>>> {
     let mut cursor = start;
     let mut matched = Vec::with_capacity(rule.atoms.len());
     for atom in &rule.atoms {
         if cursor < flat.len() && atom_matches(atom, &flat[cursor]) {
-            if cursor > start && crosses_hard_boundary(&flat[cursor - 1].morpheme, &flat[cursor].morpheme) {
+            if cursor > start
+                && crosses_hard_boundary(&flat[cursor - 1].morpheme, &flat[cursor].morpheme)
+            {
                 return None;
             }
             matched.push(Some(cursor));
@@ -918,10 +1009,10 @@ fn resolve_candidate_relations(candidates: &mut [Candidate]) {
                 && candidates[other_index].priority > candidates[index].priority
             {
                 candidates[index].occurrence.status = GrammarOccurrenceStatus::Rejected;
-                candidates[index]
-                    .occurrence
-                    .counter_evidence
-                    .push(format!("refined_by:{}", candidates[other_index].occurrence.rule_id));
+                candidates[index].occurrence.counter_evidence.push(format!(
+                    "refined_by:{}",
+                    candidates[other_index].occurrence.rule_id
+                ));
                 break;
             }
             if candidates[index].conflict_group.is_some()
@@ -929,10 +1020,10 @@ fn resolve_candidate_relations(candidates: &mut [Candidate]) {
                 && candidates[other_index].priority > candidates[index].priority
             {
                 candidates[index].occurrence.status = GrammarOccurrenceStatus::Pending;
-                candidates[index]
-                    .occurrence
-                    .counter_evidence
-                    .push(format!("conflicts_with:{}", candidates[other_index].occurrence.rule_id));
+                candidates[index].occurrence.counter_evidence.push(format!(
+                    "conflicts_with:{}",
+                    candidates[other_index].occurrence.rule_id
+                ));
                 break;
             }
         }
@@ -964,7 +1055,10 @@ fn deduplicate_candidates(catalog: &GrammarCatalog, candidates: Vec<Candidate>) 
             &mut target.occurrence.component_occurrence_ids,
             candidate.occurrence.component_occurrence_ids,
         );
-        merge_unique(&mut target.occurrence.captures, candidate.occurrence.captures);
+        merge_unique(
+            &mut target.occurrence.captures,
+            candidate.occurrence.captures,
+        );
         merge_unique(
             &mut target.occurrence.evidence,
             candidate.occurrence.evidence,
@@ -973,10 +1067,7 @@ fn deduplicate_candidates(catalog: &GrammarCatalog, candidates: Vec<Candidate>) 
             &mut target.occurrence.counter_evidence,
             candidate.occurrence.counter_evidence,
         );
-        merge_unique(
-            &mut target.refines_rule_ids,
-            candidate.refines_rule_ids,
-        );
+        merge_unique(&mut target.refines_rule_ids, candidate.refines_rule_ids);
         for sense in candidate.occurrence.sense_candidates {
             if let Some(existing) = target
                 .occurrence
@@ -990,12 +1081,12 @@ fn deduplicate_candidates(catalog: &GrammarCatalog, candidates: Vec<Candidate>) 
                 target.occurrence.sense_candidates.push(sense);
             }
         }
-        target.occurrence.sense_candidates.sort_by_key(|sense| {
-            (std::cmp::Reverse(sense.confidence), sense.sense_id.clone())
-        });
-        target.occurrence.selected_sense_id =
-            (target.occurrence.sense_candidates.len() == 1)
-                .then(|| target.occurrence.sense_candidates[0].sense_id.clone());
+        target
+            .occurrence
+            .sense_candidates
+            .sort_by_key(|sense| (std::cmp::Reverse(sense.confidence), sense.sense_id.clone()));
+        target.occurrence.selected_sense_id = (target.occurrence.sense_candidates.len() == 1)
+            .then(|| target.occurrence.sense_candidates[0].sense_id.clone());
         target.occurrence.explanation_ref = target
             .occurrence
             .selected_sense_id
@@ -1084,7 +1175,9 @@ fn capture_from_range(
     morpheme_range: (usize, usize),
 ) -> Vec<GrammarCapture> {
     flat.iter()
-        .filter(|item| item.global_index >= morpheme_range.0 && item.global_index < morpheme_range.1)
+        .filter(|item| {
+            item.global_index >= morpheme_range.0 && item.global_index < morpheme_range.1
+        })
         .map(|item| GrammarCapture {
             name: name.to_string(),
             surface: item.morpheme.surface.clone(),
@@ -1132,11 +1225,27 @@ mod tests {
     use super::*;
     use crate::models::{HeadWord, PosTag};
 
-    fn m(surface: &str, base: &str, major: &str, sub1: &str, form: &str, range: (usize, usize)) -> Morpheme {
+    fn m(
+        surface: &str,
+        base: &str,
+        major: &str,
+        sub1: &str,
+        form: &str,
+        range: (usize, usize),
+    ) -> Morpheme {
         Morpheme {
-            surface: surface.to_string(), base_form: base.to_string(), reading: String::new(),
-            pos: PosTag { major: major.to_string(), sub1: sub1.to_string(), sub2: "*".to_string(), sub3: "*".to_string() },
-            conjugation_type: String::new(), conjugation_form: form.to_string(), char_range: range,
+            surface: surface.to_string(),
+            base_form: base.to_string(),
+            reading: String::new(),
+            pos: PosTag {
+                major: major.to_string(),
+                sub1: sub1.to_string(),
+                sub2: "*".to_string(),
+                sub3: "*".to_string(),
+            },
+            conjugation_type: String::new(),
+            conjugation_form: form.to_string(),
+            char_range: range,
         }
     }
 
@@ -1144,23 +1253,49 @@ mod tests {
         let head = morphemes[0].clone();
         Bunsetsu {
             surface: morphemes.iter().map(|item| item.surface.as_str()).collect(),
-            head_word: HeadWord { surface: head.surface, base_form: head.base_form, reading: head.reading, pos: head.pos },
-            morphemes, grammar_tags: Vec::new(), morphology: MorphologyArtifact::default(), grammar_occurrences: Vec::new(), functional_residuals: Vec::new(),
-            word_formations: Vec::new(), lexical_units: Vec::new(), function: None, char_range: range,
+            head_word: HeadWord {
+                surface: head.surface,
+                base_form: head.base_form,
+                reading: head.reading,
+                pos: head.pos,
+            },
+            morphemes,
+            grammar_tags: Vec::new(),
+            morphology: MorphologyArtifact::default(),
+            grammar_occurrences: Vec::new(),
+            functional_residuals: Vec::new(),
+            word_formations: Vec::new(),
+            lexical_units: Vec::new(),
+            function: None,
+            char_range: range,
         }
     }
 
     #[test]
     fn request_refines_generic_benefactive() {
         let matcher = GrammarMatcher::new().unwrap();
-        let mut bunsetsus = vec![bunsetsu(vec![
-            m("使っ", "使う", "動詞", "自立", "連用タ接続", (0, 2)),
-            m("て", "て", "助詞", "接続助詞", "*", (2, 3)),
-            m("ください", "くださる", "動詞", "非自立", "命令ｉ", (3, 7)),
-        ], (0, 7))];
+        let mut bunsetsus = vec![bunsetsu(
+            vec![
+                m("使っ", "使う", "動詞", "自立", "連用タ接続", (0, 2)),
+                m("て", "て", "助詞", "接続助詞", "*", (2, 3)),
+                m("ください", "くださる", "動詞", "非自立", "命令ｉ", (3, 7)),
+            ],
+            (0, 7),
+        )];
         matcher.match_patterns(&mut bunsetsus);
-        assert!(bunsetsus[0].grammar_occurrences.iter().any(|item| item.concept_id == "grammar.request.te_kudasai" && item.status == GrammarOccurrenceStatus::Accepted));
-        assert!(bunsetsus[0].grammar_occurrences.iter().any(|item| item.concept_id == "grammar.benefactive.te_kudasaru" && item.status == GrammarOccurrenceStatus::Rejected));
-        assert!(bunsetsus[0].grammar_tags.iter().any(|item| item.concept_id == "grammar.request.te_kudasai"));
+        assert!(bunsetsus[0]
+            .grammar_occurrences
+            .iter()
+            .any(|item| item.concept_id == "grammar.request.te_kudasai"
+                && item.status == GrammarOccurrenceStatus::Accepted));
+        assert!(bunsetsus[0]
+            .grammar_occurrences
+            .iter()
+            .any(|item| item.concept_id == "grammar.benefactive.te_kudasaru"
+                && item.status == GrammarOccurrenceStatus::Rejected));
+        assert!(bunsetsus[0]
+            .grammar_tags
+            .iter()
+            .any(|item| item.concept_id == "grammar.request.te_kudasai"));
     }
 }
