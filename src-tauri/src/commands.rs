@@ -1,5 +1,6 @@
 use crate::state::{AnalysisCancellationGuard, AppState};
-use kotoclip_core::analysis_progress::AnalysisProgress;
+use kotoclip_core::analysis_progress::{AnalysisPhase, AnalysisProgress};
+use kotoclip_core::cache::{CacheLoadPhase, CacheLoadProgress};
 use kotoclip_core::document::{
     propagate_stage_invalidation, AnalysisPatch, AnalysisStage, DocumentSession,
 };
@@ -12,12 +13,57 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 use tauri::{Emitter, Manager, State, Window};
 
+#[derive(Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum ProgressMode {
+    Analysis,
+    Cache,
+}
+
+#[derive(Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum DocumentProgressPhase {
+    Preparing,
+    Tokenizing,
+    Chunking,
+    GrammarMatching,
+    DictionaryMatching,
+    ProfileScoring,
+    ExpressionMatching,
+    RecordingExposure,
+    CacheReading,
+    CacheDecoding,
+    CacheRestoring,
+    CacheFinalizing,
+    Completed,
+}
+
+impl From<AnalysisPhase> for DocumentProgressPhase {
+    fn from(phase: AnalysisPhase) -> Self {
+        match phase {
+            AnalysisPhase::Preparing => Self::Preparing,
+            AnalysisPhase::Tokenizing => Self::Tokenizing,
+            AnalysisPhase::Chunking => Self::Chunking,
+            AnalysisPhase::GrammarMatching => Self::GrammarMatching,
+            AnalysisPhase::DictionaryMatching => Self::DictionaryMatching,
+            AnalysisPhase::ProfileScoring => Self::ProfileScoring,
+            AnalysisPhase::ExpressionMatching => Self::ExpressionMatching,
+            AnalysisPhase::RecordingExposure => Self::RecordingExposure,
+            AnalysisPhase::Completed => Self::Completed,
+        }
+    }
+}
+
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct AnalysisProgressEvent {
+struct DocumentProgressEvent {
     request_id: String,
-    #[serde(flatten)]
-    progress: AnalysisProgress,
+    mode: ProgressMode,
+    phase: DocumentProgressPhase,
+    completed: usize,
+    total: usize,
+    percent: u8,
+    message: String,
 }
 
 #[derive(Serialize)]
@@ -40,6 +86,86 @@ fn ensure_analysis_active(cancellation: &AnalysisCancellationGuard<'_>) -> Resul
     } else {
         Ok(())
     }
+}
+
+fn emit_document_progress(window: &Window, progress: DocumentProgressEvent) {
+    let _ = window.app_handle().emit("analysis-progress", progress);
+}
+
+fn emit_analysis_progress(window: &Window, request_id: &str, progress: AnalysisProgress) {
+    emit_document_progress(
+        window,
+        DocumentProgressEvent {
+            request_id: request_id.to_string(),
+            mode: ProgressMode::Analysis,
+            phase: progress.phase.into(),
+            completed: progress.completed,
+            total: progress.total,
+            percent: progress.percent,
+            message: progress.message,
+        },
+    );
+}
+
+fn emit_cache_load_progress(window: &Window, request_id: &str, progress: CacheLoadProgress) {
+    let (completed, total, message, phase) = match progress.phase {
+        CacheLoadPhase::Reading => (
+            progress.completed,
+            progress.total,
+            "读取分析缓存",
+            DocumentProgressPhase::CacheReading,
+        ),
+        CacheLoadPhase::Decoding => (
+            0,
+            0,
+            "解析缓存内容",
+            DocumentProgressPhase::CacheDecoding,
+        ),
+        CacheLoadPhase::Validating => (
+            0,
+            0,
+            "校验缓存版本",
+            DocumentProgressPhase::CacheRestoring,
+        ),
+    };
+    emit_document_progress(
+        window,
+        DocumentProgressEvent {
+            request_id: request_id.to_string(),
+            mode: ProgressMode::Cache,
+            phase,
+            completed,
+            total,
+            percent: 0,
+            message: message.to_string(),
+        },
+    );
+}
+
+fn emit_cache_progress(
+    window: &Window,
+    request_id: &str,
+    phase: DocumentProgressPhase,
+    completed: usize,
+    total: usize,
+    message: &str,
+) {
+    let percent = match phase {
+        DocumentProgressPhase::Completed => 100,
+        _ => 0,
+    };
+    emit_document_progress(
+        window,
+        DocumentProgressEvent {
+            request_id: request_id.to_string(),
+            mode: ProgressMode::Cache,
+            phase,
+            completed,
+            total,
+            percent,
+            message: message.to_string(),
+        },
+    );
 }
 
 #[tauri::command]
@@ -218,10 +344,20 @@ pub async fn open_document(
             .analysis_cache
             .lock()
             .map_err(|error| error.to_string())?
-            .load(&text)
+            .load_with_progress(&text, |progress| {
+                emit_cache_load_progress(&window, &request_id, progress);
+            })
     };
     ensure_analysis_active(&cancellation)?;
     if let Some(stable_tokens) = cached {
+        emit_cache_progress(
+            &window,
+            &request_id,
+            DocumentProgressPhase::CacheRestoring,
+            0,
+            0,
+            "恢复文档会话",
+        );
         let engine = state.engine.lock().map_err(|error| error.to_string())?;
         ensure_analysis_active(&cancellation)?;
         let mut session = DocumentSession::new_progressive(
@@ -236,10 +372,27 @@ pub async fn open_document(
         let stable_batch = session
             .take_cached_stable_tokens(&batch)
             .ok_or_else(|| "缓存缺少首批稳定 Token".to_string())?;
+        let stable_batch_total = stable_batch.len();
+        emit_cache_progress(
+            &window,
+            &request_id,
+            DocumentProgressPhase::CacheRestoring,
+            0,
+            stable_batch_total,
+            "应用当前用户状态",
+        );
         let tokens = engine
             .hydrate_stable_tokens_for_document_batch(stable_batch)
             .map_err(|error| error.to_string())?;
         ensure_analysis_active(&cancellation)?;
+        emit_cache_progress(
+            &window,
+            &request_id,
+            DocumentProgressPhase::CacheFinalizing,
+            0,
+            stable_batch_total,
+            "构建首屏内容",
+        );
         let patch = session
             .append_analyzed_batch(0, &batch, tokens)
             .map_err(|error| error.to_string())?;
@@ -248,6 +401,14 @@ pub async fn open_document(
             .lock()
             .map_err(|error| error.to_string())?
             .insert(session_id, session);
+        emit_cache_progress(
+            &window,
+            &request_id,
+            DocumentProgressPhase::Completed,
+            0,
+            0,
+            "缓存恢复完成",
+        );
         return Ok(DocumentResponse {
             patch,
             backend_duration_ms: started.elapsed().as_millis() as u64,
@@ -266,13 +427,7 @@ pub async fn open_document(
             &batch.source,
             session.document_readings(),
             |progress| {
-                let _ = window.app_handle().emit(
-                    "analysis-progress",
-                    AnalysisProgressEvent {
-                        request_id: request_id.clone(),
-                        progress,
-                    },
-                );
+                emit_analysis_progress(&window, &request_id, progress);
             },
             &|| cancellation.is_cancelled(),
         )
@@ -339,13 +494,7 @@ pub async fn continue_document_analysis(
                 &batch.source,
                 session.document_readings(),
                 |progress| {
-                    let _ = window.app_handle().emit(
-                        "analysis-progress",
-                        AnalysisProgressEvent {
-                            request_id: request_id.clone(),
-                            progress,
-                        },
-                    );
+                    emit_analysis_progress(&window, &request_id, progress);
                 },
                 &|| cancellation.is_cancelled(),
             )
@@ -439,13 +588,7 @@ pub async fn apply_document_mutation(
         let engine = state.engine.lock().map_err(|error| error.to_string())?;
         engine
             .analyze_text_with_progress(&text, record_exposure, |progress| {
-                let _ = window.app_handle().emit(
-                    "analysis-progress",
-                    AnalysisProgressEvent {
-                        request_id: request_id.clone(),
-                        progress,
-                    },
-                );
+                emit_analysis_progress(&window, &request_id, progress);
             })
             .map_err(|error| error.to_string())?
     };

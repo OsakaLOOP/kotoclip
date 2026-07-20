@@ -8,6 +8,20 @@ use std::time::UNIX_EPOCH;
 const CACHE_SCHEMA_VERSION: u32 = 2;
 const MAX_CACHE_ENTRIES: usize = 16;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CacheLoadPhase {
+    Reading,
+    Decoding,
+    Validating,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CacheLoadProgress {
+    pub phase: CacheLoadPhase,
+    pub completed: usize,
+    pub total: usize,
+}
+
 #[derive(Debug, Clone)]
 pub struct AnalysisCache {
     directory: PathBuf,
@@ -38,9 +52,37 @@ impl AnalysisCache {
     }
 
     pub fn load(&self, source: &str) -> Option<Vec<AnnotatedToken>> {
+        self.load_with_progress(source, |_| {})
+    }
+
+    pub fn load_with_progress<F>(
+        &self,
+        source: &str,
+        mut report: F,
+    ) -> Option<Vec<AnnotatedToken>>
+    where
+        F: FnMut(CacheLoadProgress),
+    {
         let source_hash = source_hash(source);
         let path = self.path_for_hash(&source_hash);
+        let metadata = std::fs::metadata(&path).ok()?;
+        let total = usize::try_from(metadata.len()).unwrap_or(0);
+        report(CacheLoadProgress {
+            phase: CacheLoadPhase::Reading,
+            completed: 0,
+            total,
+        });
         let payload = std::fs::read(&path).ok()?;
+        report(CacheLoadProgress {
+            phase: CacheLoadPhase::Reading,
+            completed: payload.len(),
+            total: total.max(payload.len()),
+        });
+        report(CacheLoadProgress {
+            phase: CacheLoadPhase::Decoding,
+            completed: 0,
+            total: 1,
+        });
         let envelope: CacheEnvelope = match rmp_serde::from_slice(&payload) {
             Ok(value) => value,
             Err(_) => {
@@ -48,6 +90,16 @@ impl AnalysisCache {
                 return None;
             }
         };
+        report(CacheLoadProgress {
+            phase: CacheLoadPhase::Decoding,
+            completed: 1,
+            total: 1,
+        });
+        report(CacheLoadProgress {
+            phase: CacheLoadPhase::Validating,
+            completed: 0,
+            total: 1,
+        });
         if envelope.schema_version != CACHE_SCHEMA_VERSION
             || envelope.pipeline_artifact_version != PIPELINE_ARTIFACT_VERSION
             || envelope.pipeline_fingerprint != self.pipeline_fingerprint
@@ -56,6 +108,11 @@ impl AnalysisCache {
             let _ = std::fs::remove_file(path);
             return None;
         }
+        report(CacheLoadProgress {
+            phase: CacheLoadPhase::Validating,
+            completed: 1,
+            total: 1,
+        });
         Some(envelope.tokens)
     }
 
