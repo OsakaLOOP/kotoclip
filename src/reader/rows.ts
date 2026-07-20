@@ -8,13 +8,20 @@ export interface ReaderTextRow {
   heading?: ReaderChapter;
 }
 
-export interface ReaderImageRow {
-  key: string;
-  kind: "image";
+export type ReaderImageLayout = "single" | "pair" | "symbols";
+
+export interface ReaderRowImage {
   image: ReaderImageBlock;
   resolvedSrc?: string;
   intrinsicWidth?: number;
   intrinsicHeight?: number;
+}
+
+export interface ReaderImageRow {
+  key: string;
+  kind: "image";
+  layout: ReaderImageLayout;
+  items: ReaderRowImage[];
 }
 
 export type ReaderRow = ReaderTextRow | ReaderImageRow;
@@ -23,6 +30,55 @@ export interface ResolvedReaderImage {
   src: string;
   width?: number;
   height?: number;
+}
+
+function isPortraitPage(item: ReaderRowImage): boolean {
+  const { intrinsicWidth: width, intrinsicHeight: height } = item;
+  if (!width || !height || width < 600 || height < 800) return false;
+  const ratio = width / height;
+  return ratio >= 0.58 && ratio <= 0.82;
+}
+
+function canPairOpeningPages(items: ReaderRowImage[], index: number): boolean {
+  if (index !== 0 || items.length < 2) return false;
+  const [left, right] = items.slice(index, index + 2);
+  if (left.image.charOffset !== right.image.charOffset
+    || !isPortraitPage(left)
+    || !isPortraitPage(right)) return false;
+  const heightRatio = Math.max(left.intrinsicHeight!, right.intrinsicHeight!)
+    / Math.min(left.intrinsicHeight!, right.intrinsicHeight!);
+  return heightRatio <= 1.12;
+}
+
+function isSmallSymbol(item: ReaderRowImage): boolean {
+  const { intrinsicWidth: width, intrinsicHeight: height } = item;
+  return Boolean(width && height && width <= 256 && height <= 256);
+}
+
+function imageRow(items: ReaderRowImage[], index: number): { row: ReaderImageRow; nextIndex: number } {
+  let layout: ReaderImageLayout = "single";
+  let grouped = [items[index]];
+  if (canPairOpeningPages(items, index)) {
+    layout = "pair";
+    grouped = items.slice(index, index + 2);
+  } else if (isSmallSymbol(items[index])) {
+    layout = "symbols";
+    const charOffset = items[index].image.charOffset;
+    let end = index + 1;
+    while (end < items.length
+      && items[end].image.charOffset === charOffset
+      && isSmallSymbol(items[end])) end++;
+    grouped = items.slice(index, end);
+  }
+  return {
+    row: {
+      key: grouped.map((item) => item.image.id).join("+"),
+      kind: "image",
+      layout,
+      items: grouped,
+    },
+    nextIndex: index + grouped.length,
+  };
 }
 
 export function buildReaderRows(
@@ -40,22 +96,25 @@ export function buildReaderRows(
   }
 
   const rows: ReaderRow[] = [];
-  const images = [...document.images].sort((left, right) => left.charOffset - right.charOffset);
-  const chapters = [...document.chapters].sort((left, right) => left.charOffset - right.charOffset);
-  let imageIndex = 0;
-  let chapterIndex = 0;
-  for (const paragraph of paragraphs) {
-    while (imageIndex < images.length && images[imageIndex].charOffset <= paragraph.charRange[0]) {
-      const image = images[imageIndex++];
+  const images = [...document.images]
+    .sort((left, right) => left.charOffset - right.charOffset)
+    .map((image): ReaderRowImage => {
       const resolved = resolveImage(image.src);
-      rows.push({
-        key: image.id,
-        kind: "image",
+      return {
         image,
         resolvedSrc: resolved?.src,
         intrinsicWidth: resolved?.width,
         intrinsicHeight: resolved?.height,
-      });
+      };
+    });
+  const chapters = [...document.chapters].sort((left, right) => left.charOffset - right.charOffset);
+  let imageIndex = 0;
+  let chapterIndex = 0;
+  for (const paragraph of paragraphs) {
+    while (imageIndex < images.length && images[imageIndex].image.charOffset <= paragraph.charRange[0]) {
+      const group = imageRow(images, imageIndex);
+      rows.push(group.row);
+      imageIndex = group.nextIndex;
     }
     while (chapterIndex < chapters.length && chapters[chapterIndex].charOffset < paragraph.charRange[0]) {
       chapterIndex++;
@@ -72,16 +131,9 @@ export function buildReaderRows(
   }
   if (complete) {
     while (imageIndex < images.length) {
-      const image = images[imageIndex++];
-      const resolved = resolveImage(image.src);
-      rows.push({
-        key: image.id,
-        kind: "image",
-        image,
-        resolvedSrc: resolved?.src,
-        intrinsicWidth: resolved?.width,
-        intrinsicHeight: resolved?.height,
-      });
+      const group = imageRow(images, imageIndex);
+      rows.push(group.row);
+      imageIndex = group.nextIndex;
     }
   }
   return rows;
@@ -94,12 +146,12 @@ function paragraphKey(paragraph: Paragraph): string {
 
 export function rowCharacterOffset(row: ReaderRow | undefined): number {
   if (!row) return 0;
-  return row.kind === "image" ? row.image.charOffset : row.paragraph.charRange[0];
+  return row.kind === "image" ? row.items[0].image.charOffset : row.paragraph.charRange[0];
 }
 
 export function rowIndexForOffset(rows: ReaderRow[], offset: number): number {
   const exact = rows.findIndex((row) => {
-    if (row.kind === "image") return row.image.charOffset >= offset;
+    if (row.kind === "image") return row.items[0].image.charOffset >= offset;
     return row.paragraph.charRange[1] > offset;
   });
   return exact < 0 ? Math.max(0, rows.length - 1) : exact;

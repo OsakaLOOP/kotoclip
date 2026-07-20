@@ -25,8 +25,8 @@ test("将图片和标题锚点合并到虚拟行但不改变段落对象", () =>
   assert.deepEqual(rows.map((row) => row.kind), ["image", "text", "text"]);
   assert.equal(rows[1].paragraph, paragraphs[0]);
   assert.equal(rows[1].heading.title, "第一章");
-  assert.equal(rows[0].resolvedSrc, "asset://cover");
-  assert.equal(rows[0].intrinsicHeight, 1600);
+  assert.equal(rows[0].items[0].resolvedSrc, "asset://cover");
+  assert.equal(rows[0].items[0].intrinsicHeight, 1600);
 });
 
 test("可按正文字符位置定位虚拟行", () => {

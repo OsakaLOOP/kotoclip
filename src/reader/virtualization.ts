@@ -9,6 +9,7 @@ export interface ReaderRowEstimateInput {
   contentWidth: number;
   imageWidth?: number;
   imageHeight?: number;
+  imageLayout?: "single" | "pair" | "symbols";
   hasCaption?: boolean;
 }
 
@@ -23,6 +24,9 @@ export interface ReaderRowMeasurementInput {
 
 export function estimateReaderRow(input: ReaderRowEstimateInput): number {
   if (input.kind === "image") {
+    if (input.imageLayout === "symbols") {
+      return Math.round(input.fontSize * 1.4 + 8);
+    }
     if (input.imageWidth && input.imageHeight) {
       const heightLimit = Math.min(input.viewportHeight * 0.76, 900);
       const scale = Math.min(1, input.contentWidth / input.imageWidth, heightLimit / input.imageHeight);

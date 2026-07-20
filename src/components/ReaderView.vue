@@ -311,6 +311,14 @@ const {
 function estimateVirtualRow(index: number): number {
   const row = readerRows.value[index];
   const viewportHeight = scrollContainerRef.value?.clientHeight ?? window.innerHeight;
+  const imageItems = row?.kind === "image" ? row.items : [];
+  const imageWidth = row?.kind === "image" && row.layout === "pair"
+    ? imageItems.reduce((total, item) => total + (item.intrinsicWidth ?? 0), 0)
+    : imageItems[0]?.intrinsicWidth;
+  const imageHeight = imageItems.reduce(
+    (height, item) => Math.max(height, item.intrinsicHeight ?? 0),
+    0,
+  ) || undefined;
   return estimateReaderRow({
     kind: row?.kind ?? "text",
     heading: row?.kind === "text" && Boolean(row.heading),
@@ -318,9 +326,12 @@ function estimateVirtualRow(index: number): number {
     fontSize: readerAppearance.value.fontSize,
     lineHeight: readerAppearance.value.lineHeight,
     contentWidth: Math.min(readerAppearance.value.contentWidth, Math.max(0, window.innerWidth - 40)),
-    imageWidth: row?.kind === "image" ? row.intrinsicWidth : undefined,
-    imageHeight: row?.kind === "image" ? row.intrinsicHeight : undefined,
-    hasCaption: row?.kind === "image" && Boolean(row.image.title || row.image.alt),
+    imageWidth,
+    imageHeight,
+    imageLayout: row?.kind === "image" ? row.layout : undefined,
+    hasCaption: row?.kind === "image"
+      && row.layout !== "symbols"
+      && row.items.some((item) => Boolean(item.image.title || item.image.alt)),
   });
 }
 
@@ -1171,11 +1182,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           >
             <ReaderImageBlock
               v-if="readerRows[virtualRow.index].kind === 'image'"
-              :src="imageRowAt(virtualRow.index).resolvedSrc"
-              :alt="imageRowAt(virtualRow.index).image.alt"
-              :title="imageRowAt(virtualRow.index).image.title"
-              :width="imageRowAt(virtualRow.index).intrinsicWidth"
-              :height="imageRowAt(virtualRow.index).intrinsicHeight"
+              :items="imageRowAt(virtualRow.index).items"
+              :layout="imageRowAt(virtualRow.index).layout"
               @settled="measureSettledImage(imageRowAt(virtualRow.index).key)"
             />
             <template v-else-if="textRowAt(virtualRow.index).paragraph.tokens.length > 0">
