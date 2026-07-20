@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { BookOpen, Clock3, FileText, FileUp, FolderOpen, LoaderCircle, Search, Trash2 } from "@lucide/vue";
+import { computed, onBeforeUnmount, ref } from "vue";
+import { BookOpen, Clock3, FileText, FileUp, FolderOpen, Search, Trash2 } from "@lucide/vue";
 import type { LibraryBookSummary } from "../../reader/library";
 
 const props = defineProps<{
@@ -21,6 +21,20 @@ const emit = defineEmits<{
   remove: [book: LibraryBookSummary];
 }>();
 const searchQuery = ref("");
+type BookSurface = "continue" | "shelf";
+
+interface CoverRipple {
+  key: number;
+  target: string;
+  left: number;
+  top: number;
+  size: number;
+}
+
+const coverRipple = ref<CoverRipple | null>(null);
+let rippleKey = 0;
+let rippleTimer: number | undefined;
+
 const filteredBooks = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase();
   if (!query) return props.books;
@@ -42,6 +56,59 @@ function dateLabel(value?: string | null): string {
     ? "最近读过"
     : new Intl.DateTimeFormat("zh-CN", { month: "short", day: "numeric" }).format(date);
 }
+
+function rippleTarget(surface: BookSurface, bookId: string): string {
+  return `${surface}:${bookId}`;
+}
+
+function startCoverRipple(
+  event: PointerEvent | MouseEvent,
+  bookId: string,
+  surface: BookSurface,
+  centered = false,
+) {
+  const button = event.currentTarget as HTMLElement | null;
+  const cover = button?.querySelector<HTMLElement>(surface === "continue" ? ".continue-cover" : ".book-cover");
+  if (!cover) return;
+  const bounds = cover.getBoundingClientRect();
+  const fromCover = event.target instanceof Node && cover.contains(event.target);
+  const useCenter = centered || !fromCover;
+  const x = useCenter ? bounds.width / 2 : Math.min(bounds.width, Math.max(0, event.clientX - bounds.left));
+  const y = useCenter ? bounds.height / 2 : Math.min(bounds.height, Math.max(0, event.clientY - bounds.top));
+  const radius = Math.hypot(Math.max(x, bounds.width - x), Math.max(y, bounds.height - y));
+  coverRipple.value = {
+    key: ++rippleKey,
+    target: rippleTarget(surface, bookId),
+    left: x - radius,
+    top: y - radius,
+    size: radius * 2,
+  };
+  if (rippleTimer !== undefined) window.clearTimeout(rippleTimer);
+  rippleTimer = window.setTimeout(() => {
+    coverRipple.value = null;
+    rippleTimer = undefined;
+  }, 520);
+}
+
+function openBook(event: MouseEvent, bookId: string, surface: BookSurface) {
+  if (event.detail === 0) startCoverRipple(event, bookId, surface, true);
+  emit("open", bookId);
+}
+
+function rippleStyle(surface: BookSurface, bookId: string): Record<string, string> | undefined {
+  const ripple = coverRipple.value;
+  if (!ripple || ripple.target !== rippleTarget(surface, bookId)) return undefined;
+  return {
+    width: `${ripple.size}px`,
+    height: `${ripple.size}px`,
+    left: `${ripple.left}px`,
+    top: `${ripple.top}px`,
+  };
+}
+
+onBeforeUnmount(() => {
+  if (rippleTimer !== undefined) window.clearTimeout(rippleTimer);
+});
 </script>
 
 <template>
@@ -89,13 +156,22 @@ function dateLabel(value?: string | null): string {
           type="button"
           :disabled="Boolean(openingBookId)"
           :aria-busy="openingBookId === books[0].id"
-          @click="emit('open', books[0].id)"
+          @pointerdown="startCoverRipple($event, books[0].id, 'continue')"
+          @click="openBook($event, books[0].id, 'continue')"
         >
           <div class="continue-cover">
             <img v-if="props.coverUrl(books[0])" :src="props.coverUrl(books[0])" alt="" />
             <BookOpen v-else :size="30" aria-hidden="true" />
+            <span class="cover-state-layer" aria-hidden="true"></span>
+            <span
+              v-if="coverRipple?.target === rippleTarget('continue', books[0].id)"
+              :key="coverRipple.key"
+              class="cover-ripple"
+              :style="rippleStyle('continue', books[0].id)"
+              aria-hidden="true"
+            ></span>
             <span v-if="openingBookId === books[0].id" class="cover-opening" aria-hidden="true">
-              <LoaderCircle :size="22" />
+              <BookOpen :size="25" stroke-width="1.8" />
             </span>
           </div>
           <div class="continue-copy">
@@ -130,13 +206,22 @@ function dateLabel(value?: string | null): string {
               type="button"
               :disabled="Boolean(openingBookId)"
               :aria-busy="openingBookId === book.id"
-              @click="emit('open', book.id)"
+              @pointerdown="startCoverRipple($event, book.id, 'shelf')"
+              @click="openBook($event, book.id, 'shelf')"
             >
               <div class="book-cover">
                 <img v-if="props.coverUrl(book)" :src="props.coverUrl(book)" alt="" />
                 <BookOpen v-else :size="32" aria-hidden="true" />
+                <span class="cover-state-layer" aria-hidden="true"></span>
+                <span
+                  v-if="coverRipple?.target === rippleTarget('shelf', book.id)"
+                  :key="coverRipple.key"
+                  class="cover-ripple"
+                  :style="rippleStyle('shelf', book.id)"
+                  aria-hidden="true"
+                ></span>
                 <span v-if="openingBookId === book.id" class="cover-opening" aria-hidden="true">
-                  <LoaderCircle :size="24" />
+                  <BookOpen :size="32" stroke-width="1.8" />
                 </span>
               </div>
               <strong>{{ book.title }}</strong>
@@ -307,7 +392,7 @@ h1 {
   color: inherit;
   cursor: pointer;
   text-align: left;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: background-color 180ms cubic-bezier(.4, 0, .2, 1);
 }
 
 .continue-cover,
@@ -320,7 +405,9 @@ h1 {
   background: var(--accent-light);
   color: var(--accent-color);
   border: 1px solid var(--border-color);
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transform: translateY(0);
+  transition: box-shadow 180ms cubic-bezier(.4, 0, .2, 1), transform 180ms cubic-bezier(.4, 0, .2, 1);
+  will-change: transform;
 }
 
 .continue-cover {
@@ -333,21 +420,18 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 180ms ease;
 }
 
-.continue-book:hover:not(:disabled),
-.continue-book:focus-visible {
-  border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
+.continue-book:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bg-secondary) 94%, var(--accent-color));
 }
 
-.continue-book:hover:not(:disabled) .continue-cover img,
-.continue-book:focus-visible .continue-cover img,
-.book-open:hover:not(:disabled) .book-cover img,
-.book-open:focus-visible .book-cover img {
-  transform: scale(1.025);
+.continue-book:hover:not(:disabled) .continue-cover,
+.continue-book:focus-visible .continue-cover,
+.book-open:hover:not(:disabled) .book-cover,
+.book-open:focus-visible .book-cover {
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--text-primary) 15%, transparent);
+  transform: translateY(-6px);
 }
 
 .continue-copy {
@@ -421,7 +505,7 @@ h1 {
 }
 
 .book-open strong {
-  transition: color 160ms ease;
+  transition: color 140ms ease;
 }
 
 .book-cover {
@@ -431,11 +515,15 @@ h1 {
   border-radius: 4px;
 }
 
-.book-open:hover:not(:disabled) .book-cover,
+.continue-book:focus-visible,
+.book-open:focus-visible {
+  outline: none;
+}
+
+.continue-book:focus-visible .continue-cover,
 .book-open:focus-visible .book-cover {
-  border-color: color-mix(in srgb, var(--accent-color) 58%, var(--border-color));
-  box-shadow: 0 8px 20px rgba(32, 38, 44, 0.16);
-  transform: translateY(-4px);
+  outline: 2px solid color-mix(in srgb, var(--accent-color) 72%, transparent);
+  outline-offset: 3px;
 }
 
 .book-open:hover:not(:disabled) strong,
@@ -443,10 +531,11 @@ h1 {
   color: var(--accent-color);
 }
 
-.continue-book:active:not(:disabled),
+.continue-book:active:not(:disabled) .continue-cover,
 .book-open:active:not(:disabled) .book-cover {
-  transform: translateY(-1px) scale(0.99);
-  transition-duration: 70ms;
+  box-shadow: 0 3px 9px color-mix(in srgb, var(--text-primary) 12%, transparent);
+  transform: translateY(-2px);
+  transition-duration: 90ms;
 }
 
 .continue-book:disabled,
@@ -461,15 +550,68 @@ h1 {
 
 .cover-opening {
   position: absolute;
+  z-index: 3;
   inset: 0;
   display: grid;
   place-items: center;
-  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  backdrop-filter: blur(2px);
   color: var(--accent-color);
 }
 
+.cover-state-layer {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: var(--accent-color);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.continue-book:hover:not(:disabled) .cover-state-layer,
+.continue-book:focus-visible .cover-state-layer,
+.book-open:hover:not(:disabled) .cover-state-layer,
+.book-open:focus-visible .cover-state-layer {
+  opacity: 0.1;
+}
+
+.continue-book:active:not(:disabled) .cover-state-layer,
+.book-open:active:not(:disabled) .cover-state-layer {
+  opacity: 0.16;
+}
+
+.cover-ripple {
+  position: absolute;
+  z-index: 4;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-color) 30%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0);
+  animation: cover-ripple 500ms cubic-bezier(.4, 0, .2, 1);
+}
+
+.cover-opening::before,
+.cover-opening::after {
+  position: absolute;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-color) 22%, transparent);
+  content: "";
+  animation: cover-opening-wave 1.25s cubic-bezier(0, 0, .2, 1) infinite;
+}
+
+.cover-opening::after {
+  animation-delay: 420ms;
+}
+
 .cover-opening svg {
-  animation: cover-opening-spin 700ms linear infinite;
+  position: relative;
+  z-index: 1;
+  animation: cover-opening-icon 1.25s cubic-bezier(.4, 0, .2, 1) infinite;
 }
 
 .book-open strong,
@@ -526,18 +668,35 @@ h1 {
   cursor: default;
 }
 
-@keyframes cover-opening-spin {
-  to { transform: rotate(360deg); }
+@keyframes cover-ripple {
+  0% { opacity: 0.85; transform: scale(0); }
+  70% { opacity: 0.25; }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes cover-opening-wave {
+  0% { opacity: 0.5; transform: scale(0.4); }
+  75%, 100% { opacity: 0; transform: scale(7.5); }
+}
+
+@keyframes cover-opening-icon {
+  0%, 100% { opacity: 0.72; transform: translateY(1px); }
+  50% { opacity: 1; transform: translateY(-2px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .continue-book,
   .continue-cover,
-  .continue-cover img,
   .book-cover,
-  .book-cover img,
+  .cover-state-layer,
   .book-open strong {
     transition: none;
+  }
+
+  .cover-ripple,
+  .cover-opening::before,
+  .cover-opening::after {
+    display: none;
   }
 
   .cover-opening svg {
