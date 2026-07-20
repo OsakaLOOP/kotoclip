@@ -13,7 +13,7 @@ pub mod pipeline;
 pub mod profile;
 pub mod transport;
 
-use analysis_progress::{AnalysisPhase, AnalysisProgress};
+use analysis_progress::{AnalysisCancelled, AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
     AnnotatedToken, DictionaryLookup, DictionaryLookupTiming, DictionarySettings,
@@ -340,25 +340,55 @@ impl Engine {
         &self,
         text: &str,
         document_readings: &HashMap<String, String>,
-        mut report: F,
+        report: F,
     ) -> Result<(Vec<AnnotatedToken>, Vec<AnnotatedToken>), Box<dyn std::error::Error>>
     where
         F: FnMut(AnalysisProgress),
     {
+        self.analyze_document_batch_with_progress_and_stable_cancellable(
+            text,
+            document_readings,
+            report,
+            &|| false,
+        )
+    }
+
+    pub fn analyze_document_batch_with_progress_and_stable_cancellable<F>(
+        &self,
+        text: &str,
+        document_readings: &HashMap<String, String>,
+        mut report: F,
+        is_cancelled: &dyn Fn() -> bool,
+    ) -> Result<(Vec<AnnotatedToken>, Vec<AnnotatedToken>), Box<dyn std::error::Error>>
+    where
+        F: FnMut(AnalysisProgress),
+    {
+        if is_cancelled() {
+            return Err(Box::new(AnalysisCancelled));
+        }
         report(AnalysisProgress::stage(
             AnalysisPhase::Preparing,
             1,
             "准备首屏分析",
         ));
-        let stable_tokens = self.pipeline.process_with_dictionary_and_progress(
-            text,
-            &[],
-            &self.dictionary,
-            &mut report,
-        );
+        let stable_tokens = self
+            .pipeline
+            .process_with_dictionary_and_progress_cancellable(
+                text,
+                &[],
+                &self.dictionary,
+                &mut report,
+                is_cancelled,
+            )?;
+        if is_cancelled() {
+            return Err(Box::new(AnalysisCancelled));
+        }
         let mut tokens = stable_tokens.clone();
         pipeline::ruby::override_token_readings_with_document_map(&mut tokens, document_readings);
         let choices = self.profile.get_segmentation_choices()?;
+        if is_cancelled() {
+            return Err(Box::new(AnalysisCancelled));
+        }
         self.pipeline
             .apply_segmentation_choices(&mut tokens, &choices);
         let token_count = tokens.len();
@@ -369,9 +399,9 @@ impl Engine {
             86,
             "开始计算词汇熟悉度",
         ));
-        let annotated =
-            self.profile
-                .annotate_tokens_with_progress(tokens, |completed, total| {
+        let annotated = self.profile.annotate_tokens_with_progress_cancellable(
+            tokens,
+            |completed, total| {
                     let percent = 86 + ((completed * 13 / total.max(1)) as u8);
                     report(AnalysisProgress::counted(
                         AnalysisPhase::ProfileScoring,
@@ -380,7 +410,12 @@ impl Engine {
                         percent.min(99),
                         "计算词汇熟悉度",
                     ));
-                })?;
+            },
+            is_cancelled,
+        )?;
+        if is_cancelled() {
+            return Err(Box::new(AnalysisCancelled));
+        }
         report(AnalysisProgress::stage(
             AnalysisPhase::Completed,
             100,

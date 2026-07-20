@@ -9,7 +9,7 @@ pub mod restore;
 pub mod ruby;
 pub mod word_formation;
 
-use crate::analysis_progress::{AnalysisPhase, AnalysisProgress};
+use crate::analysis_progress::{AnalysisCancelled, AnalysisPhase, AnalysisProgress};
 use crate::models::AnnotatedToken;
 use crate::performance::TimingCollector;
 use std::collections::{HashMap, HashSet};
@@ -35,6 +35,10 @@ pub struct DictionaryLexicalSegment {
     pub char_range: (usize, usize),
     pub morphemes: Vec<crate::models::Morpheme>,
     pub result: lexical::DictionaryLexicalMatchResult,
+}
+
+fn cancellation_requested(check: Option<&dyn Fn() -> bool>) -> bool {
+    check.is_some_and(|check| check())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -241,7 +245,14 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         dictionary: &crate::dictionary::lookup::DictionaryEngine,
     ) -> Vec<AnnotatedToken> {
-        self.process_internal(text, merge_rules, &mut |_| {}, None, Some(dictionary))
+        self.process_internal(
+            text,
+            merge_rules,
+            &mut |_| {},
+            None,
+            Some(dictionary),
+            None,
+        )
     }
 
     pub fn inspect_dictionary_lexical_units(
@@ -424,7 +435,7 @@ impl Pipeline {
     where
         F: FnMut(AnalysisProgress),
     {
-        self.process_internal(text, merge_rules, report, None, None)
+        self.process_internal(text, merge_rules, report, None, None, None)
     }
 
     pub fn process_with_dictionary_and_progress<F>(
@@ -437,7 +448,33 @@ impl Pipeline {
     where
         F: FnMut(AnalysisProgress),
     {
-        self.process_internal(text, merge_rules, report, None, Some(dictionary))
+        self.process_internal(text, merge_rules, report, None, Some(dictionary), None)
+    }
+
+    pub fn process_with_dictionary_and_progress_cancellable<F>(
+        &self,
+        text: &str,
+        merge_rules: &[Vec<String>],
+        dictionary: &crate::dictionary::lookup::DictionaryEngine,
+        report: &mut F,
+        is_cancelled: &dyn Fn() -> bool,
+    ) -> Result<Vec<AnnotatedToken>, AnalysisCancelled>
+    where
+        F: FnMut(AnalysisProgress),
+    {
+        let tokens = self.process_internal(
+            text,
+            merge_rules,
+            report,
+            None,
+            Some(dictionary),
+            Some(is_cancelled),
+        );
+        if is_cancelled() {
+            Err(AnalysisCancelled)
+        } else {
+            Ok(tokens)
+        }
     }
 
     /// 性能诊断入口：在各项实际工作完成时累计耗时。
@@ -447,7 +484,14 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         timings: &mut TimingCollector,
     ) -> Vec<AnnotatedToken> {
-        self.process_internal(text, merge_rules, &mut |_| {}, Some(timings), None)
+        self.process_internal(
+            text,
+            merge_rules,
+            &mut |_| {},
+            Some(timings),
+            None,
+            None,
+        )
     }
 
     pub fn process_profiled_with_dictionary(
@@ -463,6 +507,7 @@ impl Pipeline {
             &mut |_| {},
             Some(timings),
             Some(dictionary),
+            None,
         )
     }
 
@@ -473,10 +518,14 @@ impl Pipeline {
         report: &mut F,
         mut timings: Option<&mut TimingCollector>,
         dictionary: Option<&crate::dictionary::lookup::DictionaryEngine>,
+        is_cancelled: Option<&dyn Fn() -> bool>,
     ) -> Vec<AnnotatedToken>
     where
         F: FnMut(AnalysisProgress),
     {
+        if cancellation_requested(is_cancelled) {
+            return Vec::new();
+        }
         if text.is_empty() {
             return Vec::new();
         }
@@ -495,6 +544,9 @@ impl Pipeline {
         if let Some(timings) = timings.as_deref_mut() {
             timings.add("准备原文与切分", preparation_started.elapsed());
         }
+        if cancellation_requested(is_cancelled) {
+            return Vec::new();
+        }
 
         report(AnalysisProgress::stage(
             AnalysisPhase::Tokenizing,
@@ -510,6 +562,9 @@ impl Pipeline {
         // 第一遍只生成段级中间产物。词典查询词跨分段汇总后统一进入 SQLite，
         // 避免章节中每个短句分别执行一个小批次查询。
         for segment in segments {
+            if cancellation_requested(is_cancelled) {
+                return Vec::new();
+            }
             let segment_len = segment.end_char_idx - segment.start_char_idx;
             if segment.seg_type != SegmentType::Content {
                 prepared_segments.push(SegmentStage::Literal(segment));
@@ -535,6 +590,9 @@ impl Pipeline {
             let mut morphemes = self.morpheme_analyzer.analyze(&segment_text);
             if let Some(timings) = timings.as_deref_mut() {
                 timings.add("形态素分析", started.elapsed());
+            }
+            if cancellation_requested(is_cancelled) {
+                return Vec::new();
             }
 
             let started = Instant::now();
@@ -592,6 +650,10 @@ impl Pipeline {
             26,
             "查询本地词典词汇",
         ));
+        if cancellation_requested(is_cancelled) {
+            return Vec::new();
+        }
+        // SQL 保持单次批量执行；取消只在请求返回后立即生效，不能拆批拖慢热路径。
         let resolved_dictionary_forms = if let Some(dictionary) = dictionary {
             let started = Instant::now();
             let matches = dictionary.resolve_exact_forms_batch(&dictionary_queries);
@@ -602,6 +664,9 @@ impl Pipeline {
         } else {
             HashMap::new()
         };
+        if cancellation_requested(is_cancelled) {
+            return Vec::new();
+        }
         report(AnalysisProgress::stage(
             AnalysisPhase::DictionaryMatching,
             64,
@@ -617,6 +682,9 @@ impl Pipeline {
         let mut all_tokens = Vec::new();
         let mut completed_chars = 0;
         for stage in prepared_segments {
+            if cancellation_requested(is_cancelled) {
+                return Vec::new();
+            }
             match stage {
                 SegmentStage::Literal(segment) => {
                     let started = Instant::now();
@@ -674,6 +742,9 @@ impl Pipeline {
                     if let Some(timings) = timings.as_deref_mut() {
                         timings.add("语法匹配", started.elapsed());
                     }
+                    if cancellation_requested(is_cancelled) {
+                        return Vec::new();
+                    }
 
                     let started = Instant::now();
                     all_tokens.extend(bunsetsus.into_iter().map(|bunsetsu| AnnotatedToken {
@@ -712,12 +783,18 @@ impl Pipeline {
             85,
             "语法模式匹配完成",
         ));
+        if cancellation_requested(is_cancelled) {
+            return Vec::new();
+        }
 
         let sorting_started = Instant::now();
         all_tokens.sort_by_key(|t| t.bunsetsu.char_range.0);
         grammar::canonicalize_document_coordinates(&mut all_tokens);
         if let Some(timings) = timings.as_deref_mut() {
             timings.add("Token 排序", sorting_started.elapsed());
+        }
+        if cancellation_requested(is_cancelled) {
+            return Vec::new();
         }
 
         all_tokens

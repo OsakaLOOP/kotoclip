@@ -2,11 +2,12 @@ pub mod commands;
 pub mod paths;
 pub mod state;
 
-use kotoclip_core::{cache::AnalysisCache, DictionaryService, Engine};
 use kotoclip_core::library::ReaderLibrary;
+use kotoclip_core::{cache::AnalysisCache, DictionaryService, Engine};
 use state::AppState;
+use std::any::Any;
 use std::collections::HashMap;
-use std::sync::{atomic::AtomicU64, Mutex};
+use std::sync::atomic::AtomicU64;
 use tauri::{Emitter, Manager};
 
 #[derive(Clone, serde::Serialize)]
@@ -14,6 +15,16 @@ use tauri::{Emitter, Manager};
 struct BackendReadyEvent {
     ready: bool,
     error: Option<String>,
+}
+
+fn panic_payload_message(payload: &(dyn Any + Send)) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        (*message).to_string()
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else {
+        "未知 panic".to_string()
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -53,7 +64,11 @@ pub fn run() {
                 engine: engine.clone(),
                 dictionary: dictionary.clone(),
                 dictionary_background: dictionary_background.clone(),
-                sessions: Mutex::new(HashMap::new()),
+                sessions: state::RecoveringMutex::new(
+                    HashMap::new(),
+                    "document sessions",
+                ),
+                analysis_cancellations: state::AnalysisCancellationRegistry::new(),
                 next_session_id: AtomicU64::new(1),
                 analysis_cache: analysis_cache.clone(),
                 library,
@@ -68,7 +83,7 @@ pub fn run() {
                     std::thread::sleep(std::time::Duration::from_millis(1500));
 
                     let start_time = std::time::SystemTime::now();
-                    let result = (|| -> Result<(), String> {
+                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         let paths = paths::AppPaths::resolve(&app_handle)
                             .map_err(|error| error.to_string())?;
 
@@ -109,8 +124,14 @@ pub fn run() {
                                 elapsed.as_millis()
                             );
                         }
-                        Ok(())
-                    })();
+                        Ok::<(), String>(())
+                    }))
+                    .unwrap_or_else(|payload| {
+                        Err(format!(
+                            "后台初始化任务异常结束：{}",
+                            panic_payload_message(payload.as_ref())
+                        ))
+                    });
 
                     if let Err(error) = result {
                         engine.initialize(Err(error.clone()));
@@ -149,6 +170,7 @@ pub fn run() {
             commands::get_library_location,
             commands::open_document,
             commands::backend_status,
+            commands::cancel_document_analysis,
             commands::continue_document_analysis,
             commands::finalize_document,
             commands::persist_document_cache,

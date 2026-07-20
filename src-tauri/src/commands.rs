@@ -1,4 +1,4 @@
-use crate::state::AppState;
+use crate::state::{AnalysisCancellationGuard, AppState};
 use kotoclip_core::analysis_progress::AnalysisProgress;
 use kotoclip_core::document::{
     propagate_stage_invalidation, AnalysisPatch, AnalysisStage, DocumentSession,
@@ -32,6 +32,14 @@ pub struct DocumentResponse {
 #[serde(rename_all = "camelCase")]
 pub struct BackendStatus {
     pub ready: bool,
+}
+
+fn ensure_analysis_active(cancellation: &AnalysisCancellationGuard<'_>) -> Result<(), String> {
+    if cancellation.is_cancelled() {
+        Err("分析已取消".to_string())
+    } else {
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -162,6 +170,14 @@ pub async fn backend_status(state: State<'_, AppState>) -> Result<BackendStatus,
     })
 }
 
+#[tauri::command]
+pub fn cancel_document_analysis(
+    state: State<'_, AppState>,
+    request_id: String,
+) -> bool {
+    state.analysis_cancellations.cancel(&request_id)
+}
+
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum DocumentMutation {
@@ -182,6 +198,8 @@ pub async fn open_document(
     disable_progressive: Option<bool>,
 ) -> Result<DocumentResponse, String> {
     let request_id = request_id.unwrap_or_else(|| "open-document".to_string());
+    let cancellation = state.analysis_cancellations.begin(request_id.clone());
+    ensure_analysis_active(&cancellation)?;
     let started = std::time::Instant::now();
     let sequence = state.next_session_id.fetch_add(1, Ordering::Relaxed);
     let session_id = format!("document-{sequence}");
@@ -202,8 +220,10 @@ pub async fn open_document(
             .map_err(|error| error.to_string())?
             .load(&text)
     };
+    ensure_analysis_active(&cancellation)?;
     if let Some(stable_tokens) = cached {
         let engine = state.engine.lock().map_err(|error| error.to_string())?;
+        ensure_analysis_active(&cancellation)?;
         let mut session = DocumentSession::new_progressive(
             session_id.clone(),
             text,
@@ -219,6 +239,7 @@ pub async fn open_document(
         let tokens = engine
             .hydrate_stable_tokens_for_document_batch(stable_batch)
             .map_err(|error| error.to_string())?;
+        ensure_analysis_active(&cancellation)?;
         let patch = session
             .append_analyzed_batch(0, &batch, tokens)
             .map_err(|error| error.to_string())?;
@@ -239,8 +260,9 @@ pub async fn open_document(
         .next_batch(target_chars)
         .ok_or_else(|| "文档没有可分析内容".to_string())?;
     let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    ensure_analysis_active(&cancellation)?;
     let (stable_tokens, tokens) = engine
-        .analyze_document_batch_with_progress_and_stable(
+        .analyze_document_batch_with_progress_and_stable_cancellable(
             &batch.source,
             session.document_readings(),
             |progress| {
@@ -252,16 +274,20 @@ pub async fn open_document(
                     },
                 );
             },
+            &|| cancellation.is_cancelled(),
         )
         .map_err(|error| error.to_string())?;
+    ensure_analysis_active(&cancellation)?;
     session.record_stable_batch(&batch, stable_tokens);
     let patch = session
         .append_analyzed_batch(0, &batch, tokens)
         .map_err(|error| error.to_string())?;
     if session.should_record_exposure() {
+        ensure_analysis_active(&cancellation)?;
         engine
             .record_document_exposures(&session.tokens)
             .map_err(|error| error.to_string())?;
+        ensure_analysis_active(&cancellation)?;
         session.mark_exposure_recorded();
     }
     drop(engine);
@@ -287,7 +313,10 @@ pub async fn continue_document_analysis(
     request_id: Option<String>,
 ) -> Result<Option<AnalysisPatch>, String> {
     let request_id = request_id.unwrap_or_else(|| "continue-document".to_string());
+    let cancellation = state.analysis_cancellations.begin(request_id.clone());
+    ensure_analysis_active(&cancellation)?;
     let engine = state.engine.lock().map_err(|error| error.to_string())?;
+    ensure_analysis_active(&cancellation)?;
     let mut sessions = state.sessions.lock().map_err(|error| error.to_string())?;
     let session = sessions
         .get_mut(&session_id)
@@ -299,12 +328,14 @@ pub async fn continue_document_analysis(
         return Ok(None);
     };
     let tokens = if let Some(stable) = session.take_cached_stable_tokens(&batch) {
-        engine
+        let tokens = engine
             .hydrate_stable_tokens_for_document_batch(stable)
-            .map_err(|error| error.to_string())?
+            .map_err(|error| error.to_string())?;
+        ensure_analysis_active(&cancellation)?;
+        tokens
     } else {
         let (stable_tokens, tokens) = engine
-            .analyze_document_batch_with_progress_and_stable(
+            .analyze_document_batch_with_progress_and_stable_cancellable(
                 &batch.source,
                 session.document_readings(),
                 |progress| {
@@ -316,8 +347,10 @@ pub async fn continue_document_analysis(
                         },
                     );
                 },
+                &|| cancellation.is_cancelled(),
             )
             .map_err(|error| error.to_string())?;
+        ensure_analysis_active(&cancellation)?;
         session.record_stable_batch(&batch, stable_tokens);
         tokens
     };
@@ -325,9 +358,11 @@ pub async fn continue_document_analysis(
         .append_analyzed_batch(base_revision, &batch, tokens)
         .map_err(|error| error.to_string())?;
     if session.should_record_exposure() {
+        ensure_analysis_active(&cancellation)?;
         engine
             .record_document_exposures(&session.tokens)
             .map_err(|error| error.to_string())?;
+        ensure_analysis_active(&cancellation)?;
         session.mark_exposure_recorded();
     }
     Ok(Some(patch))

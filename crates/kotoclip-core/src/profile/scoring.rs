@@ -1,4 +1,5 @@
 use super::ProfileEngine;
+use crate::analysis_progress::AnalysisCancelled;
 use crate::models::AnnotatedToken;
 use crate::performance::TimingCollector;
 use std::time::Instant;
@@ -14,18 +15,42 @@ impl ProfileEngine {
 
     pub fn annotate_tokens_with_progress<F>(
         &self,
-        mut tokens: Vec<AnnotatedToken>,
-        mut report: F,
+        tokens: Vec<AnnotatedToken>,
+        report: F,
     ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>>
     where
         F: FnMut(usize, usize),
     {
+        self.annotate_tokens_with_progress_cancellable(tokens, report, &|| false)
+    }
+
+    pub fn annotate_tokens_with_progress_cancellable<F>(
+        &self,
+        mut tokens: Vec<AnnotatedToken>,
+        mut report: F,
+        is_cancelled: &dyn Fn() -> bool,
+    ) -> Result<Vec<AnnotatedToken>, Box<dyn std::error::Error>>
+    where
+        F: FnMut(usize, usize),
+    {
+        if is_cancelled() {
+            return Err(Box::new(AnalysisCancelled));
+        }
         let total = tokens.len();
         let report_step = (total / 100).max(1);
         let exposures = self.get_all_exposures()?;
+        if is_cancelled() {
+            return Err(Box::new(AnalysisCancelled));
+        }
         let kanji_confidences = self.get_all_kanji_confidences()?;
+        if is_cancelled() {
+            return Err(Box::new(AnalysisCancelled));
+        }
         report(0, total);
         for (index, token) in tokens.iter_mut().enumerate() {
+            if is_cancelled() {
+                return Err(Box::new(AnalysisCancelled));
+            }
             if token.display_class != "content" {
                 token.novelty_score = 0.0;
                 token.is_known = true;

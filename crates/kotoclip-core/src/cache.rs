@@ -207,6 +207,36 @@ mod tests {
     }
 
     #[test]
+    fn stale_pipeline_artifact_cache_is_removed() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-cache-artifact-{nonce}"));
+        let dictionaries = directory.join("dicts");
+        let system_dictionary = directory.join("system.dic");
+        std::fs::create_dir_all(&dictionaries).unwrap();
+        std::fs::write(&system_dictionary, b"test").unwrap();
+        let cache =
+            AnalysisCache::new(directory.join("cache"), &system_dictionary, &dictionaries).unwrap();
+        let source = "本文";
+        let hash = source_hash(source);
+        let path = cache.path_for_hash(&hash);
+        let stale = CacheEnvelope {
+            schema_version: CACHE_SCHEMA_VERSION,
+            pipeline_artifact_version: PIPELINE_ARTIFACT_VERSION - 1,
+            pipeline_fingerprint: cache.pipeline_fingerprint.clone(),
+            source_hash: hash,
+            tokens: Vec::new(),
+        };
+        std::fs::write(&path, rmp_serde::to_vec_named(&stale).unwrap()).unwrap();
+
+        assert!(cache.load(source).is_none());
+        assert!(!path.exists());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn dictionary_signature_change_invalidates_cached_tokens() {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)

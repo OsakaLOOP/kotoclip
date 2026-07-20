@@ -5,7 +5,7 @@ use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 
 pub const DOCUMENT_SESSION_SCHEMA_VERSION: u32 = 1;
-pub const PIPELINE_ARTIFACT_VERSION: u32 = 3;
+pub const PIPELINE_ARTIFACT_VERSION: u32 = 4;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

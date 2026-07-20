@@ -461,6 +461,30 @@ export function useTokenization() {
     activeRequestId.value = null;
   }
 
+  function cancelAnalysis() {
+    const requestId = activeRequestId.value;
+    const sessionId = activeSessionId.value;
+    activeRequestId.value = null;
+    activeSessionId.value = null;
+    isAnalyzing.value = false;
+    documentComplete.value = false;
+    availableRanges.value = [];
+    unlistenAnalysisProgress?.();
+    unlistenAnalysisProgress = undefined;
+    analysisProgress.value = initialProgress();
+    errorMsg.value = null;
+    if (requestId) {
+      void invoke<boolean>("cancel_document_analysis", { requestId }).catch((error) => {
+        console.error("Analysis cancellation failed:", error);
+      });
+    }
+    if (sessionId) {
+      void invoke<boolean>("close_document", { sessionId }).catch((error) => {
+        console.error("Document session close failed:", error);
+      });
+    }
+  }
+
   function enqueueDocumentOperation<T>(operation: () => Promise<T>): Promise<T> {
     const result = documentOperation.then(operation, operation);
     documentOperation = result.then(() => undefined, () => undefined);
@@ -565,6 +589,7 @@ export function useTokenization() {
         }
       });
       listenerSetupMs = performance.now() - listenerStartedAt;
+      if (activeRequestId.value !== requestId) return false;
       // 创建后端规范文档会话；前端只应用带 revision 的 Patch。
       const invokeStartedAt = performance.now();
       const previousSessionId = activeSessionId.value;
@@ -574,6 +599,10 @@ export function useTokenization() {
         requestId,
         disableProgressive: disableProgressive.value,
       });
+      if (activeRequestId.value !== requestId) {
+        void invoke("close_document", { sessionId: response.patch.sessionId });
+        return false;
+      }
       const allTokens = mergePatch(response.patch);
       lastOpenCacheHit.value = response.cacheHit;
       const backendDurationMs = response.backendDurationMs;
@@ -818,6 +847,7 @@ export function useTokenization() {
     disableProgressive,
     initializeBackendStatus,
     disposeBackendStatusListener,
+    cancelAnalysis,
     analyzeText,
     requestDocumentRange,
     replaceDocumentText,
