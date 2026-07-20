@@ -2,9 +2,9 @@
 
 .paragraph-block {
   font-family: var(--font-ja);
-  margin-bottom: 1.5rem; /* 段间留白 */
-  line-height: 2.2; /* 给嵌套胶囊留出高度 */
-  font-size: 1.2rem;
+  margin-bottom: var(--reader-paragraph-gap, 24px);
+  line-height: var(--reader-line-height, 2.2);
+  font-size: var(--reader-font-size, 19px);
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: normal;

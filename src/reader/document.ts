@@ -178,7 +178,7 @@ function cleanInline(source: string, stats: ReaderCleanupStats): string {
   });
   value = stripHtmlTags(value);
   value = decodeHtmlEntities(value);
-  value = value.replace(/(?:\*\*|__|~~)(.+?)\1/g, "$1");
+  value = value.replace(/(\*\*|__|~~)(.+?)\1/g, "$2");
   value = value.replace(/`([^`]+)`/g, "$1");
   value = value.replace(/^\s*>\s?/, "");
   value = value.replace(/^\s*[-+*]\s+/, "• ");

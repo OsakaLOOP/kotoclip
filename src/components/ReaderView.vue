@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
-import { AlertTriangle, BookMarked, BookOpen, BriefcaseBusiness, FileUp, Link2, Library, Moon, Plus, Settings2, X } from "@lucide/vue";
-import { invoke } from "@tauri-apps/api/core";
+import { AlertTriangle, ArrowLeft, BookMarked, BookOpen, BriefcaseBusiness, FileUp, Gauge, Link2, Library, ListTree, Moon, Plus, Settings2, Type, X } from "@lucide/vue";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { ComponentPublicInstance } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { useTokenization } from "../composables/useTokenization";
@@ -22,28 +23,41 @@ import AnalysisProgressPanel from "./AnalysisProgressPanel.vue";
 import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionarySettingsPanel from "./dictionary/DictionarySettingsPanel.vue";
+import LibraryHome from "./reader/LibraryHome.vue";
+import ReaderAppearancePanel from "./reader/ReaderAppearancePanel.vue";
+import ReaderImageBlock from "./reader/ReaderImageBlock.vue";
+import ReaderNavigationPanel from "./reader/ReaderNavigationPanel.vue";
+import ReaderProgressBar from "./reader/ReaderProgressBar.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
-import { prepareMarkdownDocument, type MarkdownMetadata } from "../utils/markdownDocument";
+import { compileReaderDocument, prepareMarkdownDocument, type MarkdownMetadata, type ReaderChapter, type ReaderDocument } from "../utils/markdownDocument";
+import { resourceKey, resourcePathMap, type LibraryBook, type LibraryBookSummary } from "../reader/library";
+import { buildReaderRows, rowCharacterOffset, rowIndexForOffset } from "../reader/rows";
+import { DEFAULT_READER_APPEARANCE, formatReadingDuration, normalizeAppearance, readingEstimate, type ReaderAppearance } from "../reader/reading";
 import { useExplanationSession } from "../composables/useExplanationSession";
 import { useExplanationInteraction } from "../composables/useExplanationInteraction";
 
 // 状态定义
 const inputText = ref("");
-const showInput = ref(true);
+const showLibrary = ref(true);
+const showInput = ref(false);
+const isReading = computed(() => !showLibrary.value && !showInput.value);
 const isImportingEpub = ref(false);
 const epubImportError = ref<string | null>(null);
-const importedEpub = ref<{
-  sourceName: string;
-  title: string;
-  author: string;
-  date: string;
-  language: string;
-  chapterTitles: string[];
-  warnings: string[];
-} | null>(null);
+const libraryBooks = ref<LibraryBookSummary[]>([]);
+const libraryLoading = ref(true);
+const libraryError = ref<string | null>(null);
+const libraryPath = ref("");
+const activeLibraryBook = ref<LibraryBook | null>(null);
+const activeResourcePaths = ref<Map<string, string>>(new Map());
+const readerDocument = ref<ReaderDocument | null>(null);
 const currentDocumentMetadata = ref<MarkdownMetadata | null>(null);
 const inputMetadata = computed(() => prepareMarkdownDocument(inputText.value).metadata);
 const einkMode = ref(false);
+const showAppearance = ref(false);
+const showNavigation = ref(false);
+const currentCharOffset = ref(0);
+const appearanceStorageKey = "kotoclip:reader-appearance:v1";
+const readerAppearance = ref<ReaderAppearance>(loadReaderAppearance());
 const showDevMetrics = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_METRICS === "true";
 const analysisMetrics = ref<{
   characterCount: number;
@@ -104,6 +118,75 @@ const explanationInteraction = useExplanationInteraction({
   session: explanation,
 });
 
+function loadReaderAppearance(): ReaderAppearance {
+  try {
+    return normalizeAppearance(JSON.parse(localStorage.getItem(appearanceStorageKey) || "{}"));
+  } catch {
+    return { ...DEFAULT_READER_APPEARANCE };
+  }
+}
+
+function updateReaderAppearance(value: ReaderAppearance) {
+  readerAppearance.value = normalizeAppearance(value);
+  try {
+    localStorage.setItem(appearanceStorageKey, JSON.stringify(readerAppearance.value));
+  } catch {
+    // 设置仍在当前会话生效。
+  }
+}
+
+function resolveReaderImage(src: string): string | undefined {
+  if (src.startsWith("data:")) return src;
+  const path = activeResourcePaths.value.get(resourceKey(src));
+  return path ? convertFileSrc(path) : undefined;
+}
+
+const readerRows = computed(() => buildReaderRows(
+  paragraphs.value,
+  readerDocument.value,
+  resolveReaderImage,
+  documentComplete.value,
+));
+const currentChapter = computed(() => {
+  const chapters = readerDocument.value?.chapters ?? [];
+  let current: ReaderChapter | undefined;
+  for (const chapter of chapters) {
+    if (chapter.charOffset > currentCharOffset.value) break;
+    current = chapter;
+  }
+  return current;
+});
+const documentTotalCharacters = computed(() => {
+  const blocks = readerDocument.value?.blocks ?? [];
+  for (let index = blocks.length - 1; index >= 0; index--) {
+    const block = blocks[index];
+    if (block.kind !== "image") return block.charRange[1];
+  }
+  return documentCharRange.value[1];
+});
+const progressEstimate = computed(() => readingEstimate(
+  currentCharOffset.value,
+  documentTotalCharacters.value,
+));
+const readerStyle = computed(() => ({
+  "--reader-font-size": `${readerAppearance.value.fontSize}px`,
+  "--reader-line-height": String(readerAppearance.value.lineHeight),
+  "--reader-paragraph-gap": `${readerAppearance.value.paragraphGap}px`,
+  "--reader-content-width": `${readerAppearance.value.contentWidth}px`,
+}));
+
+function textRowAt(index: number) {
+  const row = readerRows.value[index];
+  if (row?.kind !== "text") throw new Error(`阅读行 ${index} 不是文本段落`);
+  return row;
+}
+
+function imageRowAt(index: number) {
+  const row = readerRows.value[index];
+  if (row?.kind !== "image") throw new Error(`阅读行 ${index} 不是图片`);
+  return row;
+}
+
 function openGrammarDictionary(target: GrammarDictionaryTarget) {
   for (const paragraph of paragraphs.value) {
     for (let tokenIndex = 0; tokenIndex < paragraph.tokens.length; tokenIndex++) {
@@ -161,7 +244,7 @@ async function openExpressionRules() {
 async function removeExpressionRule(id: number) {
   await deleteExpressionRule(id);
   expressionRules.value = await getExpressionRules();
-  if (!showInput.value && inputText.value.trim()) {
+  if (isReading.value && inputText.value.trim()) {
     await refreshDocumentExpressions();
   }
 }
@@ -219,10 +302,11 @@ const {
 // 使用 @tanstack/vue-virtual 虚拟滚动
 const virtualizer = useVirtualizer(
   computed(() => ({
-    count: paragraphs.value.length,
+    count: readerRows.value.length,
     getScrollElement: () => scrollContainerRef.value,
-    estimateSize: () => 70, // 估计的段落高度
+    estimateSize: (index) => readerRows.value[index]?.kind === "image" ? 520 : 82,
     overscan: 5,
+    getItemKey: (index) => readerRows.value[index]?.key ?? index,
   }))
 );
 
@@ -232,15 +316,14 @@ function measureVirtualRow(element: Element | ComponentPublicInstance | null) {
   }
 }
 
-// 新文档进入阅读态时归零；后台 Patch 只重新测量，不能打断用户滚动位置。
+// 后台 Patch 只重新测量，不能打断用户滚动位置。
 watch(
-  showInput,
-  async (visible) => {
+  isReading,
+  async (reading) => {
     explanation.closeAll();
-    if (visible) return;
+    if (!reading) return;
     await nextTick();
     virtualizer.value.measure();
-    virtualizer.value.scrollToOffset(0);
     triggerUpdate();
   },
   { flush: "post" }
@@ -249,13 +332,19 @@ watch(
 watch(
   paragraphs,
   async () => {
-    if (showInput.value) return;
+    if (!isReading.value) return;
     await nextTick();
     virtualizer.value.measure();
     triggerUpdate();
   },
   { flush: "post" }
 );
+
+watch(readerAppearance, async () => {
+  if (!isReading.value) return;
+  await nextTick();
+  virtualizer.value.measure();
+}, { deep: true, flush: "post" });
 
 let rangePrefetchPending = false;
 
@@ -278,6 +367,7 @@ async function prefetchNextMissingRange() {
 }
 
 async function handleReaderScroll() {
+  updateCurrentReadingPosition();
   explanation.refreshAnchor();
   void prefetchNextMissingRange().catch((error) => {
     console.error("Viewport range prefetch failed:", error);
@@ -286,9 +376,67 @@ async function handleReaderScroll() {
   explanation.refreshAnchor();
 }
 
+let progressPersistTimer: number | undefined;
+let lastProgressPersistedAt = Date.now();
+
+function updateCurrentReadingPosition() {
+  const container = scrollContainerRef.value;
+  if (!container) return;
+  const probe = container.scrollTop + Math.min(120, container.clientHeight * 0.2);
+  const visible = virtualizer.value.getVirtualItems();
+  const item = visible.find((row) => row.end >= probe) ?? visible[0];
+  currentCharOffset.value = rowCharacterOffset(item ? readerRows.value[item.index] : undefined);
+  if (!activeLibraryBook.value) return;
+  window.clearTimeout(progressPersistTimer);
+  progressPersistTimer = window.setTimeout(() => void persistLibraryProgress(), 1200);
+}
+
+async function persistLibraryProgress() {
+  const book = activeLibraryBook.value;
+  if (!book) return;
+  const now = Date.now();
+  const readingSeconds = Math.max(0, Math.round((now - lastProgressPersistedAt) / 1000));
+  lastProgressPersistedAt = now;
+  try {
+    const updated = await invoke<LibraryBookSummary>("update_library_progress", {
+      id: book.id,
+      progressOffset: currentCharOffset.value,
+      totalCharacters: documentTotalCharacters.value,
+      currentChapter: currentChapter.value?.title,
+      readingSeconds,
+    });
+    Object.assign(book, updated);
+    const shelf = libraryBooks.value.find((item) => item.id === book.id);
+    if (shelf) Object.assign(shelf, updated);
+  } catch (error) {
+    console.error("Reading progress persist failed:", error);
+  }
+}
+
+async function navigateToOffset(offset: number) {
+  const covered = availableRanges.value.some((range) => offset >= range[0] && offset < range[1]);
+  if (!covered && offset < documentCharRange.value[1]) {
+    await requestDocumentRange([offset, Math.min(documentCharRange.value[1], offset + 4_000)]);
+  }
+  await nextTick();
+  virtualizer.value.measure();
+  virtualizer.value.scrollToIndex(rowIndexForOffset(readerRows.value, offset), { align: "start" });
+  currentCharOffset.value = offset;
+}
+
+async function navigateChapter(chapter: ReaderChapter) {
+  showNavigation.value = false;
+  try {
+    await navigateToOffset(chapter.charOffset);
+  } catch (error) {
+    console.error("Chapter navigation failed:", error);
+  }
+}
+
 // 监听拖拽的鼠标松开事件 (挂载在 window 以防在胶囊外松开失效)
 onMounted(() => {
   void initializeBackendStatus();
+  void loadLibrary();
   window.addEventListener("mouseup", handleMouseUp);
   window.addEventListener("resize", explanation.refreshAnchor);
 });
@@ -311,6 +459,8 @@ async function updateDictionaryOrder(order: string[]) {
 }
 
 onBeforeUnmount(() => {
+  window.clearTimeout(progressPersistTimer);
+  if (activeLibraryBook.value) void persistLibraryProgress();
   disposeBackendStatusListener();
   window.removeEventListener("mouseup", handleMouseUp);
   window.removeEventListener("resize", explanation.refreshAnchor);
@@ -320,29 +470,37 @@ onBeforeUnmount(() => {
 // 执行文本分析
 async function triggerAnalysis(recordExposure = true) {
   if (!inputText.value.trim()) return;
-  const prepared = prepareMarkdownDocument(inputText.value);
-  const sourceText = prepared.body;
+  const compiled = compileReaderDocument(inputText.value);
+  const sourceText = compiled.analysisText;
   if (!sourceText.trim()) return;
-  const metadata = Object.keys(prepared.metadata).length > 0
-    ? prepared.metadata
-    : importedEpub.value
+  const metadata = Object.keys(compiled.metadata).length > 0
+    ? compiled.metadata
+    : activeLibraryBook.value
       ? {
-          title: importedEpub.value.title,
-          author: importedEpub.value.author,
-          date: importedEpub.value.date,
-          language: importedEpub.value.language,
+          title: activeLibraryBook.value.title,
+          author: activeLibraryBook.value.author,
+          language: activeLibraryBook.value.language,
         }
       : {};
   const startedAt = performance.now();
   const succeeded = await analyzeText(sourceText, recordExposure);
   if (succeeded) {
-    inputText.value = sourceText;
+    inputText.value = compiled.markdown;
+    readerDocument.value = compiled;
     currentDocumentMetadata.value = metadata;
     const renderSetupStartedAt = performance.now();
+    showLibrary.value = false;
     showInput.value = false;
     await nextTick();
     virtualizer.value.measure();
     triggerUpdate();
+    const resumeOffset = activeLibraryBook.value?.progressOffset ?? 0;
+    if (resumeOffset > 0) {
+      await navigateToOffset(resumeOffset);
+    } else {
+      virtualizer.value.scrollToOffset(0);
+      currentCharOffset.value = 0;
+    }
     await nextTick();
     
     // 覆盖盲区二：等待浏览器真正的 Layout 与 Paint 绘制完成
@@ -378,34 +536,94 @@ async function importEpub() {
   if (!selected || Array.isArray(selected)) return;
 
   isImportingEpub.value = true;
+  libraryError.value = null;
   try {
-    const imported = await invoke<{
-      sourceName: string;
-      title: string;
-      author: string;
-      date: string;
-      language: string;
-      markdown: string;
-      chapterTitles: string[];
-      warnings: string[];
-    }>("import_epub_document", { path: selected });
-    const prepared = prepareMarkdownDocument(imported.markdown);
-    inputText.value = prepared.body;
-    currentDocumentMetadata.value = null;
-    importedEpub.value = {
-      sourceName: imported.sourceName,
-      title: imported.title,
-      author: imported.author,
-      date: imported.date,
-      language: imported.language,
-      chapterTitles: imported.chapterTitles,
-      warnings: imported.warnings,
-    };
+    const imported = await invoke<LibraryBook>("import_epub_document", { path: selected });
+    await loadLibrary();
+    await openBookData(imported);
   } catch (error) {
     epubImportError.value = String(error);
+    libraryError.value = `EPUB 导入失败：${String(error)}`;
   } finally {
     isImportingEpub.value = false;
   }
+}
+
+async function loadLibrary() {
+  libraryLoading.value = true;
+  libraryError.value = null;
+  try {
+    const [books, location] = await Promise.all([
+      invoke<LibraryBookSummary[]>("list_library_books"),
+      invoke<string>("get_library_location"),
+    ]);
+    libraryBooks.value = books;
+    libraryPath.value = location;
+  } catch (error) {
+    libraryError.value = `无法读取书库：${String(error)}`;
+  } finally {
+    libraryLoading.value = false;
+  }
+}
+
+async function openLibraryBook(id: string) {
+  libraryError.value = null;
+  try {
+    await openBookData(await invoke<LibraryBook>("open_library_book", { id }));
+  } catch (error) {
+    libraryError.value = `无法打开书籍：${String(error)}`;
+  }
+}
+
+async function openBookData(book: LibraryBook) {
+  activeLibraryBook.value = book;
+  activeResourcePaths.value = resourcePathMap(book.resources);
+  inputText.value = book.markdown;
+  currentDocumentMetadata.value = null;
+  lastProgressPersistedAt = Date.now();
+  await triggerAnalysis();
+}
+
+async function showMarkdownInput() {
+  if (activeLibraryBook.value && isReading.value) await persistLibraryProgress();
+  showLibrary.value = false;
+  showInput.value = true;
+  activeLibraryBook.value = null;
+  activeResourcePaths.value = new Map();
+  readerDocument.value = null;
+  inputText.value = "";
+}
+
+async function returnToLibrary() {
+  if (activeLibraryBook.value) await persistLibraryProgress();
+  showAppearance.value = false;
+  showNavigation.value = false;
+  showInput.value = false;
+  showLibrary.value = true;
+  await loadLibrary();
+}
+
+async function revealLibrary() {
+  if (!libraryPath.value) return;
+  try {
+    await revealItemInDir(libraryPath.value);
+  } catch (error) {
+    libraryError.value = `无法打开书库目录：${String(error)}`;
+  }
+}
+
+async function removeLibraryBook(book: LibraryBookSummary) {
+  if (!window.confirm(`从书架移除《${book.title}》？\n\n原始 EPUB、Markdown、图片和阅读进度都会删除。`)) return;
+  try {
+    await invoke("remove_library_book", { id: book.id });
+    await loadLibrary();
+  } catch (error) {
+    libraryError.value = `移除失败：${String(error)}`;
+  }
+}
+
+function libraryCoverUrl(book: LibraryBookSummary): string | undefined {
+  return book.coverPath ? convertFileSrc(book.coverPath) : undefined;
 }
 
 // 事件委托：段落内的点击 (切换选中/已知)
@@ -502,7 +720,7 @@ function toggleEinkMode() {
 // 触发 Anki 数据包生成并保存
 async function executeExport() {
   try {
-    const jsonStr = await exportSelected(inputText.value, async (word, reading) => {
+    const jsonStr = await exportSelected(readerDocument.value?.analysisText ?? inputText.value, async (word, reading) => {
       return (await lookupWord(word, reading))?.entries ?? [];
     });
 
@@ -544,61 +762,90 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
     <!-- 顶部导航栏 -->
     <header class="app-header">
       <div class="logo-title">
+        <button v-if="!showLibrary" class="header-back" type="button" title="返回书架" @click="returnToLibrary">
+          <ArrowLeft :size="19" aria-hidden="true" />
+        </button>
         <BookOpen class="logo-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
         <span class="logo-text">Kotoclip</span>
-        <span v-if="showInput" class="logo-sub">日文生词胶囊阅读器</span>
+        <span v-if="showLibrary" class="logo-sub">阅读与语言学习</span>
+        <span v-else-if="showInput" class="logo-sub">Markdown 文本</span>
         <div v-else-if="currentDocumentMetadata" class="document-identity">
           <strong>{{ currentDocumentMetadata.title || '未命名文本' }}</strong>
           <span v-if="currentDocumentMetadata.author">{{ currentDocumentMetadata.author }}</span>
         </div>
       </div>
-      <div class="action-bar">
-        <div
-          v-if="showDevMetrics && analysisMetrics"
-          class="dev-metrics"
-          aria-label="开发者分析指标"
-        >
-          <span>{{ analysisMetrics.characterCount }} 字</span>
-          <span>{{ lastOpenCacheHit ? '暖缓存' : (documentComplete ? '已补全' : '渐进') }}</span>
-          <span>{{ availableRanges[availableRanges.length - 1]?.[1] ?? 0 }}/{{ documentCharRange[1] }} 字</span>
-          <span>{{ Math.round(lastPatchBytes / 1024) }} KB</span>
-          <span v-if="lastInvalidation">
-            {{ lastInvalidation.reason }} {{ lastInvalidation.recomputedCharacters }}/{{ lastInvalidation.totalCharacters }}
-          </span>
-          <span :title="`监听 ${analysisMetrics.listenerSetupMs} ms；后端 ${analysisMetrics.backendDurationMs} ms；IPC/解析 ${analysisMetrics.ipcAndParseMs} ms；IPC传输+后端 ${analysisMetrics.invokeAndTransferMs} ms；组段 ${analysisMetrics.paragraphBuildMs} ms；首帧布局/绘制 ${analysisMetrics.renderSetupMs} ms`">
-            {{ analysisMetrics.durationMs }} ms
-          </span>
+      <div v-if="isReading" class="action-bar">
+        <div v-if="showDevMetrics && analysisMetrics" class="dev-metrics-entry">
+          <button class="icon-btn compact-tool" type="button" aria-label="开发者分析指标">
+            <Gauge :size="17" aria-hidden="true" />
+          </button>
+          <div class="dev-metrics-popover" role="status">
+            <strong>分析指标</strong>
+            <dl>
+              <div><dt>正文</dt><dd>{{ analysisMetrics.characterCount }} 字</dd></div>
+              <div><dt>会话</dt><dd>{{ lastOpenCacheHit ? '暖缓存' : (documentComplete ? '已补全' : '渐进') }}</dd></div>
+              <div><dt>范围</dt><dd>{{ availableRanges[availableRanges.length - 1]?.[1] ?? 0 }}/{{ documentCharRange[1] }}</dd></div>
+              <div><dt>Patch</dt><dd>{{ Math.round(lastPatchBytes / 1024) }} KB</dd></div>
+              <div v-if="lastInvalidation"><dt>失效</dt><dd>{{ lastInvalidation.reason }} {{ lastInvalidation.recomputedCharacters }}/{{ lastInvalidation.totalCharacters }}</dd></div>
+              <div><dt>总耗时</dt><dd>{{ analysisMetrics.durationMs }} ms</dd></div>
+              <div><dt>后端</dt><dd>{{ analysisMetrics.backendDurationMs }} ms</dd></div>
+              <div><dt>IPC/解析</dt><dd>{{ analysisMetrics.ipcAndParseMs }} ms</dd></div>
+              <div><dt>组段</dt><dd>{{ analysisMetrics.paragraphBuildMs }} ms</dd></div>
+              <div><dt>首帧绘制</dt><dd>{{ analysisMetrics.renderSetupMs }} ms</dd></div>
+            </dl>
+          </div>
         </div>
-        <button class="icon-btn" :class="{ active: showExportPanel }" @click="showExportPanel = !showExportPanel">
-          <BriefcaseBusiness :size="16" aria-hidden="true" /> 导出本 ({{ selectedKeys.length }})
+        <button class="icon-btn chapter-button" :class="{ active: showNavigation }" @click="showNavigation = !showNavigation">
+          <ListTree :size="16" aria-hidden="true" /> {{ currentChapter?.title || '章节' }}
         </button>
-        <button class="icon-btn" :class="{ active: showRuleWorkbench }" @click="openExpressionRules">
-          <Link2 :size="16" aria-hidden="true" /> 规则
+        <button class="icon-btn compact-tool" :class="{ active: showAppearance }" title="阅读排版" aria-label="阅读排版" @click="showAppearance = !showAppearance">
+          <Type :size="17" aria-hidden="true" />
         </button>
-        <button class="icon-btn" :class="{ active: showGrammarLibrary }" @click="showGrammarLibrary = true">
-          <Library :size="16" aria-hidden="true" /> 文法库
+        <button class="icon-btn compact-tool export-tool" :class="{ active: showExportPanel }" :title="`导出本（${selectedKeys.length}）`" :aria-label="`导出本（${selectedKeys.length}）`" @click="showExportPanel = !showExportPanel">
+          <BriefcaseBusiness :size="16" aria-hidden="true" /><span v-if="selectedKeys.length" class="tool-count">{{ selectedKeys.length }}</span>
         </button>
-        <button class="icon-btn" :class="{ active: showDictionarySettings }" @click="showDictionarySettings = true">
-          <Settings2 :size="16" aria-hidden="true" /> 词典
+        <button class="icon-btn compact-tool" :class="{ active: showRuleWorkbench }" title="表达规则" aria-label="表达规则" @click="openExpressionRules">
+          <Link2 :size="16" aria-hidden="true" />
         </button>
-        <button class="icon-btn" :class="{ active: einkMode }" @click="toggleEinkMode">
-          <Moon :size="16" aria-hidden="true" /> 墨水屏
+        <button class="icon-btn compact-tool" :class="{ active: showGrammarLibrary }" title="文法库" aria-label="文法库" @click="showGrammarLibrary = true">
+          <Library :size="16" aria-hidden="true" />
         </button>
-        <button v-if="!showInput" class="icon-btn highlight" @click="showInput = true">
-          <Plus :size="16" aria-hidden="true" /> 输入文本
+        <button class="icon-btn compact-tool" :class="{ active: showDictionarySettings }" title="词典设置" aria-label="词典设置" @click="showDictionarySettings = true">
+          <Settings2 :size="16" aria-hidden="true" />
+        </button>
+        <button class="icon-btn compact-tool" :class="{ active: einkMode }" title="墨水屏模式" aria-label="墨水屏模式" @click="toggleEinkMode">
+          <Moon :size="16" aria-hidden="true" />
+        </button>
+        <button class="icon-btn compact-tool highlight" title="新建 Markdown 文本" aria-label="新建 Markdown 文本" @click="showMarkdownInput">
+          <Plus :size="16" aria-hidden="true" />
         </button>
       </div>
     </header>
 
     <!-- 主布局 -->
     <div class="main-layout">
+      <LibraryHome
+        v-if="showLibrary"
+        :books="libraryBooks"
+        :loading="libraryLoading"
+        :importing="isImportingEpub"
+        :error="libraryError"
+        :library-path="libraryPath"
+        :cover-url="libraryCoverUrl"
+        @import="importEpub"
+        @open="openLibraryBook"
+        @input="showMarkdownInput"
+        @reveal="revealLibrary"
+        @remove="removeLibraryBook"
+      />
+
       <!-- 1. 文本输入模块 -->
       <div v-if="showInput" class="input-section">
         <div class="input-source-bar">
           <div>
-            <strong>{{ inputMetadata.title || importedEpub?.title || 'Markdown 文本' }}</strong>
-            <span v-if="importedEpub">
-              {{ inputMetadata.author || importedEpub.author }} · {{ importedEpub.chapterTitles.length }} 章 · {{ importedEpub.sourceName }}
+            <strong>{{ inputMetadata.title || activeLibraryBook?.title || 'Markdown 文本' }}</strong>
+            <span v-if="activeLibraryBook">
+              {{ inputMetadata.author || activeLibraryBook.author }} · {{ activeLibraryBook.chapterTitles.length }} 章 · {{ activeLibraryBook.sourceName }}
             </span>
             <span v-else>可直接粘贴文本，或从 EPUB 转换后继续编辑。</span>
           </div>
@@ -621,8 +868,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <div v-if="epubImportError" class="error-message">
           <AlertTriangle :size="16" aria-hidden="true" /> EPUB 导入失败: {{ epubImportError }}
         </div>
-        <div v-else-if="importedEpub?.warnings.length" class="import-warning" role="status">
-          已生成 Markdown；另有 {{ importedEpub.warnings.length }} 个内容项未能完整读取，可先检查文本再解析。
+        <div v-else-if="activeLibraryBook?.warnings.length" class="import-warning" role="status">
+          已生成 Markdown；另有 {{ activeLibraryBook.warnings.length }} 个内容项未能完整读取，可先检查文本再解析。
         </div>
         <div v-if="errorMsg" class="error-message">
           <AlertTriangle :size="16" aria-hidden="true" /> 分析出错: {{ errorMsg }}
@@ -649,7 +896,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       </div>
 
       <AnalysisProgressPanel
-        v-if="!showInput"
+        v-if="isReading"
         class="reader-progress-overlay"
         :progress="analysisProgress"
         :active="isAnalyzing"
@@ -657,9 +904,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
       <!-- 2. 阅读展示区域 -->
       <div
-        v-if="!showInput"
+        v-if="isReading"
         ref="scrollContainerRef"
         class="reader-viewport"
+        :style="readerStyle"
         @scroll="handleReaderScroll"
       >
         <div
@@ -672,32 +920,48 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           <!-- 虚拟滚动段落渲染 -->
           <div
             v-for="virtualRow in virtualizer.getVirtualItems()"
-            :key="virtualRow.index"
+            :key="readerRows[virtualRow.index].key"
             :style="{
               position: 'absolute',
               top: 0,
               left: '50%',
-              width: '85%',
               transform: `translateY(${virtualRow.start}px) translateX(-50%)`,
             }"
             :data-index="virtualRow.index"
             :ref="measureVirtualRow"
-            :class="['paragraph-block', { 'dialogue-block': paragraphs[virtualRow.index].isDialogue }]"
-            @pointerover="explanationInteraction.handleParagraphPointerOver"
-            @pointerout="explanationInteraction.handleParagraphPointerOut"
-            @mousedown="handleMouseDown($event, paragraphs[virtualRow.index].id)"
-            @mousemove="handleMouseMove($event, paragraphs[virtualRow.index].id)"
-            @click="handleParagraphClick($event, paragraphs[virtualRow.index].id)"
-            @contextmenu.prevent="handleParagraphContextMenu($event, paragraphs[virtualRow.index].id)"
+            :class="[
+              'reader-row',
+              readerRows[virtualRow.index].kind === 'text' ? 'paragraph-block' : 'reader-image-row',
+              {
+                'dialogue-block': readerRows[virtualRow.index].kind === 'text' && textRowAt(virtualRow.index).paragraph.isDialogue,
+                'reader-heading-row': readerRows[virtualRow.index].kind === 'text' && textRowAt(virtualRow.index).heading,
+              },
+              readerRows[virtualRow.index].kind === 'text' && textRowAt(virtualRow.index).heading
+                ? `heading-level-${textRowAt(virtualRow.index).heading?.level || 2}`
+                : '',
+            ]"
+            @pointerover="readerRows[virtualRow.index].kind === 'text' && explanationInteraction.handleParagraphPointerOver($event)"
+            @pointerout="readerRows[virtualRow.index].kind === 'text' && explanationInteraction.handleParagraphPointerOut($event)"
+            @mousedown="readerRows[virtualRow.index].kind === 'text' && handleMouseDown($event, textRowAt(virtualRow.index).paragraph.id)"
+            @mousemove="readerRows[virtualRow.index].kind === 'text' && handleMouseMove($event, textRowAt(virtualRow.index).paragraph.id)"
+            @click="readerRows[virtualRow.index].kind === 'text' && handleParagraphClick($event, textRowAt(virtualRow.index).paragraph.id)"
+            @contextmenu.prevent="readerRows[virtualRow.index].kind === 'text' && handleParagraphContextMenu($event, textRowAt(virtualRow.index).paragraph.id)"
           >
-            <template v-if="paragraphs[virtualRow.index].tokens.length > 0">
-              <template v-for="(token, tokenIndex) in paragraphs[virtualRow.index].tokens" :key="tokenIndex">
+            <ReaderImageBlock
+              v-if="readerRows[virtualRow.index].kind === 'image'"
+              :src="imageRowAt(virtualRow.index).resolvedSrc"
+              :alt="imageRowAt(virtualRow.index).image.alt"
+              :title="imageRowAt(virtualRow.index).image.title"
+              @load="virtualizer.measure()"
+            />
+            <template v-else-if="textRowAt(virtualRow.index).paragraph.tokens.length > 0">
+              <template v-for="(token, tokenIndex) in textRowAt(virtualRow.index).paragraph.tokens" :key="tokenIndex">
                 <BunsetsuCapsule
                   :token="token"
-                  :paragraphId="paragraphs[virtualRow.index].id"
+                  :paragraphId="textRowAt(virtualRow.index).paragraph.id"
                   :tokenIndex="tokenIndex"
-                  :isDragSelected="isTokenDragSelected(paragraphs[virtualRow.index].id, tokenIndex)"
-                  :tokens="paragraphs[virtualRow.index].tokens"
+                  :isDragSelected="isTokenDragSelected(textRowAt(virtualRow.index).paragraph.id, tokenIndex)"
+                  :tokens="textRowAt(virtualRow.index).paragraph.tokens"
                 />
               </template>
             </template>
@@ -708,6 +972,27 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         </div>
       </div>
     </div>
+
+    <ReaderNavigationPanel
+      :show="isReading && showNavigation"
+      :chapters="readerDocument?.chapters || []"
+      :current-id="currentChapter?.id"
+      @close="showNavigation = false"
+      @navigate="navigateChapter"
+    />
+    <ReaderAppearancePanel
+      :show="isReading && showAppearance"
+      :appearance="readerAppearance"
+      @close="showAppearance = false"
+      @update="updateReaderAppearance"
+    />
+    <ReaderProgressBar
+      v-if="isReading"
+      :percent="progressEstimate.percent"
+      :current-chapter="currentChapter?.title || ''"
+      :remaining-label="formatReadingDuration(progressEstimate.remainingMinutes)"
+      :completion-label="progressEstimate.completionLabel"
+    />
 
     <!-- 3. 词典浮层组与独立语法说明 -->
     <ExplanationPopover
@@ -832,6 +1117,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 }
 
 .app-header {
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -840,13 +1126,28 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   backdrop-filter: var(--glass-filter);
   border-bottom: 1px solid var(--border-color);
   z-index: 10;
+  min-height: 58px;
 }
 
 .logo-title {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 8px;
   min-width: 0;
+  overflow: hidden;
+}
+
+.header-back {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
 }
 
 .logo-icon {
@@ -869,25 +1170,97 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
 .action-bar {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 7px;
+  flex-wrap: nowrap;
   justify-content: flex-end;
 }
 
-.dev-metrics {
-  display: flex;
-  gap: 8px;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.chapter-button {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dev-metrics span + span::before {
-  content: "/";
-  margin-right: 8px;
-  color: var(--border-color);
+.icon-btn.compact-tool {
+  position: relative;
+  width: 38px;
+  height: 36px;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: 0;
+}
+
+.tool-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--accent-color);
+  color: white;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 17px;
+}
+
+.dev-metrics-entry {
+  position: relative;
+}
+
+.dev-metrics-popover {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 8px);
+  right: 0;
+  display: none;
+  width: 270px;
+  padding: 13px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+}
+
+.dev-metrics-entry:hover .dev-metrics-popover,
+.dev-metrics-entry:focus-within .dev-metrics-popover {
+  display: block;
+}
+
+.dev-metrics-popover > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.dev-metrics-popover dl,
+.dev-metrics-popover dl div {
+  display: grid;
+}
+
+.dev-metrics-popover dl {
+  gap: 5px;
+}
+
+.dev-metrics-popover dl div {
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 0.7rem;
+}
+
+.dev-metrics-popover dt {
+  color: var(--text-muted);
+}
+
+.dev-metrics-popover dd {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .icon-btn {
@@ -960,7 +1333,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  max-width: min(42vw, 560px);
+  max-width: min(46vw, 760px);
   border-left: 1px solid var(--border-color);
   padding-left: 10px;
   line-height: 1.25;
@@ -1118,8 +1491,44 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   flex: 1;
   width: 100%;
   overflow-y: auto;
-  padding: 40px 0;
+  padding: 46px 0 78px;
   box-sizing: border-box;
+}
+
+.reader-row {
+  width: min(var(--reader-content-width, 760px), calc(100% - 40px));
+}
+
+.reader-image-row {
+  margin-bottom: var(--reader-paragraph-gap, 24px);
+}
+
+.reader-heading-row {
+  margin-top: 42px;
+  margin-bottom: calc(var(--reader-paragraph-gap, 24px) * 1.35);
+  color: var(--text-primary);
+  font-weight: 650;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.reader-heading-row.heading-level-1 {
+  font-size: calc(var(--reader-font-size, 19px) * 1.55);
+}
+
+.reader-heading-row.heading-level-2 {
+  font-size: calc(var(--reader-font-size, 19px) * 1.35);
+}
+
+.reader-heading-row.heading-level-3,
+.reader-heading-row.heading-level-4,
+.reader-heading-row.heading-level-5,
+.reader-heading-row.heading-level-6 {
+  font-size: calc(var(--reader-font-size, 19px) * 1.16);
+}
+
+.reader-heading-row :deep(.bunsetsu-capsule) {
+  cursor: text;
 }
 
 .reader-viewport::-webkit-scrollbar {
@@ -1137,6 +1546,41 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
 .reader-viewport::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+@media (max-width: 1180px) {
+  .dev-metrics,
+  .compact-tool span {
+    display: none;
+  }
+
+  .action-bar {
+    gap: 7px;
+  }
+
+  .icon-btn {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+}
+
+@media (max-width: 820px) {
+  .app-header {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .action-bar .icon-btn:not(.chapter-button):not(.compact-tool):not(.highlight) {
+    display: none;
+  }
+
+  .logo-text {
+    display: none;
+  }
+
+  .document-identity {
+    max-width: 34vw;
+  }
 }
 
 /* 详细释义弹窗 */

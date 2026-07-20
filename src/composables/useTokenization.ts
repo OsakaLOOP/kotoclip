@@ -7,6 +7,7 @@ export interface Paragraph {
   id: number;
   tokens: AnnotatedToken[];
   isDialogue: boolean;
+  charRange: [number, number];
 }
 
 export interface FrontendAnalysisTiming {
@@ -316,7 +317,12 @@ function buildParagraphs(allTokens: AnnotatedToken[]): Paragraph[] {
   const flush = () => {
     const tokens = trimTokens(blockTokens);
     if (tokens.length > 0) {
-      result.push({ id: paragraphId++, tokens, isDialogue: blockIsDialogue });
+      result.push({
+        id: paragraphId++,
+        tokens,
+        isDialogue: blockIsDialogue,
+        charRange: tokenRange(tokens),
+      });
       blockTokens = [];
     }
   };
@@ -334,7 +340,14 @@ function buildParagraphs(allTokens: AnnotatedToken[]): Paragraph[] {
     if (isDialogue) {
       flush();
       const tokens = trimTokens(line);
-      if (tokens.length > 0) result.push({ id: paragraphId++, tokens, isDialogue: true });
+      if (tokens.length > 0) {
+        result.push({
+          id: paragraphId++,
+          tokens,
+          isDialogue: true,
+          charRange: tokenRange(tokens),
+        });
+      }
       emptyLines = 0;
       continue;
     }
@@ -355,8 +368,19 @@ function buildParagraphs(allTokens: AnnotatedToken[]): Paragraph[] {
     emptyLines = 0;
   }
   flush();
-  if (result.length === 0) result.push({ id: 0, tokens: [], isDialogue: false });
+  if (result.length === 0) {
+    result.push({ id: 0, tokens: [], isDialogue: false, charRange: [0, 0] });
+  }
   return result;
+}
+
+function tokenRange(tokens: AnnotatedToken[]): [number, number] {
+  const content = tokens.filter((token) => token.bunsetsu.char_range[1] > token.bunsetsu.char_range[0]);
+  if (content.length === 0) return [0, 0];
+  return [
+    Math.min(...content.map((token) => token.bunsetsu.char_range[0])),
+    Math.max(...content.map((token) => token.bunsetsu.char_range[1])),
+  ];
 }
 
 export function useTokenization() {

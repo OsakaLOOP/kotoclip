@@ -95,8 +95,11 @@ impl ReaderLibrary {
         let source_path = source_path.as_ref();
         let id = content_id(source_path)?;
         let imported = import_epub(source_path)?;
+        let warnings = imported.warnings.clone();
         self.persist_imported(&id, source_path, imported)?;
-        self.open_book(&id)
+        let mut book = self.open_book(&id)?;
+        book.warnings = warnings;
+        Ok(book)
     }
 
     pub fn open_book(&self, id: &str) -> Result<LibraryBook, Box<dyn std::error::Error>> {
@@ -154,7 +157,7 @@ impl ReaderLibrary {
         connection.execute(
             "UPDATE books
              SET progress_offset = ?2, progress_percent = ?3, total_characters = ?4,
-                 current_chapter = ?5, reading_seconds = ?6, updated_at = ?7
+                 current_chapter = ?5, reading_seconds = reading_seconds + ?6, updated_at = ?7
              WHERE id = ?1",
             params![
                 id,
