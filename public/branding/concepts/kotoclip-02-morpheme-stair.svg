@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" role="img" aria-labelledby="title desc" focusable="false">
+  <title id="title">Kotoclip 文节阶梯标志</title>
+  <desc id="desc">三段错位的正文片段组成向上的阶梯，一枚黄色词块从分析层中被提取出来。</desc>
+  <defs>
+    <g id="mark">
+      <path fill="#2e5e8c" d="M45 30h111l31 31v17H45c-8 0-14-6-14-14V44c0-8 6-14 14-14Z"/>
+      <path fill="#7fbf6a" d="M61 91h124c8 0 14 6 14 14v16c0 8-6 14-14 14H61c-8 0-14-6-14-14v-16c0-8 6-14 14-14Z"/>
+      <path fill="#2e5e8c" d="M45 151h107l27 27v17H45c-8 0-14-6-14-14v-16c0-8 6-14 14-14Z"/>
+      <path fill="#f6c445" d="M157 69h34c8 0 14 6 14 14v70c0 8-6 14-14 14h-16v-70h-18c-8 0-14-6-14-14s6-14 14-14Z"/>
+      <path fill="#f6c445" d="M75 48h58v7H75zm0 111h43v7H75z" opacity=".95"/>
+      <circle cx="81" cy="113" r="8" fill="#f6c445"/>
+    </g>
+    <g id="wordmark" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="14">
+      <g stroke="#2e5e8c">
+        <path d="M282 72v88m0-28 40-36m-21 20 27 44"/>
+        <circle cx="368" cy="128" r="32"/>
+        <path d="M425 78v67q0 15 15 15m-33-57h39"/>
+        <circle cx="489" cy="128" r="32"/>
+      </g>
+      <g stroke="#7fbf6a">
+        <path d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12"/>
+        <path d="M619 72v73q0 15 15 15"/>
+        <path d="M665 103v57"/>
+        <path d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17"/>
+      </g>
+      <circle cx="665" cy="78" r="7" fill="#f6c445" stroke="none"/>
+    </g>
+  </defs>
+  <use href="#mark"/>
+  <use href="#wordmark"/>
+</svg>

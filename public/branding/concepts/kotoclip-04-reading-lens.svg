@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" role="img" aria-labelledby="title desc" focusable="false">
+  <title id="title">Kotoclip 读解镜标志</title>
+  <desc id="desc">由上页、下页和中心词块组成的眼形观察框，表达在原文中按需看清难点。</desc>
+  <defs>
+    <g id="mark">
+      <path fill="#3155a5" d="M22 120C47 77 81 54 120 54s73 23 98 66c-28-19-60-29-98-29s-70 10-98 29Z"/>
+      <path fill="#6cbf84" d="M22 120c25 43 59 66 98 66s73-23 98-66c-28 19-60 29-98 29s-70-10-98-29Z"/>
+      <path fill="#ffd166" d="M99 100h42c10 0 18 8 18 18v4c0 10-8 18-18 18H99c-10 0-18-8-18-18v-4c0-10 8-18 18-18Z"/>
+      <path fill="#3155a5" d="M92 115h20v7H92zm29 0h25v7h-25z"/>
+      <path d="M179 169l29 29" fill="none" stroke="#6cbf84" stroke-width="15" stroke-linecap="round"/>
+    </g>
+    <g id="wordmark" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="14">
+      <g stroke="#3155a5">
+        <path d="M282 72v88m0-28 40-36m-21 20 27 44"/>
+        <circle cx="368" cy="128" r="32"/>
+        <path d="M425 78v67q0 15 15 15m-33-57h39"/>
+        <circle cx="489" cy="128" r="32"/>
+      </g>
+      <g stroke="#6cbf84">
+        <path d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12"/>
+        <path d="M619 72v73q0 15 15 15"/>
+        <path d="M665 103v57"/>
+        <path d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17"/>
+      </g>
+      <circle cx="665" cy="78" r="7" fill="#ffd166" stroke="none"/>
+    </g>
+  </defs>
+  <use href="#mark"/>
+  <use href="#wordmark"/>
+</svg>

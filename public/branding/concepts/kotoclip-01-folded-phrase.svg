@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" role="img" aria-labelledby="title desc" focusable="false">
+  <title id="title">Kotoclip 折页词片标志</title>
+  <desc id="desc">打开的书页托住一枚被夹出的高亮词片，表达在正文中分析并摘录。</desc>
+  <defs>
+    <g id="mark">
+      <path fill="#1f3a5f" d="M79 28C59 38 40 52 25 67L13 179c34 2 69 13 103 35 17-15 38-25 63-30L165 68c-23-17-53-31-86-40Z"/>
+      <path fill="#39c5bb" stroke="#1f3a5f" stroke-linejoin="round" stroke-width="3.5" d="M78 39C61 48 46 59 34 72L24 168c28 2 57 12 84 30L78 39Z"/>
+      <path fill="#39c5bb" stroke="#1f3a5f" stroke-linejoin="round" stroke-width="3.5" d="M83 39c25 6 49 17 68 31l10 99c-20 4-38 14-53 29L83 39Z" opacity=".86"/>
+      <path fill="none" stroke="#1f3a5f" stroke-linecap="round" stroke-width="3.5" d="M47 88c9-8 18-15 28-20m-32 37c10-8 20-14 31-19m24-24c15 6 29 14 41 23m-37-5c12 5 24 12 34 20" opacity=".78"/>
+      <path fill="none" stroke="#f5d547" stroke-linecap="round" stroke-width="4" d="M24 175c29 2 59 12 90 30 15-13 32-22 50-27"/>
+
+      <path fill="none" stroke="#c95742" stroke-linecap="round" stroke-linejoin="round" stroke-width="9" d="M129 135c-4-9-3-19 1-30l15-43c6-17 21-27 37-23 18 4 28 21 23 39l-14 46c-5 16-19 25-33 21-15-4-22-18-18-32l14-43c3-10 12-16 21-13 10 3 15 12 12 22l-13 40"/>
+      <path fill="none" stroke="#f07a5a" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M129 135c-4-9-3-19 1-30l15-43c6-17 21-27 37-23 18 4 28 21 23 39l-14 46c-5 16-19 25-33 21-15-4-22-18-18-32l14-43c3-10 12-16 21-13 10 3 15 12 12 22l-13 40"/>
+
+      <g transform="rotate(3 153 132)">
+        <path fill="#f5d547" stroke="#1f3a5f" stroke-linejoin="round" stroke-width="3" d="M94 108h105c6 0 10 4 10 10v28c0 6-4 10-10 10H94c-6 0-10-4-10-10v-28c0-6 4-10 10-10Z"/>
+        <path fill="none" stroke="#1f3a5f" stroke-linecap="round" stroke-width="2.5" d="M107 145h66" opacity=".72"/>
+        <text x="108" y="138" fill="#1f3a5f" font-family="Yu Gothic, Hiragino Sans, Meiryo, sans-serif" font-size="24" font-weight="700">あ</text>
+        <text x="145" y="138" fill="#1f3a5f" font-family="Yu Gothic, Hiragino Sans, Meiryo, sans-serif" font-size="24" font-weight="700">ア</text>
+      </g>
+
+      <path fill="none" stroke="#1f3a5f" stroke-linecap="round" stroke-width="7" d="M80 39 108 198"/>
+      <path fill="none" stroke="#39c5bb" stroke-linecap="round" stroke-width="2.5" d="M82 45 106 190"/>
+
+      <path fill="none" stroke="#c95742" stroke-linecap="round" stroke-width="8" d="m173 136 13-46"/>
+      <path fill="none" stroke="#f07a5a" stroke-linecap="round" stroke-width="4.5" d="m173 136 13-46"/>
+    </g>
+    <g id="wordmark" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="14">
+      <g stroke="#1f3a5f">
+        <path d="M282 72v88m0-28 40-36m-21 20 27 44"/>
+        <circle cx="368" cy="128" r="32"/>
+        <path d="M425 78v67q0 15 15 15m-33-57h39"/>
+        <circle cx="489" cy="128" r="32"/>
+      </g>
+      <g stroke="#39c5bb">
+        <path d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12"/>
+        <path d="M619 72v73q0 15 15 15"/>
+        <path d="M665 103v57"/>
+        <path d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17"/>
+      </g>
+      <circle cx="665" cy="78" r="7" fill="#f5d547" stroke="none"/>
+    </g>
+  </defs>
+  <use href="#mark"/>
+  <use href="#wordmark"/>
+</svg>

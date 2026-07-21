@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" role="img" aria-labelledby="title desc" focusable="false">
+  <title id="title">Kotoclip 句读括号标志</title>
+  <desc id="desc">变形的日文引号框住一枚高亮词块，表达从句中截取并保存理解。</desc>
+  <defs>
+    <g id="mark">
+      <path fill="#173f5f" d="M37 35h94v29H66v66H37V49c0-8 6-14 14-14h-14Z"/>
+      <path fill="#4fae9d" d="M203 205h-94v-29h65v-66h29v81c0 8-6 14-14 14h14Z"/>
+      <path fill="#f4c95d" d="M103 88h37c10 0 18 8 18 18v28c0 10-8 18-18 18h-37c-10 0-18-8-18-18v-28c0-10 8-18 18-18Z"/>
+      <path fill="#173f5f" d="M105 104h22v7h-22zm0 13h31v7h-31z"/>
+      <path fill="#173f5f" d="M72 158l34-34 17 17-34 34z"/>
+      <path fill="#f4c95d" d="M52 72h13v40H52z" opacity=".9"/>
+    </g>
+    <g id="wordmark" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="14">
+      <g stroke="#173f5f">
+        <path d="M282 72v88m0-28 40-36m-21 20 27 44"/>
+        <circle cx="368" cy="128" r="32"/>
+        <path d="M425 78v67q0 15 15 15m-33-57h39"/>
+        <circle cx="489" cy="128" r="32"/>
+      </g>
+      <g stroke="#4fae9d">
+        <path d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12"/>
+        <path d="M619 72v73q0 15 15 15"/>
+        <path d="M665 103v57"/>
+        <path d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17"/>
+      </g>
+      <circle cx="665" cy="78" r="7" fill="#f4c95d" stroke="none"/>
+    </g>
+  </defs>
+  <use href="#mark"/>
+  <use href="#wordmark"/>
+</svg>

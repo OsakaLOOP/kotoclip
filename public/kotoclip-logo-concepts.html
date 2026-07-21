@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#fcfbfa" />
+    <title>Kotoclip Logo Concepts</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #fcfbfa;
+        --paper-deep: #f2efeb;
+        --ink: #1c2438;
+        --ink-soft: #5a6882;
+        --ink-faint: #8fa0ba;
+        --line: #e5e0da;
+        --accent: #2b4c7e;
+        --teal: #39c5bb;
+        --yellow: #f5d547;
+        --green: #7fbf6a;
+        --shadow: 0 16px 42px rgba(28, 36, 56, .08);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body { min-height: 100%; }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      button { font: inherit; }
+
+      .page {
+        width: min(1440px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 34px 0 72px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 34px;
+      }
+
+      .brand-line {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px 8px 4px 8px;
+        background: var(--teal);
+        transform: rotate(18deg);
+      }
+
+      .brand-line strong {
+        font-size: 1.05rem;
+        letter-spacing: .02em;
+      }
+
+      .brand-line span {
+        color: var(--ink-faint);
+        font-size: .72rem;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .surface-switch {
+        display: inline-flex;
+        gap: 3px;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--paper-deep);
+      }
+
+      .surface-switch button {
+        min-height: 30px;
+        padding: 0 11px;
+        border: 0;
+        border-radius: 4px;
+        color: var(--ink-soft);
+        background: transparent;
+        cursor: pointer;
+        font-size: .74rem;
+      }
+
+      .surface-switch button[aria-pressed="true"] {
+        color: var(--ink);
+        background: var(--paper);
+        box-shadow: 0 1px 4px rgba(28, 36, 56, .08);
+      }
+
+      .intro {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+        gap: 44px;
+        align-items: end;
+        margin-bottom: 28px;
+        padding-bottom: 26px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        max-width: 760px;
+        margin: 0;
+        font-size: 3.2rem;
+        font-weight: 720;
+        letter-spacing: 0;
+        line-height: 1.06;
+      }
+
+      .intro p {
+        max-width: 620px;
+        margin: 16px 0 0;
+        color: var(--ink-soft);
+        font-size: .9rem;
+      }
+
+      .brief {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: .78rem;
+        line-height: 1.75;
+      }
+
+      .brief strong {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--accent);
+        font-size: .68rem;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .candidate {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .58);
+        box-shadow: var(--shadow);
+      }
+
+      .candidate--featured {
+        grid-column: span 2;
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(250px, .8fr);
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .candidate-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      .candidate-index {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--ink-faint);
+        font-size: .68rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 720;
+        line-height: 1.25;
+      }
+
+      .candidate-heading p {
+        margin: 4px 0 0;
+        color: var(--ink-soft);
+        font-size: .76rem;
+      }
+
+      .badge {
+        flex: 0 0 auto;
+        padding: 4px 7px;
+        border: 1px solid rgba(57, 197, 187, .35);
+        border-radius: 4px;
+        color: #147d78;
+        background: rgba(57, 197, 187, .1);
+        font-size: .65rem;
+        white-space: nowrap;
+      }
+
+      .logo-stage {
+        display: grid;
+        min-height: 154px;
+        place-items: center;
+        overflow: hidden;
+        padding: 20px 24px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+      }
+
+      .logo-stage img {
+        display: block;
+        width: min(100%, 650px);
+        height: auto;
+      }
+
+      .candidate--featured .logo-stage { min-height: 214px; }
+
+      .candidate-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: end;
+        margin-top: 14px;
+      }
+
+      .candidate-note {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: .78rem;
+        line-height: 1.65;
+      }
+
+      .palette {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+        max-width: 230px;
+      }
+
+      .swatch {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--ink-faint);
+        font: .64rem/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+        white-space: nowrap;
+      }
+
+      .swatch i {
+        display: block;
+        width: 15px;
+        height: 15px;
+        border: 1px solid rgba(28, 36, 56, .12);
+        border-radius: 4px;
+      }
+
+      .size-check {
+        display: flex;
+        align-items: end;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 13px;
+        border-top: 1px solid var(--line);
+      }
+
+      .size-check > span:first-child {
+        margin-right: 2px;
+        color: var(--ink-faint);
+        font-size: .67rem;
+        white-space: nowrap;
+      }
+
+      .size-sample {
+        display: grid;
+        gap: 3px;
+        justify-items: center;
+        color: var(--ink-faint);
+        font: .6rem/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+
+      .mark-crop {
+        display: block;
+        width: var(--mark-size);
+        height: var(--mark-size);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: var(--paper);
+      }
+
+      .mark-crop img {
+        display: block;
+        width: auto;
+        max-width: none;
+        height: 100%;
+      }
+
+      .surface-note {
+        margin-left: auto;
+        color: var(--ink-faint);
+        font-size: .68rem;
+        text-align: right;
+      }
+
+      .surface-note strong { color: var(--ink-soft); }
+
+      .footer-note {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        margin-top: 26px;
+        padding-top: 17px;
+        border-top: 1px solid var(--line);
+        color: var(--ink-faint);
+        font-size: .7rem;
+      }
+
+      .footer-note code {
+        color: var(--ink-soft);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+
+      body[data-surface="dark"] {
+        --paper: #12141c;
+        --paper-deep: #1a1e2b;
+        --ink: #e2e8f0;
+        --ink-soft: #a8b4c8;
+        --ink-faint: #72819a;
+        --line: #2d3548;
+        --accent: #8fb1ff;
+        --shadow: 0 16px 42px rgba(0, 0, 0, .18);
+      }
+
+      body[data-surface="dark"] .candidate {
+        background: rgba(26, 30, 43, .72);
+      }
+
+      body[data-surface="dark"] .logo-stage,
+      body[data-surface="dark"] .mark-crop {
+        background: #f6f3ed;
+      }
+
+      body[data-surface="dark"] .surface-switch button[aria-pressed="true"] {
+        background: #242b3c;
+      }
+
+      body[data-surface="dark"] .badge {
+        color: #77d5ce;
+        background: rgba(57, 197, 187, .13);
+      }
+
+      @media (max-width: 900px) {
+        .intro { grid-template-columns: 1fr; gap: 18px; }
+        .candidate--featured { grid-template-columns: 1fr; }
+      }
+
+      @media (max-width: 700px) {
+        .page { width: min(100% - 28px, 560px); padding-top: 22px; }
+        .topbar { align-items: center; margin-bottom: 24px; }
+        .brand-line span { display: none; }
+        .grid { grid-template-columns: 1fr; }
+        .candidate--featured { grid-column: auto; }
+        .candidate-body { grid-template-columns: 1fr; }
+        .palette { justify-content: flex-start; max-width: none; }
+        .surface-note { margin-left: 0; text-align: left; }
+        .footer-note { flex-direction: column; gap: 6px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; }
+      }
+    </style>
+  </head>
+  <body data-surface="light">
+    <main class="page">
+      <header class="topbar">
+        <div class="brand-line">
+          <i class="brand-dot" aria-hidden="true"></i>
+          <strong>kotoclip</strong>
+          <span>logo study / 2026</span>
+        </div>
+        <div class="surface-switch" role="group" aria-label="预览表面">
+          <button type="button" data-surface-button="light" aria-pressed="true">浅色底</button>
+          <button type="button" data-surface-button="dark" aria-pressed="false">深色底</button>
+        </div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <h1 id="page-title">五个词片，<br />五种读法。</h1>
+          <p>以“在原文中分析、夹取、保存理解”为核心，把日文文节、阅读页和学习闭环压缩成可识别的几何符号。</p>
+        </div>
+        <p class="brief"><strong>设计约束</strong>2–3 色、透明底、纯 SVG。主色沿用当前阅读器的绀青与纸白，黄色承担“被发现”的瞬间，绿色/蓝绿色承担“连接分析”的层。</p>
+      </section>
+
+      <section class="grid" aria-label="Logo 候选">
+        <article class="candidate candidate--featured">
+          <div>
+            <div class="candidate-heading">
+              <div>
+                <span class="candidate-index">01 / FOLDED PHRASE</span>
+                <h2>折页词片</h2>
+                <p>书页 + 被夹出的正文片段</p>
+              </div>
+              <span class="badge">首选方向</span>
+            </div>
+            <div class="logo-stage"><img src="/branding/concepts/kotoclip-01-folded-phrase.svg" alt="折页词片 logo" /></div>
+          </div>
+          <div>
+            <p class="candidate-note">阅读场景最直接：两页是正文，中央的黄色词片是一次分析后被摘出的知识。轮廓具体，中心层级足够有记忆点。</p>
+            <div class="candidate-body">
+              <div class="palette">
+                <span class="swatch"><i style="background:#1f3a5f"></i>#1F3A5F</span>
+                <span class="swatch"><i style="background:#39c5bb"></i>#39C5BB</span>
+                <span class="swatch"><i style="background:#f5d547"></i>#F5D547</span>
+              </div>
+              <span class="surface-note"><strong>主场景</strong><br />书架 / 阅读器</span>
+            </div>
+            <div class="size-check">
+              <span>尺寸检查</span>
+              <span class="size-sample"><span class="mark-crop" style="--mark-size:24px"><img src="/branding/concepts/kotoclip-01-folded-phrase.svg" alt="" /></span>24</span>
+              <span class="size-sample"><span class="mark-crop" style="--mark-size:48px"><img src="/branding/concepts/kotoclip-01-folded-phrase.svg" alt="" /></span>48</span>
+              <span class="size-sample"><span class="mark-crop" style="--mark-size:72px"><img src="/branding/concepts/kotoclip-01-folded-phrase.svg" alt="" /></span>72</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="candidate">
+          <div class="candidate-heading">
+            <div>
+              <span class="candidate-index">02 / MORPHEME STAIR</span>
+              <h2>文节阶梯</h2>
+              <p>错位的片段与提取层</p>
+            </div>
+          </div>
+          <div class="logo-stage"><img src="/branding/concepts/kotoclip-02-morpheme-stair.svg" alt="文节阶梯 logo" /></div>
+          <div class="candidate-body">
+            <p class="candidate-note">把分词、活用和 N-best 候选转译成三段错位的结构，方向感更强，适合强调分析引擎。</p>
+            <div class="palette">
+              <span class="swatch"><i style="background:#2e5e8c"></i>#2E5E8C</span>
+              <span class="swatch"><i style="background:#7fbf6a"></i>#7FBF6A</span>
+              <span class="swatch"><i style="background:#f6c445"></i>#F6C445</span>
+            </div>
+          </div>
+          <div class="size-check">
+            <span>24 / 48 / 72</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:24px"><img src="/branding/concepts/kotoclip-02-morpheme-stair.svg" alt="" /></span>24</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:48px"><img src="/branding/concepts/kotoclip-02-morpheme-stair.svg" alt="" /></span>48</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:72px"><img src="/branding/concepts/kotoclip-02-morpheme-stair.svg" alt="" /></span>72</span>
+          </div>
+        </article>
+
+        <article class="candidate">
+          <div class="candidate-heading">
+            <div>
+              <span class="candidate-index">03 / CLIP LOOP</span>
+              <h2>夹环书签</h2>
+              <p>Clip、书签与学习闭环</p>
+            </div>
+          </div>
+          <div class="logo-stage"><img src="/branding/concepts/kotoclip-03-clip-loop.svg" alt="夹环书签 logo" /></div>
+          <div class="candidate-body">
+            <p class="candidate-note">把名称里的 clip 变成连续的几何夹环，青绿色只负责“连接”与“回到片段”，识别动作最明确。</p>
+            <div class="palette">
+              <span class="swatch"><i style="background:#203b59"></i>#203B59</span>
+              <span class="swatch"><i style="background:#39c5bb"></i>#39C5BB</span>
+              <span class="swatch"><i style="background:#b8d94b"></i>#B8D94B</span>
+            </div>
+          </div>
+          <div class="size-check">
+            <span>24 / 48 / 72</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:24px"><img src="/branding/concepts/kotoclip-03-clip-loop.svg" alt="" /></span>24</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:48px"><img src="/branding/concepts/kotoclip-03-clip-loop.svg" alt="" /></span>48</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:72px"><img src="/branding/concepts/kotoclip-03-clip-loop.svg" alt="" /></span>72</span>
+          </div>
+        </article>
+
+        <article class="candidate">
+          <div class="candidate-heading">
+            <div>
+              <span class="candidate-index">04 / READING LENS</span>
+              <h2>读解镜</h2>
+              <p>眼形阅读框与高亮词</p>
+            </div>
+          </div>
+          <div class="logo-stage"><img src="/branding/concepts/kotoclip-04-reading-lens.svg" alt="读解镜 logo" /></div>
+          <div class="candidate-body">
+            <p class="candidate-note">上页与下页合成一枚友好的观察框，中心词块像被看清的难点；亲和力最高，抽象度也最低。</p>
+            <div class="palette">
+              <span class="swatch"><i style="background:#3155a5"></i>#3155A5</span>
+              <span class="swatch"><i style="background:#6cbf84"></i>#6CBF84</span>
+              <span class="swatch"><i style="background:#ffd166"></i>#FFD166</span>
+            </div>
+          </div>
+          <div class="size-check">
+            <span>24 / 48 / 72</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:24px"><img src="/branding/concepts/kotoclip-04-reading-lens.svg" alt="" /></span>24</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:48px"><img src="/branding/concepts/kotoclip-04-reading-lens.svg" alt="" /></span>48</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:72px"><img src="/branding/concepts/kotoclip-04-reading-lens.svg" alt="" /></span>72</span>
+          </div>
+        </article>
+
+        <article class="candidate">
+          <div class="candidate-heading">
+            <div>
+              <span class="candidate-index">05 / QUOTE BRACKETS</span>
+              <h2>句读括号</h2>
+              <p>日文引号的几何变形</p>
+            </div>
+          </div>
+          <div class="logo-stage"><img src="/branding/concepts/kotoclip-05-quote-brackets.svg" alt="句读括号 logo" /></div>
+          <div class="candidate-body">
+            <p class="candidate-note">从「」提取出框选关系，再用斜切和中心词块做品牌化变形；日本语境最强，符号感最鲜明。</p>
+            <div class="palette">
+              <span class="swatch"><i style="background:#173f5f"></i>#173F5F</span>
+              <span class="swatch"><i style="background:#4fae9d"></i>#4FAE9D</span>
+              <span class="swatch"><i style="background:#f4c95d"></i>#F4C95D</span>
+            </div>
+          </div>
+          <div class="size-check">
+            <span>24 / 48 / 72</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:24px"><img src="/branding/concepts/kotoclip-05-quote-brackets.svg" alt="" /></span>24</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:48px"><img src="/branding/concepts/kotoclip-05-quote-brackets.svg" alt="" /></span>48</span>
+            <span class="size-sample"><span class="mark-crop" style="--mark-size:72px"><img src="/branding/concepts/kotoclip-05-quote-brackets.svg" alt="" /></span>72</span>
+          </div>
+        </article>
+      </section>
+
+      <footer class="footer-note">
+        <span>候选文件位于 <code>public/branding/concepts/</code>；每个 SVG 的图形组可用 <code>#mark</code> 单独引用。</span>
+        <span>当前未改动 onboarding、应用图标和正式 UI 入口。</span>
+      </footer>
+    </main>
+    <script>
+      const buttons = document.querySelectorAll("[data-surface-button]");
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const surface = button.dataset.surfaceButton;
+          document.body.dataset.surface = surface;
+          buttons.forEach((item) => {
+            item.setAttribute("aria-pressed", String(item === button));
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

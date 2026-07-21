@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" role="img" aria-labelledby="title desc" focusable="false">
+  <title id="title">Kotoclip 夹环书签标志</title>
+  <desc id="desc">两层几何夹环围住一枚词片，表达从阅读到摘录再到复习的闭环。</desc>
+  <defs>
+    <g id="mark">
+      <path d="M95 42h57c29 0 51 23 51 51v54c0 34-26 61-59 61H90c-34 0-60-26-60-59V95c0-30 23-53 52-53h13Z" fill="none" stroke="#203b59" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M103 72h47c17 0 29 13 29 30v43c0 20-15 34-35 34H91c-18 0-31-13-31-31v-43c0-14 10-25 24-25h19Z" fill="none" stroke="#39c5bb" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+      <path fill="#b8d94b" d="M91 99h58c7 0 12 5 12 12v20c0 7-5 12-12 12h-16l-13 13-13-13H91c-7 0-12-5-12-12v-20c0-7 5-12 12-12Z"/>
+      <path fill="#203b59" d="M99 111h29v6H99zm0 12h38v6H99z"/>
+      <path fill="#b8d94b" d="M154 42h23l18 18-14 14-19-19z"/>
+    </g>
+    <g id="wordmark" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="14">
+      <g stroke="#203b59">
+        <path d="M282 72v88m0-28 40-36m-21 20 27 44"/>
+        <circle cx="368" cy="128" r="32"/>
+        <path d="M425 78v67q0 15 15 15m-33-57h39"/>
+        <circle cx="489" cy="128" r="32"/>
+      </g>
+      <g stroke="#39c5bb">
+        <path d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12"/>
+        <path d="M619 72v73q0 15 15 15"/>
+        <path d="M665 103v57"/>
+        <path d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17"/>
+      </g>
+      <circle cx="665" cy="78" r="7" fill="#b8d94b" stroke="none"/>
+    </g>
+  </defs>
+  <use href="#mark"/>
+  <use href="#wordmark"/>
+</svg>
