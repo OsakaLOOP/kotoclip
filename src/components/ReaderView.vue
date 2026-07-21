@@ -999,6 +999,44 @@ async function removeLibraryBook(book: LibraryBookSummary) {
   }
 }
 
+async function revealLibraryBook(book: LibraryBookSummary) {
+  if (!libraryPath.value) return;
+  try {
+    await revealItemInDir(`${libraryPath.value}\\books\\${book.id}\\source.epub`);
+  } catch (error) {
+    libraryError.value = `无法显示书籍文件：${String(error)}`;
+  }
+}
+
+async function updateLibraryBookOrganization(
+  book: LibraryBookSummary,
+  accentColor: string | null,
+  tags: string[],
+) {
+  try {
+    const updated = await invoke<LibraryBookSummary>("update_library_book_organization", {
+      id: book.id,
+      accentColor,
+      tags,
+    });
+    const index = libraryBooks.value.findIndex((item) => item.id === updated.id);
+    if (index >= 0) libraryBooks.value.splice(index, 1, updated);
+  } catch (error) {
+    libraryError.value = `保存书籍分类失败：${String(error)}`;
+  }
+}
+
+async function resetLibraryBookProgress(book: LibraryBookSummary) {
+  if (!window.confirm(`重置《${book.title}》的阅读进度？`)) return;
+  try {
+    const updated = await invoke<LibraryBookSummary>("reset_library_book_progress", { id: book.id });
+    const index = libraryBooks.value.findIndex((item) => item.id === updated.id);
+    if (index >= 0) libraryBooks.value.splice(index, 1, updated);
+  } catch (error) {
+    libraryError.value = `重置进度失败：${String(error)}`;
+  }
+}
+
 function libraryCoverUrl(book: LibraryBookSummary): string | undefined {
   return book.coverPath ? convertFileSrc(book.coverPath) : undefined;
 }
@@ -1347,7 +1385,10 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         @open="openLibraryBook"
         @input="showMarkdownInput"
         @reveal="revealLibrary"
+        @reveal-book="revealLibraryBook"
         @remove="removeLibraryBook"
+        @update-organization="updateLibraryBookOrganization"
+        @reset-progress="resetLibraryBookProgress"
       />
 
       <!-- 1. 分析与文本输入模块 -->

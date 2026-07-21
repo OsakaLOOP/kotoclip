@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   BookOpen,
   BookOpenText,
@@ -9,10 +9,16 @@ import {
   FileText,
   FileUp,
   FolderOpen,
+  Info,
+  MoreHorizontal,
+  Palette,
+  RotateCcw,
   Search,
+  Tags,
   Trash2,
 } from "@lucide/vue";
 import type { LibraryBookSummary } from "../../reader/library";
+import SegmentedActionFrame from "../common/SegmentedActionFrame.vue";
 
 const props = defineProps<{
   books: LibraryBookSummary[];
@@ -30,8 +36,36 @@ const emit = defineEmits<{
   input: [];
   reveal: [];
   remove: [book: LibraryBookSummary];
+  revealBook: [book: LibraryBookSummary];
+  updateOrganization: [book: LibraryBookSummary, accentColor: string | null, tags: string[]];
+  resetProgress: [book: LibraryBookSummary];
 }>();
 const searchQuery = ref("");
+const importActions = computed(() => [
+  {
+    id: "markdown",
+    label: "粘贴 Markdown",
+    description: "从纯文本开始阅读",
+    icon: FileText,
+    disabled: props.importing || Boolean(props.openingBookId),
+    theme: { color: "#4d79b8", textColor: "#28486f" },
+  },
+  {
+    id: "epub",
+    label: props.importing ? "正在导入…" : "导入 EPUB",
+    description: "保留封面、章节与插图",
+    icon: FileUp,
+    disabled: props.importing || Boolean(props.openingBookId),
+    theme: { color: "#b9ce32", textColor: "#52620f" },
+  },
+]);
+type ShelfSort = "recent" | "title" | "progress" | "added";
+const shelfSort = ref<ShelfSort>("recent");
+const contextMenu = ref<{ book: LibraryBookSummary; x: number; y: number } | null>(null);
+const contextMenuElement = ref<HTMLElement | null>(null);
+const detailsBook = ref<LibraryBookSummary | null>(null);
+const tagDraft = ref("");
+const menuColor = ref<string | null>(null);
 type BookSurface = "continue" | "shelf";
 type PageDirection = "next" | "previous";
 
@@ -88,15 +122,23 @@ const filteredBooks = computed(() => {
   if (!query) return props.books;
   return props.books.filter((book) =>
     [book.title, book.author, book.currentChapter, book.sourceName]
-      .some((value) => value?.toLocaleLowerCase().includes(query))
+      .some((value) => value?.toLocaleLowerCase().includes(query)) ||
+    book.tags.some((tag) => tag.toLocaleLowerCase().includes(query))
   );
 });
 
-const shelfTotalPages = computed(() => Math.max(1, Math.ceil(filteredBooks.value.length / shelfPageSize.value)));
+const sortedBooks = computed(() => [...filteredBooks.value].sort((left, right) => {
+  if (shelfSort.value === "title") return left.title.localeCompare(right.title, "zh-CN");
+  if (shelfSort.value === "progress") return right.progressPercent - left.progressPercent;
+  if (shelfSort.value === "added") return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+  return openedAtTimestamp(right) - openedAtTimestamp(left) || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+}));
+
+const shelfTotalPages = computed(() => Math.max(1, Math.ceil(sortedBooks.value.length / shelfPageSize.value)));
 const visibleShelfBooks = computed(() => {
   const start = shelfPage.value * shelfPageSize.value;
-  const end = Math.min(start + shelfPageSize.value, filteredBooks.value.length);
-  return filteredBooks.value.slice(start, end);
+  const end = Math.min(start + shelfPageSize.value, sortedBooks.value.length);
+  return sortedBooks.value.slice(start, end);
 });
 const showImportCard = computed(() => {
   return shelfPage.value === 0;
@@ -233,8 +275,111 @@ function goToShelfPage(page: number) {
   shelfPage.value = Math.min(Math.max(0, page), shelfTotalPages.value - 1);
 }
 
+function handleImportAction(id: string) {
+  if (id === "markdown") emit("input");
+  if (id === "epub") emit("import");
+}
+
+function openBookContextMenu(event: MouseEvent, book: LibraryBookSummary) {
+  event.preventDefault();
+  event.stopPropagation();
+  const menuWidth = 276;
+  const menuHeight = 420;
+  const trigger = event.currentTarget as HTMLElement | null;
+  const triggerBounds = trigger?.getBoundingClientRect();
+  const requestedX = event.clientX || triggerBounds?.right || 10;
+  const requestedY = event.clientY || triggerBounds?.top || 10;
+  contextMenu.value = {
+    book,
+    x: Math.max(10, Math.min(requestedX, window.innerWidth - menuWidth - 10)),
+    y: Math.max(10, Math.min(requestedY, window.innerHeight - menuHeight - 10)),
+  };
+  menuColor.value = book.accentColor ?? null;
+  tagDraft.value = book.tags.join(", ");
+  void nextTick(() => contextMenuElement.value?.querySelector<HTMLElement>("[role='menuitem']")?.focus());
+}
+
+function closeBookContextMenu() {
+  contextMenu.value = null;
+  menuColor.value = null;
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  const target = event.target as HTMLElement | null;
+  if (!target?.closest(".book-context-menu")) closeBookContextMenu();
+}
+
+function handleDocumentKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    closeBookContextMenu();
+    detailsBook.value = null;
+  }
+}
+
+function handleMenuKeydown(event: KeyboardEvent) {
+  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+  const items = [...(contextMenuElement.value?.querySelectorAll<HTMLElement>("[role='menuitem']") ?? [])];
+  if (!items.length) return;
+  event.preventDefault();
+  const current = items.indexOf(document.activeElement as HTMLElement);
+  const next = event.key === "Home" ? 0
+    : event.key === "End" ? items.length - 1
+      : event.key === "ArrowDown" ? (current + 1 + items.length) % items.length
+        : (current - 1 + items.length) % items.length;
+  items[next].focus();
+}
+
+function showDetails(book: LibraryBookSummary) {
+  detailsBook.value = book;
+  closeBookContextMenu();
+}
+
+function submitOrganization(book: LibraryBookSummary, color: string | null = menuColor.value) {
+  const tags = tagDraft.value.split(/[，,\n]/).map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean);
+  emit("updateOrganization", book, color, [...new Set(tags)].slice(0, 12));
+}
+
+function selectColor(book: LibraryBookSummary, color: string | null) {
+  menuColor.value = color;
+  submitOrganization(book, color);
+}
+
+function requestRemove(book: LibraryBookSummary) {
+  closeBookContextMenu();
+  emit("remove", book);
+}
+
+function requestReset(book: LibraryBookSummary) {
+  closeBookContextMenu();
+  emit("resetProgress", book);
+}
+
+function requestReveal(book: LibraryBookSummary) {
+  closeBookContextMenu();
+  emit("revealBook", book);
+}
+
+function openFromMenu(book: LibraryBookSummary) {
+  closeBookContextMenu();
+  openingSurfaceTarget.value = rippleTarget("shelf", book.id);
+  emit("open", book.id);
+}
+
+function openFromDetails(book: LibraryBookSummary) {
+  detailsBook.value = null;
+  openingSurfaceTarget.value = rippleTarget("shelf", book.id);
+  emit("open", book.id);
+}
+
+onMounted(() => {
+  document.addEventListener("pointerdown", handleDocumentPointerDown);
+  document.addEventListener("keydown", handleDocumentKeydown);
+});
+
 onBeforeUnmount(() => {
   if (rippleTimer !== undefined) window.clearTimeout(rippleTimer);
+  document.removeEventListener("pointerdown", handleDocumentPointerDown);
+  document.removeEventListener("keydown", handleDocumentKeydown);
 });
 
 watch(() => props.openingBookId, (bookId) => {
@@ -249,6 +394,10 @@ watch(searchQuery, () => {
   shelfPage.value = 0;
 });
 
+watch(shelfSort, () => {
+  shelfPage.value = 0;
+});
+
 watch(shelfPageSize, () => {
   shelfPage.value = 0;
 });
@@ -259,7 +408,7 @@ watch(shelfTotalPages, (pageCount) => {
 </script>
 
 <template>
-  <main class="library-home">
+  <main class="library-home" @contextmenu.prevent>
     <div class="library-toolbar">
       <div>
         <h1>书架</h1>
@@ -315,6 +464,7 @@ watch(shelfTotalPages, (pageCount) => {
                 :aria-busy="isOpeningSurface('continue', book.id)"
                 @pointerdown="startCoverRipple($event, book.id, 'continue')"
                 @click="openBook($event, book.id, 'continue')"
+                @contextmenu="openBookContextMenu($event, book)"
               >
                 <div
                   class="continue-cover"
@@ -381,7 +531,16 @@ watch(shelfTotalPages, (pageCount) => {
           <div class="shelf-tools">
             <label class="shelf-search">
               <Search :size="15" aria-hidden="true" />
-              <input v-model="searchQuery" type="search" placeholder="搜索书名或作者" />
+              <input v-model="searchQuery" type="search" placeholder="搜索书名、作者或标签" />
+            </label>
+            <label class="shelf-sort">
+              <span>排列</span>
+              <select v-model="shelfSort" aria-label="排列书籍">
+                <option value="recent">最近阅读</option>
+                <option value="title">书名</option>
+                <option value="progress">阅读进度</option>
+                <option value="added">导入时间</option>
+              </select>
             </label>
             <label class="shelf-page-size">
               <span>每页</span>
@@ -392,25 +551,21 @@ watch(shelfTotalPages, (pageCount) => {
           </div>
         </div>
         <div class="book-grid">
-          <article v-if="showImportCard" class="shelf-import-card" aria-label="添加阅读内容">
-            <button
-              type="button"
-              :disabled="importing || Boolean(openingBookId)"
-              @click="emit('input')"
-            >
-              <FileText :size="22" stroke-width="1.7" aria-hidden="true" />
-              <span>粘贴 Markdown</span>
-            </button>
-            <button
-              type="button"
-              :disabled="importing || Boolean(openingBookId)"
-              @click="emit('import')"
-            >
-              <FileUp :size="22" stroke-width="1.7" aria-hidden="true" />
-              <span>{{ importing ? '正在导入…' : '导入 EPUB' }}</span>
-            </button>
-          </article>
-          <article v-for="book in visibleShelfBooks" :key="book.id" class="book-card">
+          <SegmentedActionFrame
+            v-if="showImportCard"
+            class="shelf-import-card"
+            :actions="importActions"
+            min-height="328px"
+            aria-label="添加阅读内容"
+            @select="handleImportAction"
+          />
+          <article
+            v-for="book in visibleShelfBooks"
+            :key="book.id"
+            class="book-card"
+            :class="book.accentColor ? `book-card--${book.accentColor}` : undefined"
+            @contextmenu="openBookContextMenu($event, book)"
+          >
             <button
               class="book-open"
               type="button"
@@ -443,21 +598,24 @@ watch(shelfTotalPages, (pageCount) => {
                 <span><Clock3 :size="13" aria-hidden="true" />{{ dateLabel(book.lastOpenedAt) }}</span>
                 <span>{{ progressLabel(book) }}</span>
               </div>
+              <div v-if="book.tags.length" class="book-tags" aria-label="标签">
+                <span v-for="tag in book.tags.slice(0, 2)" :key="tag">#{{ tag }}</span>
+              </div>
               <div class="book-progress"><i :style="{ width: `${book.progressPercent * 100}%` }"></i></div>
             </button>
             <button
               class="book-menu"
               type="button"
-              title="从书架移除"
+              title="书本操作"
+              aria-label="打开书本操作菜单"
               :disabled="Boolean(openingBookId)"
-              @click="emit('remove', book)"
+              @click="openBookContextMenu($event, book)"
             >
-              <Trash2 :size="16" aria-hidden="true" />
-              <span class="sr-only">移除 {{ book.title }}</span>
+              <MoreHorizontal :size="17" aria-hidden="true" />
             </button>
           </article>
         </div>
-        <p v-if="searchQuery && filteredBooks.length === 0" class="no-search-results">没有匹配的书籍</p>
+        <p v-if="searchQuery && sortedBooks.length === 0" class="no-search-results">没有匹配的书籍</p>
         <nav v-if="shelfTotalPages > 1" class="shelf-pagination" aria-label="书库分页">
           <button
             type="button"
@@ -491,6 +649,84 @@ watch(shelfTotalPages, (pageCount) => {
         </nav>
       </section>
     </template>
+
+    <Transition name="book-context-fade">
+      <div
+        v-if="contextMenu"
+        ref="contextMenuElement"
+        class="book-context-menu"
+        :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+        role="menu"
+        :aria-label="`${contextMenu.book.title} 的操作`"
+        @pointerdown.stop
+        @keydown="handleMenuKeydown"
+      >
+        <div class="book-context-menu__heading">
+          <strong>{{ contextMenu.book.title }}</strong>
+          <small>{{ contextMenu.book.author }}</small>
+        </div>
+        <button class="book-context-menu__item" type="button" role="menuitem" @click="openFromMenu(contextMenu.book)">
+          <BookOpen :size="16" aria-hidden="true" />打开阅读
+        </button>
+        <button class="book-context-menu__item" type="button" role="menuitem" @click="showDetails(contextMenu.book)">
+          <Info :size="16" aria-hidden="true" />查看详情
+        </button>
+        <button class="book-context-menu__item" type="button" role="menuitem" @click="requestReveal(contextMenu.book)">
+          <FolderOpen :size="16" aria-hidden="true" />在文件夹中显示
+        </button>
+        <div class="book-context-menu__rule"></div>
+        <div class="book-context-menu__label"><Palette :size="14" aria-hidden="true" />颜色标记</div>
+        <div class="book-color-picker" role="group" aria-label="颜色标记">
+          <button
+            v-for="color in ['red', 'amber', 'lime', 'teal', 'blue', 'violet']"
+            :key="color"
+            type="button"
+            class="book-color-swatch"
+            :class="[`book-color-swatch--${color}`, { 'is-selected': menuColor === color }]"
+            :aria-label="`${color}标记`"
+            @click="selectColor(contextMenu.book, color)"
+          ></button>
+          <button type="button" class="book-color-swatch book-color-swatch--clear" aria-label="清除颜色标记" @click="selectColor(contextMenu.book, null)">×</button>
+        </div>
+        <div class="book-context-menu__label"><Tags :size="14" aria-hidden="true" />标签分类</div>
+        <div class="book-tag-editor">
+          <input v-model="tagDraft" type="text" placeholder="输入标签，用逗号分隔" @keydown.enter.prevent="submitOrganization(contextMenu.book)" />
+          <button type="button" @click="submitOrganization(contextMenu.book)">保存</button>
+        </div>
+        <div class="book-context-menu__rule"></div>
+        <button class="book-context-menu__item" type="button" role="menuitem" @click="requestReset(contextMenu.book)">
+          <RotateCcw :size="16" aria-hidden="true" />重置阅读进度
+        </button>
+        <button class="book-context-menu__item book-context-menu__item--danger" type="button" role="menuitem" @click="requestRemove(contextMenu.book)">
+          <Trash2 :size="16" aria-hidden="true" />从书架删除
+        </button>
+      </div>
+    </Transition>
+
+    <Transition name="book-details-slide">
+      <aside v-if="detailsBook" class="book-details" role="dialog" aria-modal="true" aria-label="书籍详情">
+        <button class="book-details__close" type="button" aria-label="关闭详情" @click="detailsBook = null">×</button>
+        <div class="book-details__cover">
+          <img v-if="props.coverUrl(detailsBook)" :src="props.coverUrl(detailsBook)" alt="" />
+          <BookOpen v-else :size="30" aria-hidden="true" />
+        </div>
+        <p class="book-details__eyebrow">书籍详情</p>
+        <h2>{{ detailsBook.title }}</h2>
+        <p class="book-details__author">{{ detailsBook.author || '未知作者' }}</p>
+        <dl class="book-details__stats">
+          <div><dt>章节</dt><dd>{{ detailsBook.chapterCount }}</dd></div>
+          <div><dt>字数</dt><dd>{{ detailsBook.totalCharacters.toLocaleString('zh-CN') }}</dd></div>
+          <div><dt>进度</dt><dd>{{ progressLabel(detailsBook) }}</dd></div>
+          <div><dt>格式</dt><dd>{{ detailsBook.sourceName.split('.').pop()?.toUpperCase() || 'EPUB' }}</dd></div>
+        </dl>
+        <div class="book-details__section">
+          <span>标签</span>
+          <div v-if="detailsBook.tags.length" class="book-details__tags"><span v-for="tag in detailsBook.tags" :key="tag">#{{ tag }}</span></div>
+          <em v-else>尚未分类</em>
+        </div>
+        <button class="book-details__action" type="button" @click="openFromDetails(detailsBook)">打开阅读</button>
+      </aside>
+    </Transition>
   </main>
 </template>
 
@@ -507,6 +743,7 @@ watch(shelfTotalPages, (pageCount) => {
 .section-heading,
 .shelf-tools,
 .shelf-search,
+.shelf-sort,
 .shelf-page-size,
 .book-meta,
 .continue-book,
@@ -548,6 +785,7 @@ h1 {
 
 .shelf-tools,
 .shelf-search,
+.shelf-sort,
 .shelf-page-size {
   gap: 7px;
 }
@@ -562,8 +800,30 @@ h1 {
   padding: 0 10px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
+  background: transparent;
   color: var(--text-muted);
+}
+
+.shelf-sort {
+  height: 34px;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.shelf-sort select {
+  max-width: 112px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
 }
 
 .shelf-search input {
@@ -843,37 +1103,19 @@ h1 {
   grid-template-columns: repeat(auto-fill, minmax(150px, 176px));
   gap: 22px 18px;
   justify-content: start;
+  align-items: stretch;
 }
 
 .book-card {
   position: relative;
   min-width: 0;
+  min-height: 328px;
+  display: flex;
 }
 
 .shelf-import-card {
-  display: grid;
   min-width: 0;
-  aspect-ratio: 3 / 4;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-secondary);
-}
-
-.shelf-import-card button {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 8px;
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.78rem;
+  min-height: 328px;
 }
 
 .shelf-page-size {
@@ -881,7 +1123,7 @@ h1 {
   padding: 0 8px 0 10px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
+  background: transparent;
   color: var(--text-muted);
   font-size: 0.75rem;
   white-space: nowrap;
@@ -896,26 +1138,6 @@ h1 {
   font: inherit;
 }
 
-.shelf-import-card button + button {
-  border-top: 1px solid var(--border-color);
-}
-
-.shelf-import-card button:hover:not(:disabled),
-.shelf-import-card button:focus-visible {
-  background: color-mix(in srgb, var(--accent-color) 7%, transparent);
-  color: var(--accent-color);
-}
-
-.shelf-import-card button:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent-color) 72%, transparent);
-  outline-offset: -2px;
-}
-
-.shelf-import-card button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 .book-open {
   display: flex;
   width: 100%;
@@ -927,6 +1149,7 @@ h1 {
   color: inherit;
   cursor: pointer;
   text-align: left;
+  height: 100%;
 }
 
 .book-open strong {
@@ -938,6 +1161,7 @@ h1 {
   aspect-ratio: 3 / 4;
   margin-bottom: 10px;
   border-radius: 4px;
+  background: transparent;
 }
 
 .continue-book:focus-visible,
@@ -1092,14 +1316,167 @@ h1 {
   cursor: pointer;
 }
 
-.book-menu:hover {
-  color: var(--novelty-high-text);
+.book-menu:hover,
+.book-menu:focus-visible {
+  color: var(--accent-color);
+  transform: translateY(-2px);
 }
 
 .book-menu:disabled {
   opacity: 0.45;
   cursor: default;
 }
+
+.book-tags {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.book-tags span {
+  max-width: 82px;
+  overflow: hidden;
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, var(--accent-color) 28%, var(--border-color));
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: .62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-card--red .book-cover { border-color: #d87878; }
+.book-card--amber .book-cover { border-color: #d39a4b; }
+.book-card--lime .book-cover { border-color: #a2b329; }
+.book-card--teal .book-cover { border-color: #43a6a0; }
+.book-card--blue .book-cover { border-color: #5685cf; }
+.book-card--violet .book-cover { border-color: #9270c5; }
+
+.book-context-menu {
+  position: fixed;
+  z-index: 1200;
+  width: min(276px, calc(100vw - 20px));
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent-color) 24%, var(--border-color));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--text-primary) 13%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.book-context-menu__heading {
+  display: grid;
+  gap: 1px;
+  padding: 7px 9px 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.book-context-menu__heading strong,
+.book-context-menu__heading small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-context-menu__heading strong { font-size: .78rem; }
+.book-context-menu__heading small { color: var(--text-muted); font-size: .68rem; }
+
+.book-context-menu__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: .76rem;
+  text-align: left;
+  transition: color 140ms ease, transform 140ms ease;
+}
+
+.book-context-menu__item:hover,
+.book-context-menu__item:focus-visible {
+  color: var(--accent-color);
+  outline: none;
+  transform: translateX(3px);
+}
+
+.book-context-menu__item--danger:hover,
+.book-context-menu__item--danger:focus-visible { color: var(--novelty-high-text); }
+.book-context-menu__rule { height: 1px; margin: 6px 4px; background: var(--border-color); }
+.book-context-menu__label { display: flex; align-items: center; gap: 6px; padding: 5px 9px 4px; color: var(--text-muted); font-size: .68rem; }
+
+.book-color-picker { display: flex; gap: 8px; padding: 2px 9px 8px; }
+.book-color-swatch {
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+.book-color-swatch:hover, .book-color-swatch:focus-visible { outline: none; transform: scale(1.18); }
+.book-color-swatch.is-selected { border-color: var(--text-primary); box-shadow: 0 0 0 2px var(--bg-primary); }
+.book-color-swatch--red { background: #d87878; }
+.book-color-swatch--amber { background: #d39a4b; }
+.book-color-swatch--lime { background: #a8b82f; }
+.book-color-swatch--teal { background: #43a6a0; }
+.book-color-swatch--blue { background: #5685cf; }
+.book-color-swatch--violet { background: #9270c5; }
+.book-color-swatch--clear { border-color: var(--border-color); background: transparent; color: var(--text-muted); font-size: .85rem; }
+
+.book-tag-editor { display: flex; gap: 5px; padding: 2px 9px 7px; }
+.book-tag-editor input { min-width: 0; flex: 1; height: 29px; padding: 0 7px; border: 1px solid var(--border-color); border-radius: 5px; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: .7rem; }
+.book-tag-editor input:focus { border-color: var(--accent-color); }
+.book-tag-editor button { border: 0; background: transparent; color: var(--accent-color); cursor: pointer; font: inherit; font-size: .7rem; }
+
+.book-details {
+  position: fixed;
+  z-index: 1190;
+  top: 0;
+  right: 0;
+  display: flex;
+  width: min(360px, 100vw);
+  height: 100%;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 32px 26px 30px;
+  border-left: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 97%, transparent);
+  box-shadow: -14px 0 36px color-mix(in srgb, var(--text-primary) 10%, transparent);
+  backdrop-filter: blur(3px);
+}
+.book-details__close { position: absolute; top: 14px; right: 16px; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 1.4rem; line-height: 1; }
+.book-details__cover { width: 142px; aspect-ratio: 3 / 4; display: grid; place-items: center; overflow: hidden; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 5px; background: transparent; color: var(--accent-color); }
+.book-details__cover img { width: 100%; height: 100%; object-fit: cover; }
+.book-details__eyebrow { color: var(--accent-color); font-size: .68rem; font-weight: 700; letter-spacing: .08em; }
+.book-details h2 { font-size: 1.3rem; line-height: 1.35; overflow-wrap: anywhere; }
+.book-details__author { color: var(--text-muted); font-size: .8rem; }
+.book-details__stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 15px 0 10px; }
+.book-details__stats div { display: grid; gap: 2px; padding-top: 7px; border-top: 1px solid var(--border-color); }
+.book-details__stats dt { color: var(--text-muted); font-size: .66rem; }
+.book-details__stats dd { color: var(--text-secondary); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.book-details__section { display: grid; gap: 7px; margin-top: 8px; color: var(--text-muted); font-size: .72rem; }
+.book-details__section em { color: var(--text-muted); font-style: normal; }
+.book-details__tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.book-details__tags span { padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--accent-color) 28%, var(--border-color)); border-radius: 999px; color: var(--text-secondary); font-size: .68rem; }
+.book-details__action { margin-top: 18px; padding: 10px 12px; border: 1px solid var(--accent-color); border-radius: 6px; background: transparent; color: var(--accent-color); cursor: pointer; font: inherit; font-size: .78rem; }
+.book-details__action:hover, .book-details__action:focus-visible { background: var(--accent-light); outline: none; }
+
+.book-context-fade-enter-active, .book-context-fade-leave-active { transition: opacity 130ms ease, transform 130ms ease; }
+.book-context-fade-enter-from, .book-context-fade-leave-to { opacity: 0; transform: translateY(-4px) scale(.98); }
+.book-details-slide-enter-active, .book-details-slide-leave-active { transition: transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease; }
+.book-details-slide-enter-from, .book-details-slide-leave-to { opacity: 0; transform: translateX(24px); }
 
 .recent-page-next-enter-active,
 .recent-page-next-leave-active,
@@ -1220,7 +1597,7 @@ h1 {
   place-items: center;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background: var(--bg-secondary);
+  background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   font: 0.75rem/1 var(--font-ui);
@@ -1235,8 +1612,9 @@ h1 {
 
 .shelf-pagination button.is-current {
   border-color: var(--accent-color);
-  background: var(--accent-color);
-  color: #fff;
+  background: transparent;
+  color: var(--accent-color);
+  font-weight: 800;
 }
 
 .shelf-pagination button:disabled {
