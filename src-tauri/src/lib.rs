@@ -163,6 +163,8 @@ pub fn run() {
             commands::list_library_books,
             commands::open_library_book,
             commands::update_library_progress,
+            commands::update_library_book_organization,
+            commands::reset_library_book_progress,
             commands::remove_library_book,
             commands::get_library_location,
             commands::open_document,

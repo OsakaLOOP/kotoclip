@@ -12,6 +12,8 @@ export interface LibraryBookSummary {
   currentChapter?: string | null;
   createdAt: string;
   lastOpenedAt?: string | null;
+  accentColor?: string | null;
+  tags: string[];
 }
 
 export interface LibraryResource {

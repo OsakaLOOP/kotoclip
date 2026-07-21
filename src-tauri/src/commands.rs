@@ -222,6 +222,30 @@ pub fn remove_library_book(state: State<'_, AppState>, id: String) -> Result<boo
 }
 
 #[tauri::command]
+pub fn update_library_book_organization(
+    state: State<'_, AppState>,
+    id: String,
+    accent_color: Option<String>,
+    tags: Vec<String>,
+) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    state
+        .library
+        .update_organization(&id, accent_color.as_deref(), &tags)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn reset_library_book_progress(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    state
+        .library
+        .reset_progress(&id)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub fn get_library_location(state: State<'_, AppState>) -> String {
     state.library.root().to_string_lossy().into_owned()
 }

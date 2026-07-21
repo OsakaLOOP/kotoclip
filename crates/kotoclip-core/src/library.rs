@@ -7,7 +7,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-const LIBRARY_SCHEMA_VERSION: i64 = 2;
+const LIBRARY_SCHEMA_VERSION: i64 = 3;
+const BOOK_ACCENT_COLORS: [&str; 6] = ["red", "amber", "lime", "teal", "blue", "violet"];
 
 #[derive(Debug, Clone)]
 pub struct ReaderLibrary {
@@ -30,6 +31,8 @@ pub struct LibraryBookSummary {
     pub current_chapter: Option<String>,
     pub created_at: String,
     pub last_opened_at: Option<String>,
+    pub accent_color: Option<String>,
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -75,7 +78,7 @@ impl ReaderLibrary {
         let mut statement = connection.prepare(
             "SELECT id, title, author, language, source_name, cover_path,
                     chapter_count, total_characters, progress_offset, progress_percent,
-                    current_chapter, created_at, last_opened_at
+                    current_chapter, created_at, last_opened_at, accent_color
              FROM books
              ORDER BY CASE WHEN last_opened_at IS NULL THEN 1 ELSE 0 END,
                       last_opened_at DESC, created_at DESC",
@@ -87,6 +90,7 @@ impl ReaderLibrary {
                 .cover_path
                 .take()
                 .map(|path| self.root.join(path).to_string_lossy().into_owned());
+            book.tags = self.book_tags(&connection, &book.id)?;
         }
         Ok(books)
     }
@@ -117,7 +121,7 @@ impl ReaderLibrary {
             .query_row(
                 "SELECT id, title, author, language, source_name, cover_path,
                         chapter_count, total_characters, progress_offset, progress_percent,
-                        current_chapter, created_at, last_opened_at
+                        current_chapter, created_at, last_opened_at, accent_color
                  FROM books WHERE id = ?1",
                 [id],
                 read_book_summary,
@@ -128,6 +132,7 @@ impl ReaderLibrary {
             .cover_path
             .take()
             .map(|path| self.root.join(path).to_string_lossy().into_owned());
+        summary.tags = self.book_tags(&connection, id)?;
         let markdown =
             std::fs::read_to_string(self.root.join("books").join(id).join("content.md"))?;
         let chapter_titles = self.chapter_titles(&connection, id)?;
@@ -176,7 +181,7 @@ impl ReaderLibrary {
         let mut summary = connection.query_row(
             "SELECT id, title, author, language, source_name, cover_path,
                     chapter_count, total_characters, progress_offset, progress_percent,
-                    current_chapter, created_at, last_opened_at
+                    current_chapter, created_at, last_opened_at, accent_color
              FROM books WHERE id = ?1",
             [id],
             read_book_summary,
@@ -185,7 +190,58 @@ impl ReaderLibrary {
             .cover_path
             .take()
             .map(|path| self.root.join(path).to_string_lossy().into_owned());
+        summary.tags = self.book_tags(&connection, id)?;
         Ok(summary)
+    }
+
+    pub fn update_organization(
+        &self,
+        id: &str,
+        accent_color: Option<&str>,
+        tags: &[String],
+    ) -> Result<LibraryBookSummary, Box<dyn std::error::Error>> {
+        validate_book_id(id)?;
+        if accent_color.is_some_and(|color| !BOOK_ACCENT_COLORS.contains(&color)) {
+            return Err("书籍颜色无效".into());
+        }
+        let normalized_tags = normalize_tags(tags)?;
+        let mut connection = self.connection()?;
+        let transaction = connection.transaction()?;
+        let updated = transaction.execute(
+            "UPDATE books SET accent_color = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, accent_color, Utc::now().to_rfc3339()],
+        )?;
+        if updated == 0 {
+            return Err(format!("书库中不存在书籍：{id}").into());
+        }
+        transaction.execute("DELETE FROM book_tags WHERE book_id = ?1", [id])?;
+        for (position, tag) in normalized_tags.iter().enumerate() {
+            transaction.execute(
+                "INSERT INTO book_tags (book_id, position, tag) VALUES (?1, ?2, ?3)",
+                params![id, position as i64, tag],
+            )?;
+        }
+        transaction.commit()?;
+        self.book_summary(id)
+    }
+
+    pub fn reset_progress(
+        &self,
+        id: &str,
+    ) -> Result<LibraryBookSummary, Box<dyn std::error::Error>> {
+        validate_book_id(id)?;
+        let connection = self.connection()?;
+        let updated = connection.execute(
+            "UPDATE books
+             SET progress_offset = 0, progress_percent = 0, current_chapter = NULL,
+                 reading_seconds = 0, updated_at = ?2
+             WHERE id = ?1",
+            params![id, Utc::now().to_rfc3339()],
+        )?;
+        if updated == 0 {
+            return Err(format!("书库中不存在书籍：{id}").into());
+        }
+        self.book_summary(id)
     }
 
     pub fn remove_book(&self, id: &str) -> Result<bool, Box<dyn std::error::Error>> {
@@ -318,6 +374,39 @@ impl ReaderLibrary {
         rows.collect()
     }
 
+    fn book_tags(
+        &self,
+        connection: &Connection,
+        id: &str,
+    ) -> Result<Vec<String>, rusqlite::Error> {
+        let mut statement = connection.prepare(
+            "SELECT tag FROM book_tags WHERE book_id = ?1 ORDER BY position",
+        )?;
+        let tags = statement.query_map([id], |row| row.get(0))?.collect();
+        tags
+    }
+
+    fn book_summary(&self, id: &str) -> Result<LibraryBookSummary, Box<dyn std::error::Error>> {
+        let connection = self.connection()?;
+        let mut summary = connection
+            .query_row(
+                "SELECT id, title, author, language, source_name, cover_path,
+                        chapter_count, total_characters, progress_offset, progress_percent,
+                        current_chapter, created_at, last_opened_at, accent_color
+                 FROM books WHERE id = ?1",
+                [id],
+                read_book_summary,
+            )
+            .optional()?
+            .ok_or_else(|| format!("书库中不存在书籍：{id}"))?;
+        summary.cover_path = summary
+            .cover_path
+            .take()
+            .map(|path| self.root.join(path).to_string_lossy().into_owned());
+        summary.tags = self.book_tags(&connection, id)?;
+        Ok(summary)
+    }
+
     fn resources(
         &self,
         connection: &Connection,
@@ -363,7 +452,8 @@ fn initialize_schema(connection: &Connection) -> Result<(), rusqlite::Error> {
             reading_seconds INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            last_opened_at TEXT
+            last_opened_at TEXT,
+            accent_color TEXT
         );
         CREATE TABLE IF NOT EXISTS chapters (
             book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -382,6 +472,13 @@ fn initialize_schema(connection: &Connection) -> Result<(), rusqlite::Error> {
             PRIMARY KEY (book_id, href),
             UNIQUE (book_id, position)
         );
+        CREATE TABLE IF NOT EXISTS book_tags (
+            book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+            position INTEGER NOT NULL,
+            tag TEXT NOT NULL,
+            PRIMARY KEY (book_id, tag),
+            UNIQUE (book_id, position)
+        );
         CREATE INDEX IF NOT EXISTS idx_books_last_opened ON books(last_opened_at DESC);",
     )?;
     let columns = connection
@@ -393,6 +490,13 @@ fn initialize_schema(connection: &Connection) -> Result<(), rusqlite::Error> {
     }
     if !columns.iter().any(|column| column == "height") {
         connection.execute("ALTER TABLE resources ADD COLUMN height INTEGER", [])?;
+    }
+    let book_columns = connection
+        .prepare("PRAGMA table_info(books)")?
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?;
+    if !book_columns.iter().any(|column| column == "accent_color") {
+        connection.execute("ALTER TABLE books ADD COLUMN accent_color TEXT", [])?;
     }
     connection.pragma_update(None, "user_version", LIBRARY_SCHEMA_VERSION)?;
     Ok(())
@@ -445,7 +549,30 @@ fn read_book_summary(row: &rusqlite::Row<'_>) -> rusqlite::Result<LibraryBookSum
         current_chapter: row.get(10)?,
         created_at: row.get(11)?,
         last_opened_at: row.get(12)?,
+        accent_color: row.get(13)?,
+        tags: Vec::new(),
     })
+}
+
+fn normalize_tags(tags: &[String]) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut normalized = Vec::new();
+    for raw_tag in tags {
+        let tag = raw_tag.trim().trim_start_matches('#').trim();
+        if tag.is_empty() {
+            continue;
+        }
+        if tag.chars().count() > 24 {
+            return Err("单个标签不能超过 24 个字符".into());
+        }
+        if normalized.iter().any(|saved: &String| saved.eq_ignore_ascii_case(tag)) {
+            continue;
+        }
+        if normalized.len() >= 12 {
+            return Err("每本书最多保存 12 个标签".into());
+        }
+        normalized.push(tag.to_string());
+    }
+    Ok(normalized)
 }
 
 fn content_id(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
@@ -542,6 +669,19 @@ mod tests {
             .update_progress(&id, 50, 100, Some("第一章"), 120)
             .unwrap();
         assert_eq!(updated.progress_percent, 0.5);
+        let organized = library
+            .update_organization(
+                &id,
+                Some("lime"),
+                &["轻小说".to_string(), "待读".to_string()],
+            )
+            .unwrap();
+        assert_eq!(organized.accent_color.as_deref(), Some("lime"));
+        assert_eq!(organized.tags, vec!["轻小说", "待读"]);
+        let reset = library.reset_progress(&id).unwrap();
+        assert_eq!(reset.progress_percent, 0.0);
+        assert_eq!(reset.progress_offset, 0);
+        assert_eq!(reset.current_chapter, None);
         assert!(library.remove_book(&id).unwrap());
         assert!(library.list_books().unwrap().is_empty());
         std::fs::remove_dir_all(root).unwrap();

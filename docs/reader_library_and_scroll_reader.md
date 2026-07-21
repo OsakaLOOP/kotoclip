@@ -9,7 +9,7 @@
 - EPUB 导入、XHTML 前置清理、ruby 规范化、章节探测与图片提取。
 - Windows“文档”目录中的可见书库、原书保留、规范 Markdown 和图片资源目录。
 - SQLite 书籍索引、章节、资源、最近阅读位置与阅读时长。
-- 书架首页、最近阅读、全文库搜索、继续阅读、删除和打开书库目录。
+- 书架首页、最近阅读、全文库搜索、排序、继续阅读、颜色/标签分类、详情、进度重置、删除和打开书库目录。
 - Markdown 标题、正文、图片阅读块，章节导航和滚动阅读进度。
 - 字号、行距、段距、版心宽度调整及本机持久化。
 - 当前章节、正文百分比、预计剩余时间和预计完成时刻。
@@ -96,6 +96,7 @@ Kotoclip Library/
 - 内容摘要：`cover_path`、`chapter_count`、`total_characters`。
 - 阅读状态：`progress_offset`、`progress_percent`、`current_chapter`、`reading_seconds`。
 - 生命周期：`created_at`、`updated_at`、`last_opened_at`。
+- 书架组织：`accent_color` 保存受控色板标识，标签保存在 `book_tags` 中并按用户顺序返回。
 
 ### `chapters`
 
@@ -105,7 +106,7 @@ Kotoclip Library/
 
 保存 `book_id`、顺序、Markdown `href`、相对文件路径和 MIME 类型。前端按规范化 basename 解析当前 EPUB 导入器生成的扁平资源键。
 
-数据库使用 `PRAGMA user_version = 1`。后续 schema 变化必须增加显式迁移，不得依赖删除数据库重建。
+数据库使用 `PRAGMA user_version = 3`。v2 增加资源尺寸，v3 增加书籍颜色标记与标签表；迁移只追加字段和表，不得依赖删除数据库重建。
 
 ## 导入与删除事务
 
@@ -151,7 +152,7 @@ progress = current_character_offset / total_analysis_characters
 
 ## UI 组成
 
-- `LibraryHome.vue`：书架、继续阅读、搜索、导入、可见路径和删除。
+- `LibraryHome.vue`：书架、继续阅读、搜索、排序、导入、右键菜单、分类、详情、可见路径、进度重置和删除。
 - `ReaderNavigationPanel.vue`：章节目录与当前章节。
 - `ReaderAppearancePanel.vue`：字号、行距、段距和版心。
 - `ReaderImageBlock.vue`：图片、标题和缺失资源状态。
