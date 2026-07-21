@@ -107,3 +107,9 @@
 - W3C EPUB 3.3 Reading Systems：<https://www.w3.org/TR/epub-rs-33/>。用于后续保真模式中回流、固定版式、脚本与阅读系统行为的设计参照。
 - MDN `getComputedStyle()`：<https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle>。用于视觉对象计算样式指纹和浏览器布局测量的接口参照。
 - MDN iframe sandbox：<https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/iframe#sandbox>。用于未知 EPUB XHTML 隔离渲染的权限边界参照。
+
+## 中日短文本语言识别
+
+- CJClassifier 官方仓库：<https://github.com/jlpka/cjclassifier>。用于核对基于中日 Wikipedia 语料的 unigram + bigram 表意文字模型、假名处理、Unknown 语义、内存成本和模型构建工具。
+- CJClassifier 0.1.0 文档：<https://docs.rs/cjclassifier/0.1.0/cjclassifier/>。用于核对 `CJClassifier::load`、`detect_with_results`、`Results::gap` 与字符命中统计接口。
+- CJClassifier 0.1.0 crate：<https://crates.io/crates/cjclassifier/0.1.0>。用于锁定 Apache-2.0 许可的 Rust 依赖版本。

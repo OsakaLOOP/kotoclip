@@ -26,3 +26,4 @@ flate2 = "1"
 roxmltree = "0.21"
 zip = { version = "4", default-features = false, features = ["deflate"] }
 imagesize = "0.14"
+cjclassifier = "0.1"

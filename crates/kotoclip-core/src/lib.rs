@@ -11,6 +11,7 @@ pub mod models;
 pub mod performance;
 pub mod pipeline;
 pub mod profile;
+pub mod text_language;
 pub mod transport;
 
 use analysis_progress::{AnalysisCancelled, AnalysisPhase, AnalysisProgress};
