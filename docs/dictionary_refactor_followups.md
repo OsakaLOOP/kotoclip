@@ -161,6 +161,7 @@
 
 ### 5.2 小学馆
 
+- 已完成：30,405 条无 `<h3>` 的 standalone `複合語/慣用句` 记录在运行时直接生成结构化 occurrence，不再落入 fallback；详见 `analysis/dictionary_standalone_subhead_audit_20260721.md`；
 - 扩充白/黑方块标签分类，避免把新类别误作 marker；
 - 深化 subhead/subheadword 内多级 sense 与例句；
 - 统一更多中文全半角标点，但不修改词典语义措辞；

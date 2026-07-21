@@ -7,10 +7,15 @@ import html
 import json
 import re
 import sqlite3
+import sys
 import zlib
 from collections import Counter, defaultdict
 from collections.abc import Iterator
 from pathlib import Path
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 MEANING_PARAGRAPH_RE = re.compile(
@@ -28,6 +33,8 @@ INLINE_TAG_RE = re.compile(
 SQUARE_QUALIFIER_RE = re.compile(r'［([^］]+)］')
 TAG_RE = re.compile(r'<[^>]+>')
 JAPANESE_KANA_RE = re.compile(r'[ぁ-ゖァ-ヺー]')
+STANDALONE_SUBHEAD_RE = re.compile(r'data-orgtag="subhead"')
+SUBHEAD_TYPE_RE = re.compile(r'data-orgtag="subhead"[^>]*\btype="([^"]+)"')
 
 
 def iter_entries(path: Path) -> Iterator[tuple[str, str]]:
@@ -72,10 +79,24 @@ def add_sample(
 def audit_shogakukan(path: Path, sample_limit: int) -> dict[str, object]:
     counts: Counter[str] = Counter()
     labels: Counter[str] = Counter()
+    standalone_subhead_types: Counter[str] = Counter()
     samples: dict[str, list[dict[str, str]]] = defaultdict(list)
     entry_count = 0
     for headword, raw in iter_entries(path):
         entry_count += 1
+        if "<h3" not in raw and STANDALONE_SUBHEAD_RE.search(raw):
+            counts["standalone_subhead_entries"] += 1
+            subhead_type = SUBHEAD_TYPE_RE.search(raw)
+            standalone_subhead_types[
+                subhead_type.group(1) if subhead_type else "(none)"
+            ] += 1
+            add_sample(
+                samples,
+                "standalone_subhead_entries",
+                headword,
+                raw,
+                sample_limit,
+            )
         parsed = []
         for paragraph_match in MEANING_PARAGRAPH_RE.finditer(raw):
             paragraph = paragraph_match.group(0)
@@ -165,6 +186,7 @@ def audit_shogakukan(path: Path, sample_limit: int) -> dict[str, object]:
         "entries": entry_count,
         "counts": dict(counts),
         "inline_tag_labels": dict(labels.most_common()),
+        "standalone_subhead_types": dict(standalone_subhead_types.most_common()),
         "samples": dict(samples),
     }
 

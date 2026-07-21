@@ -5,6 +5,7 @@ use crate::models::{
     DictionaryGlossGroup, DictionarySection, DictionarySectionItem, DictionarySense, DictionaryTag,
     DictionaryText,
 };
+use crate::text_language::is_japanese_text;
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -31,6 +32,25 @@ pub fn adapt(
     let root = parse_fragment(definition);
     let records = split_records(&root);
     if records.is_empty() {
+        let standalone_subheads = common::direct_child_elements(&root)
+            .filter(|element| element.attr("data-orgtag") == Some("subhead"))
+            .collect::<Vec<_>>();
+        if !standalone_subheads.is_empty() {
+            return standalone_subheads
+                .into_iter()
+                .enumerate()
+                .map(|(index, subhead)| {
+                    adapt_standalone_subhead(
+                        index,
+                        indexed_headword,
+                        subhead,
+                        &root,
+                        structured_reading,
+                        definition,
+                    )
+                })
+                .collect();
+        }
         return vec![common::fallback(
             "shogakukan",
             indexed_headword,
@@ -53,6 +73,68 @@ pub fn adapt(
             )
         })
         .collect()
+}
+
+fn adapt_standalone_subhead(
+    index: usize,
+    indexed_headword: &str,
+    subhead: &HtmlElement,
+    root: &HtmlElement,
+    structured_reading: Option<&str>,
+    fallback_source: &str,
+) -> AdaptedOccurrence {
+    let (display_form, _) = first_by_orgtag(subhead, "subheadword")
+        .map(HtmlElement::text)
+        .map(|value| subhead_label(&value))
+        .unwrap_or_else(|| (indexed_headword.to_string(), None));
+    let display_form = if display_form.is_empty() {
+        indexed_headword.to_string()
+    } else {
+        display_form
+    };
+    let entry_kind = match subhead.attr("type") {
+        Some("慣用句") => "phrase",
+        _ => "lexical",
+    };
+    let reading = structured_reading.map(common::normalize_reading);
+    let mut occurrence = AdaptedOccurrence {
+        source_record_index: index,
+        occurrence_suffix: format!("standalone-subhead-{index}"),
+        entry_kind: entry_kind.to_string(),
+        header: crate::models::DictionaryOccurrenceHeader {
+            display_form: display_form.clone(),
+            canonical_form: Some(display_form.clone()),
+            reading: reading.clone(),
+            scoped_forms: vec![DictionaryForm {
+                form: display_form,
+                reading,
+                kind: "canonical".to_string(),
+            }],
+            ..Default::default()
+        },
+        diagnostics: DictionaryAdapterDiagnostics {
+            coverage: "structured".to_string(),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    let mut paragraphs = Vec::new();
+    collect_main_paragraphs(subhead, &mut paragraphs);
+    let (senses, loose_notes) = parse_sense_paragraphs(&paragraphs);
+    occurrence.senses = senses;
+    if !loose_notes.is_empty() {
+        occurrence.sections.push(DictionarySection {
+            kind: "notes".to_string(),
+            label: Some("说明".to_string()),
+            items: vec![DictionarySectionItem {
+                content: loose_notes,
+                ..Default::default()
+            }],
+        });
+    }
+    occurrence.links = common::extract_links(root, "reference");
+    common::finish(occurrence, "shogakukan", fallback_source)
 }
 
 fn split_records(root: &HtmlElement) -> Vec<(&HtmlElement, Option<&HtmlElement>)> {
@@ -357,7 +439,7 @@ fn parse_sense_paragraphs(
                     ..Default::default()
                 };
                 if !residual.is_empty() {
-                    if sense.glosses.is_empty() && !contains_kana(&residual) {
+                    if sense.glosses.is_empty() && !is_japanese_text(&residual) {
                         sense.glosses.extend(
                             split_top_level_phrases(&residual)
                                 .into_iter()
@@ -415,15 +497,6 @@ fn sense_relation_targets(sense: &DictionarySense) -> Box<dyn Iterator<Item = &S
             .map(|link| &link.target)
             .chain(sense.children.iter().flat_map(sense_relation_targets)),
     )
-}
-
-fn contains_kana(value: &str) -> bool {
-    value.chars().any(|character| {
-        matches!(
-            character,
-            '\u{3040}'..='\u{30ff}' | '\u{31f0}'..='\u{31ff}'
-        )
-    })
 }
 
 fn subhead_content(paragraph: &HtmlElement) -> (Option<DictionaryText>, Vec<DictionaryTag>) {
@@ -589,6 +662,11 @@ impl GlossGroupBuilder {
     }
 
     fn text(&mut self, value: &str) {
+        if !self.current_clause.trailing_tags.is_empty()
+            && value.chars().any(|character| !character.is_whitespace())
+        {
+            self.flush_clause();
+        }
         self.current_clause.text.html.push_str(value);
     }
 
@@ -609,7 +687,14 @@ impl GlossGroupBuilder {
         self.current_clause.text = if raw.is_empty() {
             DictionaryText::default()
         } else {
-            common::text(if contains_kana(&raw) { "ja" } else { "zh-CN" }, raw)
+            common::text(
+                if is_japanese_text(&raw) {
+                    "ja"
+                } else {
+                    "zh-CN"
+                },
+                raw,
+            )
         };
         self.current_group
             .clauses
@@ -696,7 +781,7 @@ fn collect_gloss_text(source: &str, builder: &mut GlossGroupBuilder) {
                         }
                         "square" => builder.qualifier(&label),
                         "angle" => builder.tag("domain", &label),
-                        "round" if contains_kana(&label) => builder.heading(&label),
+                        "round" if is_japanese_text(&label) => builder.heading(&label),
                         _ => {
                             buffer.push(character);
                             buffer.push_str(&label);
@@ -903,6 +988,57 @@ mod tests {
             occurrence.senses[0].gloss_groups[1].heading.as_deref(),
             Some("〔反動・反発〕")
         );
+    }
+
+    #[test]
+    fn adapts_standalone_subhead_as_a_structured_occurrence() {
+        let definition = r#"<link rel="stylesheet" type="text/css" href="Shogakukanjcv3.css"><div data-orgtag="subhead" id="JCD3_320300_SC080" type="複合語" delimiter="┃"><div data-orgtag="subheadword" type="複合語">世間話</div><p data-orgtag="meaning" class="subhw_meaning">闲话；［世間話をする］闲聊，闲谈，聊天儿<span class="white-square">口語</span>，拉〔扯〕家常<span class="white-square">口語</span>；张家长李家短．</p><p data-orgtag="example" delimiter="¶"><jae>30分ほど世間話で過ごした</jae><ja_cn>随便闲聊了三十来分钟．</ja_cn></p><p data-orgtag="example" delimiter="¶"><jae>友だちと世間話をさかなに一杯やった</jae><ja_cn>跟朋友以清谈佐酒喝了两杯．</ja_cn></p></div>参见：<a href="entry://世間">世間</a>"#;
+        let occurrence = adapt("世間話", "世間話", None, definition)
+            .into_iter()
+            .next()
+            .expect("应生成独立 occurrence");
+
+        assert_eq!(occurrence.header.display_form, "世間話");
+        assert_eq!(occurrence.entry_kind, "lexical");
+        assert_eq!(occurrence.diagnostics.coverage, "structured");
+        assert_eq!(occurrence.senses.len(), 1);
+        let clauses = &occurrence.senses[0].gloss_groups[0].clauses;
+        assert_eq!(clauses.len(), 4);
+        assert_eq!(clauses[1].qualifier.as_deref(), Some("世間話をする"));
+        assert_eq!(clauses[1].trailing_tags[0].label, "口語");
+        assert_eq!(clauses[2].trailing_tags[0].label, "口語");
+        assert_eq!(occurrence.senses[0].examples.len(), 2);
+        assert!(occurrence.links.iter().any(|link| link.target == "世間"));
+        assert!(!occurrence.definition_html.contains("subheadword"));
+    }
+
+    #[test]
+    fn recognizes_kanji_only_japanese_gloss_heading() {
+        let occurrence = adapt_one(
+            r#"<h3>雑談<span class="pinyin_h">ざつだん</span></h3><section class="description"><p data-orgtag="meaning">〔世間話〕<b>闲聊</b>．</p></section>"#,
+        );
+        assert_eq!(
+            occurrence.senses[0].gloss_groups[0].heading.as_deref(),
+            Some("世間話")
+        );
+        assert_eq!(
+            occurrence.senses[0].gloss_groups[0].clauses[0].text.lang,
+            "zh-CN"
+        );
+    }
+
+    #[test]
+    fn preserves_standalone_idiom_kind_and_example() {
+        let definition = r#"<div data-orgtag="subhead" type="慣用句"><div data-orgtag="subheadword" type="慣用句">…たことがある</div><p data-orgtag="meaning" class="subhw_meaning">（曾经）……过．</p><p data-orgtag="example"><jae>行ったことがある</jae><ja_cn>去过．</ja_cn></p></div>参见：<a href="entry://た">た</a>"#;
+        let occurrence = adapt("…たことがある", "…たことがある", None, definition)
+            .into_iter()
+            .next()
+            .expect("应生成惯用句 occurrence");
+
+        assert_eq!(occurrence.entry_kind, "phrase");
+        assert_eq!(occurrence.senses.len(), 1);
+        assert_eq!(occurrence.senses[0].examples.len(), 1);
+        assert!(occurrence.links.iter().any(|link| link.target == "た"));
     }
 }
 
