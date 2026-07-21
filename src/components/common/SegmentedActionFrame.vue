@@ -397,8 +397,7 @@ onBeforeUnmount(() => {
 .segmented-action-frame__rail {
   position: absolute;
   z-index: 1;
-  inset: 0;
-  border-radius: var(--frame-line-radius);
+  inset: 0 var(--frame-line-width);
   transition: filter var(--frame-motion-duration) var(--frame-motion-curve), transform var(--frame-motion-duration) var(--frame-motion-curve);
 }
 
