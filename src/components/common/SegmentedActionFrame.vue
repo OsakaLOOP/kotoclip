@@ -106,7 +106,7 @@ function dividerStyle(index: number): CSSProperties {
   grid-template-rows: repeat(var(--frame-rows), minmax(0, 1fr));
   overflow: visible;
   --frame-line-width: 7px;
-  --frame-line-radius: 4px;
+  --frame-line-radius: 12px;
   --frame-corner-length: 38px;
 }
 

@@ -1088,7 +1088,7 @@ h1 {
 .book-progress {
   height: 3px;
   overflow: hidden;
-  margin-top: 7px;
+  margin-top: auto;
   background: var(--border-color);
 }
 
