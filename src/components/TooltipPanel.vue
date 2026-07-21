@@ -302,7 +302,9 @@ const activeHeaderFacts = computed(() => {
   if (header.origin) facts.push(`词源 ${header.origin}`);
   if (header.historical_reading) facts.push(`历史读音 ${header.historical_reading}`);
   for (const form of header.scoped_forms) {
-    if (form.form !== header.display_form) facts.push(`异表记 ${form.form}`);
+    if (form.form !== header.display_form) {
+      facts.push(`${form.kind === "original" ? "原綴" : "异表记"} ${form.form}`);
+    }
   }
   if (header.short_note) facts.push(header.short_note);
   return facts;

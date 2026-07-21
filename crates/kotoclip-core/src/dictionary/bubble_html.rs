@@ -498,7 +498,12 @@ fn header_facts(entry: &DictEntry) -> Vec<String> {
                 .as_ref()
                 .map(|value| format!("【{value}】"))
                 .unwrap_or_default();
-            facts.push(format!("异表记 {}{}", form.form, reading));
+            let label = if form.kind == "original" {
+                "原綴"
+            } else {
+                "异表记"
+            };
+            facts.push(format!("{label} {}{}", form.form, reading));
         }
     }
     if let Some(note) = &header.short_note {
@@ -723,10 +728,10 @@ const PREVIEW_SCRIPT: &str = r#"
 
 #[cfg(test)]
 mod tests {
-    use super::occurrence_label;
+    use super::{header_facts, occurrence_label};
     use crate::models::{
-        DictEntry, DictionaryAdapterDiagnostics, DictionaryOccurrenceHeader, DictionarySense,
-        DictionaryText,
+        DictEntry, DictionaryAdapterDiagnostics, DictionaryForm, DictionaryOccurrenceHeader,
+        DictionarySense, DictionaryText,
     };
 
     fn daijirin_occurrence(id: &str, definition: &str) -> DictEntry {
@@ -782,5 +787,17 @@ mod tests {
         assert_eq!(second_label, "立つ · 同形条目 2/2");
         assert!(!first_label.contains("座ったり"));
         assert!(!second_label.contains("和船"));
+    }
+
+    #[test]
+    fn labels_original_spelling_separately_from_variant_forms() {
+        let mut entry = daijirin_occurrence("entry", "definition");
+        entry.header.scoped_forms.push(DictionaryForm {
+            form: "paperwork".to_string(),
+            reading: None,
+            kind: "original".to_string(),
+        });
+
+        assert!(header_facts(&entry).contains(&"原綴 paperwork".to_string()));
     }
 }

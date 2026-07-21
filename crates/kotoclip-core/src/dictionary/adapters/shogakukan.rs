@@ -97,6 +97,28 @@ fn adapt_standalone_subhead(
         _ => "lexical",
     };
     let reading = structured_reading.map(common::normalize_reading);
+    let mut scoped_forms = vec![DictionaryForm {
+        form: display_form.clone(),
+        reading: reading.clone(),
+        kind: "canonical".to_string(),
+    }];
+    for original in common::direct_child_elements(subhead)
+        .filter(|element| {
+            element.attr("data-orgtag") == Some("subheadword")
+                && element.attr("type") == Some("複合語原綴")
+        })
+        .map(HtmlElement::text)
+        .map(|value| common::normalize_visible_text(&value))
+        .filter(|value| !value.is_empty() && value != &display_form)
+    {
+        if !scoped_forms.iter().any(|form| form.form == original) {
+            scoped_forms.push(DictionaryForm {
+                form: original,
+                reading: None,
+                kind: "original".to_string(),
+            });
+        }
+    }
     let mut occurrence = AdaptedOccurrence {
         source_record_index: index,
         occurrence_suffix: format!("standalone-subhead-{index}"),
@@ -105,11 +127,7 @@ fn adapt_standalone_subhead(
             display_form: display_form.clone(),
             canonical_form: Some(display_form.clone()),
             reading: reading.clone(),
-            scoped_forms: vec![DictionaryForm {
-                form: display_form,
-                reading,
-                kind: "canonical".to_string(),
-            }],
+            scoped_forms,
             ..Default::default()
         },
         diagnostics: DictionaryAdapterDiagnostics {
@@ -1039,6 +1057,20 @@ mod tests {
         assert_eq!(occurrence.senses.len(), 1);
         assert_eq!(occurrence.senses[0].examples.len(), 1);
         assert!(occurrence.links.iter().any(|link| link.target == "た"));
+    }
+
+    #[test]
+    fn preserves_standalone_original_spelling() {
+        let definition = r#"<div data-orgtag="subhead" type="複合語"><div data-orgtag="subheadword" type="複合語">ペーパーワーク</div><div data-orgtag="subheadword" type="複合語原綴">paperwork</div><p data-orgtag="meaning" class="subhw_meaning">書類仕事．</p></div>"#;
+        let occurrence = adapt("ペーパーワーク", "ペーパーワーク", None, definition)
+            .into_iter()
+            .next()
+            .expect("应生成独立 occurrence");
+
+        assert_eq!(occurrence.header.scoped_forms.len(), 2);
+        assert_eq!(occurrence.header.scoped_forms[1].form, "paperwork");
+        assert_eq!(occurrence.header.scoped_forms[1].kind, "original");
+        assert_eq!(occurrence.header.scoped_forms[1].reading, None);
     }
 }
 
