@@ -1528,8 +1528,14 @@ fn heading_equivalent(left: &str, right: &str) -> bool {
 
 fn normalize_heading_key(value: &str) -> String {
     static RUBY: OnceLock<Regex> = OnceLock::new();
-    RUBY.get_or_init(|| Regex::new(r"《[^》]+》").unwrap())
-        .replace_all(value, "")
+    static DASH: OnceLock<Regex> = OnceLock::new();
+    let without_ruby = RUBY
+        .get_or_init(|| Regex::new(r"《[^》]+》").unwrap())
+        .replace_all(value, "");
+    let normalized_dashes = DASH
+        .get_or_init(|| Regex::new(r"[-‐‑‒–—―─━]+").unwrap())
+        .replace_all(&without_ruby, "-");
+    normalized_dashes
         .chars()
         .filter(|character| !character.is_whitespace())
         .collect::<String>()
@@ -1634,6 +1640,14 @@ mod tests {
             normalize_spaced_title("第一章　恋人とか、ぜったいにムリ！"),
             "第一章　恋人とか、ぜったいにムリ！"
         );
+    }
+
+    #[test]
+    fn treats_equivalent_dash_runs_as_the_same_heading() {
+        assert!(heading_equivalent(
+            "プロローグ　◎　自己紹介代わりの回想─元・天才美少女作家です",
+            "　プロローグ　◎　自己紹介代わりの回想──元・天才美少女作家です",
+        ));
     }
 
     #[test]
