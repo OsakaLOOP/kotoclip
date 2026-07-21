@@ -32,22 +32,31 @@ export interface ResolvedReaderImage {
   height?: number;
 }
 
+// 部分 EPUB 将名义 400px 页面编码为 371/390px，保留约 10% 尺寸容差。
+const PORTRAIT_PAGE_MIN_WIDTH = 360;
+const PORTRAIT_PAGE_MIN_RATIO = 0.58;
+const PORTRAIT_PAGE_MAX_RATIO = 0.82;
+const PAIRED_PAGE_MAX_SIZE_RATIO = 1.12;
+
 function isPortraitPage(item: ReaderRowImage): boolean {
   const { intrinsicWidth: width, intrinsicHeight: height } = item;
-  if (!width || !height || width < 600 || height < 800) return false;
+  if (!width || !height || width < PORTRAIT_PAGE_MIN_WIDTH) return false;
   const ratio = width / height;
-  return ratio >= 0.58 && ratio <= 0.82;
+  return ratio >= PORTRAIT_PAGE_MIN_RATIO && ratio <= PORTRAIT_PAGE_MAX_RATIO;
 }
 
-function canPairOpeningPages(items: ReaderRowImage[], index: number): boolean {
-  if (index !== 0 || items.length < 2) return false;
+function canPairPortraitPages(items: ReaderRowImage[], index: number): boolean {
+  if (index + 1 >= items.length) return false;
   const [left, right] = items.slice(index, index + 2);
   if (left.image.charOffset !== right.image.charOffset
     || !isPortraitPage(left)
     || !isPortraitPage(right)) return false;
+  const widthRatio = Math.max(left.intrinsicWidth!, right.intrinsicWidth!)
+    / Math.min(left.intrinsicWidth!, right.intrinsicWidth!);
   const heightRatio = Math.max(left.intrinsicHeight!, right.intrinsicHeight!)
     / Math.min(left.intrinsicHeight!, right.intrinsicHeight!);
-  return heightRatio <= 1.12;
+  return widthRatio <= PAIRED_PAGE_MAX_SIZE_RATIO
+    && heightRatio <= PAIRED_PAGE_MAX_SIZE_RATIO;
 }
 
 function isSmallSymbol(item: ReaderRowImage): boolean {
@@ -58,7 +67,7 @@ function isSmallSymbol(item: ReaderRowImage): boolean {
 function imageRow(items: ReaderRowImage[], index: number): { row: ReaderImageRow; nextIndex: number } {
   let layout: ReaderImageLayout = "single";
   let grouped = [items[index]];
-  if (canPairOpeningPages(items, index)) {
+  if (canPairPortraitPages(items, index)) {
     layout = "pair";
     grouped = items.slice(index, index + 2);
   } else if (isSmallSymbol(items[index])) {

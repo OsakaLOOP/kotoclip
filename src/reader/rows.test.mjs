@@ -46,3 +46,54 @@ test("段落 key 不随增量插入导致的临时 ID 变化", () => {
   );
   assert.deepEqual(after.map((row) => row.key), before.map((row) => row.key));
 });
+
+test("连续的近 400px 竖版图片按顺序两两配对", () => {
+  const images = Array.from({ length: 4 }, (_, index) => ({
+    id: `image-${index + 1}`,
+    kind: "image",
+    src: `page-${index + 1}.jpeg`,
+    alt: "",
+    charOffset: 0,
+  }));
+  const document = {
+    metadata: {},
+    markdown: "",
+    analysisText: "",
+    blocks: images,
+    cleanup: {},
+    chapters: [],
+    images,
+  };
+  const rows = buildReaderRows([], document, (src) => ({
+    src: `asset://${src}`,
+    width: src === "page-1.jpeg" || src === "page-2.jpeg" ? 390 : 371,
+    height: 545,
+  }), true);
+
+  assert.deepEqual(rows.map((row) => row.layout), ["pair", "pair"]);
+  assert.deepEqual(rows.map((row) => row.items.length), [2, 2]);
+});
+
+test("不同正文锚点或尺寸差异过大的竖版图片保持单页", () => {
+  const images = [
+    { id: "image-1", kind: "image", src: "page-1.jpeg", alt: "", charOffset: 0 },
+    { id: "image-2", kind: "image", src: "page-2.jpeg", alt: "", charOffset: 1 },
+    { id: "image-3", kind: "image", src: "page-3.jpeg", alt: "", charOffset: 1 },
+  ];
+  const document = {
+    metadata: {},
+    markdown: "",
+    analysisText: "",
+    blocks: images,
+    cleanup: {},
+    chapters: [],
+    images,
+  };
+  const rows = buildReaderRows([], document, (src) => ({
+    src: `asset://${src}`,
+    width: src === "page-3.jpeg" ? 430 : 390,
+    height: src === "page-3.jpeg" ? 650 : 545,
+  }), true);
+
+  assert.deepEqual(rows.map((row) => row.layout), ["single", "single", "single"]);
+});
