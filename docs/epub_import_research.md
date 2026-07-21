@@ -194,6 +194,18 @@ EPUB ZIP
 
 验证通过：10 项 EPUB 定向测试、`cargo check -p kotoclip-core`、全机 69 个唯一可读 EPUB 复测、`cargo fmt --all` 与 `git diff --check`。全机审计 example 已在验证后删除，不进入生产代码或仓库。
 
+### 2026-07-21 阶段 E：现有书架外部迁移
+
+由于当前应用没有删除或重新导入入口，本阶段不修改 Tauri/Vue 主体，也不加入运行时兼容分支；使用一次性外部工具调用既有 `ReaderLibrary::import_epub`，对书库中 8 个 `source.epub` 原地重建 `content.md`、`assets`、`chapters` 和 `resources`。
+
+- 迁移前完整备份：`Documents/Kotoclip Library.migration-backup-20260721-113250`。
+- 迁移保留原始 EPUB 内容哈希和书籍 ID，不改变书架身份；阅读秒数保留，进度偏移按新正文长度截断，已不存在的当前章节清空。
+- 迁移后删除未被新资源索引引用的旧 asset 文件；图片资源仍由数据库相对路径指向书籍目录。
+- 7 本日文验收书章节数保持 `8/5/11/12/9/5/18`；此前研究排除的中文正文样本也按同一通用解析器完成迁移，没有添加书籍特例。
+- 只读验收确认 8 本书的数据库章节计数、Markdown 字符数、图片索引与文件、Markdown 图片引用和进度范围一致；`![]`、`![]()`、raw HTML 和 Pandoc 残留均为 0。
+
+迁移和验收使用的临时 Rust example 已在完成后删除，仓库不新增程序入口。
+
 ## 6. 验收矩阵
 
 每次实现后记录以下结果：
