@@ -5,7 +5,7 @@ use crate::models::{
     DictionaryGlossGroup, DictionarySection, DictionarySectionItem, DictionarySense, DictionaryTag,
     DictionaryText,
 };
-use crate::text_language::is_japanese_text;
+use crate::text_language::{detect_cjk_language, is_japanese_text, CjkLanguage};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -151,8 +151,135 @@ fn adapt_standalone_subhead(
             }],
         });
     }
+    let (related_sections, omitted_media) = standalone_related_sections(root);
+    occurrence.sections.extend(related_sections);
+    occurrence.diagnostics.omitted.extend(omitted_media);
     occurrence.links = common::extract_links(root, "reference");
     common::finish(occurrence, "shogakukan", fallback_source)
+}
+
+fn standalone_related_sections(root: &HtmlElement) -> (Vec<DictionarySection>, Vec<String>) {
+    let mut columns = Vec::new();
+    collect_related_columns(root, &mut columns);
+    let mut sections = Vec::new();
+    let mut omitted_media = Vec::new();
+    for column in columns {
+        let mut images = Vec::new();
+        column.all_by_name("img", &mut images);
+        for source in images
+            .into_iter()
+            .filter_map(|image| image.attr("src"))
+            .map(common::normalize_visible_text)
+            .filter(|source| !source.is_empty())
+        {
+            let omission = format!("相关文章图片：{source}");
+            if !omitted_media.contains(&omission) {
+                omitted_media.push(omission);
+            }
+        }
+
+        if let Some(section) = related_column_section(column) {
+            sections.push(section);
+        }
+    }
+    (sections, omitted_media)
+}
+
+fn collect_related_columns<'a>(element: &'a HtmlElement, output: &mut Vec<&'a HtmlElement>) {
+    for child in common::direct_child_elements(element) {
+        if child.attr("data-orgtag") == Some("column") {
+            output.push(child);
+        } else {
+            collect_related_columns(child, output);
+        }
+    }
+}
+
+fn related_column_section(column: &HtmlElement) -> Option<DictionarySection> {
+    let label = column
+        .first_by_class("column-title")
+        .map(HtmlElement::text)
+        .map(|value| common::normalize_visible_text(&value))
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "相关文章".to_string());
+    let mut paragraphs = Vec::new();
+    column.all_by_name("p", &mut paragraphs);
+    let mut items = paragraphs
+        .into_iter()
+        .filter_map(related_paragraph_item)
+        .collect::<Vec<_>>();
+    if items.is_empty() {
+        let value =
+            common::normalize_visible_text(&column.text_excluding_classes(&["column-title"]))
+                .trim_start_matches("[関連記事]")
+                .trim()
+                .to_string();
+        if !value.is_empty() {
+            items.push(DictionarySectionItem {
+                content: vec![detected_text(value)],
+                ..Default::default()
+            });
+        }
+    }
+    (!items.is_empty()).then(|| DictionarySection {
+        kind: "related".to_string(),
+        label: Some(label),
+        items,
+    })
+}
+
+fn related_paragraph_item(paragraph: &HtmlElement) -> Option<DictionarySectionItem> {
+    if let Some(source) = first_named_plain_text(paragraph, "jae") {
+        return Some(DictionarySectionItem {
+            label: Some(source),
+            content: first_named_example_text(paragraph, "ja_cn", "zh-CN")
+                .into_iter()
+                .collect(),
+            ..Default::default()
+        });
+    }
+
+    let value = common::normalize_visible_text(&paragraph.text());
+    if value.is_empty() {
+        return None;
+    }
+    if let Some((source, translation)) = split_bilingual_column_text(&value) {
+        return Some(DictionarySectionItem {
+            label: Some(source),
+            content: vec![common::text("zh-CN", translation)],
+            ..Default::default()
+        });
+    }
+    Some(DictionarySectionItem {
+        content: vec![detected_text(value)],
+        ..Default::default()
+    })
+}
+
+fn first_named_plain_text(element: &HtmlElement, name: &str) -> Option<String> {
+    let mut elements = Vec::new();
+    element.all_by_name(name, &mut elements);
+    elements
+        .first()
+        .map(|element| element.text())
+        .map(|value| common::normalize_visible_text(&value))
+        .filter(|value| !value.is_empty())
+}
+
+fn split_bilingual_column_text(value: &str) -> Option<(String, String)> {
+    let (source, translation) = value.split_once('｜').or_else(|| value.split_once('|'))?;
+    let source = common::normalize_visible_text(source);
+    let translation = common::normalize_visible_text(translation);
+    (!source.is_empty() && !translation.is_empty()).then_some((source, translation))
+}
+
+fn detected_text(value: String) -> DictionaryText {
+    let lang = match detect_cjk_language(&value) {
+        CjkLanguage::Japanese => "ja",
+        CjkLanguage::ChineseSimplified | CjkLanguage::ChineseTraditional => "zh-CN",
+        CjkLanguage::Undetermined => "",
+    };
+    common::text(lang, value)
 }
 
 fn split_records(root: &HtmlElement) -> Vec<(&HtmlElement, Option<&HtmlElement>)> {
@@ -1123,6 +1250,36 @@ mod tests {
             .definition_html
             .contains("反躬自省<span class=\"dictionary-tag\">成語</span>；不作回答。"));
         assert!(!occurrence.definition_html.contains("反躬自省成語"));
+    }
+
+    #[test]
+    fn preserves_related_columns_and_reports_unavailable_media() {
+        let definition = r#"<div data-orgtag="subhead" type="複合語"><div data-orgtag="subheadword" type="複合語">魚屋</div><p data-orgtag="meaning" class="subhw_meaning">鱼店；鱼铺．</p></div><div data-orgtag="column" type="関連記事">[関連記事]<span class="column-title">魚の部位名称</span><img src="image/dictionary/jc03/JGN05010.bmp"/><p data-orgtag="example">➀背びれ｜背鳍</p><p data-orgtag="example"><jae>➁尾びれ</jae><ja_cn>尾鳍．</ja_cn></p><p data-orgtag="example">补充说明．</p></div>"#;
+        let occurrence = adapt("魚屋", "魚屋", None, definition)
+            .into_iter()
+            .next()
+            .expect("应生成独立 occurrence");
+        let section = occurrence
+            .sections
+            .iter()
+            .find(|section| section.kind == "related")
+            .expect("应保留相关文章栏");
+
+        assert_eq!(section.label.as_deref(), Some("魚の部位名称"));
+        assert_eq!(section.items.len(), 3);
+        assert_eq!(section.items[0].label.as_deref(), Some("➀背びれ"));
+        assert_eq!(section.items[0].content[0].html, "背鳍");
+        assert_eq!(section.items[0].content[0].lang, "zh-CN");
+        assert_eq!(section.items[1].label.as_deref(), Some("➁尾びれ"));
+        assert_eq!(section.items[1].content[0].html, "尾鳍。");
+        assert_eq!(section.items[2].content[0].html, "补充说明。");
+        assert_eq!(
+            occurrence.diagnostics.omitted,
+            vec!["相关文章图片：image/dictionary/jc03/JGN05010.bmp"]
+        );
+        assert!(occurrence.definition_html.contains("魚の部位名称"));
+        assert!(occurrence.definition_html.contains("背鳍"));
+        assert!(!occurrence.definition_html.contains("data-orgtag"));
     }
 }
 
