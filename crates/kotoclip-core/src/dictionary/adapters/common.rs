@@ -126,21 +126,6 @@ pub fn tag(kind: &str, label: impl AsRef<str>) -> DictionaryTag {
     }
 }
 
-pub fn example(source: &str, translation: Option<&str>) -> Option<DictionaryExample> {
-    let source = normalize_visible_text(source);
-    if source.is_empty() {
-        return None;
-    }
-    Some(DictionaryExample {
-        source: text("ja", source),
-        translation: translation
-            .map(normalize_visible_text)
-            .filter(|value| !value.is_empty())
-            .map(|value| text("zh-CN", value)),
-        note: None,
-    })
-}
-
 pub fn normalize_visible_text(value: &str) -> String {
     let mut output = String::with_capacity(value.len());
     let mut previous_space = false;

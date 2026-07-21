@@ -395,16 +395,6 @@ fn first_typed_text(element: &HtmlElement, target_type: &str) -> Option<String> 
         .filter(|value| !value.is_empty())
 }
 
-fn first_named_text(element: &HtmlElement, name: &str) -> Option<String> {
-    let mut elements = Vec::new();
-    element.all_by_name(name, &mut elements);
-    elements
-        .first()
-        .map(|element| element.text())
-        .map(|value| common::normalize_visible_text(&value))
-        .filter(|value| !value.is_empty())
-}
-
 fn parse_sense_paragraphs(
     paragraphs: &[&HtmlElement],
 ) -> (Vec<DictionarySense>, Vec<DictionaryText>) {
@@ -478,14 +468,9 @@ fn parse_sense_paragraphs(
                 }
             }
             Some("example") => {
-                let source = first_named_text(element, "jae");
-                let translation = first_named_text(element, "ja_cn");
-                if let (Some(last), Some(example)) = (
-                    drafts.last_mut(),
-                    source
-                        .as_deref()
-                        .and_then(|source| common::example(source, translation.as_deref())),
-                ) {
+                if let (Some(last), Some(example)) =
+                    (drafts.last_mut(), structured_example(element))
+                {
                     last.sense.examples.push(example);
                 }
             }
@@ -499,12 +484,57 @@ fn standalone_examples(paragraphs: &[&HtmlElement]) -> Vec<DictionaryExample> {
     paragraphs
         .iter()
         .filter(|paragraph| paragraph.attr("data-orgtag") == Some("example"))
-        .filter_map(|paragraph| {
-            let source = first_named_text(paragraph, "jae")?;
-            let translation = first_named_text(paragraph, "ja_cn");
-            common::example(&source, translation.as_deref())
-        })
+        .filter_map(|paragraph| structured_example(paragraph))
         .collect()
+}
+
+fn structured_example(element: &HtmlElement) -> Option<DictionaryExample> {
+    Some(DictionaryExample {
+        source: first_named_example_text(element, "jae", "ja")?,
+        translation: first_named_example_text(element, "ja_cn", "zh-CN"),
+        ..Default::default()
+    })
+}
+
+fn first_named_example_text(
+    element: &HtmlElement,
+    name: &str,
+    lang: &str,
+) -> Option<DictionaryText> {
+    let mut elements = Vec::new();
+    element.all_by_name(name, &mut elements);
+    let element = *elements.first()?;
+    if element.first_by_class("white-square").is_none()
+        && element.first_by_class("black-square").is_none()
+    {
+        let value = common::normalize_visible_text(&element.text());
+        return (!value.is_empty()).then(|| common::text(lang, value));
+    }
+
+    let mut html = String::new();
+    render_example_text_nodes(&element.children, &mut html);
+    let html = common::normalize_visible_text(&html);
+    (!html.is_empty()).then(|| common::html_text(lang, html))
+}
+
+fn render_example_text_nodes(nodes: &[HtmlNode], output: &mut String) {
+    for node in nodes {
+        match node {
+            HtmlNode::Text(text) => output.push_str(&common::escape_html(text)),
+            HtmlNode::Element(element)
+                if element.has_class("white-square") || element.has_class("black-square") =>
+            {
+                let label = common::normalize_visible_text(&element.text());
+                if !label.is_empty() {
+                    output.push_str("<span class=\"dictionary-tag\">");
+                    output.push_str(&common::escape_html(&label));
+                    output.push_str("</span>");
+                }
+            }
+            HtmlNode::Element(element) if element.name == "br" => output.push_str("<br>"),
+            HtmlNode::Element(element) => render_example_text_nodes(&element.children, output),
+        }
+    }
 }
 
 fn sense_relation_targets(sense: &DictionarySense) -> Box<dyn Iterator<Item = &String> + '_> {
@@ -1071,6 +1101,28 @@ mod tests {
         assert_eq!(occurrence.header.scoped_forms[1].form, "paperwork");
         assert_eq!(occurrence.header.scoped_forms[1].kind, "original");
         assert_eq!(occurrence.header.scoped_forms[1].reading, None);
+    }
+
+    #[test]
+    fn preserves_inline_tags_in_example_translations() {
+        let definition = r#"<div data-orgtag="subhead" type="慣用句"><div data-orgtag="subheadword" type="慣用句">我と</div><p data-orgtag="meaning" class="subhw_meaning">亲自；主动地．</p><p data-orgtag="example"><jae>我と我が身を振り返る</jae><ja_cn>反躬自省<span class="white-square">成語</span>；不作回答．</ja_cn></p></div>"#;
+        let occurrence = adapt("我と", "我と", None, definition)
+            .into_iter()
+            .next()
+            .expect("应生成独立 occurrence");
+        let translation = occurrence.senses[0].examples[0]
+            .translation
+            .as_ref()
+            .expect("应保留例句译文");
+
+        assert_eq!(
+            translation.html,
+            "反躬自省<span class=\"dictionary-tag\">成語</span>；不作回答。"
+        );
+        assert!(occurrence
+            .definition_html
+            .contains("反躬自省<span class=\"dictionary-tag\">成語</span>；不作回答。"));
+        assert!(!occurrence.definition_html.contains("反躬自省成語"));
     }
 }
 
