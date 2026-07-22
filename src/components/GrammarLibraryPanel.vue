@@ -10,6 +10,7 @@ import aiCheckedIcon from "../assets/grammar-review/ai-checked.svg";
 import trustedIcon from "../assets/grammar-review/trusted.svg";
 import unverifiedIcon from "../assets/grammar-review/unverified.svg";
 import GrammarTrustBadges from "./grammar/GrammarTrustBadges.vue";
+import ReaderSurface from "./reader/ReaderSurface.vue";
 import type {
   GrammarConcept,
   GrammarConceptBundle,
@@ -144,16 +145,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Transition name="grammar-library-fade">
-    <section v-if="show" class="grammar-library" role="dialog" aria-modal="true" aria-label="语法知识库">
-      <header class="library-header">
-        <div>
-          <span>Grammar Catalog</span>
-          <h1>语法知识库</h1>
-          <p>按稳定 concept 浏览讲解；正文中的实际作用仍由 occurrence 精确解析。</p>
-        </div>
-        <button type="button" class="close-button" @click="emit('close')">关闭</button>
-      </header>
+  <ReaderSurface :show="show" variant="fullscreen" title="语法知识库" subtitle="Grammar Catalog · 按稳定 concept 浏览讲解" @close="emit('close')">
+    <section class="grammar-library" aria-label="语法知识库">
 
       <div class="library-filters">
         <label>
@@ -330,17 +323,13 @@ onBeforeUnmount(() => {
         </article>
       </div>
     </section>
-  </Transition>
+  </ReaderSurface>
 </template>
 
 <style scoped>
-.grammar-library { position: fixed; inset: 18px; z-index: 1200; display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--bg-primary) 96%, transparent); box-shadow: 0 24px 70px rgba(18, 28, 48, .2); backdrop-filter: blur(22px); }
-.library-header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; padding: 22px 26px 16px; border-bottom: 1px solid var(--border-color); }
-.library-header span, .concept-heading > div > span { color: #1769aa; font: 800 .68rem/1.3 var(--font-ui); letter-spacing: .09em; text-transform: uppercase; }
-.library-header h1 { margin-top: 3px; font-size: 1.45rem; }
-.library-header p { margin-top: 3px; color: var(--text-muted); font-size: .78rem; }
+.grammar-library { display: grid; height: 100%; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; background: color-mix(in srgb, var(--bg-primary) 96%, transparent); }
+.concept-heading > div > span { color: #1769aa; font: 800 .68rem/1.3 var(--font-ui); letter-spacing: .09em; text-transform: uppercase; }
 button { border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; }
-.close-button { padding: 7px 13px; border-radius: 999px; }
 .library-filters { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(130px, .3fr) minmax(100px, .2fr) auto; gap: 12px; align-items: end; padding: 13px 26px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); }
 .library-filters label { display: grid; gap: 4px; min-width: 0; }
 .library-filters label span { color: var(--text-muted); font-size: .68rem; font-weight: 700; }
@@ -348,7 +337,7 @@ button { border: 1px solid var(--border-color); background: transparent; color: 
 .library-filters input:focus, .library-filters select:focus { border-color: #1769aa; box-shadow: 0 0 0 2px color-mix(in srgb, #1769aa 12%, transparent); }
 .library-filters output { padding-bottom: 7px; color: var(--text-muted); font-size: .72rem; white-space: nowrap; }
 .library-error { padding: 8px 26px; background: color-mix(in srgb, #a8323e 9%, var(--bg-primary)); color: #a8323e; font-size: .78rem; }
-.library-body { display: grid; grid-template-columns: minmax(210px, 290px) minmax(0, 1fr); min-height: 0; }
+.library-body { display: grid; grid-row: 3; grid-template-columns: minmax(210px, 290px) minmax(0, 1fr); min-height: 0; }
 .concept-list { overflow: auto; border-right: 1px solid var(--border-color); background: color-mix(in srgb, var(--bg-secondary) 70%, transparent); }
 .concept-list > button { display: grid; width: 100%; gap: 2px; padding: 12px 16px; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent); border-radius: 0; text-align: left; }
 .concept-list > button:hover, .concept-list > button.active { background: color-mix(in srgb, #1769aa 8%, var(--bg-primary)); }
@@ -395,7 +384,5 @@ button { border: 1px solid var(--border-color); background: transparent; color: 
 .relation-section button { padding: 5px 8px; border-radius: 999px; font-size: .7rem; }
 .concept-footer { display: grid; gap: 3px; margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: .68rem; }
 .empty-state { padding: 30px 18px; color: var(--text-muted); text-align: center; }
-.grammar-library-fade-enter-active, .grammar-library-fade-leave-active { transition: opacity .14s ease, transform .14s ease; }
-.grammar-library-fade-enter-from, .grammar-library-fade-leave-to { opacity: 0; transform: translateY(4px); }
-@media (max-width: 760px) { .grammar-library { inset: 8px; }.library-filters { grid-template-columns: 1fr 1fr; }.library-filters label:first-child { grid-column: 1 / -1; }.library-body { grid-template-columns: 1fr; }.concept-list { max-height: 33vh; border-right: 0; border-bottom: 1px solid var(--border-color); }.concept-heading { display: grid; }.detail-columns { grid-template-columns: 1fr; }.review-editor { align-items: flex-start; }.review-options { flex-wrap: wrap; } }
+@media (max-width: 760px) { .library-filters { grid-template-columns: 1fr 1fr; }.library-filters label:first-child { grid-column: 1 / -1; }.library-body { grid-template-columns: 1fr; }.concept-list { max-height: 33vh; border-right: 0; border-bottom: 1px solid var(--border-color); }.concept-heading { display: grid; }.detail-columns { grid-template-columns: 1fr; }.review-editor { align-items: flex-start; }.review-options { flex-wrap: wrap; } }
 </style>

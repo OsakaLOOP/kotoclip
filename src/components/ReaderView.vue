@@ -336,10 +336,45 @@ const expressionDraftMorphemeRange = ref({
 });
 const showRuleWorkbench = ref(false);
 const ruleWorkbenchView = ref<"library" | "editor">("library");
+type ReaderMenu = "navigation" | "appearance" | "dictionary" | "export" | "grammar" | "rules";
+
+function closeReaderMenus() {
+  showNavigation.value = false;
+  showAppearance.value = false;
+  showDictionarySettings.value = false;
+  showExportPanel.value = false;
+  showGrammarLibrary.value = false;
+  showRuleWorkbench.value = false;
+}
+
+function isReaderMenuOpen(menu: ReaderMenu): boolean {
+  if (menu === "navigation") return showNavigation.value;
+  if (menu === "appearance") return showAppearance.value;
+  if (menu === "dictionary") return showDictionarySettings.value;
+  if (menu === "export") return showExportPanel.value;
+  if (menu === "grammar") return showGrammarLibrary.value;
+  return showRuleWorkbench.value;
+}
+
+function openReaderMenu(menu: ReaderMenu) {
+  closeReaderMenus();
+  if (menu === "navigation") showNavigation.value = true;
+  else if (menu === "appearance") showAppearance.value = true;
+  else if (menu === "dictionary") showDictionarySettings.value = true;
+  else if (menu === "export") showExportPanel.value = true;
+  else if (menu === "grammar") showGrammarLibrary.value = true;
+  else showRuleWorkbench.value = true;
+}
+
+function toggleReaderMenu(menu: ReaderMenu) {
+  const shouldOpen = !isReaderMenuOpen(menu);
+  closeReaderMenus();
+  if (shouldOpen) openReaderMenu(menu);
+}
 
 async function openExpressionRules() {
   ruleWorkbenchView.value = "library";
-  showRuleWorkbench.value = true;
+  openReaderMenu("rules");
   try {
     expressionRules.value = await getExpressionRules();
   } catch (error) {
@@ -402,7 +437,7 @@ const {
     expressionDraft.value = tokens.filter((t) => t.display_class === "content");
     expressionDraftMorphemeRange.value = { startMorphemeIdx, endMorphemeIdx };
     ruleWorkbenchView.value = "editor";
-    showRuleWorkbench.value = true;
+    openReaderMenu("rules");
     try {
       expressionRules.value = await getExpressionRules();
     } catch (error) {
@@ -986,8 +1021,7 @@ async function returnToLibrary() {
   cancelAnalysis();
   if (activeLibraryBook.value && isReading.value)
     void persistLibraryProgress();
-  showAppearance.value = false;
-  showNavigation.value = false;
+  closeReaderMenus();
   showInput.value = false;
   showLibrary.value = true;
   activeLibraryBook.value = null;
@@ -1326,7 +1360,7 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           class="icon-btn chapter-button"
           :class="{ active: showNavigation }"
           :title="currentChapter?.title || '章节'"
-          @click="showNavigation = !showNavigation"
+          @click="toggleReaderMenu('navigation')"
         >
           <ListTree :size="16" aria-hidden="true" />
           <span class="chapter-button__label">{{ currentChapter?.title || "章节" }}</span>
@@ -1336,16 +1370,25 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           :class="{ active: showAppearance }"
           title="阅读排版"
           aria-label="阅读排版"
-          @click="showAppearance = !showAppearance"
+          @click="toggleReaderMenu('appearance')"
         >
           <Type :size="17" aria-hidden="true" />
         </button>
         <button
+          class="icon-btn compact-tool"
+          :class="{ active: showDictionarySettings }"
+          title="词典设置"
+          aria-label="词典设置"
+          @click="toggleReaderMenu('dictionary')"
+        >
+          <Settings2 :size="16" aria-hidden="true" />
+        </button>
+        <button
           class="icon-btn compact-tool export-tool"
           :class="{ active: showExportPanel }"
-          :title="`导出本（${selectedKeys.length}）`"
-          :aria-label="`导出本（${selectedKeys.length}）`"
-          @click="showExportPanel = !showExportPanel"
+          :title="`Anki 导出（${selectedKeys.length}）`"
+          :aria-label="`Anki 导出（${selectedKeys.length}）`"
+          @click="toggleReaderMenu('export')"
         >
           <BriefcaseBusiness :size="16" aria-hidden="true" /><span
             v-if="selectedKeys.length"
@@ -1355,30 +1398,21 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         </button>
         <button
           class="icon-btn compact-tool"
+          :class="{ active: showGrammarLibrary }"
+          title="文法库"
+          aria-label="文法库"
+          @click="toggleReaderMenu('grammar')"
+        >
+          <Library :size="16" aria-hidden="true" />
+        </button>
+        <button
+          class="icon-btn compact-tool"
           :class="{ active: showRuleWorkbench }"
           title="表达规则"
           aria-label="表达规则"
           @click="openExpressionRules"
         >
           <Link2 :size="16" aria-hidden="true" />
-        </button>
-        <button
-          class="icon-btn compact-tool"
-          :class="{ active: showGrammarLibrary }"
-          title="文法库"
-          aria-label="文法库"
-          @click="showGrammarLibrary = true"
-        >
-          <Library :size="16" aria-hidden="true" />
-        </button>
-        <button
-          class="icon-btn compact-tool"
-          :class="{ active: showDictionarySettings }"
-          title="词典设置"
-          aria-label="词典设置"
-          @click="showDictionarySettings = true"
-        >
-          <Settings2 :size="16" aria-hidden="true" />
         </button>
         <button
           class="icon-btn compact-tool"
@@ -2414,6 +2448,18 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
   .action-bar
     .icon-btn:not(.chapter-button):not(.compact-tool):not(.highlight) {
+    display: none;
+  }
+
+  .action-bar {
+    min-width: 0;
+    flex: 0 1 auto;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .action-bar::-webkit-scrollbar {
     display: none;
   }
 

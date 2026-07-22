@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { ChevronDown, ChevronUp, GripVertical, X } from "@lucide/vue";
+import { ChevronDown, ChevronUp, GripVertical } from "@lucide/vue";
 import type { DictionarySettings } from "../../types";
+import ReaderSurface from "../reader/ReaderSurface.vue";
 import {
   dictionaryShortcutKeyOptions,
   dictionaryShortcutSettings,
@@ -121,16 +122,9 @@ onBeforeUnmount(resetDrag);
 </script>
 
 <template>
-  <Transition name="fade">
-    <div v-if="show" class="settings-overlay" @click.self="emit('close')">
-      <section class="settings-panel" role="dialog" aria-modal="true" aria-label="词典设置">
-        <header>
-          <div>
-            <h2>词典设置</h2>
-            <p>拖动词典调整优先级。第一个词典为默认词典，查词浮层仍可切换到其他命中项。</p>
-          </div>
-          <button type="button" class="close-button" aria-label="关闭词典设置" @click="emit('close')"><X :size="19" aria-hidden="true" /></button>
-        </header>
+  <ReaderSurface :show="show" variant="modal" title="词典设置" @close="emit('close')">
+      <div class="settings-content">
+        <p class="settings-intro">拖动词典调整优先级。第一个词典为默认词典，查词浮层仍可切换到其他命中项。</p>
         <p v-if="!hasDictionaries" class="empty-state">尚未加载本地词典。</p>
         <ol v-else class="dictionary-list" aria-label="词典优先级">
           <li
@@ -194,18 +188,14 @@ onBeforeUnmount(resetDrag);
             </span>
           </label>
         </section>
-      </section>
-    </div>
-  </Transition>
+      </div>
+  </ReaderSurface>
 </template>
 
 <style scoped>
-.settings-overlay { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, #000 32%, transparent); backdrop-filter: blur(3px); }
-.settings-panel { width: min(460px, 100%); max-height: min(720px, calc(100vh - 40px)); overflow-y: auto; padding: 20px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-primary); box-shadow: var(--shadow-md); }
-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-h2 { color: var(--text-primary); font-size: 1.06rem; }
+.settings-content { min-height: 0; overflow-y: auto; padding: 16px 18px 20px; }
+.settings-intro { margin-top: 0; }
 p { margin-top: 4px; color: var(--text-secondary); font-size: .82rem; }
-.close-button { display: grid; place-items: center; flex: 0 0 auto; border: 0; background: transparent; color: var(--text-muted); line-height: 1; cursor: pointer; }
 .dictionary-list { display: grid; gap: 8px; margin-top: 10px; padding: 0; list-style: none; }
 .dictionary-list li { position: relative; display: grid; grid-template-columns: 24px 24px minmax(0, 1fr) 64px; align-items: center; gap: 9px; min-height: 48px; padding: 8px 9px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); transition: border-color .12s ease, background-color .12s ease, transform .12s ease; }
 .dictionary-list li.dragging { opacity: .46; transform: scale(.985); }
@@ -234,6 +224,4 @@ h3 { color: var(--text-primary); font-size: .9rem; }
 .shortcut-control select { min-width: 92px; height: 32px; border: 1px solid var(--border-color); border-radius: 6px; padding: 0 28px 0 9px; background: var(--bg-card); color: var(--text-primary); font: .78rem var(--font-ui); }
 kbd { min-width: 22px; padding: 3px 6px 4px; border: 1px solid color-mix(in srgb, var(--border-color) 88%, var(--text-muted)); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-card); color: var(--text-secondary); font: 700 .68rem/1 var(--font-ui); text-align: center; box-shadow: 0 1px 0 color-mix(in srgb, var(--border-color) 55%, transparent); }
 @media (max-width: 420px) { .shortcut-settings label { align-items: flex-start; flex-direction: column; gap: 6px; } .shortcut-control { width: 100%; } .shortcut-control select { flex: 1; } }
-.fade-enter-active, .fade-leave-active { transition: opacity .12s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

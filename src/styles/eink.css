@@ -159,14 +159,14 @@ body.eink-mode .expression-anchor {
 /* 弹窗与悬浮面板 */
 body.eink-mode .tooltip-panel,
 body.eink-mode .context-menu,
-body.eink-mode .export-panel,
-body.eink-mode .modal-card,
-body.eink-mode .workbench-shell {
+body.eink-mode .reader-surface__panel,
+body.eink-mode .modal-card {
   background-color: #ffffff !important;
   border: 2px solid #000000 !important;
   border-radius: 0 !important;
 }
 
+body.eink-mode .reader-surface,
 body.eink-mode .modal-overlay {
   background: rgba(255, 255, 255, 0.92) !important;
 }

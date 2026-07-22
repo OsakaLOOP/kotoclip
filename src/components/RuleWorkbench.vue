@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ArrowRight } from "@lucide/vue";
+import ReaderSurface from "./reader/ReaderSurface.vue";
 import type {
   AnnotatedToken,
   ExpressionBoundaryEffect,
@@ -275,19 +276,11 @@ function save() {
 </script>
 
 <template>
-  <Transition name="workbench-fade">
-    <div v-if="show" class="workbench-shell" role="dialog" aria-modal="true" aria-label="规则工作台">
-      <header class="workbench-header">
-        <div>
-          <span class="eyebrow">KOTOCLIP ANALYSIS</span>
-          <h1>规则工作台</h1>
-          <p>选择实例，分别配置范围、匹配条件、上下文与输出。</p>
-        </div>
-        <div class="header-actions">
-          <button v-if="view === 'editor'" class="quiet-button" @click="view = 'library'">规则库</button>
-          <button class="close-button" aria-label="关闭规则工作台" @click="emit('close')">关闭</button>
-        </div>
-      </header>
+  <ReaderSurface :show="show" variant="fullscreen" title="规则工作台" subtitle="KOTOCLIP ANALYSIS · 配置范围、匹配条件、上下文与输出" @close="emit('close')">
+    <template #actions>
+      <button v-if="view === 'editor'" class="quiet-button" @click="view = 'library'">规则库</button>
+    </template>
+    <div class="workbench-shell" aria-label="规则工作台">
 
       <main v-if="view === 'library'" class="library-layout">
         <aside class="layer-rail">
@@ -407,14 +400,13 @@ function save() {
         </aside>
       </main>
     </div>
-  </Transition>
+  </ReaderSurface>
 </template>
 
 <style scoped>
-.workbench-shell { position: fixed; z-index: 1400; inset: 0; display: flex; flex-direction: column; overflow: hidden; color: var(--text-primary); background: color-mix(in srgb, var(--bg-primary) 96%, #e9e4d9); }
-.workbench-header { flex: 0 0 auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 22px clamp(20px, 4vw, 54px); border-bottom: 1px solid var(--border-color); background: var(--bg-primary); }
-.workbench-header h1, .section-heading h2, .preview-panel h2 { margin: 3px 0 0; font-size: clamp(1.25rem, 2vw, 1.8rem); letter-spacing: -0.025em; }
-.workbench-header p, .section-heading p { margin: 5px 0 0; color: var(--text-secondary); font-size: .84rem; }
+.workbench-shell { min-height: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden; color: var(--text-primary); background: color-mix(in srgb, var(--bg-primary) 96%, #e9e4d9); }
+.section-heading h2, .preview-panel h2 { margin: 3px 0 0; font-size: clamp(1.25rem, 2vw, 1.8rem); letter-spacing: -0.025em; }
+.section-heading p { margin: 5px 0 0; color: var(--text-secondary); font-size: .84rem; }
 .eyebrow, .section-label { color: var(--accent-color); font-size: .67rem; font-weight: 800; letter-spacing: .14em; }
 .header-actions, .preview-panel footer { display: flex; align-items: center; gap: 9px; }
 button { font: inherit; }
@@ -451,7 +443,6 @@ fieldset { min-width: 0; margin: 28px 0 0; padding: 0; border: 0; } legend, .ste
 .context-grid { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 9px; }.context-grid label, .output-card { min-width: 0; display: flex; align-items: flex-start; gap: 9px; padding: 12px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-primary); }.context-grid label span, .output-card { display: grid; gap: 3px; }.context-grid small, .output-card small { color: var(--text-muted); font-size: .68rem; line-height: 1.4; }.output-card span { color: var(--accent-color); font-size: .76rem; }
 .metadata-section { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; margin-top: 28px; }.metadata-section label { display: grid; gap: 5px; color: var(--text-secondary); font-size: .72rem; }.metadata-section input, .metadata-section textarea { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); background: var(--bg-primary); font: inherit; }.description-field { grid-column: 1 / -1; }
 .preview-panel code svg { display: inline-block; margin: 0 5px; vertical-align: -3px; }
-.workbench-fade-enter-active, .workbench-fade-leave-active { transition: opacity .16s ease; }.workbench-fade-enter-from, .workbench-fade-leave-to { opacity: 0; }
 @media (max-width: 900px) { .editor-layout { grid-template-columns: 1fr; overflow: auto; }.editor-main, .preview-panel { overflow: visible; }.preview-panel { border-top: 1px solid var(--border-color); border-left: 0; }.context-grid { grid-template-columns: 1fr; }.type-picker { grid-template-columns: 1fr; } }
-@media (max-width: 680px) { .workbench-header { padding: 15px; }.workbench-header p { display: none; }.library-layout { grid-template-columns: 1fr; overflow: auto; }.layer-rail { display: flex; gap: 6px; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--border-color); }.layer-rail .section-label, .layer-note { display: none; }.layer-rail > button { flex: 0 0 auto; width: auto; margin: 0; }.library-content { overflow: visible; }.atom-card header { align-items: flex-start; flex-direction: column; }.mode-switch { width: 100%; }.mode-switch button { flex: 1; }.metadata-section { grid-template-columns: 1fr; }.description-field { grid-column: auto; } }
+@media (max-width: 680px) { .library-layout { grid-template-columns: 1fr; overflow: auto; }.layer-rail { display: flex; gap: 6px; overflow-x: auto; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--border-color); }.layer-rail .section-label, .layer-note { display: none; }.layer-rail > button { flex: 0 0 auto; width: auto; margin: 0; }.library-content { overflow: visible; }.atom-card header { align-items: flex-start; flex-direction: column; }.mode-switch { width: 100%; }.mode-switch button { flex: 1; }.metadata-section { grid-template-columns: 1fr; }.description-field { grid-column: auto; } }
 </style>

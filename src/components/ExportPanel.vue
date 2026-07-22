@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { Backpack, Download, Eraser, Trash2, X } from "@lucide/vue";
+import { Backpack, Download, Eraser, Trash2 } from "@lucide/vue";
 import { Paragraph } from "../composables/useTokenization";
+import ReaderSurface from "./reader/ReaderSurface.vue";
 
 const props = defineProps<{
   show: boolean;
@@ -52,15 +53,13 @@ const count = computed(() => selectedTokens.value.length);
 </script>
 
 <template>
-  <Transition name="slide">
-    <div v-if="show" class="export-panel">
-      <div class="panel-header">
+  <ReaderSurface :show="show" variant="side" title="待导出词汇" @close="emit('close')">
+      <template #title>
         <div class="header-title">
           <span>待导出词汇</span>
           <span class="badge">{{ count }}</span>
         </div>
-        <button class="close-btn" aria-label="关闭导出面板" @click="emit('close')"><X :size="19" aria-hidden="true" /></button>
-      </div>
+      </template>
 
       <div class="panel-body no-scrollbar">
         <div v-if="count === 0" class="empty-state">
@@ -102,34 +101,10 @@ const count = computed(() => selectedTokens.value.length);
           <Download :size="15" aria-hidden="true" /> {{ isExporting ? '处理中...' : '生成 Anki 导出' }}
         </button>
       </div>
-    </div>
-  </Transition>
+  </ReaderSurface>
 </template>
 
 <style scoped>
-.export-panel {
-  position: fixed;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 320px;
-  background: var(--bg-secondary);
-  border-left: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-primary);
-}
-
 .header-title {
   display: flex;
   align-items: center;
@@ -143,15 +118,6 @@ const count = computed(() => selectedTokens.value.length);
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
-}
-
-.close-btn {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-secondary);
-  box-shadow: none;
 }
 
 .panel-body {
@@ -279,17 +245,6 @@ const count = computed(() => selectedTokens.value.length);
 
 .export-btn:hover {
   background-color: var(--accent-hover);
-}
-
-/* 滑动动画 */
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(100%);
 }
 
 .card-note {
