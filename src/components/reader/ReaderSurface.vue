@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, watch } from "vue";
-import { ArrowLeft, BookOpen, X } from "@lucide/vue";
+import { X } from "@lucide/vue";
+import AppHeader from "../common/AppHeader.vue";
 
 type ReaderSurfaceVariant = "side" | "modal" | "fullscreen";
 
@@ -8,9 +9,11 @@ const props = withDefaults(defineProps<{
   show: boolean;
   variant: ReaderSurfaceVariant;
   title: string;
+  description?: string;
   side?: "left" | "right";
   label?: string;
 }>(), {
+  description: "",
   side: "right",
   label: "",
 });
@@ -55,31 +58,14 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
         :aria-modal="variant === 'fullscreen' ? undefined : true"
         :aria-label="label || title"
       >
-        <header class="reader-surface__header">
-          <button
-            v-if="variant === 'fullscreen'"
-            class="reader-surface__back"
-            type="button"
-            :title="`返回阅读界面`"
-            :aria-label="`返回阅读界面`"
-            @click="close"
-          >
-            <ArrowLeft :size="19" aria-hidden="true" />
-          </button>
-          <div
-            class="reader-surface__heading"
-            :class="{ 'reader-surface__heading--brand': variant === 'fullscreen' }"
-          >
-            <template v-if="variant === 'fullscreen'">
-              <BookOpen class="reader-surface__brand-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
-              <strong class="reader-surface__brand-name">Kotoclip</strong>
-              <span class="reader-surface__section-name">{{ title }}</span>
-            </template>
-            <slot v-else name="title">
-              <strong>{{ title }}</strong>
-            </slot>
-          </div>
-          <div class="reader-surface__actions">
+        <AppHeader
+          :show-back="variant === 'fullscreen'"
+          collapse-brand
+          :title="title"
+          :description="variant === 'fullscreen' ? description : ''"
+          @back="close"
+        >
+          <template #actions>
             <slot name="actions" />
             <button
               v-if="variant !== 'fullscreen'"
@@ -91,8 +77,8 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
             >
               <X :size="18" aria-hidden="true" />
             </button>
-          </div>
-        </header>
+          </template>
+        </AppHeader>
         <div class="reader-surface__body">
           <slot />
         </div>
@@ -126,77 +112,6 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
   will-change: transform, opacity;
 }
 
-.reader-surface__header {
-  display: flex;
-  min-height: 58px;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
-  backdrop-filter: var(--glass-filter);
-}
-
-.reader-surface__heading {
-  display: grid;
-  min-width: 0;
-  flex: 1 1 auto;
-  gap: 1px;
-}
-
-.reader-surface__heading strong {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: .9rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.reader-surface__heading span {
-  overflow: hidden;
-  color: var(--text-muted);
-  font-size: .7rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.reader-surface__heading--brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: hidden;
-}
-
-.reader-surface__brand-icon {
-  flex: 0 0 auto;
-  color: var(--accent-color);
-}
-
-.reader-surface__heading .reader-surface__brand-name {
-  flex: 0 0 auto;
-  color: var(--accent-color);
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.reader-surface__heading .reader-surface__section-name {
-  min-width: 0;
-  padding-left: 8px;
-  border-left: 1px solid var(--border-color);
-  color: var(--text-muted);
-  font-size: .75rem;
-  text-overflow: ellipsis;
-}
-
-.reader-surface__actions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 4px;
-}
-
-.reader-surface__back,
 .reader-surface__close {
   display: grid;
   width: 32px;
@@ -210,9 +125,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
   cursor: pointer;
 }
 
-.reader-surface__back:hover,
 .reader-surface__close:hover,
-.reader-surface__back:focus-visible,
 .reader-surface__close:focus-visible {
   outline: 0;
   background: var(--accent-light);
@@ -257,7 +170,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
   box-shadow: none;
 }
 
-.reader-surface--fullscreen .reader-surface__header {
+.reader-surface--fullscreen .app-header {
   min-height: 58px;
   padding: 8px 24px;
 }
@@ -335,7 +248,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
     max-height: none;
   }
 
-  .reader-surface--fullscreen .reader-surface__header {
+  .reader-surface--fullscreen .app-header {
     padding-right: 12px;
     padding-left: 12px;
   }

@@ -9,9 +9,7 @@ import {
 } from "vue";
 import {
   AlertTriangle,
-  ArrowLeft,
   BookMarked,
-  BookOpen,
   BriefcaseBusiness,
   FileUp,
   Gauge,
@@ -58,6 +56,7 @@ import ReaderAppearancePanel from "./reader/ReaderAppearancePanel.vue";
 import ReaderImageBlock from "./reader/ReaderImageBlock.vue";
 import ReaderNavigationPanel from "./reader/ReaderNavigationPanel.vue";
 import ReaderProgressBar from "./reader/ReaderProgressBar.vue";
+import AppHeader from "./common/AppHeader.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 import {
   compileReaderDocument,
@@ -1251,39 +1250,15 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 
 <template>
   <div class="reader-container">
-    <!-- 顶部导航栏 -->
-    <header
-      class="app-header"
-      :class="{ 'library-header': showLibrary, 'analysis-header': showInput }"
+    <AppHeader
+      :show-back="!showLibrary"
+      :collapse-brand="isReading"
+      back-label="返回书架"
+      :title="isReading ? currentDocumentMetadata?.title || '未命名文本' : ''"
+      :description="showLibrary ? '日语生肉阅读助手' : showInput ? (activeLibraryBook ? '正在分析书籍' : 'Markdown 文本') : currentDocumentMetadata?.author || ''"
+      @back="returnToLibrary"
     >
-      <div class="logo-title">
-        <button
-          v-if="!showLibrary"
-          class="header-back"
-          type="button"
-          title="返回书架"
-          @click="returnToLibrary"
-        >
-          <ArrowLeft :size="19" aria-hidden="true" />
-        </button>
-        <BookOpen
-          class="logo-icon"
-          :size="24"
-          stroke-width="1.8"
-          aria-hidden="true"
-        />
-        <span class="logo-text">Kotoclip</span>
-        <span v-if="showLibrary" class="logo-sub">日语生肉阅读助手</span>
-        <span v-else-if="showInput" class="logo-sub">{{
-          activeLibraryBook ? "正在分析书籍" : "Markdown 文本"
-        }}</span>
-        <div v-else-if="currentDocumentMetadata" class="document-identity">
-          <strong>{{ currentDocumentMetadata.title || "未命名文本" }}</strong>
-          <span v-if="currentDocumentMetadata.author">{{
-            currentDocumentMetadata.author
-          }}</span>
-        </div>
-      </div>
+      <template #actions>
       <div v-if="isReading" class="action-bar">
         <div v-if="showDevMetrics && analysisMetrics" class="dev-metrics-entry">
           <button
@@ -1424,7 +1399,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           <Moon :size="16" aria-hidden="true" />
         </button>
       </div>
-    </header>
+      </template>
+    </AppHeader>
 
     <!-- 主布局 -->
     <div class="main-layout">
@@ -1844,60 +1820,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   background-color: var(--bg-primary);
 }
 
-.app-header {
-  flex: 0 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 24px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-filter);
-  border-bottom: 1px solid var(--border-color);
-  z-index: 10;
-  min-height: 58px;
-}
-
-.logo-title {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.header-back {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.logo-icon {
-  flex: 0 0 auto;
-  color: var(--accent-color);
-}
-
-.logo-text {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: var(--accent-color);
-}
-
-.logo-sub {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  border-left: 1px solid var(--border-color);
-  padding-left: 8px;
-}
-
 .action-bar {
   display: flex;
+  max-width: 100%;
   flex: 0 0 auto;
   align-items: center;
   gap: 7px;
@@ -2204,33 +2129,6 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   height: 100%;
 }
 
-.document-identity {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  max-width: min(46vw, 760px);
-  border-left: 1px solid var(--border-color);
-  padding-left: 10px;
-  line-height: 1.25;
-}
-
-.document-identity strong,
-.document-identity span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.document-identity strong {
-  color: var(--text-primary);
-  font-size: 0.86rem;
-}
-
-.document-identity span {
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-
 .input-source-bar {
   display: flex;
   align-items: center;
@@ -2441,17 +2339,13 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
 }
 
 @media (max-width: 820px) {
-  .app-header {
-    padding-right: 12px;
-    padding-left: 12px;
-  }
-
   .action-bar
     .icon-btn:not(.chapter-button):not(.compact-tool):not(.highlight) {
     display: none;
   }
 
   .action-bar {
+    width: 100%;
     min-width: 0;
     flex: 0 1 auto;
     justify-content: flex-start;
@@ -2463,23 +2357,6 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
     display: none;
   }
 
-  .logo-text {
-    display: none;
-  }
-
-  .library-header .logo-text {
-    display: inline;
-  }
-
-  .analysis-header .logo-text,
-  .library-header .logo-sub,
-  .analysis-header .logo-sub {
-    display: inline;
-  }
-
-  .document-identity {
-    max-width: 34vw;
-  }
 }
 
 /* 详细释义弹窗 */

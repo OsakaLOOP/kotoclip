@@ -54,11 +54,8 @@ const count = computed(() => selectedTokens.value.length);
 
 <template>
   <ReaderSurface :show="show" variant="side" title="待导出词汇" @close="emit('close')">
-      <template #title>
-        <div class="header-title">
-          <span>待导出词汇</span>
-          <span class="badge">{{ count }}</span>
-        </div>
+      <template #actions>
+        <span class="badge">{{ count }}</span>
       </template>
 
       <div class="panel-body no-scrollbar">
@@ -105,13 +102,6 @@ const count = computed(() => selectedTokens.value.length);
 </template>
 
 <style scoped>
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: bold;
-}
-
 .badge {
   font-size: 0.75rem;
   background-color: var(--accent-color);

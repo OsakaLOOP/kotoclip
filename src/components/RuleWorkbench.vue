@@ -276,7 +276,7 @@ function save() {
 </script>
 
 <template>
-  <ReaderSurface :show="show" variant="fullscreen" title="表达规则" @close="emit('close')">
+  <ReaderSurface :show="show" variant="fullscreen" title="表达规则" description="查看和管理表达规则" @close="emit('close')">
     <template #actions>
       <button v-if="view === 'editor'" class="quiet-button" @click="view = 'library'">规则库</button>
     </template>

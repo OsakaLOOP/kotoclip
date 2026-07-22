@@ -1,0 +1,168 @@
+<script setup lang="ts">
+import { ArrowLeft, BookOpen } from "@lucide/vue";
+
+withDefaults(defineProps<{
+  showBack?: boolean;
+  backLabel?: string;
+  collapseBrand?: boolean;
+  title?: string;
+  description?: string;
+}>(), {
+  showBack: false,
+  backLabel: "返回",
+  collapseBrand: false,
+  title: "",
+  description: "",
+});
+
+const emit = defineEmits<{ back: [] }>();
+</script>
+
+<template>
+  <header
+    class="app-header"
+    :class="{
+      'app-header--collapsible': collapseBrand,
+      'app-header--has-title': Boolean(title),
+    }"
+  >
+    <div class="app-header__identity">
+      <button
+        v-if="showBack"
+        class="app-header__back"
+        type="button"
+        :title="backLabel"
+        :aria-label="backLabel"
+        @click="emit('back')"
+      >
+        <ArrowLeft :size="19" aria-hidden="true" />
+      </button>
+      <BookOpen class="app-header__brand-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
+      <span class="app-header__brand-name">Kotoclip</span>
+      <div v-if="title" class="app-header__page-identity">
+        <strong>{{ title }}</strong>
+        <span v-if="description">{{ description }}</span>
+      </div>
+      <span v-else-if="description" class="app-header__brand-description">{{ description }}</span>
+    </div>
+    <div class="app-header__actions">
+      <slot name="actions" />
+    </div>
+  </header>
+</template>
+
+<style scoped>
+.app-header {
+  z-index: 10;
+  display: flex;
+  min-height: 58px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-filter);
+}
+
+.app-header__identity {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.app-header__back {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.app-header__back:hover,
+.app-header__back:focus-visible {
+  outline: 0;
+  color: var(--accent-color);
+}
+
+.app-header__brand-icon {
+  flex: 0 0 auto;
+  color: var(--accent-color);
+}
+
+.app-header__brand-name {
+  flex: 0 0 auto;
+  color: var(--accent-color);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.app-header__brand-description {
+  min-width: 0;
+  overflow: hidden;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: .75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__page-identity {
+  display: flex;
+  min-width: 0;
+  max-width: min(46vw, 760px);
+  flex-direction: column;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-color);
+  line-height: 1.25;
+}
+
+.app-header__page-identity strong,
+.app-header__page-identity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__page-identity strong {
+  color: var(--text-primary);
+  font-size: .86rem;
+}
+
+.app-header__page-identity span {
+  color: var(--text-muted);
+  font-size: .72rem;
+}
+
+.app-header__actions {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  overflow: hidden;
+}
+
+@media (max-width: 820px) {
+  .app-header {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .app-header--collapsible .app-header__brand-name {
+    display: none;
+  }
+
+  .app-header--collapsible .app-header__page-identity {
+    max-width: 34vw;
+  }
+}
+</style>
