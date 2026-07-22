@@ -244,10 +244,18 @@ onBeforeUnmount(() => {
     }"
     :aria-label="ariaLabel"
   >
-    <span class="segmented-action-frame__corner segmented-action-frame__corner--tl" :class="{ 'is-active': isVisuallyActive(0), 'is-top': activeIndex === 0 }" aria-hidden="true"></span>
-    <span class="segmented-action-frame__corner segmented-action-frame__corner--tr" :class="{ 'is-active': isVisuallyActive(0), 'is-top': activeIndex === 0 }" aria-hidden="true"></span>
-    <span class="segmented-action-frame__corner segmented-action-frame__corner--bl" :class="{ 'is-active': isVisuallyActive(visibleActions.length - 1), 'is-top': activeIndex === visibleActions.length - 1 }" aria-hidden="true"></span>
-    <span class="segmented-action-frame__corner segmented-action-frame__corner--br" :class="{ 'is-active': isVisuallyActive(visibleActions.length - 1), 'is-top': activeIndex === visibleActions.length - 1 }" aria-hidden="true"></span>
+    <svg class="segmented-action-frame__corner segmented-action-frame__corner--tl" :class="{ 'is-active': isVisuallyActive(0), 'is-top': activeIndex === 0 }" viewBox="0 0 45 45" fill="none" aria-hidden="true">
+      <path d="M 41.5 3.5 H 12 A 8.5 8.5 0 0 0 3.5 12 V 41.5" />
+    </svg>
+    <svg class="segmented-action-frame__corner segmented-action-frame__corner--tr" :class="{ 'is-active': isVisuallyActive(0), 'is-top': activeIndex === 0 }" viewBox="0 0 45 45" fill="none" aria-hidden="true">
+      <path d="M 3.5 3.5 H 33 A 8.5 8.5 0 0 1 41.5 12 V 41.5" />
+    </svg>
+    <svg class="segmented-action-frame__corner segmented-action-frame__corner--bl" :class="{ 'is-active': isVisuallyActive(visibleActions.length - 1), 'is-top': activeIndex === visibleActions.length - 1 }" viewBox="0 0 45 45" fill="none" aria-hidden="true">
+      <path d="M 3.5 3.5 V 33 A 8.5 8.5 0 0 0 12 41.5 H 41.5" />
+    </svg>
+    <svg class="segmented-action-frame__corner segmented-action-frame__corner--br" :class="{ 'is-active': isVisuallyActive(visibleActions.length - 1), 'is-top': activeIndex === visibleActions.length - 1 }" viewBox="0 0 45 45" fill="none" aria-hidden="true">
+      <path d="M 41.5 3.5 V 33 A 8.5 8.5 0 0 1 33 41.5 H 3.5" />
+    </svg>
     <span
       v-for="(_, index) in visibleActions.slice(0, -1)"
       :key="`divider-${index}`"
@@ -341,22 +349,27 @@ onBeforeUnmount(() => {
 .segmented-action-frame__corner {
   position: absolute;
   z-index: 3;
-  width: var(--frame-corner-length);
-  height: var(--frame-corner-length);
-  border-color: var(--corner-top);
-  border-style: solid;
-  border-width: var(--frame-line-width);
+  width: calc(var(--frame-corner-length) + var(--frame-line-width));
+  height: calc(var(--frame-corner-length) + var(--frame-line-width));
   color: var(--corner-top);
+  overflow: visible;
   pointer-events: none;
   transition: filter var(--frame-motion-duration) var(--frame-motion-curve), transform var(--frame-motion-duration) var(--frame-motion-curve);
 }
 
+.segmented-action-frame__corner path {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--frame-line-width);
+}
+
 .segmented-action-frame__corner.is-top { z-index: 5; }
 
-.segmented-action-frame__corner--tl { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: var(--frame-line-radius); }
-.segmented-action-frame__corner--tr { top: 0; right: 0; border-bottom: 0; border-left: 0; border-top-right-radius: var(--frame-line-radius); }
-.segmented-action-frame__corner--bl { bottom: 0; left: 0; border-color: var(--corner-bottom); color: var(--corner-bottom); border-top: 0; border-right: 0; border-bottom-left-radius: var(--frame-line-radius); }
-.segmented-action-frame__corner--br { right: 0; bottom: 0; border-color: var(--corner-bottom); color: var(--corner-bottom); border-top: 0; border-left: 0; border-bottom-right-radius: var(--frame-line-radius); }
+.segmented-action-frame__corner--tl { top: 0; left: 0; }
+.segmented-action-frame__corner--tr { top: 0; right: 0; }
+.segmented-action-frame__corner--bl { bottom: 0; left: 0; color: var(--corner-bottom); }
+.segmented-action-frame__corner--br { right: 0; bottom: 0; color: var(--corner-bottom); }
 .segmented-action-frame__corner--tl.is-active { transform: translate(calc(-1 * var(--frame-motion)), calc(-1 * var(--frame-motion))); }
 .segmented-action-frame__corner--tr.is-active { transform: translate(var(--frame-motion), calc(-1 * var(--frame-motion))); }
 .segmented-action-frame__corner--bl.is-active { transform: translate(calc(-1 * var(--frame-motion)), var(--frame-motion)); }
