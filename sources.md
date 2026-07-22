@@ -114,6 +114,43 @@
 - CJClassifier 0.1.0 文档：<https://docs.rs/cjclassifier/0.1.0/cjclassifier/>。用于核对 `CJClassifier::load`、`detect_with_results`、`Results::gap` 与字符命中统计接口。
 - CJClassifier 0.1.0 crate：<https://crates.io/crates/cjclassifier/0.1.0>。用于锁定 Apache-2.0 许可的 Rust 依赖版本。
 
+## 项目内部权威文档与协议全面索引
+
+- **[README.md](file:///d:/PROJ/GIT/kotoclip/README.md)**
+  - 核心架构与仓库入口 (`crates/kotoclip-core`, `src-tauri`, `src`)
+  - 本地资源与调用边界 (`system.dic`, `.kdict` 源包, schema v4 SQLite)
+  - 文本与 EPUB 输入流及分词坐标协议
+  - CLI 命令与端到端运行验证
+- **[kotoclip_v1_independent_design.md](file:///d:/PROJ/GIT/kotoclip/kotoclip_v1_independent_design.md)**
+  - 设计目标与边界 (N3 目标用户、沉浸阅读场景)
+  - v1.0 最小闭环与交互范式
+  - 自适应策略与离线优先原则
+- **[docs/v1_completion_plan.md](file:///d:/PROJ/GIT/kotoclip/docs/v1_completion_plan.md)**
+  - v1.0 剩余 8 个模块包 (M0 ~ M7)
+  - 既有模块重构经验与提交规范
+  - 依赖关系主线与实验决策门
+- **[docs/product_roadmap.md](file:///d:/PROJ/GIT/kotoclip/docs/product_roadmap.md)**
+  - 统一产品目标与里程碑
+  - 现象识别、阅读器、学习事件与 AI 演进路线
+- **[docs/reader_library_and_scroll_reader.md](file:///d:/PROJ/GIT/kotoclip/docs/reader_library_and_scroll_reader.md)**
+  - 虚拟滚动阅读器与章节索引
+  - 本地书库 (`Kotoclip Library`) 存储协议
+- **[docs/epub_import_research.md](file:///d:/PROJ/GIT/kotoclip/docs/epub_import_research.md)**
+  - EPUB3 / NCX 规范解析
+  - XHTML 清洗与规范 Markdown 转换
+- **[docs/dictionary_lookup_and_bubble_refactor.md](file:///d:/PROJ/GIT/kotoclip/docs/dictionary_lookup_and_bubble_refactor.md)**
+  - 多词典 occurrence 与 IR 协议
+  - 词典适配器与悬浮气泡重构
+- **[docs/grammar_morphology_and_functional_pipeline.md](file:///d:/PROJ/GIT/kotoclip/docs/grammar_morphology_and_functional_pipeline.md)**
+  - 形态素活用与功能语素识别
+  - 语法 concept / sense / realization 体系与讲解库
+- **[docs/cross_bunsetsu_expressions.md](file:///d:/PROJ/GIT/kotoclip/docs/cross_bunsetsu_expressions.md)**
+  - 跨文节表达检测与覆盖
+- **[docs/incremental_pipeline_roadmap.md](file:///d:/PROJ/GIT/kotoclip/docs/incremental_pipeline_roadmap.md)**
+  - 增量分析管线与 DocumentSession 调度
+- **[docs/china_market_assessment.md](file:///d:/PROJ/GIT/kotoclip/docs/china_market_assessment.md)**
+  - 中国区市场规模、竞品对比 (MOJi/jpdb) 与商业模式评估
+
 ## 词典表记矩阵查询重构（2026-07-22）
 
 - JMdict DTD：<https://www.edrdg.org/jmdict/jmdict_dtd_h.html>。用于核对 entry、多个 `k_ele`、多个 `r_ele`、`re_restr`、多个 `sense` 以及 `stagk/stagr` 的分层与适用范围；只用于校准表记/读音/义项术语，不作为三本本地词典的统一语义来源。
