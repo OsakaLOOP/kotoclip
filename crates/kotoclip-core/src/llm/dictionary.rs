@@ -53,7 +53,6 @@ pub struct DictionaryAnalysisEvidence {
     pub pos: Vec<String>,
     pub author_ruby_reading: Option<String>,
     pub nbest_readings: Vec<String>,
-    pub user_selected_target: Option<String>,
     pub deterministic_preferred_entry_ids: Vec<String>,
 }
 
@@ -158,16 +157,12 @@ pub fn build_disambiguation_request(
     lookup: &DictionaryLookup,
     resolved_navigation: &HashMap<String, Vec<DictEntry>>,
     mut context: DictionaryContextEvidence,
-    mut analysis: DictionaryAnalysisEvidence,
+    analysis: DictionaryAnalysisEvidence,
     budget: &DisambiguationBudget,
 ) -> DictionaryDisambiguationRequest {
     context.sentence = truncate_chars(&context.sentence, budget.max_context_chars).0;
     context.before = truncate_chars(&context.before, budget.max_context_chars / 2).0;
     context.after = truncate_chars(&context.after, budget.max_context_chars / 2).0;
-    analysis.user_selected_target = analysis
-        .user_selected_target
-        .or_else(|| lookup.selected_target.clone());
-
     let candidate_count = lookup.entries.len();
     let mut remaining_definition_chars = budget.max_total_definition_chars;
     let mut remaining_linked_chars = budget.max_total_linked_content_chars;

@@ -858,32 +858,58 @@ pub struct DictionaryLink {
     pub relation: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct DictionaryCandidate {
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryFormAvailability {
+    pub dictionary_name: String,
     #[serde(default)]
-    pub candidate_id: String,
-    pub target: String,
-    pub label: String,
-    pub relation: String,
+    pub available: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryFormGroup {
+    pub form_id: String,
+    pub display_form: String,
+    pub normalized_form: String,
+    #[serde(default)]
+    pub readings: Vec<String>,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub score: i32,
+    #[serde(default)]
+    pub variants: Vec<DictionaryFormVariant>,
+    #[serde(default)]
+    pub dictionaries: Vec<DictionaryFormAvailability>,
+}
+
+/// 归一分组内保留的原始表记及其独立证据。
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DictionaryFormVariant {
+    pub surface_form: String,
+    #[serde(default)]
+    pub readings: Vec<String>,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default)]
+    pub score: i32,
+    #[serde(default)]
     pub dictionary_names: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub reading: Option<String>,
-    #[serde(default)]
-    pub entry_kind: String,
-    #[serde(default)]
-    pub occurrence_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DictionaryLookup {
     pub query: String,
-    pub reading: Option<String>,
-    pub selected_target: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub selected_occurrence_id: Option<String>,
+    pub observed_form: Option<String>,
+    pub reading: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pos: Option<PosTag>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected_form_id: Option<String>,
     #[serde(default)]
     pub mode: String,
-    pub candidates: Vec<DictionaryCandidate>,
+    #[serde(default)]
+    pub forms: Vec<DictionaryFormGroup>,
     pub dictionary_names: Vec<String>,
     pub entries: Vec<DictEntry>,
     #[serde(skip_serializing_if = "Option::is_none")]

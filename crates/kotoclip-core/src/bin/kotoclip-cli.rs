@@ -353,24 +353,27 @@ fn lookup(args: &CliArgs) -> Result<(), Box<dyn Error>> {
 
 fn dict_bubble_html(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let word = args.required("word").map_err(io::Error::other)?;
+    let observed_form = args.options.get("observed-form").map(String::as_str);
     let reading = args.options.get("reading").map(String::as_str);
+    let selected_form = args.options.get("selected-form").map(String::as_str);
     let pos = cli_pos(args);
 
-    let (entries, timing) = dictionary(args)?.lookup_profiled_with_pos(word, reading, pos.as_ref());
-    let lookup = kotoclip_core::dictionary::lookup_state::build_lookup(
+    let dictionary = dictionary(args)?;
+    let dictionary_order = dictionary.names();
+    let lookup = dictionary.lookup_matrix_profiled(
         word,
+        observed_form,
         reading,
-        None,
-        "contextual-cli",
-        &entries,
-        entries.clone(),
-        Some(timing.clone()),
+        pos.as_ref(),
+        selected_form,
+        &dictionary_order,
     );
+    let timing = lookup.timing.clone().unwrap_or_default();
 
     let html_content =
         kotoclip_core::dictionary::bubble_html::generate_bubble_preview_html(&lookup);
 
-    // JSON 与 HTML 使用同一份完整 Lookup，便于检查候选、活动 occurrence 和词典可用性。
+    // JSON 与 HTML 使用同一份矩阵 Lookup，便于检查表记、固定词典列和 occurrence。
     if let Some(json_path) = args.options.get("json") {
         std::fs::write(json_path, serde_json::to_string_pretty(&lookup)?)?;
         println!("Lookup JSON 已保存至：{}", json_path);
@@ -2951,7 +2954,8 @@ fn print_help() {
 命令：
   dict-info
   lookup --word WORD [--reading READING] [--full --timing]
-  dict-bubble-html --word WORD [--reading READING] [--pos-major POS --pos-sub1 POS]
+  dict-bubble-html --word WORD [--observed-form FORM --reading READING --selected-form FORM]
+        [--pos-major POS --pos-sub1 POS]
         [--output PATH] [--raw --json PATH --timing --no-open]
   analyze (--text TEXT | --source PATH)
   grammar-inspect (--text TEXT | --source PATH)

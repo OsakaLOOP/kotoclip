@@ -823,8 +823,10 @@ pub async fn choose_document_segmentation(
 pub async fn lookup_word(
     state: State<'_, AppState>,
     word: String,
+    observed_form: Option<String>,
     reading: Option<String>,
     pos: Option<PosTag>,
+    selected_form: Option<String>,
     priority_list: Vec<String>,
     background: Option<bool>,
 ) -> Result<DictionaryLookup, String> {
@@ -840,8 +842,10 @@ pub async fn lookup_word(
     let resource_wait_ms = started.elapsed().as_millis() as u64;
     let mut lookup = dictionary.lookup_word_contextual_profiled(
         &word,
+        observed_form.as_deref(),
         reading.as_deref(),
         pos.as_ref(),
+        selected_form.as_deref(),
         &priority_list,
     );
     if let Some(timing) = &mut lookup.timing {
@@ -876,26 +880,6 @@ pub async fn set_dictionary_order(
         .set_dictionary_order(&order)
         .map_err(|error| error.to_string())?;
     Ok(settings)
-}
-
-#[tauri::command]
-pub async fn choose_dictionary_target(
-    state: State<'_, AppState>,
-    query: String,
-    reading: Option<String>,
-    target: String,
-) -> Result<(), String> {
-    let dictionary = state.dictionary.lock().map_err(|e| e.to_string())?;
-    dictionary
-        .choose_dictionary_target(&query, reading.as_deref(), &target)
-        .map_err(|e| e.to_string())?;
-    drop(dictionary);
-    state
-        .dictionary_background
-        .lock()
-        .map_err(|e| e.to_string())?
-        .choose_dictionary_target(&query, reading.as_deref(), &target)
-        .map_err(|e| e.to_string())
 }
 
 /// IPC 命令：主动标记单词为“已知”

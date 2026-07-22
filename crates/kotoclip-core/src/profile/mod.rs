@@ -6,14 +6,12 @@ pub mod scoring;
 pub mod segmentation;
 
 use rusqlite::Connection;
-use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Mutex;
 
 /// 用户画像引擎，掌管词汇曝光、已知/未知状态以及汉字音训掌握度推导
 pub struct ProfileEngine {
     conn: Connection,
-    dictionary_choice_cache: Mutex<HashMap<String, String>>,
     default_dictionary_cache: Mutex<Option<String>>,
     dictionary_order_cache: Mutex<Vec<String>>,
 }
@@ -102,17 +100,6 @@ impl ProfileEngine {
             [],
         );
 
-        let dictionary_choice_cache = {
-            let mut statement =
-                conn.prepare("SELECT query_key, selected_target FROM user_dictionary_choices")?;
-            let choices = statement
-                .query_map([], |row| {
-                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-                })?
-                .flatten()
-                .collect();
-            choices
-        };
         let default_dictionary_cache = conn
             .query_row(
                 "SELECT default_dictionary FROM user_dictionary_settings WHERE id = 1",
@@ -133,7 +120,6 @@ impl ProfileEngine {
 
         Ok(Self {
             conn,
-            dictionary_choice_cache: Mutex::new(dictionary_choice_cache),
             default_dictionary_cache: Mutex::new(default_dictionary_cache),
             dictionary_order_cache: Mutex::new(dictionary_order_cache),
         })

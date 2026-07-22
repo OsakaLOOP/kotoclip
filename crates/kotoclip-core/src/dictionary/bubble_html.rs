@@ -6,12 +6,13 @@ const SHOGAKUKAN_CSS: &str = include_str!("../../../../src/styles/dictionaries/s
 const CROWN_CSS: &str = include_str!("../../../../src/styles/dictionaries/crown.css");
 
 /// 生成与 TooltipPanel 相同信息架构的自包含研究预览。
-/// 预览保留完整 Lookup 的候选、活动词典和 occurrence 边界，不再按读音铺开所有词条。
+/// 预览按全局表记、固定词典和单元格 occurrence 三层展示查询状态。
 pub fn generate_bubble_preview_html(lookup: &DictionaryLookup) -> String {
     let groups = dictionary_groups(lookup);
     let active_dictionary = groups
         .iter()
         .find(|(_, entries)| !entries.is_empty())
+        .or_else(|| groups.first())
         .map(|(name, _)| name.as_str());
     let mut html = String::new();
     html.push_str("<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">");
@@ -28,18 +29,20 @@ pub fn generate_bubble_preview_html(lookup: &DictionaryLookup) -> String {
 
     render_query_summary(lookup, &mut html);
     html.push_str("<section class=\"tooltip-panel-mock\" aria-label=\"词典气泡预览\">");
-    if lookup.entries.is_empty() {
+    if lookup.forms.is_empty() {
         html.push_str("<div class=\"empty-state\">未找到满足当前质量门的词条。</div>");
     } else {
-        render_candidate_bar(lookup, &mut html);
-        render_dictionary_bar(&groups, active_dictionary, &mut html);
+        render_form_bar(lookup, &mut html);
+        render_form_matrix(lookup, &mut html);
+        render_dictionary_bar(lookup, &groups, active_dictionary, &mut html);
         html.push_str("<div class=\"preview-dictionary-stage\">");
         for (dictionary_name, entries) in &groups {
-            if entries.is_empty() {
-                continue;
-            }
             let active = active_dictionary == Some(dictionary_name.as_str());
-            render_dictionary_pane(lookup, dictionary_name, entries, active, &mut html);
+            if entries.is_empty() {
+                render_empty_dictionary_pane(dictionary_name, active, &mut html);
+            } else {
+                render_dictionary_pane(dictionary_name, entries, active, &mut html);
+            }
         }
         html.push_str("</div>");
     }
@@ -56,6 +59,20 @@ fn render_query_summary(lookup: &DictionaryLookup, html: &mut String) {
     if let Some(reading) = &lookup.reading {
         html.push_str("<span>请求读音 ");
         html.push_str(&escape_html(reading));
+        html.push_str("</span>");
+    }
+    if let Some(observed_form) = &lookup.observed_form {
+        html.push_str("<span>观察表记 ");
+        html.push_str(&escape_html(observed_form));
+        html.push_str("</span>");
+    }
+    if let Some(pos) = &lookup.pos {
+        html.push_str("<span>请求词性 ");
+        html.push_str(&escape_html(&pos.major));
+        if !pos.sub1.is_empty() && pos.sub1 != "*" {
+            html.push_str(" / ");
+            html.push_str(&escape_html(&pos.sub1));
+        }
         html.push_str("</span>");
     }
     html.push_str("<span>模式 ");
@@ -79,75 +96,153 @@ fn render_query_summary(lookup: &DictionaryLookup, html: &mut String) {
     html.push_str("</header>");
 }
 
-fn render_candidate_bar(lookup: &DictionaryLookup, html: &mut String) {
-    if lookup.candidates.is_empty() {
+fn render_form_bar(lookup: &DictionaryLookup, html: &mut String) {
+    if lookup.forms.is_empty() {
         return;
     }
-    html.push_str("<section class=\"preview-choice-bar\"><div class=\"preview-choice-label\">表记候选</div><div class=\"preview-choice-options\">");
-    for candidate in &lookup.candidates {
-        let active = lookup.selected_target.as_deref() == Some(candidate.target.as_str());
-        html.push_str("<button type=\"button\" class=\"preview-choice candidate-choice");
-        if active {
-            html.push_str(" active");
+    html.push_str("<section class=\"preview-choice-bar form-bar\"><div class=\"preview-choice-label\">表记</div>");
+    if lookup.forms.len() > 8 {
+        html.push_str("<select class=\"preview-form-select\" aria-label=\"表记\">");
+        for form in &lookup.forms {
+            html.push_str("<option value=\"");
+            html.push_str(&escape_attr(&form.form_id));
+            if lookup.selected_form_id.as_deref() == Some(form.form_id.as_str()) {
+                html.push_str("\" selected>");
+            } else {
+                html.push_str("\">");
+            }
+            html.push_str(&escape_html(&form.display_form));
+            html.push_str("</option>");
         }
-        html.push_str("\" data-target=\"");
-        html.push_str(&escape_attr(&candidate.target));
-        html.push_str("\" data-dictionaries=\"");
-        html.push_str(&escape_attr(&candidate.dictionary_names.join("\u{1f}")));
-        html.push_str("\" title=\"");
-        html.push_str(&escape_attr(&candidate.target));
-        html.push_str("\">");
-        html.push_str(&escape_html(if candidate.label.is_empty() {
-            &candidate.target
-        } else {
-            &candidate.label
-        }));
-        html.push_str("</button>");
-    }
-    html.push_str("</div><div class=\"candidate-target\">");
-    if let Some(target) = &lookup.selected_target {
-        html.push_str("当前：");
-        html.push_str(&escape_html(target));
+        html.push_str("</select>");
     } else {
-        html.push_str("未选择候选；保持原查询 occurrence");
+        html.push_str("<div class=\"preview-choice-options\">");
+        for form in &lookup.forms {
+            let active = lookup.selected_form_id.as_deref() == Some(form.form_id.as_str());
+            html.push_str("<button type=\"button\" class=\"preview-choice form-choice");
+            if active {
+                html.push_str(" active");
+            }
+            html.push_str("\" data-form-id=\"");
+            html.push_str(&escape_attr(&form.form_id));
+            html.push_str("\" data-dictionaries=\"");
+            let available = form
+                .dictionaries
+                .iter()
+                .filter(|item| item.available)
+                .map(|item| item.dictionary_name.as_str())
+                .collect::<Vec<_>>()
+                .join("\u{1f}");
+            html.push_str(&escape_attr(&available));
+            html.push_str("\" title=\"");
+            let variants = form
+                .variants
+                .iter()
+                .map(|variant| variant.surface_form.as_str())
+                .collect::<Vec<_>>()
+                .join(" / ");
+            html.push_str(&escape_attr(
+                &[variants, form.readings.join(" / ")]
+                    .into_iter()
+                    .filter(|value| !value.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("；"),
+            ));
+            html.push_str("\">");
+            html.push_str(&escape_html(&form.display_form));
+            html.push_str("</button>");
+        }
+        html.push_str("</div>");
     }
-    html.push_str("</div></section>");
+    if let Some(form) = active_form(lookup) {
+        html.push_str("<div class=\"form-reading-summary\">");
+        if !form.readings.is_empty() {
+            html.push_str(&escape_html(&form.readings.join(" / ")));
+        }
+        html.push_str("</div>");
+    }
+    html.push_str("</section>");
 }
 
 fn render_dictionary_bar(
+    lookup: &DictionaryLookup,
     groups: &[(String, Vec<&DictEntry>)],
     active_dictionary: Option<&str>,
     html: &mut String,
 ) {
+    let selected_form = active_form(lookup);
     html.push_str("<section class=\"preview-choice-bar dictionary-bar\"><div class=\"preview-choice-label\">词典</div><div class=\"preview-choice-options\">");
-    for (name, entries) in groups {
+    for (name, _) in groups {
+        let available = selected_form.is_some_and(|form| {
+            form.dictionaries
+                .iter()
+                .any(|item| item.dictionary_name == *name && item.available)
+        });
         html.push_str("<button type=\"button\" class=\"preview-choice dictionary-choice");
         if active_dictionary == Some(name.as_str()) {
             html.push_str(" active");
         }
-        if entries.is_empty() {
+        if !available {
             html.push_str(" unavailable");
         }
         html.push_str("\" data-dictionary=\"");
         html.push_str(&escape_attr(name));
-        html.push_str("\">");
-        html.push_str(&escape_html(name));
-        if entries.is_empty() {
-            html.push_str(" · 无当前释义");
+        if !available {
+            html.push_str("\" disabled aria-disabled=\"true\" title=\"当前表记未收录\">");
+        } else {
+            html.push_str("\">");
         }
+        html.push_str(&escape_html(name));
         html.push_str("</button>");
     }
     html.push_str("</div></section>");
 }
 
+fn render_form_matrix(lookup: &DictionaryLookup, html: &mut String) {
+    html.push_str("<details class=\"preview-matrix\"><summary>可用矩阵 · ");
+    html.push_str(&lookup.forms.len().to_string());
+    html.push_str(" 个表记 × ");
+    html.push_str(&lookup.dictionary_names.len().to_string());
+    html.push_str(
+        " 本词典</summary><div class=\"preview-matrix-viewport\"><table><thead><tr><th>表记</th>",
+    );
+    for name in &lookup.dictionary_names {
+        html.push_str("<th>");
+        html.push_str(&escape_html(name));
+        html.push_str("</th>");
+    }
+    html.push_str("</tr></thead><tbody>");
+    for form in &lookup.forms {
+        html.push_str("<tr");
+        if lookup.selected_form_id.as_deref() == Some(form.form_id.as_str()) {
+            html.push_str(" class=\"active\"");
+        }
+        html.push_str("><th>");
+        html.push_str(&escape_html(&form.display_form));
+        html.push_str("</th>");
+        for name in &lookup.dictionary_names {
+            let available = form
+                .dictionaries
+                .iter()
+                .any(|item| item.dictionary_name == *name && item.available);
+            if available {
+                html.push_str("<td data-available=\"true\">有</td>");
+            } else {
+                html.push_str("<td data-available=\"false\">--</td>");
+            }
+        }
+        html.push_str("</tr>");
+    }
+    html.push_str("</tbody></table></div></details>");
+}
+
 fn render_dictionary_pane(
-    lookup: &DictionaryLookup,
     dictionary_name: &str,
     entries: &[&DictEntry],
     active: bool,
     html: &mut String,
 ) {
-    let selected_id = default_entry(lookup, entries).map(|entry| entry.occurrence_id.as_str());
+    let selected_id = default_entry(entries).map(|entry| entry.occurrence_id.as_str());
     let unresolved = entries.len() > 1 && !entries.iter().any(|entry| entry.is_preferred);
     html.push_str("<section class=\"preview-dictionary-pane");
     if active {
@@ -187,6 +282,16 @@ fn render_dictionary_pane(
         render_entry(entry, unresolved, entry_active, html);
     }
     html.push_str("</section>");
+}
+
+fn render_empty_dictionary_pane(dictionary_name: &str, active: bool, html: &mut String) {
+    html.push_str("<section class=\"preview-dictionary-pane");
+    if active {
+        html.push_str(" active");
+    }
+    html.push_str("\" data-dictionary-pane=\"");
+    html.push_str(&escape_attr(dictionary_name));
+    html.push_str("\"><div class=\"empty-state\">当前表记在该词典中不可用。</div></section>");
 }
 
 fn render_entry(entry: &DictEntry, unresolved: bool, active: bool, html: &mut String) {
@@ -356,19 +461,15 @@ fn dictionary_groups(lookup: &DictionaryLookup) -> Vec<(String, Vec<&DictEntry>)
         .collect()
 }
 
-fn default_entry<'a>(
-    lookup: &DictionaryLookup,
-    entries: &[&'a DictEntry],
-) -> Option<&'a DictEntry> {
-    if let Some(selected) = lookup.selected_occurrence_id.as_deref() {
-        if let Some(entry) = entries
-            .iter()
-            .copied()
-            .find(|entry| entry.occurrence_id == selected)
-        {
-            return Some(entry);
-        }
-    }
+fn active_form(lookup: &DictionaryLookup) -> Option<&crate::models::DictionaryFormGroup> {
+    lookup
+        .selected_form_id
+        .as_deref()
+        .and_then(|selected| lookup.forms.iter().find(|form| form.form_id == selected))
+        .or_else(|| lookup.forms.first())
+}
+
+fn default_entry<'a>(entries: &[&'a DictEntry]) -> Option<&'a DictEntry> {
     let preferred = entries
         .iter()
         .copied()
@@ -381,55 +482,54 @@ fn default_entry<'a>(
 }
 
 fn occurrence_label(entry: &DictEntry, peers: &[&DictEntry]) -> String {
-    let form = if entry.header.display_form.is_empty() {
-        &entry.headword
-    } else {
-        &entry.header.display_form
-    };
-    let same_identity = peers
+    let reading = entry
+        .header
+        .reading
+        .as_ref()
+        .or(entry.reading.as_ref())
+        .map(String::as_str)
+        .unwrap_or("");
+    let same_reading = peers
         .iter()
         .copied()
-        .filter(|peer| same_occurrence_identity(entry, peer))
+        .filter(|peer| {
+            peer.header
+                .reading
+                .as_ref()
+                .or(peer.reading.as_ref())
+                .map(String::as_str)
+                .unwrap_or("")
+                == reading
+        })
         .collect::<Vec<_>>();
-    if same_identity.len() > 1 {
-        if let Some(discriminator) = occurrence_discriminator(entry) {
-            let unique = same_identity
-                .iter()
-                .filter(|peer| {
-                    occurrence_discriminator(peer).as_deref() == Some(discriminator.as_str())
-                })
-                .count()
-                == 1;
-            if unique {
-                return format!("{form} · {discriminator}");
-            }
-        }
-        let position = same_identity
+    if same_reading.len() == 1 && !reading.is_empty() {
+        return reading.to_string();
+    }
+    if let Some(discriminator) = occurrence_discriminator(entry) {
+        let unique = same_reading
             .iter()
-            .position(|peer| peer.occurrence_id == entry.occurrence_id)
-            .unwrap_or(0);
-        return format!("{form} · 同形条目 {}/{}", position + 1, same_identity.len());
+            .filter(|peer| {
+                occurrence_discriminator(peer).as_deref() == Some(discriminator.as_str())
+            })
+            .count()
+            == 1;
+        if unique {
+            return [reading, discriminator.as_str()]
+                .into_iter()
+                .filter(|value| !value.is_empty())
+                .collect::<Vec<_>>()
+                .join(" · ");
+        }
     }
-    if entry.entry_kind != "lexical" {
-        return format!("{form} · {}", entry_kind_label(&entry.entry_kind));
+    let position = same_reading
+        .iter()
+        .position(|peer| peer.occurrence_id == entry.occurrence_id)
+        .unwrap_or(0);
+    if reading.is_empty() {
+        format!("条目 {}", position + 1)
+    } else {
+        format!("{reading} · 条目 {}", position + 1)
     }
-    form.to_string()
-}
-
-fn same_occurrence_identity(left: &DictEntry, right: &DictEntry) -> bool {
-    let left_form = if left.header.display_form.is_empty() {
-        &left.headword
-    } else {
-        &left.header.display_form
-    };
-    let right_form = if right.header.display_form.is_empty() {
-        &right.headword
-    } else {
-        &right.header.display_form
-    };
-    left_form == right_form
-        && left.header.reading.as_ref().or(left.reading.as_ref())
-            == right.header.reading.as_ref().or(right.reading.as_ref())
 }
 
 fn occurrence_discriminator(entry: &DictEntry) -> Option<String> {
@@ -593,18 +693,28 @@ body { margin: 0; padding: 28px 16px 48px; background: var(--bg-primary); color:
 button { font: inherit; }
 .preview-shell { width: min(680px, 100%); margin: 0 auto; }
 .preview-query { display: flex; justify-content: space-between; gap: 18px; align-items: start; margin-bottom: 14px; padding: 0 3px; }
+.preview-query > div:first-child { min-width: 0; }
 .preview-query h1 { margin: 0; color: var(--accent-color); font: 750 1.25rem/1.35 var(--font-ja); }
 .preview-query-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 4px; color: var(--text-muted); font-size: .72rem; }
-.preview-timing { display: grid; justify-items: end; color: var(--text-muted); font-size: .68rem; }
+.preview-timing { display: grid; flex: 0 0 auto; justify-items: end; color: var(--text-muted); font-size: .68rem; }
 .preview-timing strong { color: var(--text-secondary); font-size: .82rem; }
-.tooltip-panel-mock { overflow: hidden; border: 1px solid var(--glass-border); border-radius: 15px; background: var(--glass-bg); box-shadow: 0 18px 48px rgba(35, 42, 54, .14); }
+.tooltip-panel-mock { overflow: hidden; border: 1px solid var(--glass-border); border-radius: 8px; background: var(--glass-bg); box-shadow: 0 18px 48px rgba(35, 42, 54, .14); }
 .preview-choice-bar { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; align-items: start; padding: 9px 13px; border-bottom: 1px solid var(--border-color); }
 .preview-choice-label { display: flex; align-items: center; gap: 5px; padding-top: 5px; color: var(--text-muted); font: 700 .68rem var(--font-ui); white-space: nowrap; }
 .preview-choice-options { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
 .preview-choice { flex: 0 0 auto; min-height: 28px; max-width: 230px; overflow: hidden; border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 10px; background: var(--bg-card); color: var(--accent-color); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .preview-choice:hover, .preview-choice.active { border-color: var(--accent-color); background: var(--accent-light); }
 .preview-choice.unavailable { color: var(--text-muted); opacity: .5; }
-.candidate-target { grid-column: 2; color: var(--text-muted); font-size: .66rem; }
+.form-reading-summary { grid-column: 2; color: var(--text-muted); font: .66rem var(--font-ja); }
+.preview-form-select { min-width: 0; min-height: 30px; border: 1px solid var(--border-color); border-radius: 5px; padding: 3px 8px; background: var(--bg-card); color: var(--text-primary); font: .75rem var(--font-ja); }
+.preview-matrix { padding: 8px 13px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: .68rem; }
+.preview-matrix summary { cursor: pointer; }
+.preview-matrix-viewport { overflow-x: auto; margin-top: 7px; }
+.preview-matrix table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+.preview-matrix th, .preview-matrix td { padding: 4px 6px; border: 1px solid var(--border-color); text-align: center; }
+.preview-matrix tbody th { color: var(--text-secondary); text-align: left; }
+.preview-matrix tr.active { background: var(--accent-light); }
+.preview-matrix td[data-available="true"] { color: var(--accent-color); font-weight: 700; }
 .preview-dictionary-pane, .preview-entry { display: none; }
 .preview-dictionary-pane.active, .preview-entry.active { display: block; }
 .occurrence-bar { background: color-mix(in srgb, var(--bg-secondary) 55%, transparent); }
@@ -632,7 +742,7 @@ button { font: inherit; }
   :root { --bg-primary: #17191d; --bg-secondary: #202329; --bg-card: #1d2025; --glass-border: #343941; --border-color: #343941; --text-primary: #edf0f4; --text-secondary: #c5cbd3; --text-muted: #9199a5; --accent-color: #91add4; --accent-light: #26364d; }
   .ambiguity-badge { color: #e6bd8b !important; background: #3d2c1c !important; border-color: #6c4c2b !important; }
 }
-@media (max-width: 500px) {
+@media (max-width: 720px) {
   body { padding: 12px 8px 30px; }
   .preview-query { display: grid; }
   .preview-timing { justify-items: start; }
@@ -651,10 +761,6 @@ const PREVIEW_SCRIPT: &str = r#"
     document.querySelectorAll('[data-dictionary-pane]').forEach((pane) => {
       pane.classList.toggle('active', pane.dataset.dictionaryPane === name);
     });
-    document.querySelectorAll('.candidate-choice').forEach((button) => {
-      const names = (button.dataset.dictionaries || '').split('\u001f');
-      button.classList.toggle('unavailable', !names.includes(name));
-    });
   };
   document.querySelectorAll('.dictionary-choice:not(.unavailable)').forEach((button) => {
     button.addEventListener('click', () => setDictionary(button.dataset.dictionary));
@@ -664,13 +770,6 @@ const PREVIEW_SCRIPT: &str = r#"
       const pane = button.closest('[data-dictionary-pane]');
       pane.querySelectorAll('.occurrence-choice').forEach((item) => item.classList.toggle('active', item === button));
       pane.querySelectorAll('[data-occurrence-pane]').forEach((item) => item.classList.toggle('active', item.dataset.occurrencePane === button.dataset.occurrence));
-    });
-  });
-  document.querySelectorAll('.candidate-choice').forEach((button) => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('.candidate-choice').forEach((item) => item.classList.toggle('active', item === button));
-      const target = document.querySelector('.candidate-target');
-      if (target) target.textContent = `静态预览候选：${button.dataset.target}（应用中选择后会重新查询）`;
     });
   });
   document.querySelectorAll('[data-example-browser]').forEach((browser) => {
@@ -783,8 +882,8 @@ mod tests {
         let first_label = occurrence_label(&first, &peers);
         let second_label = occurrence_label(&second, &peers);
 
-        assert_eq!(first_label, "立つ · 同形条目 1/2");
-        assert_eq!(second_label, "立つ · 同形条目 2/2");
+        assert_eq!(first_label, "たつ · 条目 1");
+        assert_eq!(second_label, "たつ · 条目 2");
         assert!(!first_label.contains("座ったり"));
         assert!(!second_label.contains("和船"));
     }

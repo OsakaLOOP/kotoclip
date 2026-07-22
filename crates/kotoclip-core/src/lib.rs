@@ -17,9 +17,8 @@ pub mod transport;
 use analysis_progress::{AnalysisCancelled, AnalysisPhase, AnalysisProgress};
 use dictionary::lookup::DictionaryEngine;
 use models::{
-    AnnotatedToken, DictionaryLookup, DictionaryLookupTiming, DictionarySettings,
-    ExpressionAnnotation, ExpressionRule, ExpressionRulePreview, PosTag, SegmentationCandidate,
-    SegmentationChoice,
+    AnnotatedToken, DictionaryLookup, DictionarySettings, ExpressionAnnotation, ExpressionRule,
+    ExpressionRulePreview, PosTag, SegmentationCandidate, SegmentationChoice,
 };
 use performance::TimingCollector;
 use pipeline::Pipeline;
@@ -39,16 +38,6 @@ pub struct Engine {
 pub struct DictionaryService {
     dictionary: DictionaryEngine,
     profile: ProfileEngine,
-}
-
-fn merge_dictionary_timing(target: &mut DictionaryLookupTiming, source: DictionaryLookupTiming) {
-    target.redirect_ms += source.redirect_ms;
-    target.sqlite_ms += source.sqlite_ms;
-    target.definition_ms += source.definition_ms;
-    target.presentation_ms += source.presentation_ms;
-    target.definition_cache_hits += source.definition_cache_hits;
-    target.definition_cache_misses += source.definition_cache_misses;
-    target.entries += source.entries;
 }
 
 impl DictionaryService {
@@ -90,51 +79,25 @@ impl DictionaryService {
         reading: Option<&str>,
         priority_list: &[String],
     ) -> DictionaryLookup {
-        self.lookup_word_contextual_profiled(word, reading, None, priority_list)
+        self.lookup_word_contextual_profiled(word, None, reading, None, None, priority_list)
     }
 
     pub fn lookup_word_contextual_profiled(
         &self,
         word: &str,
+        observed_form: Option<&str>,
         reading: Option<&str>,
         pos: Option<&PosTag>,
+        selected_form: Option<&str>,
         priority_list: &[String],
     ) -> DictionaryLookup {
-        let started = Instant::now();
-        let query_key = dictionary_query_key(word, reading);
-        let (initial_entries, mut timing) =
-            self.dictionary.lookup_profiled_with_pos(word, reading, pos);
-        let initial_entries =
-            dictionary::aggregate::sort_definitions(initial_entries, priority_list);
-        let candidates = dictionary::lookup_state::collect_candidates(word, &initial_entries);
-        let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
-            candidates
-                .iter()
-                .any(|candidate| &candidate.target == target)
-        });
-        let entries = if let Some(target) = selected_target.as_deref() {
-            let (selected_entries, selected_timing) = self
-                .dictionary
-                .lookup_profiled_with_pos(target, reading, pos);
-            if !selected_entries.is_empty() {
-                merge_dictionary_timing(&mut timing, selected_timing);
-                selected_entries
-            } else {
-                initial_entries.clone()
-            }
-        } else {
-            initial_entries.clone()
-        };
-        timing.service_ms = started.elapsed().as_millis() as u64;
-        let entries = dictionary::aggregate::sort_definitions(entries, priority_list);
-        dictionary::lookup_state::build_lookup(
+        self.dictionary.lookup_matrix_profiled(
             word,
+            observed_form,
             reading,
-            selected_target,
-            "contextual",
-            &initial_entries,
-            entries,
-            Some(timing),
+            pos,
+            selected_form,
+            priority_list,
         )
     }
 
@@ -178,17 +141,6 @@ impl DictionaryService {
         }
         self.profile.set_dictionary_order(order)?;
         Ok(self.dictionary_settings())
-    }
-
-    pub fn choose_dictionary_target(
-        &self,
-        query: &str,
-        reading: Option<&str>,
-        target: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.profile
-            .set_dictionary_choice(&dictionary_query_key(query, reading), target)?;
-        Ok(())
     }
 }
 
@@ -637,32 +589,8 @@ impl Engine {
         reading: Option<&str>,
         priority_list: &[String],
     ) -> DictionaryLookup {
-        let query_key = dictionary_query_key(word, reading);
-        let initial_entries = dictionary::aggregate::sort_definitions(
-            self.dictionary.lookup(word, reading),
-            priority_list,
-        );
-        let candidates = dictionary::lookup_state::collect_candidates(word, &initial_entries);
-        let selected_target = self.profile.dictionary_choice(&query_key).filter(|target| {
-            candidates
-                .iter()
-                .any(|candidate| &candidate.target == target)
-        });
-        let entries = selected_target
-            .as_deref()
-            .map(|target| self.dictionary.lookup(target, reading))
-            .filter(|entries| !entries.is_empty())
-            .unwrap_or_else(|| initial_entries.clone());
-        let entries = dictionary::aggregate::sort_definitions(entries, priority_list);
-        dictionary::lookup_state::build_lookup(
-            word,
-            reading,
-            selected_target,
-            "contextual",
-            &initial_entries,
-            entries,
-            None,
-        )
+        self.dictionary
+            .lookup_matrix_profiled(word, None, reading, None, None, priority_list)
     }
 
     pub fn dictionary_settings(&self) -> DictionarySettings {
@@ -705,17 +633,6 @@ impl Engine {
         }
         self.profile.set_dictionary_order(order)?;
         Ok(self.dictionary_settings())
-    }
-
-    pub fn choose_dictionary_target(
-        &self,
-        query: &str,
-        reading: Option<&str>,
-        target: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.profile
-            .set_dictionary_choice(&dictionary_query_key(query, reading), target)?;
-        Ok(())
     }
 
     /// 记录用户自定义分词合并规则
@@ -960,10 +877,6 @@ impl Engine {
     ) -> Result<bool, Box<dyn std::error::Error>> {
         Ok(self.profile.delete_segmentation_choice(surface)?)
     }
-}
-
-fn dictionary_query_key(word: &str, reading: Option<&str>) -> String {
-    format!("{}\u{1f}{}", word.trim(), reading.unwrap_or("*"))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

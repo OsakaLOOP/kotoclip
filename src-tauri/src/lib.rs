@@ -182,7 +182,6 @@ pub fn run() {
             commands::lookup_word,
             commands::get_dictionary_settings,
             commands::set_dictionary_order,
-            commands::choose_dictionary_target,
             commands::search_grammar_catalog,
             commands::get_grammar_concept,
             commands::mark_known,
