@@ -57,6 +57,9 @@ pub fn collect_form_seeds(
             (Some(_), None) => true,
             (None, _) => true,
         };
+        if !reading_compatible {
+            continue;
+        }
         let base_score = entry
             .match_evidence
             .as_ref()
@@ -284,11 +287,20 @@ pub fn entry_matches_form(entry: &DictEntry, form: &str) -> bool {
         .any(|candidate| normalize_form_identity(&candidate) == target)
 }
 
-pub fn entry_matches_surface_form(entry: &DictEntry, form: &str) -> bool {
-    let target = normalize_surface_identity(form);
-    entry_forms(entry)
-        .into_iter()
-        .any(|candidate| normalize_surface_identity(&candidate) == target)
+pub fn entry_matches_reading(entry: &DictEntry, requested_reading: Option<&str>) -> bool {
+    let Some(requested) = requested_reading
+        .filter(|value| !value.is_empty() && *value != "*")
+        .map(normalize_reading_identity)
+    else {
+        return true;
+    };
+    entry
+        .header
+        .reading
+        .as_deref()
+        .or(entry.reading.as_deref())
+        .map(normalize_reading_identity)
+        .is_none_or(|actual| actual == requested)
 }
 
 pub fn build_lookup(
@@ -495,7 +507,7 @@ mod tests {
     }
 
     #[test]
-    fn same_form_across_dictionaries_and_readings_is_one_row() {
+    fn same_form_across_dictionaries_is_one_reading_scoped_row() {
         let entries = vec![
             entry("大辞林", "one", "行く", "いく", "exact_form", 200),
             entry("小学馆", "two", "行く", "ゆく", "exact_form", 150),
@@ -504,7 +516,8 @@ mod tests {
         let seeds = collect_form_seeds("行く", Some("行く"), Some("イク"), &entries);
         assert_eq!(seeds.len(), 1);
         assert_eq!(seeds[0].display_form, "行く");
-        assert_eq!(seeds[0].readings, vec!["いく", "ゆく"]);
+        assert_eq!(seeds[0].readings, vec!["いく"]);
+        assert_eq!(seeds[0].available_dictionary_names, vec!["大辞林", "Crown"]);
     }
 
     #[test]
@@ -544,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn incompatible_alias_is_rejected_but_other_readings_of_admitted_form_remain() {
+    fn incompatible_readings_do_not_enter_an_admitted_form() {
         let entries = vec![
             entry("大辞林", "one", "熟れる", "なれる", "explicit_alias", 170),
             entry("小学馆", "two", "熟れる", "うれる", "explicit_alias", 70),
@@ -553,7 +566,22 @@ mod tests {
         let seeds = collect_form_seeds("なれる", None, Some("ナレル"), &entries);
         assert_eq!(seeds.len(), 1);
         assert_eq!(seeds[0].display_form, "熟れる");
-        assert_eq!(seeds[0].readings, vec!["なれる", "うれる"]);
+        assert_eq!(seeds[0].readings, vec!["なれる"]);
+        assert_eq!(seeds[0].available_dictionary_names, vec!["大辞林"]);
+    }
+
+    #[test]
+    fn requested_reading_rejects_conflicts_but_keeps_missing_readings() {
+        let exact = entry("大辞林", "one", "私", "わたし", "exact_form", 170);
+        let conflict = entry("大辞林", "two", "私", "わたくし", "exact_form", 70);
+        let mut missing = entry("大辞林", "three", "私", "", "exact_form", 60);
+        missing.reading = None;
+        missing.header.reading = None;
+
+        assert!(entry_matches_reading(&exact, Some("ワタシ")));
+        assert!(!entry_matches_reading(&conflict, Some("ワタシ")));
+        assert!(entry_matches_reading(&missing, Some("ワタシ")));
+        assert!(entry_matches_reading(&conflict, None));
     }
 
     #[test]

@@ -12,6 +12,12 @@ import DictionaryChoiceBar from "./dictionary/DictionaryChoiceBar.vue";
 import DictionaryFormSelector from "./dictionary/DictionaryFormSelector.vue";
 import LoadingSkeleton from "./common/LoadingSkeleton.vue";
 import {
+  dictionaryForForm,
+  dictionaryHasAnyForm,
+  formForDictionary,
+  formSupportsDictionary,
+} from "../explanation/dictionaryMatrix";
+import {
   morphologyLemma,
   morphologyPosLabel,
   morphologySteps as buildMorphologySteps,
@@ -114,9 +120,7 @@ function meaningfulEntries(entries: DictEntry[]) {
 }
 
 function dictionarySupportsCurrentChoice(dictionaryName: string) {
-  return activeForm.value?.dictionaries.some((item) => (
-    item.dictionary_name === dictionaryName && item.available
-  )) ?? false;
+  return formSupportsDictionary(activeForm.value, dictionaryName);
 }
 
 function defaultOccurrence(entries: DictEntry[]) {
@@ -131,12 +135,12 @@ function cellKey(dictionaryName: string) {
 }
 
 function synchronizeSelection() {
-  const names = dictionaryGroups.value.map((group) => group.name);
   const previous = activeDictionaryName.value;
-  const supported = names.filter(dictionarySupportsCurrentChoice);
-  activeDictionaryName.value = previous && names.includes(previous)
-    ? previous
-    : supported[0] ?? names[0] ?? null;
+  activeDictionaryName.value = dictionaryForForm(
+    props.lookup,
+    activeForm.value?.form_id,
+    previous,
+  );
   const nextSelection = { ...selectedOccurrenceByCell.value };
   for (const group of dictionaryGroups.value) {
     const key = cellKey(group.name);
@@ -150,8 +154,25 @@ function synchronizeSelection() {
 }
 
 function handleDictionarySelect(dictionaryName: string) {
-  if (!dictionarySupportsCurrentChoice(dictionaryName)) return;
+  if (props.loading) return;
+  const formId = formForDictionary(
+    props.lookup,
+    dictionaryName,
+    activeForm.value?.form_id,
+  );
+  if (!formId) return;
   activeDictionaryName.value = dictionaryName;
+  if (formId !== activeForm.value?.form_id) emit("selectForm", formId);
+}
+
+function handleFormSelect(formId: string) {
+  if (props.loading || formId === activeForm.value?.form_id) return;
+  activeDictionaryName.value = dictionaryForForm(
+    props.lookup,
+    formId,
+    activeDictionaryName.value,
+  );
+  emit("selectForm", formId);
 }
 
 watch(
@@ -169,9 +190,16 @@ const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
     label: group.name,
     active: activeDictionaryName.value === group.name,
     unavailable: !dictionarySupportsCurrentChoice(group.name),
+    disabled: !dictionaryHasAnyForm(props.lookup, group.name),
     title: dictionarySupportsCurrentChoice(group.name) ? undefined : "当前表记在此词典中不可用",
   })),
 );
+
+const unavailableFormIds = computed(() => (
+  (props.lookup?.forms ?? [])
+    .filter((form) => !formSupportsDictionary(form, activeDictionaryName.value))
+    .map((form) => form.form_id)
+));
 
 const activeDictionaryEntries = computed(() => {
   const entries = dictionaryGroups.value.find((group) => group.name === activeDictionaryName.value)?.entries ?? [];
@@ -310,7 +338,7 @@ function relationLabel(relation: string) {
 }
 
 function selectNextOption(options: DictionaryChoiceOption[], select: (key: string) => void) {
-  const available = options.filter((option) => !option.unavailable);
+  const available = options.filter((option) => !option.disabled);
   if (available.length <= 1) return false;
   const activeIndex = available.findIndex((option) => option.active);
   select(available[(activeIndex + 1 + available.length) % available.length].key);
@@ -327,7 +355,7 @@ function handleShortcut(event: KeyboardEvent) {
   } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey, true) && (props.lookup?.forms.length ?? 0) > 1) {
     const forms = props.lookup?.forms ?? [];
     const index = forms.findIndex((form) => form.form_id === activeForm.value?.form_id);
-    emit("selectForm", forms[(index + 1 + forms.length) % forms.length].form_id);
+    handleFormSelect(forms[(index + 1 + forms.length) % forms.length].form_id);
     handled = true;
   } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey)) {
     handled = occurrenceOptions.value.length > 1
@@ -426,7 +454,9 @@ function handleDefinitionClick(event: MouseEvent) {
           v-if="lookup?.forms.length"
           :forms="lookup.forms"
           :selected-form-id="lookup.selected_form_id"
-          @select="emit('selectForm', $event)"
+          :unavailable-form-ids="unavailableFormIds"
+          :disabled="loading"
+          @select="handleFormSelect"
         />
 
         <DictionaryChoiceBar
@@ -435,6 +465,7 @@ function handleDefinitionClick(event: MouseEvent) {
           label="词典"
           :options="dictionaryOptions"
           :shortcut-keys="dictionaryShortcutKeys"
+          :disabled="loading"
           @select="handleDictionarySelect"
         />
 
@@ -443,6 +474,7 @@ function handleDefinitionClick(event: MouseEvent) {
           label="词条"
           :options="occurrenceOptions"
           :shortcut-keys="occurrenceShortcutKeys"
+          :disabled="loading"
           @select="handleOccurrenceSelect"
         />
 

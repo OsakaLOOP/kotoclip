@@ -162,7 +162,7 @@ export interface AnnotatedToken { bunsetsu: Bunsetsu; novelty_score: number; is_
 export interface SegmentationCandidate { tokens: AnnotatedToken[]; total_cost: number; relative_cost: number; source: "vibrato_lattice"; vibrato_rank: number; rank_score: number; dictionary_evidence: string[]; }
 export interface DictionaryLink { target: string; label: string; relation: "candidate" | "redirect" | "synonym" | "antonym" | "parent" | "child" | "phrase" | "reference" | "internal_reference" | "related"; }
 export interface DictionaryContentBlock { kind: "rich_text" | "notice" | string; label: string | null; html: string; }
-export interface DictionaryChoiceOption { key: string; label: string; active: boolean; preferred?: boolean; unavailable?: boolean; title?: string; }
+export interface DictionaryChoiceOption { key: string; label: string; active: boolean; preferred?: boolean; unavailable?: boolean; disabled?: boolean; title?: string; }
 export interface DictionaryTag { kind: string; label: string; }
 export interface DictionaryForm { form: string; reading?: string | null; kind: string; }
 export interface DictionaryPronunciation { system: string; label: string; value: string; }

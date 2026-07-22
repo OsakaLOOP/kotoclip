@@ -114,7 +114,8 @@ DictionaryLookupRequest
 
 - 表记来自 `lookup.forms[]`，跨词典相同规范表记只显示一次；
 - 词典来自固定的 `lookup.dictionary_names[]`；
-- 不可用词典保留按钮位置，暗显并禁用；
+- 当前表记下不可用、但在其他表记下可用的词典暗显并可触发表记联动；
+- 整个查询均无可用表记的词典才禁用；
 - occurrence 选择以 `form ID + dictionary name` 为状态 key；
 - occurrence 标签使用读音、词性和稳定的“条目 N”兜底；
 - 表记超过 8 项时使用集中菜单。

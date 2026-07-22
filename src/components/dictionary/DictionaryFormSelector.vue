@@ -5,11 +5,17 @@ import type { DictionaryFormGroup } from "../../types";
 const props = defineProps<{
   forms: DictionaryFormGroup[];
   selectedFormId?: string | null;
+  unavailableFormIds?: string[];
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits<{ select: [formId: string] }>();
 
 const activeFormId = computed(() => props.selectedFormId ?? props.forms[0]?.form_id ?? "");
+
+function isUnavailable(formId: string) {
+  return props.unavailableFormIds?.includes(formId) ?? false;
+}
 
 function formTitle(form: DictionaryFormGroup) {
   const variants = form.variants.map((variant) => variant.surface_form).join(" / ");
@@ -31,9 +37,15 @@ function handleSelect(event: Event) {
       class="form-select"
       :value="activeFormId"
       aria-label="表记"
+      :disabled="disabled"
       @change="handleSelect"
     >
-      <option v-for="form in forms" :key="form.form_id" :value="form.form_id">
+      <option
+        v-for="form in forms"
+        :key="form.form_id"
+        :value="form.form_id"
+        :class="{ unavailable: isUnavailable(form.form_id) }"
+      >
         {{ form.display_form }}
       </option>
     </select>
@@ -42,9 +54,10 @@ function handleSelect(event: Event) {
         v-for="form in forms"
         :key="form.form_id"
         type="button"
-        :class="{ active: form.form_id === activeFormId }"
+        :class="{ active: form.form_id === activeFormId, unavailable: isUnavailable(form.form_id) }"
         :aria-pressed="form.form_id === activeFormId"
         :title="formTitle(form)"
+        :disabled="disabled"
         @click="emit('select', form.form_id)"
       >
         {{ form.display_form }}
@@ -60,5 +73,10 @@ function handleSelect(event: Event) {
 button { min-width: 0; min-height: 29px; max-width: 100%; overflow: hidden; border: 1px solid var(--border-color); border-radius: 999px; padding: 3px 10px; background: color-mix(in srgb, var(--bg-card) 88%, transparent); color: var(--accent-color); font: inherit; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 button.active { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 32%, transparent); }
+button.unavailable { border-color: color-mix(in srgb, var(--border-color) 72%, transparent); background: color-mix(in srgb, var(--bg-card) 62%, transparent); color: var(--text-muted); opacity: .52; }
+button.unavailable:hover, button.unavailable.active { border-color: color-mix(in srgb, var(--accent-color) 58%, var(--border-color)); background: color-mix(in srgb, var(--accent-light) 48%, var(--bg-card)); opacity: .76; }
+button:disabled { cursor: default; }
+button:disabled:hover { border-color: var(--border-color); background: color-mix(in srgb, var(--bg-card) 88%, transparent); }
 .form-select { width: 100%; min-width: 0; min-height: 31px; border: 1px solid var(--border-color); border-radius: 5px; padding: 3px 8px; background: var(--bg-card); color: var(--text-primary); font: .78rem var(--font-ja); }
+.form-select option.unavailable { color: var(--text-muted); }
 </style>

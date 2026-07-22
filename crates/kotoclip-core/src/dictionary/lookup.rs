@@ -221,11 +221,25 @@ impl DictionaryEngine {
         priority_list: &[String],
     ) -> DictionaryLookup {
         let started = Instant::now();
-        let (discovery_entries, mut timing) = self.lookup_profiled_with_pos(query, reading, pos);
+        let effective_reading = reading
+            .filter(|value| !value.is_empty() && *value != "*")
+            .or_else(|| is_kana_query(query).then_some(query));
+        let (discovery_entries, mut timing) =
+            self.lookup_profiled_with_pos(query, effective_reading, pos);
         let dictionary_names = ordered_dictionary_names(self.names(), priority_list);
-        let mut seeds =
-            lookup_state::collect_form_seeds(query, observed_form, reading, &discovery_entries);
-        self.complete_form_availability(&mut seeds, &discovery_entries, &mut timing);
+        let mut seeds = lookup_state::collect_form_seeds(
+            query,
+            observed_form,
+            effective_reading,
+            &discovery_entries,
+        );
+        self.complete_form_availability(
+            &mut seeds,
+            &discovery_entries,
+            effective_reading,
+            &mut timing,
+        );
+        seeds.retain(|seed| !seed.available_dictionary_names.is_empty());
         let forms = lookup_state::build_form_groups(seeds, &dictionary_names);
         let selected_form_id = lookup_state::selected_form_id(&forms, selected_form);
         let mut entries = Vec::new();
@@ -234,8 +248,11 @@ impl DictionaryEngine {
             let mut seen = HashSet::new();
             let mut exact_entries = Vec::new();
             for variant in &active_form.variants {
-                let (variant_entries, exact_timing) =
-                    self.lookup_exact_form_profiled_with_pos(&variant.surface_form, reading, pos);
+                let (variant_entries, exact_timing) = self.lookup_exact_form_profiled_with_pos(
+                    &variant.surface_form,
+                    effective_reading,
+                    pos,
+                );
                 merge_timing(&mut timing, exact_timing);
                 exact_entries.extend(variant_entries);
             }
@@ -245,12 +262,20 @@ impl DictionaryEngine {
                 .filter(|entry| {
                     is_substantive(entry)
                         && lookup_state::entry_matches_form(entry, &active_form.display_form)
+                        && lookup_state::entry_matches_reading(entry, effective_reading)
                 })
             {
                 if seen.insert(entry.occurrence_id.clone()) {
                     entries.push(entry);
                 }
             }
+            let normalized_reading = effective_reading.map(normalize_reading);
+            rank_entries(
+                &mut entries,
+                &active_form.display_form,
+                normalized_reading.as_deref(),
+                pos,
+            );
         }
         entries = aggregate::sort_definitions(entries, priority_list);
         timing.entries = entries.len();
@@ -652,54 +677,42 @@ impl DictionaryEngine {
         &self,
         seeds: &mut [lookup_state::DictionaryFormSeed],
         discovery_entries: &[DictEntry],
+        reading: Option<&str>,
         timing: &mut DictionaryLookupTiming,
     ) {
-        let started = Instant::now();
         for seed in seeds {
-            for database in &self.databases {
-                let mut available = false;
+            seed.available_dictionary_names.clear();
+            for (database_index, database) in self.databases.iter().enumerate() {
+                let discovered = discovery_entries.iter().any(|entry| {
+                    entry.dict_name == database.name
+                        && is_substantive(entry)
+                        && lookup_state::entry_matches_form(entry, &seed.display_form)
+                        && lookup_state::entry_matches_reading(entry, reading)
+                });
+                let mut available = discovered;
                 for variant in &seed.variants {
-                    let legacy_key = normalize_form(&variant.surface_form);
-                    let indexed = database
-                        .connection
-                        .query_row(
-                            "SELECT EXISTS(
-                                 SELECT 1 FROM entry_keys
-                                 WHERE kind = 0 AND normalized_value = ?1
-                                 UNION ALL
-                                 SELECT 1 FROM entries WHERE headword = ?2
-                             )",
-                            [&legacy_key, &variant.surface_form],
-                            |row| row.get::<_, bool>(0),
+                    if available {
+                        break;
+                    }
+                    available = self
+                        .lookup_exact_in_database(
+                            database_index,
+                            &variant.surface_form,
+                            "exact_form",
+                            timing,
                         )
-                        .unwrap_or(false);
-                    if !indexed {
-                        continue;
-                    }
-                    let discovered = discovery_entries
-                        .iter()
-                        .filter(|entry| {
-                            entry.dict_name == database.name
-                                && lookup_state::entry_matches_surface_form(
-                                    entry,
-                                    &variant.surface_form,
-                                )
-                        })
-                        .collect::<Vec<_>>();
-                    if !discovered.is_empty()
-                        && !discovered.iter().any(|entry| is_substantive(entry))
-                    {
-                        continue;
-                    }
-                    available = true;
-                    break;
+                        .into_iter()
+                        .any(|entry| {
+                            is_substantive(&entry)
+                                && lookup_state::entry_matches_form(&entry, &seed.display_form)
+                                && lookup_state::entry_matches_reading(&entry, reading)
+                        });
                 }
                 if available && !seed.available_dictionary_names.contains(&database.name) {
                     seed.available_dictionary_names.push(database.name.clone());
                 }
             }
         }
-        timing.sqlite_ms += started.elapsed().as_millis() as u64;
     }
 
     fn lookup_exact(&self, headword: &str, timing: &mut DictionaryLookupTiming) -> Vec<DictEntry> {
@@ -1368,7 +1381,97 @@ mod tests {
     use flate2::{write::ZlibEncoder, Compression};
     use rusqlite::{params, Connection};
     use std::io::Write;
+    use std::path::Path;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn create_reading_database(path: &Path, source_name: &str, reading: &str) {
+        let connection = Connection::open(path).unwrap();
+        connection.execute_batch(BASE_SCHEMA).unwrap();
+        connection
+            .execute(
+                "INSERT INTO metadata VALUES(1, 4, 1, ?1, 'test', 1, 0, 2)",
+                [source_name],
+            )
+            .unwrap();
+        let definition = format!("<p><hy>私</hy>{source_name}の私</p>");
+        let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
+        encoder.write_all(definition.as_bytes()).unwrap();
+        let compressed = encoder.finish().unwrap();
+        connection
+            .execute(
+                "INSERT INTO definition_blocks VALUES(1, ?1, ?2)",
+                params![definition.len(), compressed],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO entries VALUES(1, ?1, 1, 0, ?2)",
+                params![format!("{reading}【私】"), definition.len()],
+            )
+            .unwrap();
+        connection
+            .execute("INSERT INTO entry_keys VALUES(1, 0, '私', '私', 0)", [])
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO entry_keys VALUES(1, 1, ?1, ?2, 0)",
+                params![super::normalize_reading(reading), reading],
+            )
+            .unwrap();
+        connection.execute_batch(SEARCH_SCHEMA).unwrap();
+    }
+
+    #[test]
+    fn matrix_entries_and_availability_share_the_requested_reading() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("kotoclip-matrix-reading-{nonce}"));
+        std::fs::create_dir_all(&directory).unwrap();
+        create_reading_database(&directory.join("compatible.sqlite"), "兼容大辞林", "わたし");
+        create_reading_database(&directory.join("conflict.sqlite"), "冲突大辞林", "わたくし");
+
+        let engine = DictionaryEngine::new(&directory).unwrap();
+        let lookup = engine.lookup_matrix_profiled(
+            "わたし",
+            Some("わたし"),
+            Some("ワタシ"),
+            None,
+            Some("私"),
+            &["冲突大辞林".to_string(), "兼容大辞林".to_string()],
+        );
+        let form = lookup
+            .forms
+            .iter()
+            .find(|form| form.display_form == "私")
+            .unwrap_or_else(|| {
+                panic!(
+                    "forms={:?}, entries={:?}",
+                    lookup.forms,
+                    lookup
+                        .entries
+                        .iter()
+                        .map(|entry| (&entry.dict_name, &entry.headword, &entry.reading))
+                        .collect::<Vec<_>>()
+                )
+            });
+
+        assert_eq!(form.readings, vec!["わたし"]);
+        assert!(!form.dictionaries[0].available);
+        assert!(form.dictionaries[1].available);
+        assert!(lookup.forms.iter().all(|form| {
+            form.dictionaries
+                .iter()
+                .any(|dictionary| dictionary.available)
+        }));
+        assert_eq!(lookup.entries.len(), 1);
+        assert_eq!(lookup.entries[0].dict_name, "兼容大辞林");
+        assert_eq!(lookup.entries[0].reading.as_deref(), Some("わたし"));
+
+        drop(engine);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
 
     #[test]
     fn structured_forms_readings_aliases_and_variants_resolve() {

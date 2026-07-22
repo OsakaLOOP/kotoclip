@@ -39,7 +39,7 @@
 7. 结构化解析失败时保留安全 fallback 和 diagnostics，不伪装成已完整解析。
 8. 日文和中文片段必须带语言角色，中文使用独立字体栈。
 9. `normalized_form` 只用于分组；原始表记、证据、来源词典和得分必须保留在 `variants[]`。
-10. 全部已启用词典始终作为固定列返回；不可用只暗显，不删除、不改选其他表记。
+10. 全部已启用词典始终作为固定列返回；不可用只暗显，选择后通过矩阵联动到可用表记。
 
 ## 3. 当前代码入口
 
@@ -85,7 +85,7 @@
 - exact canonical/form 可以进入正文；
 - dictionary-local explicit alias 贡献表记发现；活动表记正文再通过精确加载取得；
 - 仅同音、fuzzy、无关汉字条、姓氏或拘束语素不得替代直接正文；
-- reading conflict、POS conflict 和 entry kind conflict 用于降序，不直接证明语义错误；
+- reading conflict 在 contextual 查询中排除 occurrence；POS conflict 和 entry kind conflict 继续用于降序与诊断；
 - 每本词典最佳 occurrence 只有在分差明确且质量足够时才设置 `is_preferred`；并列时全部保留。当前 Tooltip 通过无星标和多个 occurrence 选项隐式表达不确定性，独立“未消歧”状态标签列入后续改进。
 
 纯假名查询仍可发现较多读音兼容表记。当前阶段保留这些有确定证据的行；navigation/redirect 只贡献普通表记发现证据，正文只加载实质 occurrence。
@@ -180,10 +180,12 @@
 
 - 词典优先级来自用户设置，首项作为默认活动词典；
 - 表记切换重新请求同一个根查询，只替换活动行正文，不进入导航历史或画像；
-- 词典选择不改变表记；表记切换后当前词典即使不可用也保持选择并显示空态；
+- 选择表记时保留仍可用的词典，否则切换到优先可用词典；
+- 选择词典时保留仍可用的表记，否则切换到该词典中优先可用表记；
+- 暗显行列继续显示并可触发联动，整个查询均不可用的词典禁用；
 - occurrence 切换只影响当前“表记 + 词典”单元格；
 - 同形同读异义没有可靠证据时不显示星标，仍默认打开第一条供阅读；显式 ambiguity status 由后续 per-dictionary Lookup group 提供；
-- 默认 `D` 循环可用词典，默认 `F` 循环 occurrence，`Shift+F` 循环表记；
+- 默认 `D` 按固定列循环词典并执行矩阵联动，默认 `F` 循环 occurrence，`Shift+F` 循环表记；
 - 输入控件获得焦点时不响应气泡快捷键。
 
 ## 9. 字体与排版
