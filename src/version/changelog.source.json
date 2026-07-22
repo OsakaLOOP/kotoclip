@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "repositoryUrl": "https://github.com/OsakaLOOP/kotoclip",
+  "currentVersion": "0.1.2",
+  "lastUpdated": "2026-07-22",
+  "updateCheck": {
+    "enabled": false,
+    "provider": null
+  },
+  "releases": [
+    {
+      "version": "0.1.2",
+      "date": "2026-07-22",
+      "type": "fix",
+      "summary": "优化词典渲染，解耦 UI 组件。",
+      "details": [
+        "优化词典渲染",
+        "解耦 UI 组件"
+      ],
+      "source": {
+        "kind": "commit",
+        "ref": "HEAD"
+      }
+    },
+    {
+      "version": "0.1.1",
+      "date": "2026-07-21",
+      "type": "feat",
+      "summary": "加入书架，完善逻辑和交互，优化动画，修复部分竞态。",
+      "details": [
+        "加入书架",
+        "完善逻辑和交互",
+        "优化动画",
+        "修复部分竞态"
+      ],
+      "source": {
+        "kind": "commit",
+        "ref": "a3aa90399a3db4deb6c53431f57ec70e42fe3a86"
+      }
+    },
+    {
+      "version": "0.1.0",
+      "date": "2026-07-20",
+      "type": "feat",
+      "summary": "EPUB 导入、阅读器、分词查询、文法分析基本可用。",
+      "details": [
+        "EPUB 导入",
+        "阅读器",
+        "分词查询",
+        "文法分析基本可用"
+      ],
+      "source": {
+        "kind": "commit",
+        "ref": "00848272c783748fa2ed8ec68e5317e03d46db9f"
+      }
+    }
+  ]
+}

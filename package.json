@@ -1,12 +1,13 @@
 {
   "name": "tauri-app",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_channel.ps1 -Channel dev",
-    "frontend:dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "version:sync": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync_changelog.ps1",
+    "frontend:dev": "npm run version:sync && vite",
+    "build": "npm run version:sync && vue-tsc --noEmit && vite build",
     "insider": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_channel.ps1 -Channel insider",
     "test:ui": "node --test --experimental-strip-types src/explanation/*.test.mjs src/reader/*.test.mjs src/utils/*.test.mjs",
     "preview": "vite preview",

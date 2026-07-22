@@ -66,6 +66,7 @@ const emit = defineEmits<{ back: [] }>();
         <span v-if="description">{{ description }}</span>
       </div>
       <span v-else-if="description" class="app-header__brand-description">{{ description }}</span>
+      <slot name="version" />
     </div>
     <div class="app-header__actions">
       <slot name="actions" />
@@ -94,7 +95,7 @@ const emit = defineEmits<{ back: [] }>();
   flex: 1 1 auto;
   align-items: center;
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .app-header__back {

@@ -57,6 +57,7 @@ import ReaderImageBlock from "./reader/ReaderImageBlock.vue";
 import ReaderNavigationPanel from "./reader/ReaderNavigationPanel.vue";
 import ReaderProgressBar from "./reader/ReaderProgressBar.vue";
 import AppHeader from "./common/AppHeader.vue";
+import VersionBadge from "./common/VersionBadge.vue";
 import { dictionaryTargetForToken } from "../utils/dictionaryTarget";
 import {
   compileReaderDocument,
@@ -1271,6 +1272,9 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       :description="showLibrary ? '日语生肉阅读助手' : showInput ? (activeLibraryBook ? '正在分析书籍' : 'Markdown 文本') : currentDocumentMetadata?.author || ''"
       @back="returnToLibrary"
     >
+      <template v-if="showLibrary" #version>
+        <VersionBadge />
+      </template>
       <template #actions>
       <div v-if="isReading" class="action-bar">
         <div v-if="showDevMetrics && analysisMetrics" class="dev-metrics-entry">
