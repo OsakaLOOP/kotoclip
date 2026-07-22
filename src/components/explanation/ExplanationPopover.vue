@@ -25,8 +25,8 @@ const emit = defineEmits<{
   leave: [event: PointerEvent];
   navigateWhole: [target: string];
   navigateComponent: [target: string];
-  selectWhole: [target: string];
-  selectComponent: [target: string];
+  selectWholeForm: [formId: string];
+  selectComponentForm: [formId: string];
   backWhole: [];
   backComponent: [];
 }>();
@@ -169,7 +169,7 @@ onBeforeUnmount(() => {
     @enter="emit('enter', $event)"
     @leave="emit('leave', $event)"
     @navigate="emit('navigateWhole', $event)"
-    @select="emit('selectWhole', $event)"
+    @select-form="emit('selectWholeForm', $event)"
     @back="emit('backWhole')"
   />
   <TooltipPanel
@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
     @enter="emit('enter', $event)"
     @leave="emit('leave', $event)"
     @navigate="emit('navigateComponent', $event)"
-    @select="emit('selectComponent', $event)"
+    @select-form="emit('selectComponentForm', $event)"
     @back="emit('backComponent')"
   />
 </template>

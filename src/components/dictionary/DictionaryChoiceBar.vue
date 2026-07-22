@@ -29,7 +29,8 @@ const emit = defineEmits<{ select: [key: string] }>();
           :aria-pressed="option.active"
           :aria-description="option.unavailable ? '当前选择下无词典释义' : undefined"
           :title="option.title"
-          @click="emit('select', option.key)"
+          :disabled="option.unavailable"
+          @click="!option.unavailable && emit('select', option.key)"
         >
           <Star v-if="option.preferred" class="choice-star" :size="12" fill="currentColor" aria-label="最佳匹配" />
           <span>{{ option.label }}</span>
@@ -51,7 +52,7 @@ button { display: inline-flex; align-items: center; justify-content: center; gap
 button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 button.active { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 32%, transparent); }
-button.unavailable { border-color: color-mix(in srgb, var(--border-color) 72%, transparent); background: color-mix(in srgb, var(--bg-card) 62%, transparent); color: var(--text-muted); opacity: .52; }
-button.unavailable:hover, button.unavailable.active { border-color: color-mix(in srgb, var(--accent-color) 58%, var(--border-color)); background: color-mix(in srgb, var(--accent-light) 48%, var(--bg-card)); opacity: .76; }
+button.unavailable { border-color: color-mix(in srgb, var(--border-color) 72%, transparent); background: color-mix(in srgb, var(--bg-card) 62%, transparent); color: var(--text-muted); opacity: .52; cursor: default; }
+button.unavailable.active { border-color: color-mix(in srgb, var(--accent-color) 48%, var(--border-color)); background: color-mix(in srgb, var(--accent-light) 36%, var(--bg-card)); opacity: .72; }
 .choice-star { color: var(--accent-color); font-size: .72em; }
 </style>

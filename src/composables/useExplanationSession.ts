@@ -1,13 +1,12 @@
 import { computed, nextTick, ref, watch } from "vue";
-import type { AnnotatedToken, DictionaryLookup, GrammarTag, PosTag } from "../types";
+import type { AnnotatedToken, DictionaryLookup, DictionaryLookupRequest, GrammarTag } from "../types";
 import { snapshotRect, type RectSnapshot } from "../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS, scheduleCloseGrace } from "../explanation/closeGrace";
 import { floatDebug } from "../explanation/floatDebug";
 import { deriveExplanationRenderGate } from "../explanation/interactionGate";
 import { morphemeLookupTarget, type MorphemeLookupTarget } from "../utils/dictionaryTarget";
 
-type LookupWord = (word: string, reading?: string, background?: boolean, pos?: PosTag) => Promise<DictionaryLookup | null>;
-type ChooseTarget = (query: string, reading: string | null, target: string) => Promise<DictionaryLookup | null>;
+type LookupWord = (request: DictionaryLookupRequest) => Promise<DictionaryLookup | null>;
 
 const HOVER_LOOKUP_DELAY_MS = 48;
 const WHOLE_LOOKUP_DELAY_MS = 220;
@@ -18,7 +17,7 @@ interface SourceIdentity {
   morphemeIndex: number;
 }
 
-export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTarget: ChooseTarget) {
+export function useExplanationSession(lookupWord: LookupWord) {
   const visible = ref(false);
   const activeSource = ref<SourceIdentity | null>(null);
   const componentToken = ref<AnnotatedToken | null>(null);
@@ -326,7 +325,13 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     const resolveStartedAt = performance.now();
     const word = target.query;
     const generation = ++componentGeneration;
-    const requestKey = lookupKey(word, target.lookupReading, target.pos);
+    const request = {
+      word,
+      observedForm: target.lemma,
+      reading: target.lookupReading || undefined,
+      pos: target.pos,
+    } satisfies DictionaryLookupRequest;
+    const requestKey = lookupKey(request);
     const cachedResult = resultCache.get(requestKey);
     const hasCachedResult = resultCache.has(requestKey);
     floatDebug.snapshot("request.component", {
@@ -359,7 +364,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       });
       return;
     }
-    const cached = cachedLookup(word, target.lookupReading, false, target.pos);
+    const cached = cachedLookup(request);
     const invokeStartedAt = performance.now();
     const lookup = await cached.promise!;
     if (generation !== componentGeneration) {
@@ -411,7 +416,14 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       return;
     }
     const generation = ++wholeGeneration;
-    const requestKey = lookupKey(lexical.base_form, lexical.reading, lexical.output_pos);
+    const request = {
+      word: lexical.base_form,
+      observedForm: lexical.base_form,
+      reading: lexical.reading || undefined,
+      background: true,
+      pos: lexical.output_pos,
+    } satisfies DictionaryLookupRequest;
+    const requestKey = lookupKey(request);
     const cachedResult = resultCache.get(requestKey);
     const hasCachedResult = resultCache.has(requestKey);
     floatDebug.snapshot("request.whole", {
@@ -428,7 +440,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       reading: lexical.reading,
     });
     if (hasCachedResult) {
-      wholeLookup.value = cachedResult?.entries.length ? cachedResult : null;
+      wholeLookup.value = cachedResult?.forms.length ? cachedResult : null;
       wholeLoading.value = false;
       publishSession("whole-resolved", "cache-hit");
       return;
@@ -445,7 +457,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       return;
     }
     wholeLoading.value = true;
-    const cached = cachedLookup(lexical.base_form, lexical.reading, true, lexical.output_pos);
+    const cached = cachedLookup(request);
     const invokeStartedAt = performance.now();
     const lookup = await cached.promise!;
     if (generation !== wholeGeneration) {
@@ -456,7 +468,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
       });
       return;
     }
-    wholeLookup.value = lookup?.entries.length ? lookup : null;
+    wholeLookup.value = lookup?.forms.length ? lookup : null;
     wholeLoading.value = false;
     await nextTick();
     const renderSettledAt = performance.now();
@@ -478,17 +490,17 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     publishSession("whole-resolved", "network-or-ipc");
   }
 
-  function cachedLookup(word: string, reading = "", background = false, pos?: PosTag) {
-    const key = lookupKey(word, reading, pos);
+  function cachedLookup(request: DictionaryLookupRequest) {
+    const key = lookupKey(request);
     if (resultCache.has(key)) {
       floatDebug.record("request", "cache", "result-hit", key);
       return { immediate: true as const, value: resultCache.get(key) ?? null };
     }
-    const inflightKey = `${key}\u001f${background ? "background" : "interactive"}`;
+    const inflightKey = `${key}\u001f${request.background ? "background" : "interactive"}`;
     let promise = inflightCache.get(inflightKey);
     if (!promise) {
       floatDebug.record("request", "cache", "start-inflight", key);
-      promise = lookupWord(word, reading || undefined, background, pos).then((lookup) => {
+      promise = lookupWord(request).then((lookup) => {
         resultCache.set(key, lookup);
         inflightCache.delete(inflightKey);
         floatDebug.record("request", "cache", "store-result", key, {
@@ -509,7 +521,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     componentLoading.value = true;
     floatDebug.record("request", "component", "navigate", target, { generation });
     publishSession("component-navigate", target);
-    const lookup = await lookupWord(target);
+    const lookup = await lookupWord({ word: target, observedForm: target });
     if (generation === componentGeneration && visible.value) {
       componentLookup.value = lookup;
       componentLoading.value = false;
@@ -533,7 +545,7 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     wholeLoading.value = true;
     floatDebug.record("request", "whole", "navigate", target, { generation });
     publishSession("whole-navigate", target);
-    const lookup = await lookupWord(target);
+    const lookup = await lookupWord({ word: target, observedForm: target });
     if (generation === wholeGeneration && visible.value) {
       wholeLookup.value = lookup;
       wholeLoading.value = false;
@@ -551,20 +563,27 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     }
   }
 
-  async function selectComponent(target: string) {
+  async function selectComponentForm(formId: string) {
     if (!componentLookup.value) return;
     const generation = ++componentGeneration;
     componentLoading.value = true;
-    floatDebug.record("request", "component", "select", target, { generation });
-    publishSession("component-select", target);
-    const lookup = await chooseDictionaryTarget(componentLookup.value.query, componentLookup.value.reading, target);
+    floatDebug.record("request", "component", "select-form", formId, { generation });
+    publishSession("component-select-form", formId);
+    const current = componentLookup.value;
+    const lookup = await lookupWord({
+      word: current.query,
+      observedForm: current.observed_form ?? current.query,
+      reading: current.reading ?? undefined,
+      pos: current.pos ?? undefined,
+      selectedForm: formId,
+    });
     if (generation === componentGeneration && visible.value) {
       componentLookup.value = lookup;
       componentLoading.value = false;
-      floatDebug.record("request", "component", "select-accepted", target, { generation });
-      publishSession("component-select-resolved", target);
+      floatDebug.record("request", "component", "select-form-accepted", formId, { generation });
+      publishSession("component-select-form-resolved", formId);
     } else {
-      floatDebug.record("request", "component", "select-discarded", target, {
+      floatDebug.record("request", "component", "select-form-discarded", formId, {
         generation,
         currentGeneration: componentGeneration,
         visibleRequested: visible.value,
@@ -572,20 +591,27 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     }
   }
 
-  async function selectWhole(target: string) {
+  async function selectWholeForm(formId: string) {
     if (!wholeLookup.value) return;
     const generation = ++wholeGeneration;
     wholeLoading.value = true;
-    floatDebug.record("request", "whole", "select", target, { generation });
-    publishSession("whole-select", target);
-    const lookup = await chooseDictionaryTarget(wholeLookup.value.query, wholeLookup.value.reading, target);
+    floatDebug.record("request", "whole", "select-form", formId, { generation });
+    publishSession("whole-select-form", formId);
+    const current = wholeLookup.value;
+    const lookup = await lookupWord({
+      word: current.query,
+      observedForm: current.observed_form ?? current.query,
+      reading: current.reading ?? undefined,
+      pos: current.pos ?? undefined,
+      selectedForm: formId,
+    });
     if (generation === wholeGeneration && visible.value) {
       wholeLookup.value = lookup;
       wholeLoading.value = false;
-      floatDebug.record("request", "whole", "select-accepted", target, { generation });
-      publishSession("whole-select-resolved", target);
+      floatDebug.record("request", "whole", "select-form-accepted", formId, { generation });
+      publishSession("whole-select-form-resolved", formId);
     } else {
-      floatDebug.record("request", "whole", "select-discarded", target, {
+      floatDebug.record("request", "whole", "select-form-discarded", formId, {
         generation,
         currentGeneration: wholeGeneration,
         visibleRequested: visible.value,
@@ -637,16 +663,24 @@ export function useExplanationSession(lookupWord: LookupWord, chooseDictionaryTa
     refreshAnchor,
     navigateComponent,
     navigateWhole,
-    selectComponent,
-    selectWhole,
+    selectComponentForm,
+    selectWholeForm,
     backComponent,
     backWhole,
   };
 }
 
-function lookupKey(word: string, reading: string, pos?: PosTag) {
-  const posKey = pos ? `${pos.major}/${pos.sub1}/${pos.sub2}/${pos.sub3}` : "";
-  return `${word}\u001f${reading}\u001f${posKey}`;
+function lookupKey(request: DictionaryLookupRequest) {
+  const posKey = request.pos
+    ? `${request.pos.major}/${request.pos.sub1}/${request.pos.sub2}/${request.pos.sub3}`
+    : "";
+  return [
+    request.word,
+    request.observedForm ?? "",
+    request.reading ?? "",
+    posKey,
+    request.selectedForm ?? "",
+  ].join("\u001f");
 }
 
 function waitForHoverIntent(delay: number) {

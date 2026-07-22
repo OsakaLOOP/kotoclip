@@ -181,12 +181,11 @@ const {
 } = useSelection(paragraphs, markDocumentKnown);
 const {
   lookupWord,
-  chooseDictionaryTarget,
   dictionarySettings,
   loadDictionarySettings,
   setDictionaryOrder,
 } = useDictionary();
-const explanation = useExplanationSession(lookupWord, chooseDictionaryTarget);
+const explanation = useExplanationSession(lookupWord);
 const explanationInteraction = useExplanationInteraction({
   findToken(paragraphId, tokenIndex) {
     return paragraphs.value.find((item) => item.id === paragraphId)?.tokens[
@@ -1201,12 +1200,12 @@ async function viewFullDefinition(paragraphId: number, tokenIndex: number) {
   showDefinitionModal.value = true;
   modalDefinitions.value = [];
 
-  const lookup = await lookupWord(
-    target.word,
-    target.reading,
-    false,
-    target.pos,
-  );
+  const lookup = await lookupWord({
+    word: target.word,
+    observedForm: target.word,
+    reading: target.reading,
+    pos: target.pos,
+  });
   modalDefinitions.value = lookup?.entries ?? [];
 }
 
@@ -1227,7 +1226,7 @@ async function executeExport() {
     const jsonStr = await exportSelected(
       readerDocument.value?.analysisText ?? inputText.value,
       async (word, reading) => {
-        return (await lookupWord(word, reading))?.entries ?? [];
+        return (await lookupWord({ word, observedForm: word, reading }))?.entries ?? [];
       },
     );
 
@@ -1716,8 +1715,8 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       @leave="explanationInteraction.handlePopoverLeave"
       @navigate-whole="explanation.navigateWhole"
       @navigate-component="explanation.navigateComponent"
-      @select-whole="explanation.selectWhole"
-      @select-component="explanation.selectComponent"
+      @select-whole-form="explanation.selectWholeForm"
+      @select-component-form="explanation.selectComponentForm"
       @back-whole="explanation.backWhole"
       @back-component="explanation.backComponent"
     />

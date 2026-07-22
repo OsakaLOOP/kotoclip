@@ -9,6 +9,7 @@ import {
 } from "../composables/useDictionaryShortcuts";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionaryChoiceBar from "./dictionary/DictionaryChoiceBar.vue";
+import DictionaryFormSelector from "./dictionary/DictionaryFormSelector.vue";
 import LoadingSkeleton from "./common/LoadingSkeleton.vue";
 import {
   morphologyLemma,
@@ -37,7 +38,7 @@ const emit = defineEmits<{
   enter: [event: PointerEvent];
   leave: [event: PointerEvent];
   navigate: [target: string];
-  select: [target: string];
+  selectForm: [formId: string];
   back: [];
 }>();
 
@@ -73,10 +74,11 @@ const showMorphologySummary = computed(() => {
 });
 
 const displayableEntries = computed(() => {
-  const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
   return (props.lookup?.entries ?? []).filter((entry) => {
-    const hasManagedRelation = entry.links.some((link) => !candidateTargets.has(link.target));
-    return entry.senses.length || entry.sections.length || entry.content_blocks.length || hasManagedRelation;
+    const hasManagedRelation = entry.links.some((link) => !["candidate", "redirect"].includes(link.relation));
+    return entry.entry_kind !== "navigation"
+      && entry.entry_kind !== "redirect"
+      && (entry.senses.length || entry.sections.length || entry.content_blocks.length || hasManagedRelation);
   });
 });
 
@@ -94,7 +96,13 @@ const dictionaryGroups = computed(() => {
 });
 
 const activeDictionaryName = ref<string | null>(null);
-const selectedOccurrenceByDictionary = ref<Record<string, string>>({});
+const selectedOccurrenceByCell = ref<Record<string, string>>({});
+
+const activeForm = computed(() => (
+  props.lookup?.forms.find((form) => form.form_id === props.lookup?.selected_form_id)
+  ?? props.lookup?.forms[0]
+  ?? null
+));
 
 function meaningfulEntries(entries: DictEntry[]) {
   const withContent = entries.filter((entry) => (
@@ -105,63 +113,45 @@ function meaningfulEntries(entries: DictEntry[]) {
   return withContent.length ? withContent : entries;
 }
 
-const selectedCandidate = computed(() => (
-  props.lookup?.candidates.find((candidate) => candidate.target === props.lookup?.selected_target) ?? null
-));
-
 function dictionarySupportsCurrentChoice(dictionaryName: string) {
-  if (selectedCandidate.value && !selectedCandidate.value.dictionary_names.includes(dictionaryName)) {
-    return false;
-  }
-  return dictionaryGroups.value.some((group) => group.name === dictionaryName && group.entries.length > 0);
+  return activeForm.value?.dictionaries.some((item) => (
+    item.dictionary_name === dictionaryName && item.available
+  )) ?? false;
 }
 
 function defaultOccurrence(entries: DictEntry[]) {
   const candidates = meaningfulEntries(entries);
-  return candidates.find((entry) => entry.occurrence_id === props.lookup?.selected_occurrence_id)
-    ?? candidates.find((entry) => entry.is_preferred)
+  return candidates.find((entry) => entry.is_preferred)
     ?? candidates[0]
     ?? null;
+}
+
+function cellKey(dictionaryName: string) {
+  return `${activeForm.value?.form_id ?? ""}\u001f${dictionaryName}`;
 }
 
 function synchronizeSelection() {
   const names = dictionaryGroups.value.map((group) => group.name);
   const previous = activeDictionaryName.value;
   const supported = names.filter(dictionarySupportsCurrentChoice);
-  const defaultDictionary = names[0] ?? null;
-  activeDictionaryName.value = (
-    (defaultDictionary && supported.includes(defaultDictionary) ? defaultDictionary : null)
-    ?? (previous && supported.includes(previous) ? previous : null)
-    ?? supported[0]
-    ?? defaultDictionary
-    ?? previous
-    ?? null
-  );
-  const nextSelection: Record<string, string> = {};
+  activeDictionaryName.value = previous && names.includes(previous)
+    ? previous
+    : supported[0] ?? names[0] ?? null;
+  const nextSelection = { ...selectedOccurrenceByCell.value };
   for (const group of dictionaryGroups.value) {
-    const previousId = selectedOccurrenceByDictionary.value[group.name];
+    const key = cellKey(group.name);
+    const previousId = nextSelection[key];
     const entries = meaningfulEntries(group.entries);
     const selected = entries.find((entry) => entry.occurrence_id === previousId)
       ?? defaultOccurrence(entries);
-    if (selected) nextSelection[group.name] = selected.occurrence_id;
+    if (selected) nextSelection[key] = selected.occurrence_id;
   }
-  selectedOccurrenceByDictionary.value = nextSelection;
+  selectedOccurrenceByCell.value = nextSelection;
 }
 
 function handleDictionarySelect(dictionaryName: string) {
-  const selected = selectedCandidate.value;
-  if (selected && !selected.dictionary_names.includes(dictionaryName)) {
-    const replacement = (props.lookup?.candidates ?? [])
-      .find((candidate) => candidate.dictionary_names.includes(dictionaryName));
-    if (replacement) {
-      activeDictionaryName.value = dictionaryName;
-      emit("select", replacement.target);
-      return;
-    }
-  }
-
+  if (!dictionarySupportsCurrentChoice(dictionaryName)) return;
   activeDictionaryName.value = dictionaryName;
-  if (!dictionarySupportsCurrentChoice(dictionaryName)) synchronizeSelection();
 }
 
 watch(
@@ -179,7 +169,7 @@ const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
     label: group.name,
     active: activeDictionaryName.value === group.name,
     unavailable: !dictionarySupportsCurrentChoice(group.name),
-    title: dictionarySupportsCurrentChoice(group.name) ? undefined : "当前词条无此词典释义",
+    title: dictionarySupportsCurrentChoice(group.name) ? undefined : "当前表记在此词典中不可用",
   })),
 );
 
@@ -190,7 +180,7 @@ const activeDictionaryEntries = computed(() => {
 
 const activeEntry = computed(() => {
   const selectedId = activeDictionaryName.value
-    ? selectedOccurrenceByDictionary.value[activeDictionaryName.value]
+    ? selectedOccurrenceByCell.value[cellKey(activeDictionaryName.value)]
     : null;
   return activeDictionaryEntries.value.find((entry) => entry.occurrence_id === selectedId)
     ?? defaultOccurrence(activeDictionaryEntries.value)
@@ -211,19 +201,16 @@ function occurrenceDiscriminator(entry: DictEntry) {
 }
 
 function occurrenceLabel(entry: DictEntry) {
-  const form = entry.header.display_form || entry.headword;
+  const reading = entry.header.reading || entry.reading || "";
   const peers = activeDictionaryEntries.value.filter((candidate) => (
-    (candidate.header.display_form || candidate.headword) === form
-    && (candidate.header.reading || candidate.reading) === (entry.header.reading || entry.reading)
+    (candidate.header.reading || candidate.reading || "") === reading
   ));
-  if (peers.length <= 1) {
-    return entry.entry_kind !== "lexical" ? `${form} · ${entryKindLabel(entry.entry_kind)}` : form;
-  }
+  if (peers.length === 1 && reading) return reading;
   const discriminator = occurrenceDiscriminator(entry);
   const discriminatorIsUnique = discriminator && peers.filter((peer) => occurrenceDiscriminator(peer) === discriminator).length === 1;
-  if (discriminatorIsUnique) return `${form} · ${discriminator}`;
+  if (discriminatorIsUnique) return [reading, discriminator].filter(Boolean).join(" · ");
   const position = peers.findIndex((peer) => peer.occurrence_id === entry.occurrence_id);
-  return `${form} · 同形条目 ${position + 1}/${peers.length}`;
+  return [reading, `条目 ${position + 1}`].filter(Boolean).join(" · ");
 }
 
 const occurrenceOptions = computed<DictionaryChoiceOption[]>(() => (
@@ -242,9 +229,9 @@ const occurrenceOptions = computed<DictionaryChoiceOption[]>(() => (
 
 function handleOccurrenceSelect(occurrenceId: string) {
   if (!activeDictionaryName.value) return;
-  selectedOccurrenceByDictionary.value = {
-    ...selectedOccurrenceByDictionary.value,
-    [activeDictionaryName.value]: occurrenceId,
+  selectedOccurrenceByCell.value = {
+    ...selectedOccurrenceByCell.value,
+    [cellKey(activeDictionaryName.value)]: occurrenceId,
   };
 }
 const definitionViewportRef = ref<HTMLElement | null>(null);
@@ -267,14 +254,15 @@ const isSourceQuery = computed(() =>
   !props.lookup || props.lookup.query === sourceQuery.value,
 );
 
-const showsSourceIdentity = computed(() => (
-  isSourceQuery.value
-  && (!props.lookup?.selected_target || props.lookup.selected_target === sourceQuery.value)
+const showsSourceIdentity = computed(() => isSourceQuery.value && (
+  !activeForm.value
+  || activeForm.value.display_form === (props.lookup?.observed_form ?? props.lookup?.query)
 ));
 
 const activeHeadword = computed(() => {
   return (activeEntry.value?.header.display_form
     || activeEntry.value?.headword)
+    ?? activeForm.value?.display_form
     ?? props.lookup?.query
     ?? sourceLemma.value;
 });
@@ -282,6 +270,7 @@ const activeHeadword = computed(() => {
 const activeReading = computed(() => {
   const reading = activeEntry.value?.header.reading
     || activeEntry.value?.reading
+    || (activeForm.value?.readings.length === 1 ? activeForm.value.readings[0] : "")
     || (showsSourceIdentity.value
       ? props.token?.bunsetsu.head_word.reading
       : props.lookup?.reading);
@@ -320,31 +309,11 @@ function relationLabel(relation: string) {
   return ({ candidate: "表记", antonym: "反义", synonym: "近义", parent: "亲项目", child: "子项目", phrase: "惯用句", reference: "参照", related: "关联", redirect: "转至" } as Record<string, string>)[relation] ?? "关联";
 }
 
-function candidateLabel(candidate: DictionaryLink) {
-  const match = candidate.target.match(/[【〖（](.*?)[】〗）]$/u);
-  return match?.[1] || candidate.label || candidate.target;
-}
-
-const candidateOptions = computed<DictionaryChoiceOption[]>(() =>
-  (props.lookup?.candidates ?? []).map((candidate) => ({
-    key: candidate.target,
-    label: candidateLabel(candidate),
-    active: props.lookup?.selected_target === candidate.target,
-    unavailable: Boolean(activeDictionaryName.value && !candidate.dictionary_names.includes(activeDictionaryName.value)),
-    title: activeDictionaryName.value && !candidate.dictionary_names.includes(activeDictionaryName.value)
-      ? `当前词典未收录此表记`
-      : undefined,
-  })),
-);
-
-function handleCandidateSelect(target: string) {
-  emit("select", target);
-}
-
 function selectNextOption(options: DictionaryChoiceOption[], select: (key: string) => void) {
-  if (options.length <= 1) return false;
-  const activeIndex = options.findIndex((option) => option.active);
-  select(options[(activeIndex + 1 + options.length) % options.length].key);
+  const available = options.filter((option) => !option.unavailable);
+  if (available.length <= 1) return false;
+  const activeIndex = available.findIndex((option) => option.active);
+  select(available[(activeIndex + 1 + available.length) % available.length].key);
   return true;
 }
 
@@ -355,12 +324,15 @@ function handleShortcut(event: KeyboardEvent) {
   let handled = false;
   if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.dictionaryKey)) {
     handled = selectNextOption(dictionaryOptions.value, handleDictionarySelect);
-  } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey, true) && candidateOptions.value.length > 1) {
-    handled = selectNextOption(candidateOptions.value, handleCandidateSelect);
+  } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey, true) && (props.lookup?.forms.length ?? 0) > 1) {
+    const forms = props.lookup?.forms ?? [];
+    const index = forms.findIndex((form) => form.form_id === activeForm.value?.form_id);
+    emit("selectForm", forms[(index + 1 + forms.length) % forms.length].form_id);
+    handled = true;
   } else if (matchesDictionaryShortcut(event, dictionaryShortcutSettings.choiceKey)) {
     handled = occurrenceOptions.value.length > 1
       ? selectNextOption(occurrenceOptions.value, handleOccurrenceSelect)
-      : selectNextOption(candidateOptions.value, handleCandidateSelect);
+      : false;
   }
 
   if (handled) {
@@ -381,20 +353,13 @@ const occurrenceShortcutKeys = computed(() => (
     : []
 ));
 
-const candidateShortcutKeys = computed(() => {
-  if (!dictionaryShortcutSettings.choiceKey) return [];
-  const key = shortcutKeyLabel(dictionaryShortcutSettings.choiceKey);
-  return occurrenceOptions.value.length > 1 ? ["Shift", key] : [key];
-});
-
 onMounted(() => window.addEventListener("keydown", handleShortcut));
 onBeforeUnmount(() => window.removeEventListener("keydown", handleShortcut));
 
 function managedLinkGroups(entry: DictEntry) {
-  const candidateTargets = new Set(props.lookup?.candidates.map((candidate) => candidate.target) ?? []);
   const groups = new Map<string, DictionaryLink[]>();
   for (const link of entry.links) {
-    if (candidateTargets.has(link.target)) continue;
+    if (link.relation === "candidate" || link.relation === "redirect") continue;
     const group = groups.get(link.relation) ?? [];
     group.push(link);
     groups.set(link.relation, group);
@@ -457,6 +422,22 @@ function handleDefinitionClick(event: MouseEvent) {
           </div>
         </header>
 
+        <DictionaryFormSelector
+          v-if="lookup?.forms.length"
+          :forms="lookup.forms"
+          :selected-form-id="lookup.selected_form_id"
+          @select="emit('selectForm', $event)"
+        />
+
+        <DictionaryChoiceBar
+          v-if="dictionaryOptions.length"
+          class="dictionary-switcher"
+          label="词典"
+          :options="dictionaryOptions"
+          :shortcut-keys="dictionaryShortcutKeys"
+          @select="handleDictionarySelect"
+        />
+
         <DictionaryChoiceBar
           v-if="occurrenceOptions.length > 1"
           label="词条"
@@ -465,15 +446,7 @@ function handleDefinitionClick(event: MouseEvent) {
           @select="handleOccurrenceSelect"
         />
 
-        <DictionaryChoiceBar
-          v-if="candidateOptions.length"
-          label="跳转"
-          :options="candidateOptions"
-          :shortcut-keys="candidateShortcutKeys"
-          @select="handleCandidateSelect"
-        />
-
-        <div v-if="loading || dictionaryGroups.length || !lookup?.candidates.length" class="tooltip-section definitions" @click="handleDefinitionClick">
+        <div v-if="loading || lookup" class="tooltip-section definitions" @click="handleDefinitionClick">
           <div
             ref="definitionViewportRef"
             class="definition-viewport"
@@ -482,14 +455,6 @@ function handleDefinitionClick(event: MouseEvent) {
           >
             <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
             <template v-else>
-              <DictionaryChoiceBar
-                v-if="dictionaryOptions.length"
-                class="dictionary-switcher"
-                label="词典"
-                :options="dictionaryOptions"
-                :shortcut-keys="dictionaryShortcutKeys"
-                @select="handleDictionarySelect"
-              />
               <section v-if="activeEntry" class="dictionary-group">
                 <article :key="activeEntry.occurrence_id" class="dictionary-entry">
                   <div class="entry-body">
@@ -505,7 +470,7 @@ function handleDefinitionClick(event: MouseEvent) {
                   </div>
                 </article>
               </section>
-              <div v-else class="empty-state">当前词典没有可显示的 occurrence。</div>
+              <div v-else class="empty-state">当前表记在该词典中不可用。</div>
             </template>
           </div>
         </div>
@@ -536,6 +501,7 @@ function handleDefinitionClick(event: MouseEvent) {
 .morphology-step span { color: var(--text-secondary); }
 .tooltip-section { border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px; }
 .tooltip-header + :deep(.dictionary-choice-bar) { margin-top: 0; padding-top: 9px; border-top: 0; }
+.tooltip-header + :deep(.form-selector) { margin-top: 0; padding-top: 9px; border-top: 0; }
 .definition-viewport.is-loading { overflow: hidden; }
 .definition-skeleton { height: 100%; }
 .relation-list { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -543,7 +509,7 @@ button { border: 1px solid var(--border-color); border-radius: 999px; padding: 3
 button:hover, button.active { border-color: var(--accent-color); background: var(--accent-light); }
 .dictionary-entry + .dictionary-entry { border-top: 1px dashed var(--border-color); margin-top: 12px; padding-top: 12px; }
 .dictionary-group + .dictionary-group { margin-top: 14px; }
-.dictionary-switcher { margin: 0 0 10px; padding-top: 0; border-top: 0; }
+.dictionary-switcher { margin-top: 7px; }
 .entry-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .entry-body { padding-top: 3px; }
 .entry-meta span, .empty-state { color: var(--text-muted); font: .75rem var(--font-ui); }

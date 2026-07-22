@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import type { DictionaryLookup, DictionarySettings, PosTag } from "../types";
+import type { DictionaryLookup, DictionaryLookupRequest, DictionarySettings } from "../types";
 
 export function useDictionary() {
   const dictionaryResults = ref<DictionaryLookup | null>(null);
@@ -27,13 +27,9 @@ export function useDictionary() {
     return dictionarySettings.value;
   }
 
-  /**
-   * 根据原形与读音检索词典释义
-   * @param word 辞书形原形
-   * 默认词典排在检索结果首位，其余已加载词典保持稳定顺序。
-   */
-  async function lookupWord(word: string, reading?: string, background = false, pos?: PosTag) {
-    if (!word) {
+  /** 按根查询与活动表记加载稳定的“表记 × 词典”矩阵。 */
+  async function lookupWord(request: DictionaryLookupRequest) {
+    if (!request.word) {
       dictionaryResults.value = null;
       return null;
     }
@@ -41,11 +37,13 @@ export function useDictionary() {
     isSearching.value = true;
     try {
       const results = await invoke<DictionaryLookup>("lookup_word", {
-        word,
-        reading,
-        pos,
+        word: request.word,
+        observedForm: request.observedForm,
+        reading: request.reading,
+        pos: request.pos,
+        selectedForm: request.selectedForm,
         priorityList: priorityList(),
-        background,
+        background: request.background ?? false,
       });
       dictionaryResults.value = results;
       return results;
@@ -58,11 +56,6 @@ export function useDictionary() {
     }
   }
 
-  async function chooseDictionaryTarget(query: string, reading: string | null, target: string) {
-    await invoke("choose_dictionary_target", { query, reading, target });
-    return lookupWord(query, reading ?? undefined);
-  }
-
   return {
     dictionaryResults,
     isSearching,
@@ -70,6 +63,5 @@ export function useDictionary() {
     loadDictionarySettings,
     setDictionaryOrder,
     lookupWord,
-    chooseDictionaryTarget,
   };
 }
