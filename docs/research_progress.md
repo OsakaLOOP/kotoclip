@@ -94,12 +94,15 @@
 
 ## 多词典查询与气泡统一
 
-状态：主要重构完成，进入样本驱动扩展。
+状态：表记矩阵查询、结构化 occurrence IR 和三轴气泡已完成，进入样本驱动扩展。
 
-- 2026-07-18 的 `refactor(dictionary): unify multi-dictionary lookup and bubble` 将查询请求、候选、匹配证据、occurrence、义项树、分词典适配器和气泡渲染职责分层。
-- 当前覆盖大辞林、小学馆和 Crown 三个适配器；18 词全量审计没有留下需要重定义核心 IR 或单活动词典交互的 P0 架构阻塞项。
-- 后续工作转为音调／发音作用域、小学馆子记录索引、内部 sense reference、标签规范化、复杂省略词头、候选作用域与适配器回归统计等 P1/P2 项。
-- 权威协议见 `dictionary_lookup_and_bubble_refactor.md`，后续清单见 `dictionary_refactor_followups.md`；新增样本不得直接回到历史问题基线修改核心架构。
+- 查询按词典独立执行 exact、alias 与有条件读音发现，相同规范表记跨词典合并为一个全局行。
+- 归一组保留全部原始 variants、来源、得分和词典覆盖；全部已启用词典作为固定列返回。
+- 气泡按表记、词典、单元格 occurrence 三层选择；表记选择不持久化，也不进入普通关系历史。
+- navigation/redirect 只参与表记发现和可用性校正，正文只加载实质 occurrence。
+- 当前覆盖大辞林、小学馆和 Crown 三个适配器，并保留 StarterDict 测试列；重构前后 CLI 样本已分别固化。
+- 后续工作包括 schema v5 结构元数据、复杂表记证据、内容作用域、矩阵夹具与独立搜索/智能模式。
+- 当前协议见 `dictionary_lookup_and_bubble_refactor.md`，增量项目见 `dictionary_refactor_followups.md`。
 
 ### 第一话交互扫描
 

@@ -113,3 +113,10 @@
 - CJClassifier 官方仓库：<https://github.com/jlpka/cjclassifier>。用于核对基于中日 Wikipedia 语料的 unigram + bigram 表意文字模型、假名处理、Unknown 语义、内存成本和模型构建工具。
 - CJClassifier 0.1.0 文档：<https://docs.rs/cjclassifier/0.1.0/cjclassifier/>。用于核对 `CJClassifier::load`、`detect_with_results`、`Results::gap` 与字符命中统计接口。
 - CJClassifier 0.1.0 crate：<https://crates.io/crates/cjclassifier/0.1.0>。用于锁定 Apache-2.0 许可的 Rust 依赖版本。
+
+## 词典表记矩阵查询重构（2026-07-22）
+
+- JMdict DTD：<https://www.edrdg.org/jmdict/jmdict_dtd_h.html>。用于核对 entry、多个 `k_ele`、多个 `r_ele`、`re_restr`、多个 `sense` 以及 `stagk/stagr` 的分层与适用范围；只用于校准表记/读音/义项术语，不作为三本本地词典的统一语义来源。
+- Unicode Standard Annex #15, Unicode Normalization Forms：<https://www.unicode.org/reports/tr15/>。用于限定 NFC/NFKC 的字符规范与兼容等价边界，确认全半角片假名可由 NFKC 折叠，但词汇表记等价不能由 Unicode 规范化推导。
+- 文化厅《送り仮名の付け方》索引：<https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html>。用于核对送假名本则、例外、许可形式与复合词惯用差异。索引项目：前書き・本文の見方及び使い方；単独の語・活用のある語・通則1；通則2；単独の語・活用のない語・通則3；通則4；通則5；複合の語・通則6；通則7；付表の語。
+  - 本次深入核对：本文 通則1（活用语尾、例外与许可形式）；本文 通則2（包含其他词的活用语及送假名省略许可）；本文 通則6（复合词及不致误读时的省略许可）；本文 通則7（按惯用不加送假名的固定形式）。

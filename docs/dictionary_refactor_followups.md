@@ -1,262 +1,195 @@
 # 词典查询与气泡后续项目
 
-状态：**主要重构后的增量项目清单**
+状态：表记矩阵重构后的增量清单
 
-日期：2026-07-18
+日期：2026-07-22
 
-核心协议：`docs/dictionary_lookup_and_bubble_refactor.md`
-
-原文事实：`docs/analysis/dictionary_refactor_source_notes.md`
-
-内部架构与差距：`docs/dictionary_internal_architecture.md`
-
-## 0. 架构硬化主线
-
-后续项目按 `dictionary_internal_architecture.md` 的四条主线组织：
-
-1. 有序 document blocks 与 residual 保真；
-2. adapter descriptor/context/typed diagnostics；
-3. per-dictionary Lookup group 与 sense scope；
-4. 受控 extension renderer registry。
-
-这些项目优先于继续增加零散 UI 特例。新样本仍可直接扩展现有适配器；一旦问题涉及未知片段丢失、源顺序无法表达或新内容需要专用组件，应归入上述架构主线。
+当前协议：[`dictionary_lookup_and_bubble_refactor.md`](dictionary_lookup_and_bubble_refactor.md)
 
 ## 1. 使用方式
 
-本文件只记录不要求推翻当前架构的后续工作。新增问题先判断所属层，再放入相应项目；不要把单词典 DOM 特例直接写进 Vue，也不要为追求自动消歧删除真实候选。
+新增问题先确定所属层：
 
-优先级定义：
+- 查询索引与路由；
+- 表记证据与规范分组；
+- occurrence/sense/section 适配；
+- 矩阵与单元格状态；
+- renderer 与排版；
+- 主动搜索或智能能力。
 
-- P1：已由第一批样本确认，继续扩展时优先处理；
-- P2：产品体验或覆盖能力增强，有明确扩展点；
-- P3：长期能力，不影响当前主要重构完成状态。
+每项完成时补充代表样本、正反例、修改入口、验证结果和剩余边界。
 
-每项完成时必须补充实际样本、修改入口、验证结果和剩余边界。
+## 2. 当前边界
 
-## 2. 当前结论
+表记矩阵已建立以下稳定能力：
 
-当前没有已知 P0 架构阻塞项。18 词中未发现必须重新定义 occurrence、sense tree、section、match evidence 或单活动词典气泡才能表达的问题。
+- 相同规范表记跨词典合并；
+- 原始 variants、证据、来源词典和得分保留；
+- 全部词典固定列；
+- navigation/redirect 从正文与可用单元格中排除；
+- 同表记异读保留在单元格 occurrence；
+- 表记选择只存在于当前解释会话；
+- CLI 可复现初次查询与活动表记切换。
 
-仍存在的困难主要属于：
+后续工作集中于索引元数据、复杂表记证据、内容作用域、回归规模和独立的搜索/智能模式。
 
-1. 原词典没有足够信息，语义或词性只能保持 unknown；
-2. 原词典有更细作用域，但当前可选字段尚未表达到最细；
-3. 新的源 DOM 形态尚未进入某词典适配器；
-4. 产品可增加折叠、偏好、搜索或对齐能力。
+## 3. P1：索引与查询路由
 
-这些问题都可以通过 additive 字段、适配规则、诊断和局部组件继续解决。
+### 3.1 schema v5 结构元数据
 
-## 3. P1：已确认的精度扩展
-
-### 3.1 音调与发音的义项作用域
-
-现状：`DictionaryOccurrenceHeader.pronunciations` 保存 occurrence 级音调。`ごちゃごちゃ` 的大辞林原文中，音调 1 与副词组相邻，音调 0 与形动组相邻；当前只能显示 `1 / 0`，不能可靠绑定到 sense。
-
-扩展方向：
-
-- 为 pronunciation 增加可选 `sense_id` 或 scope path；
-- 仅在词典 DOM 明确给出局部位置时绑定；
-- 无法确认时继续保留 occurrence 级列表，不按顺序猜测。
-
-修改入口：`models.rs`、`adapters/daijirin.rs`、表头/义项 renderer。
-
-验收样本：`ごちゃごちゃ`、`気配`、具有多词性多音调的大辞林条目。
-
-### 3.2 小学馆子记录构建期索引
-
-现状：运行时已按连续 `<h3> + <section>` 拆 occurrence；但 schema v4 仍可能只索引外层 entry 的首个表记/读音。已经由精确外层查询加载的子记录可以正确显示，隐藏子记录未必能被自己的 form/reading 直接检索。
+schema v4 的 `entries` 表没有 `entry_kind` 和子记录级结构元数据。运行时可用性探测需要结合
+精确索引与已适配 occurrence 才能排除 navigation/redirect。
 
 扩展方向：
 
-- schema v5 构建源包时拆分小学馆子记录；
-- 每个子记录建立独立 form/reading key 和稳定 source record ID；
-- 运行时 splitter 保留为旧包兼容层。
+- 构建期保存 `entry_kind`、source record ID 和实质正文标志；
+- 可用矩阵使用批量 metadata 查询；
+- 非活动表记避免 definition 解压与完整适配；
+- schema v4 保留运行时兼容路径。
 
-修改入口：`scripts/build_dictionary_bundle.py`、bundle/schema 构建、`dictionary/bundle.rs`、迁移验证脚本。
+验收：`する/いく` 的大辞林导航记录不可用；`行く/刷る/熟れる` 的跨词典覆盖完整。
 
-验收样本：`前/ぜん/まえ`、同表记多读音、多 `<h3>` 拼接条目。
+### 3.2 小学馆子记录索引
 
-### 3.3 内部 sense reference 定位
+运行时已经按连续 `<h3> + <section>` 拆 occurrence。schema v5 需要为每个子记录建立独立
+form/reading key 和稳定 source record ID。
 
-现状：大辞林 `一①に同じ` 已结构化为 `internal_reference`，UI 显示静态参照，不会误触发新词典查询；尚未滚动并高亮目标 sense。
+验收：`前/ぜん/まえ`、同表记多读音和隐藏子记录能够直接精确查询。
 
-扩展方向：
+### 3.3 查询模式
 
-- 适配器将 marker path 解析为实际 `sense_id`；
-- renderer 为 sense 输出局部 anchor；
-- 点击内部参照只在当前 occurrence 内定位，不进入导航历史。
+当前应用入口使用 `contextual` 路由，并保留所有满足准入门的表记。后续将主动搜索单独实现：
 
-修改入口：`adapters/daijirin.rs`、`DictionarySenseTree.vue`。
+- contextual：正文证据、表记矩阵与稳定条件门；
+- search：用户输入的宽泛 reading/fuzzy 结果与明确证据；
+- relation：普通词典关系的精确目标查询。
 
-验收样本：`ごちゃごちゃ` 及含多级“同じ”引用的条目。
+每种模式拥有独立请求字段、缓存 key、结果标识和验收样本。
 
-### 3.4 标签规范化词表
+## 4. P1：表记证据
 
-现状：标签已统一为 `pos/register/domain/grammar/form/entry-kind` 等 kind，但原词典可能继续出现新的短标签。未知标签可显示，尚未全部归入稳定视觉类别。
+### 4.1 复杂送假名与复合形式
 
-扩展方向：
+当前支持全汉字 `・` 备选和一段可选假名。后续需要覆盖：
 
-- 每词典维护小型显式映射，不使用全文模糊正则；
-- 保留原 label，规范 kind 只决定呈现和筛选；
-- 未知标签进入 diagnostics 统计，积累足够样本后再归类。
+- 多段可选送假名；
+- 历史活用和接辞；
+- 复合词内部的片假名/平假名组合；
+- 词典只给出局部 form restriction 的记录。
 
-验收样本：口语、文语、方言、专有、成语、谚语、经济/医学等领域标签。
+每条规则必须保留原始 variant，并提供防止过度展开的反例。
 
-### 3.5 复杂省略词头展开
+### 4.2 字符兼容映射
 
-现状：大辞林 `━/—・` 已能按 display form 或活用词干展开常见例句；复杂复合、接辞或历史活用不能一律安全展开。
+兼容字形映射维护为显式小表。新增映射时记录 Unicode/词典依据，并验证：
 
-扩展方向：
+- group key 合并正确；
+- variants 仍保存原始字形；
+- observed form 保持展示优先级；
+- 无关词形没有被压平。
 
-- 使用 occurrence 的 canonical/stem/form scope 选择展开基底；
-- 不能唯一确定时保留原符号并写 diagnostics；
-- 不从例句反向修改表头。
+### 4.3 表记上限与截断诊断
 
-验收样本：サ变、历史活用、接头/接尾、复合词内部占位。
+发现阶段需要显式候选上限和截断字段。达到上限时，Lookup 与 CLI 报告截断原因、数量和排序
+边界。UI 继续使用集中菜单访问所有已返回表记。
 
-## 4. P1：候选与查询治理
+## 5. P1：内容作用域
 
-### 4.1 大量词典导航候选的分组
+### 5.1 pronunciation 作用域
 
-现状：direct-first 已防止 `もう` 的毛、猛、網、蒙等进入正文，但大辞林导航页仍可能提供十余个合法候选。完整保留符合“不伪造语义区分”的原则，直接平铺会增加视觉负担。
+`DictionaryOccurrenceHeader.pronunciations` 当前保存 occurrence 级音调。原词典明确给出局部
+位置时，可增加 `sense_id` 或 scope path。
 
-扩展方向：
+验收：`ごちゃごちゃ`、`気配` 和多词性多音调的大辞林记录。
 
-- 按 `lexical/surname/kanji/prefix/suffix/navigation` 分组；
-- 默认显示与当前 reading/kind 兼容的第一组，其余折叠；
-- 主动搜索模式可以展开全部，上下文气泡保持紧凑；
-- 不因折叠删除候选，不把分组顺序写回语义首选。
+### 5.2 internal reference 定位
 
-修改入口：`lookup_state.rs` 可增加 candidate metadata；`DictionaryChoiceBar.vue` 可增加分组/折叠模式。
+`internal_reference` 已保持为当前 occurrence 内关系。后续解析 marker path，给 sense 输出局部
+anchor，点击后在当前正文定位。
 
-### 4.2 contextual/navigation/search 模式完全分流
+### 5.3 标签规范化
 
-现状：模型已保留 `mode`，planner 已采用 direct-first 和 dictionary-local alias；`mode` 尚未传入 `DictionaryEngine`，无 direct 结果时当前固定路径仍会尝试 reading fallback。主动搜索和导航也没有各自独立的可执行 policy。
+每本词典维护显式标签映射。原 label 完整保留，规范 kind 只参与呈现和筛选。未知标签进入
+diagnostics 统计。
 
-扩展方向：
+### 5.4 residual 保真
 
-- contextual：禁止 fuzzy 与任意同音正文；
-- navigation：允许明确 target/redirect；
-- search：允许读音和 fuzzy，但必须显示 evidence 与结果类型；
-- 缓存键和用户选择按 mode 隔离。
+新增适配规则时记录已消费节点。无法映射的源内容进入 residual/fallback 与 diagnostics，
+避免在 CSS 中静默隐藏。
 
-### 4.3 occurrence 选择的上下文持久化
+## 6. P2：矩阵与交互
 
-现状：表记 target 可以持久化；同词典同形同读的 occurrence 只在当前气泡内选择。`もう` 的两个 Crown occurrence 没有可靠全局首选，贸然持久化会污染不同句子。
+### 6.1 单元格歧义状态
 
-扩展方向：
+当前 occurrence 选择通过数量、星标和标签表达。可在 Lookup 中增加每个单元格的
+`resolved/ambiguous/unavailable` 状态和诊断，不改变三轴结构。
 
-- 优先使用 document/session scope；
-- 只有用户明确选择“始终使用”时才建立更宽规则；
-- 持久化键至少包含 query、reading、POS 和可选上下文签名。
+### 6.2 大量 occurrence
 
-## 5. P2：分词典适配深化
+同一单元格出现大量真实记录时，按读音、entry kind 和词性分组；全部 occurrence 保留并可访问。
+分组只影响展示顺序。
 
-### 5.1 大辞林
+### 6.3 可访问性与窄屏
 
-- 扩充 `deco` 新类型的明确 section 映射；
-- 处理更多历史语法、出处和外字容器；
-- 将来源词、短注与局部 note 的边界继续细化；
-- 未知结构必须输出 adapter warning；静默并入 definition 不属于允许的降级路径。
+- 菜单和按钮使用完整 accessible name；
+- 不可用词典具有明确说明；
+- 键盘循环跳过不可用项；
+- 十余表记、长词典名和长读音不造成横向溢出；
+- 高缩放和移动宽度下保持表头、控制区与正文顺序。
 
-### 5.2 小学馆
+### 6.4 宽屏比较
 
-- 已完成：30,405 条无 `<h3>` 的 standalone `複合語/慣用句` 记录在运行时直接生成结构化 occurrence，不再落入 fallback；详见 `analysis/dictionary_standalone_subhead_audit_20260721.md`；
-- 扩充白/黑方块标签分类，避免把新类别误作 marker；
-- 深化 subhead/subheadword 内多级 sense 与例句；
-- 统一更多中文全半角标点，但不修改词典语义措辞；
-- 对无 bold、混合日中和特殊 qualifier 的 meaning 增加样本。
+后续可增加明确触发的多词典并排比较。每列仍消费同一表记行的独立 occurrence，正文不做
+跨词典 sense 对齐。
 
-### 5.3 Crown
+## 7. P2：诊断与回归
 
-- 将 `mean_iikae` 从例句内部文本提升为可选替换结构；
-- 对中文缺失而英文提供唯一语义的条目保留 secondary English，不把英语误标为中文；
-- 扩充复合词、作品信息和专栏容器；
-- 继续默认省略拼音，未来由显示偏好控制。
+### 7.1 固定矩阵夹具
 
-## 6. P2：表头与正文体验
+为代表词保存轻量断言：
 
-### 6.1 当前义项分支表头
+- query、observed form、reading、POS；
+- form ID、display form 和 variants；
+- 固定 dictionary names；
+- 每个单元格可用性；
+- 活动 entries 的 dictionary/occurrence/reading；
+- 必须拒绝的表记；
+- 表记切换前后矩阵一致性。
 
-现状：occurrence 全局事实进入表头，局部 POS/grammar/register 保留在对应 sense。若未来增加义项聚焦或折叠状态，可把当前分支的局部标签临时投影到表头右栏。
+首批夹具：`行く/いく`、`強い/こわい/つよい`、`する/刷る`、`なれる/慣れる`、
+`寄りかかる/よりかかる`、`ヒミツ/ひみつ`、`がんばる`。
 
-约束：
+### 7.2 适配器覆盖统计
 
-- 没有“当前 sense”交互状态时，不把多个分支标签合并到表头；
-- 投影不修改 occurrence 数据，只是 UI 派生状态；
-- 切换 occurrence 后重新计算。
+统计 fallback、unknown tag、空 sense、无语言标记文本、未归属关系、未展开占位和 sanitizer
+省略节点。统计用于定位样本，原文审计仍是语义结论来源。
 
-### 6.2 宽屏比较视图
+### 7.3 CLI manifest
 
-当前气泡坚持单活动词典，避免重复表头和纵向噪声。后续可增加显式“比较”模式：
+为 `dict-bubble-html` 增加批量 manifest：一次定义输入、初始活动表记、切换表记和期望矩阵摘要。
+每个 case 继续输出独立 JSON/HTML。
 
-- 左右栏各选择一本词典；
-- 两栏仍各自维护 occurrence 和表头；
-- 不自动跨词典合并 sense；
-- 窄屏回退为单栏切换。
+## 8. P3：智能与跨词典能力
 
-### 6.3 显示偏好
+- 上下文语义排序同音表记；
+- 跨词典词汇等价证据；
+- sense 对齐与来源保留；
+- 用户授权的 LLM 消歧；
+- 结构化词典证据回供词法边界和表达候选；
+- 图片、音频、外字和安全资源 URI。
 
-可配置项：拼音、英文对应、历史读音、详细词源、适配诊断、原始 HTML。默认仍以日文结构和中文主释义为中心。
+这些能力使用独立证据和决策层，基础矩阵继续提供确定性表记、可用性和 occurrence 事实。
 
-### 6.4 可访问性与窄屏
-
-- 选项条方向键、Home/End 和焦点环；
-- 键盘打开气泡及返回历史；
-- 小屏底部面板模式；
-- 动态候选/词典切换的读屏通知。
-
-## 7. P2：跨词典互补提示
-
-现状：不同词典保持独立正文，不强行对齐编号。后续可以在不合并事实的前提下计算轻量 coverage hint：
-
-- 某词典有日文详解，另一本有中文例句；
-- 某 occurrence 只在一本词典提供古义、惯用句或词源；
-- 当前词典无此候选，其他词典有。
-
-提示只用于词典切换引导，不生成统一 sense，不宣称语义等价。
-
-## 8. P2：诊断与回归夹具
-
-### 8.1 固定夹具
-
-将第一批 18 词及后续代表词保存为轻量 fixture：
-
-- 查询输入、reading、POS、mode；
-- 期望 occurrence 数与关键 identity；
-- 必须出现/不得出现的结构字段；
-- 允许变化的 source 内容不做全文快照。
-
-### 8.2 适配器覆盖统计
-
-建议统计：fallback 比例、unknown tag、空 sense、无语言标记文本、未归属关系、未展开占位和 sanitizer 丢弃节点。统计只用于定位样本，不代替人工原文审计。
-
-### 8.3 CLI 批量输出
-
-`dict-bubble-html --no-open --json --output` 已支持完整 Lookup。后续可增加批量 manifest，但每个失败样本仍需逐文件核对原始 HTML。
-
-## 9. P3：长期能力
-
-- 结构化词典证据回供词法边界与表达候选；
-- 经用户授权的上下文/LLM 消歧；
-- 图片、音频、外字和安全资源 URI；
-- 跨词典关系去重与来源保留；
-- 适配器能力版本和 schema capability 声明。
-
-## 10. 新问题登记模板
+## 9. 新问题模板
 
 ```markdown
 ### 问题名
 
-- 查询：表记 / reading / POS / mode
-- 词典与 occurrence：
-- 原始 HTML 证据：
-- 当前结构化输出：
-- 问题所属层：lookup / splitter / adapter / IR / renderer / CSS
-- 是否需要核心协议变化：否 / 待证明
-- 建议扩展点：
-- 验收样本：
-- 仍不确定的事实：
+- 输入：query / observed / reading / POS
+- 当前 form group / variant / dictionary cell：
+- 原词典证据：
+- 归属层：lookup / form / adapter / IR / state / renderer
+- 期望行为：
+- 正例与反例：
+- 验证命令：
 ```
-
-只有在至少多个真实样本证明现有 IR 无法表达时，才把“是否需要核心协议变化”改为“是”。
