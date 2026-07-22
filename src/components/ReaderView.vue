@@ -89,6 +89,10 @@ import {
   estimateReaderRow,
   resolveReaderRowMeasurement,
 } from "../reader/virtualization";
+import {
+  createViewTransitionGuard,
+  type ManagedViewTransition,
+} from "../reader/viewTransition";
 import { useExplanationSession } from "../composables/useExplanationSession";
 import { useExplanationInteraction } from "../composables/useExplanationInteraction";
 
@@ -105,6 +109,7 @@ const libraryError = ref<string | null>(null);
 const openingLibraryBookId = ref<string | null>(null);
 const bookAnalysisTransitioning = ref(false);
 let bookAnalysisGeneration = 0;
+const readerViewTransition = createViewTransitionGuard();
 const libraryPath = ref("");
 const activeLibraryBook = ref<LibraryBook | null>(null);
 const activeResources = ref<Map<string, LibraryResource>>(new Map());
@@ -734,6 +739,7 @@ async function updateDictionaryOrder(order: string[]) {
 }
 
 onBeforeUnmount(() => {
+  readerViewTransition.dispose();
   window.clearTimeout(progressPersistTimer);
   if (activeLibraryBook.value) void persistLibraryProgress();
   disposeBackendStatusListener();
@@ -923,9 +929,9 @@ function waitForBookAnalysisEntry(): Promise<void> {
 
 async function runReaderViewTransition(update: () => void): Promise<void> {
   const transitionDocument = document as Document & {
-    startViewTransition?: (callback: () => void | Promise<void>) => {
-      updateCallbackDone: Promise<void>;
-    };
+    startViewTransition?: (
+      callback: () => void | Promise<void>,
+    ) => ManagedViewTransition;
   };
   if (
     !transitionDocument.startViewTransition ||
@@ -939,7 +945,12 @@ async function runReaderViewTransition(update: () => void): Promise<void> {
     update();
     await nextTick();
   });
+  readerViewTransition.track(transition);
   await transition.updateCallbackDone;
+}
+
+async function finishReaderViewTransition(): Promise<void> {
+  await readerViewTransition.finish();
 }
 
 function showMarkdownInput() {
@@ -957,9 +968,12 @@ function showMarkdownInput() {
   inputText.value = "";
 }
 
-function returnToLibrary() {
-  bookAnalysisGeneration++;
+async function returnToLibrary() {
+  const generation = ++bookAnalysisGeneration;
   openingLibraryBookId.value = null;
+  // 先结束仍在取景的共享元素动画，再卸载其 Vue 组件树。
+  await finishReaderViewTransition();
+  if (generation !== bookAnalysisGeneration) return;
   bookAnalysisTransitioning.value = false;
   cancelAnalysis();
   if (activeLibraryBook.value && isReading.value)
