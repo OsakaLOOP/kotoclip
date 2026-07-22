@@ -7,6 +7,7 @@ import type {
   AnalysisProgressMode,
   ProgressPhase,
 } from "../reader/analysisProgress";
+import { runSessionBoundOperation } from "../reader/documentOperation";
 
 export interface Paragraph {
   id: number;
@@ -481,6 +482,21 @@ export function useTokenization() {
     return result;
   }
 
+  function enqueueSessionOperation<T, R>(
+    sessionId: string,
+    operation: () => Promise<T>,
+    apply: (value: T) => R,
+  ): Promise<R | null> {
+    return enqueueDocumentOperation(() =>
+      runSessionBoundOperation(
+        sessionId,
+        () => activeSessionId.value,
+        operation,
+        apply,
+      ),
+    );
+  }
+
   function mergePatch(patch: AnalysisPatch) {
     if (import.meta.env.DEV) lastPatchBytes.value = new Blob([JSON.stringify(patch)]).size;
     lastInvalidation.value = patch.invalidation ?? null;
@@ -527,6 +543,11 @@ export function useTokenization() {
   }
 
   function applyPatch(patch: AnalysisPatch): AnnotatedToken[] {
+    if (activeSessionId.value !== patch.sessionId) {
+      throw new Error(
+        `拒绝跨会话文档 Patch：当前 ${activeSessionId.value ?? "无"}，收到 ${patch.sessionId}`,
+      );
+    }
     const allTokens = mergePatch(patch);
     if (patch.kind !== "token_update" || paragraphs.value.length === 0) {
       // TokenUpdate 原位更新响应式 token，不触碰段落数组和虚拟行结构。
@@ -637,29 +658,37 @@ export function useTokenization() {
   }
 
   async function requestDocumentRange(charRange: [number, number]) {
-    if (!activeSessionId.value) throw new Error("尚未打开文档会话");
-    return enqueueDocumentOperation(async () => {
-      const patch = await invoke<AnalysisPatch>("request_document_range", {
-        sessionId: activeSessionId.value,
+    const sessionId = activeSessionId.value;
+    if (!sessionId) throw new Error("尚未打开文档会话");
+    return enqueueSessionOperation(
+      sessionId,
+      () => invoke<AnalysisPatch>("request_document_range", {
+        sessionId,
         baseRevision: documentRevision.value,
         charRange,
-      });
-      applyPatch(patch);
-      return patch;
-    });
+      }),
+      (patch) => {
+        applyPatch(patch);
+        return patch;
+      },
+    );
   }
 
   async function replaceDocumentText(text: string, recordExposure = false) {
-    if (!activeSessionId.value) return analyzeText(text, recordExposure);
-    return enqueueDocumentOperation(async () => {
-      const response = await invoke<DocumentResponse>("apply_document_mutation", {
-        sessionId: activeSessionId.value,
+    const sessionId = activeSessionId.value;
+    if (!sessionId) return analyzeText(text, recordExposure);
+    return enqueueSessionOperation(
+      sessionId,
+      () => invoke<DocumentResponse>("apply_document_mutation", {
+        sessionId,
         baseRevision: documentRevision.value,
         mutation: { type: "replace_text", text, recordExposure },
-      });
-      applyPatch(response.patch);
-      return true;
-    });
+      }),
+      (response) => {
+        applyPatch(response.patch);
+        return true;
+      },
+    );
   }
 
   async function continueDocumentAnalysis() {
@@ -709,33 +738,41 @@ export function useTokenization() {
   }
 
   async function refreshDocumentExpressions() {
-    if (!activeSessionId.value) throw new Error("尚未打开文档会话");
-    return enqueueDocumentOperation(async () => {
-      const patch = await invoke<AnalysisPatch>("refresh_document_expressions", {
-        sessionId: activeSessionId.value,
+    const sessionId = activeSessionId.value;
+    if (!sessionId) throw new Error("尚未打开文档会话");
+    return enqueueSessionOperation(
+      sessionId,
+      () => invoke<AnalysisPatch>("refresh_document_expressions", {
+        sessionId,
         baseRevision: documentRevision.value,
-      });
-      applyPatch(patch);
-      return patch;
-    });
+      }),
+      (patch) => {
+        applyPatch(patch);
+        return patch;
+      },
+    );
   }
 
   async function markDocumentKnown(baseForm: string, reading: string, known: boolean) {
-    if (!activeSessionId.value) {
+    const sessionId = activeSessionId.value;
+    if (!sessionId) {
       await invoke(known ? "mark_known" : "mark_unknown", { baseForm, reading });
       return null;
     }
-    return enqueueDocumentOperation(async () => {
-      const patch = await invoke<AnalysisPatch>("mark_document_known", {
-        sessionId: activeSessionId.value,
+    return enqueueSessionOperation(
+      sessionId,
+      () => invoke<AnalysisPatch>("mark_document_known", {
+        sessionId,
         baseRevision: documentRevision.value,
         baseForm,
         reading,
         known,
-      });
-      applyPatch(patch);
-      return patch;
-    });
+      }),
+      (patch) => {
+        applyPatch(patch);
+        return patch;
+      },
+    );
   }
 
   /**
@@ -804,19 +841,21 @@ export function useTokenization() {
   }
 
   async function chooseSegmentation(source: AnnotatedToken, candidate: SegmentationCandidate) {
-    if (!activeSessionId.value) {
+    const sessionId = activeSessionId.value;
+    if (!sessionId) {
       await invoke("choose_segmentation", { source, candidate });
       return;
     }
-    await enqueueDocumentOperation(async () => {
-      const patch = await invoke<AnalysisPatch>("choose_document_segmentation", {
-        sessionId: activeSessionId.value,
+    await enqueueSessionOperation(
+      sessionId,
+      () => invoke<AnalysisPatch>("choose_document_segmentation", {
+        sessionId,
         baseRevision: documentRevision.value,
         source,
         candidate,
-      });
-      applyPatch(patch);
-    });
+      }),
+      (patch) => applyPatch(patch),
+    );
   }
 
   return {
