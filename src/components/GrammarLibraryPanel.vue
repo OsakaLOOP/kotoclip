@@ -139,13 +139,21 @@ watch(
   },
 );
 
+function handleBack() {
+  if (selected.value !== null) {
+    selected.value = null;
+  } else {
+    emit("close");
+  }
+}
+
 onBeforeUnmount(() => {
   if (searchTimer !== null) window.clearTimeout(searchTimer);
 });
 </script>
 
 <template>
-  <ReaderSurface :show="show" variant="fullscreen" title="文法库" description="搜索和查看文法说明" @close="emit('close')">
+  <ReaderSurface :show="show" variant="fullscreen" title="文法库" description="搜索和查看文法说明" @back="handleBack" @close="emit('close')">
     <section class="grammar-library" aria-label="文法库">
 
       <div class="library-filters">

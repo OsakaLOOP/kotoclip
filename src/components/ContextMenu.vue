@@ -49,12 +49,20 @@ function handleOutsideClick(e: MouseEvent) {
   }
 }
 
+function handleKeydown(e: KeyboardEvent) {
+  if (props.show && e.key === "Escape") {
+    emit("close");
+  }
+}
+
 onMounted(() => {
   document.addEventListener("mousedown", handleOutsideClick);
+  window.addEventListener("keydown", handleKeydown);
 });
 
 onUnmounted(() => {
   document.removeEventListener("mousedown", handleOutsideClick);
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 

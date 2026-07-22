@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from "vue";
+import { computed, onBeforeUnmount, useAttrs, watch } from "vue";
 import { X } from "@lucide/vue";
 import AppHeader from "../common/AppHeader.vue";
 
@@ -18,15 +18,55 @@ const props = withDefaults(defineProps<{
   label: "",
 });
 
-const emit = defineEmits<{ close: [] }>();
+const emit = defineEmits<{
+  close: [];
+  back: [];
+}>();
+
+const attrs = useAttrs();
 const transitionName = computed(() => `reader-surface-${props.variant}`);
+
+function isInputElement(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toUpperCase();
+  return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target.isContentEditable;
+}
+
+function handleBack() {
+  if (attrs.onBack) {
+    emit("back");
+  } else {
+    close();
+  }
+}
 
 function close() {
   emit("close");
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape" && props.show) close();
+  if (!props.show) return;
+
+  // 1. Esc 键
+  if (event.key === "Escape") {
+    event.preventDefault();
+    handleBack();
+    return;
+  }
+
+  // 2. Backspace 键 (非输入框焦点时触发返回)
+  if (event.key === "Backspace" && !isInputElement(event.target)) {
+    event.preventDefault();
+    handleBack();
+    return;
+  }
+
+  // 3. Alt + Left 方向键 (标准返回快捷键)
+  if (event.altKey && event.key === "ArrowLeft") {
+    event.preventDefault();
+    handleBack();
+    return;
+  }
 }
 
 watch(
@@ -50,7 +90,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
         `reader-surface--${variant}`,
         variant === 'side' && `reader-surface--${side}`,
       ]"
-      @click.self="variant !== 'fullscreen' && close()"
+      @click.self="variant !== 'fullscreen' && handleBack()"
     >
       <section
         class="reader-surface__panel"
@@ -59,11 +99,11 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
         :aria-label="label || title"
       >
         <AppHeader
-          :show-back="variant === 'fullscreen'"
+          :show-back="variant === 'fullscreen' || Boolean(attrs.onBack)"
           collapse-brand
           :title="title"
           :description="variant === 'fullscreen' ? description : ''"
-          @back="close"
+          @back="handleBack"
         >
           <template #actions>
             <slot name="actions" />
@@ -71,9 +111,9 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
               v-if="variant !== 'fullscreen'"
               class="reader-surface__close"
               type="button"
-              :title="`关闭${title}`"
+              :title="`关闭${title} (Esc)`"
               :aria-label="`关闭${title}`"
-              @click="close"
+              @click="handleBack"
             >
               <X :size="18" aria-hidden="true" />
             </button>

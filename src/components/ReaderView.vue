@@ -743,11 +743,23 @@ async function navigateChapter(chapter: ReaderChapter) {
   }
 }
 
+function handleReaderKeydown(event: KeyboardEvent) {
+  if (showDefinitionModal.value) {
+    const target = event.target as HTMLElement | null;
+    const isInput = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable);
+    if (event.key === "Escape" || (event.key === "Backspace" && !isInput) || (event.altKey && event.key === "ArrowLeft")) {
+      event.preventDefault();
+      showDefinitionModal.value = false;
+    }
+  }
+}
+
 // 监听拖拽的鼠标松开事件 (挂载在 window 以防在胶囊外松开失效)
 onMounted(() => {
   void initializeBackendStatus();
   void loadLibrary();
   window.addEventListener("mouseup", handleMouseUp);
+  window.addEventListener("keydown", handleReaderKeydown);
   window.addEventListener("resize", explanation.refreshAnchor);
   window.addEventListener("resize", scheduleReaderRemeasure, { passive: true });
 });
@@ -779,6 +791,7 @@ onBeforeUnmount(() => {
   if (activeLibraryBook.value) void persistLibraryProgress();
   disposeBackendStatusListener();
   window.removeEventListener("mouseup", handleMouseUp);
+  window.removeEventListener("keydown", handleReaderKeydown);
   window.removeEventListener("resize", explanation.refreshAnchor);
   window.removeEventListener("resize", scheduleReaderRemeasure);
   if (remeasureFrame !== undefined) cancelAnimationFrame(remeasureFrame);
