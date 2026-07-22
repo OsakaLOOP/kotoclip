@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, watch } from "vue";
-import { ArrowLeft, X } from "@lucide/vue";
+import { ArrowLeft, BookOpen, X } from "@lucide/vue";
 
 type ReaderSurfaceVariant = "side" | "modal" | "fullscreen";
 
@@ -8,11 +8,9 @@ const props = withDefaults(defineProps<{
   show: boolean;
   variant: ReaderSurfaceVariant;
   title: string;
-  subtitle?: string;
   side?: "left" | "right";
   label?: string;
 }>(), {
-  subtitle: "",
   side: "right",
   label: "",
 });
@@ -68,10 +66,17 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
           >
             <ArrowLeft :size="19" aria-hidden="true" />
           </button>
-          <div class="reader-surface__heading">
-            <slot name="title">
+          <div
+            class="reader-surface__heading"
+            :class="{ 'reader-surface__heading--brand': variant === 'fullscreen' }"
+          >
+            <template v-if="variant === 'fullscreen'">
+              <BookOpen class="reader-surface__brand-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
+              <strong class="reader-surface__brand-name">Kotoclip</strong>
+              <span class="reader-surface__section-name">{{ title }}</span>
+            </template>
+            <slot v-else name="title">
               <strong>{{ title }}</strong>
-              <span v-if="subtitle">{{ subtitle }}</span>
             </slot>
           </div>
           <div class="reader-surface__actions">
@@ -154,6 +159,34 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
   font-size: .7rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.reader-surface__heading--brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.reader-surface__brand-icon {
+  flex: 0 0 auto;
+  color: var(--accent-color);
+}
+
+.reader-surface__heading .reader-surface__brand-name {
+  flex: 0 0 auto;
+  color: var(--accent-color);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.reader-surface__heading .reader-surface__section-name {
+  min-width: 0;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: .75rem;
+  text-overflow: ellipsis;
 }
 
 .reader-surface__actions {

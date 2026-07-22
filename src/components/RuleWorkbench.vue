@@ -276,11 +276,11 @@ function save() {
 </script>
 
 <template>
-  <ReaderSurface :show="show" variant="fullscreen" title="规则工作台" subtitle="KOTOCLIP ANALYSIS · 配置范围、匹配条件、上下文与输出" @close="emit('close')">
+  <ReaderSurface :show="show" variant="fullscreen" title="表达规则" @close="emit('close')">
     <template #actions>
       <button v-if="view === 'editor'" class="quiet-button" @click="view = 'library'">规则库</button>
     </template>
-    <div class="workbench-shell" aria-label="规则工作台">
+    <div class="workbench-shell" aria-label="表达规则">
 
       <main v-if="view === 'library'" class="library-layout">
         <aside class="layer-rail">

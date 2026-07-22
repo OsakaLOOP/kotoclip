@@ -145,8 +145,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <ReaderSurface :show="show" variant="fullscreen" title="语法知识库" subtitle="Grammar Catalog · 按稳定 concept 浏览讲解" @close="emit('close')">
-    <section class="grammar-library" aria-label="语法知识库">
+  <ReaderSurface :show="show" variant="fullscreen" title="文法库" @close="emit('close')">
+    <section class="grammar-library" aria-label="文法库">
 
       <div class="library-filters">
         <label>
