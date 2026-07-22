@@ -110,6 +110,7 @@ const openingLibraryBookId = ref<string | null>(null);
 const bookAnalysisTransitioning = ref(false);
 let bookAnalysisGeneration = 0;
 const readerViewTransition = createViewTransitionGuard();
+let libraryLoadGeneration = 0;
 const libraryPath = ref("");
 const activeLibraryBook = ref<LibraryBook | null>(null);
 const activeResources = ref<Map<string, LibraryResource>>(new Map());
@@ -825,6 +826,7 @@ async function importEpub() {
   });
   if (!selected || Array.isArray(selected)) return;
 
+  const generation = ++bookAnalysisGeneration;
   isImportingEpub.value = true;
   libraryError.value = null;
   try {
@@ -832,16 +834,20 @@ async function importEpub() {
       path: selected,
     });
     await loadLibrary();
-    await openBookData(imported);
+    if (generation !== bookAnalysisGeneration) return;
+    await openBookData(imported, generation);
   } catch (error) {
-    epubImportError.value = String(error);
-    libraryError.value = `EPUB 导入失败：${String(error)}`;
+    if (generation === bookAnalysisGeneration) {
+      epubImportError.value = String(error);
+      libraryError.value = `EPUB 导入失败：${String(error)}`;
+    }
   } finally {
     isImportingEpub.value = false;
   }
 }
 
 async function loadLibrary() {
+  const generation = ++libraryLoadGeneration;
   libraryLoading.value = true;
   libraryError.value = null;
   try {
@@ -849,12 +855,14 @@ async function loadLibrary() {
       invoke<LibraryBookSummary[]>("list_library_books"),
       invoke<string>("get_library_location"),
     ]);
+    if (generation !== libraryLoadGeneration) return;
     libraryBooks.value = books;
     libraryPath.value = location;
   } catch (error) {
-    libraryError.value = `无法读取书库：${String(error)}`;
+    if (generation === libraryLoadGeneration)
+      libraryError.value = `无法读取书库：${String(error)}`;
   } finally {
-    libraryLoading.value = false;
+    if (generation === libraryLoadGeneration) libraryLoading.value = false;
   }
 }
 
