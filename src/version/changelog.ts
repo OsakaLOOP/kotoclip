@@ -13,8 +13,8 @@ export interface ChangelogRelease {
   version: string;
   date: string;
   type: ReleaseType;
-  summary: string;
-  details: string[];
+  title: string;
+  changes: string[];
   source: ReleaseSource;
 }
 

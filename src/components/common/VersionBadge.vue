@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, ref } from "vue";
 import {
   AlertCircle,
   Bell,
-  ChevronDown,
   Clock3,
   ExternalLink,
   GitCommit,
@@ -17,7 +16,6 @@ const props = withDefaults(defineProps<{ currentVersion?: string }>(), {
 });
 
 const isOpen = ref(false);
-const isHovered = ref(false);
 const loading = ref(false);
 const error = ref(false);
 let closeTimer: number | undefined;
@@ -36,7 +34,6 @@ function readViewedState(): boolean {
 
 function openBadge() {
   if (closeTimer !== undefined) window.clearTimeout(closeTimer);
-  isHovered.value = true;
   isOpen.value = true;
   if (showDot.value) {
     showDot.value = false;
@@ -49,7 +46,6 @@ function openBadge() {
 }
 
 function scheduleClose() {
-  isHovered.value = false;
   if (closeTimer !== undefined) window.clearTimeout(closeTimer);
   closeTimer = window.setTimeout(() => {
     isOpen.value = false;
@@ -114,11 +110,11 @@ onBeforeUnmount(() => {
               </div>
               <div class="version-badge__release-content">
                 <a :href="releaseUrl(release)" target="_blank" rel="noopener noreferrer" class="version-badge__release-link">
-                  <span>{{ release.summary }}</span>
+                  <span>{{ release.title }}</span>
                   <ExternalLink :size="11" aria-hidden="true" />
                 </a>
                 <ul>
-                  <li v-for="detail in release.details" :key="detail">{{ detail }}</li>
+                  <li v-for="change in release.changes" :key="change">{{ change }}</li>
                 </ul>
                 <span class="version-badge__release-meta">
                   <Clock3 :size="10" aria-hidden="true" />{{ release.date }} · {{ release.source.kind === "commit" ? "commit" : "release" }}
@@ -129,8 +125,7 @@ onBeforeUnmount(() => {
         </div>
         <footer class="version-badge__footer">
           <span><MapPin :size="11" aria-hidden="true" />当前版本 v{{ changelog.currentVersion }}</span>
-          <a :href="changelog.repositoryUrl" target="_blank" rel="noopener noreferrer">完整记录 <GitCommit :size="11" aria-hidden="true" /></a>
-          <ChevronDown v-if="isHovered" :size="11" aria-hidden="true" />
+          <a :href="`${changelog.repositoryUrl}/commits`" target="_blank" rel="noopener noreferrer">完整记录 <GitCommit :size="11" aria-hidden="true" /></a>
         </footer>
       </section>
     </Transition>
@@ -169,8 +164,8 @@ onBeforeUnmount(() => {
 .version-badge__release-meta { display: inline-flex; align-items: center; gap: 4px; color: var(--text-muted); font: .59rem/1.3 var(--font-ui); }
 .version-badge__footer { padding: 8px 12px; background: var(--text-primary); color: var(--bg-primary); font-size: .62rem; }
 .version-badge__footer span { opacity: .76; }
-.version-badge__footer a { color: var(--accent-color); font-weight: 700; text-decoration: none; }
-.version-badge__footer a:hover, .version-badge__footer a:focus-visible { color: var(--accent-hover); outline: 0; }
+.version-badge__footer a { margin-left: auto; color: #dce8ff; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.version-badge__footer a:hover, .version-badge__footer a:focus-visible { color: #fff; outline: 0; text-decoration: underline; text-underline-offset: 2px; }
 .version-popover-enter-active, .version-popover-leave-active { transition: opacity 150ms ease, transform 150ms ease; transform-origin: top left; }
 .version-popover-enter-from, .version-popover-leave-to { opacity: 0; transform: translateY(-4px) scale(.98); }
 @keyframes version-dot-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--novelty-high-text) 28%, transparent); } 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--novelty-high-text) 0%, transparent); } }
