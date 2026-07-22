@@ -38,7 +38,29 @@ const emit = defineEmits<{ back: [] }>();
         <ArrowLeft :size="19" aria-hidden="true" />
       </button>
       <BookOpen class="app-header__brand-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
-      <span class="app-header__brand-name">Kotoclip</span>
+      <svg
+        class="app-header__brand-name"
+        viewBox="275 65 507 130"
+        role="img"
+        aria-label="Kotoclip"
+        focusable="false"
+      >
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="14">
+          <g stroke="currentColor">
+            <path d="M282 72v88m0-28 40-36m-21 20 27 44" />
+            <circle cx="368" cy="128" r="32" />
+            <path d="M425 78v67q0 15 15 15m-33-57h39" />
+            <circle cx="489" cy="128" r="32" />
+          </g>
+          <g stroke="#39c5bb">
+            <path d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12" />
+            <path d="M619 72v73q0 15 15 15" />
+            <path d="M665 103v57" />
+            <path d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17" />
+          </g>
+          <circle cx="665" cy="78" r="7" fill="#f5d547" stroke="none" />
+        </g>
+      </svg>
       <div v-if="title" class="app-header__page-identity">
         <strong>{{ title }}</strong>
         <span v-if="description">{{ description }}</span>
@@ -99,10 +121,11 @@ const emit = defineEmits<{ back: [] }>();
 }
 
 .app-header__brand-name {
+  display: block;
   flex: 0 0 auto;
+  height: 22px;
+  width: auto;
   color: var(--accent-color);
-  font-size: 1.25rem;
-  font-weight: 700;
 }
 
 .app-header__brand-description {
