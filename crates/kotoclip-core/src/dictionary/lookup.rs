@@ -594,13 +594,17 @@ impl DictionaryEngine {
             }
             if let Some(reading) = effective_reading {
                 for candidate in reading_candidates(headword, reading) {
-                    let reading_entries = self.query_key_in_database(
+                    let mut reading_entries = self.query_key_in_database(
                         database_index,
                         READING_KEY,
                         &candidate,
                         "reading_fallback",
                         &mut timing,
                     );
+                    reading_entries.retain(|entry| {
+                        is_kana_query(headword)
+                            || crate::dictionary::lookup_state::entry_matches_form(entry, headword)
+                    });
                     let found = !reading_entries.is_empty();
                     for entry in reading_entries {
                         if seen.insert(entry.occurrence_id.clone()) {
@@ -633,6 +637,11 @@ impl DictionaryEngine {
                 for candidate in reading_candidates(headword, reading) {
                     direct =
                         self.query_key(READING_KEY, &candidate, "reading_fallback", &mut timing);
+                    if !is_kana_query(headword) {
+                        direct.retain(|entry| {
+                            crate::dictionary::lookup_state::entry_matches_form(entry, headword)
+                        });
+                    }
                     if !direct.is_empty() {
                         break;
                     }
@@ -777,7 +786,12 @@ impl DictionaryEngine {
         match_type: &str,
         timing: &mut DictionaryLookupTiming,
     ) -> Vec<DictEntry> {
-        let sql = "SELECT e.id, COALESCE(k.display_value, k.normalized_value), e.headword, \
+        let sql = "SELECT e.id, CASE WHEN k.kind = 1 THEN COALESCE((\
+                             SELECT COALESCE(form.display_value, form.normalized_value) \
+                             FROM entry_keys form \
+                             WHERE form.entry_id = e.id AND form.kind = 0 \
+                             ORDER BY form.rank LIMIT 1\
+                         ), e.headword) ELSE COALESCE(k.display_value, k.normalized_value) END, e.headword, \
                           e.definition_block_id, e.definition_offset, e.definition_length, \
                           (SELECT COALESCE(r.display_value, r.normalized_value) \
                            FROM entry_keys r \
@@ -1498,6 +1512,7 @@ mod tests {
             (5, "こ【子】", "<p><span class=\"bss\">こ</span>【<hy>子</hy>】<br><div><div class=\"no\">①</div><div class=\"lefta\">子供。⇔<a href=\"entry://親\">親</a>・<a href=\"entry://祖\">祖</a>。</div></div></p>"),
             (6, "ダサい", "<p>野暮ったい。</p>"),
             (7, "ださい【駄才】", "<p>才能がないこと。</p>"),
+            (8, "こうこうせい【向光性】", "<p>向光性释义</p>"),
         ];
         for (id, headword, definition) in entries {
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
@@ -1543,6 +1558,8 @@ mod tests {
             (6, 1, "ダサイ", Some("ださい"), 0),
             (7, 0, "駄才", None, 0),
             (7, 1, "ダサイ", Some("ださい"), 0),
+            (8, 0, "向光性", None, 0),
+            (8, 1, "コウコウセイ", Some("こうこうせい"), 0),
         ];
         for key in keys {
             connection
@@ -1609,6 +1626,12 @@ mod tests {
         assert!(exact_with_alias
             .iter()
             .any(|entry| entry.headword == "駄才"));
+
+        assert!(engine.lookup("高校生", Some("コウコウセイ")).is_empty());
+        assert!(engine
+            .lookup("こうこうせい", None)
+            .iter()
+            .any(|entry| entry.headword == "向光性"));
 
         drop(engine);
         std::fs::remove_dir_all(directory).unwrap();

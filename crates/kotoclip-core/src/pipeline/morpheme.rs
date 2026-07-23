@@ -43,6 +43,59 @@ fn apply_tokenization_compatibility(morphemes: Vec<Morpheme>) -> Vec<Morpheme> {
     let mut corrected = Vec::with_capacity(morphemes.len());
     let mut index = 0;
     while index < morphemes.len() {
+        if index > 0
+            && index + 1 < morphemes.len()
+            && morphemes[index].surface == "上の空"
+            && morphemes[index - 1].pos.major == "名詞"
+            && morphemes[index + 1].pos.major == "名詞"
+        {
+            let current = &morphemes[index];
+            let start = current.char_range.0;
+            corrected.push(Morpheme {
+                surface: "上".to_string(),
+                pos: PosTag {
+                    major: "名詞".to_string(),
+                    sub1: "接尾".to_string(),
+                    sub2: "一般".to_string(),
+                    sub3: "*".to_string(),
+                },
+                base_form: "上".to_string(),
+                reading: String::new(),
+                conjugation_type: "*".to_string(),
+                conjugation_form: "*".to_string(),
+                char_range: (start, start + 1),
+            });
+            corrected.push(Morpheme {
+                surface: "の".to_string(),
+                pos: PosTag {
+                    major: "助詞".to_string(),
+                    sub1: "格助詞".to_string(),
+                    sub2: "一般".to_string(),
+                    sub3: "*".to_string(),
+                },
+                base_form: "の".to_string(),
+                reading: "ノ".to_string(),
+                conjugation_type: "*".to_string(),
+                conjugation_form: "*".to_string(),
+                char_range: (start + 1, start + 2),
+            });
+            corrected.push(Morpheme {
+                surface: "空".to_string(),
+                pos: PosTag {
+                    major: "名詞".to_string(),
+                    sub1: "一般".to_string(),
+                    sub2: "*".to_string(),
+                    sub3: "*".to_string(),
+                },
+                base_form: "空".to_string(),
+                reading: "ソラ".to_string(),
+                conjugation_type: "*".to_string(),
+                conjugation_form: "*".to_string(),
+                char_range: (start + 2, current.char_range.1),
+            });
+            index += 1;
+            continue;
+        }
         if index + 1 < morphemes.len()
             && morphemes[index].surface == "だっせ"
             && morphemes[index].base_form == "だっする"
@@ -142,6 +195,28 @@ mod tests {
         assert_eq!(corrected[0].base_form, "憚る");
         assert_eq!(corrected[0].pos.major, "動詞");
         assert_eq!(corrected[1].base_form, "べし");
+    }
+
+    #[test]
+    fn splits_idiom_only_when_it_crosses_compound_boundaries() {
+        let corrected = apply_tokenization_compatibility(vec![
+            morpheme("事実", "事実", "名詞", "副詞可能", 0),
+            morpheme("上の空", "上の空", "名詞", "一般", 2),
+            morpheme("文化", "文化", "名詞", "一般", 5),
+        ]);
+        assert_eq!(
+            corrected
+                .iter()
+                .map(|item| item.surface.as_str())
+                .collect::<Vec<_>>(),
+            vec!["事実", "上", "の", "空", "文化"]
+        );
+
+        let standalone = apply_tokenization_compatibility(vec![
+            morpheme("上の空", "上の空", "名詞", "形容動詞語幹", 0),
+            morpheme("だっ", "だ", "助動詞", "*", 3),
+        ]);
+        assert_eq!(standalone[0].surface, "上の空");
     }
 }
 
