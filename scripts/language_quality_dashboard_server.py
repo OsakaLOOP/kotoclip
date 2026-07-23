@@ -23,13 +23,18 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="在本地 HTTP 下提供 report.html 及其外部 JSON/JSONL 产物。"
+        description="在本地 HTTP 下提供语言质量报告及其外部 JSON/JSONL 产物。"
     )
-    parser.add_argument(
+    root_group = parser.add_mutually_exclusive_group(required=True)
+    root_group.add_argument(
         "--report",
         type=Path,
-        required=True,
-        help="report.html 路径；服务根目录为其父目录",
+        help="单个 report.html 路径；服务根目录为其父目录",
+    )
+    root_group.add_argument(
+        "--root",
+        type=Path,
+        help="报告根目录；可同时访问历史索引和多个轮次报告",
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
@@ -42,15 +47,21 @@ def main(argv: list[str] | None = None) -> int:
         if reconfigure is not None:
             reconfigure(encoding="utf-8", errors="backslashreplace")
     args = parse_args(argv)
-    report = args.report.resolve()
-    if not report.is_file() or report.name != "report.html":
-        raise SystemExit(f"report.html 不存在：{report}")
-    directory = report.parent
+    if args.report is not None:
+        report = args.report.resolve()
+        if not report.is_file() or report.name != "report.html":
+            raise SystemExit(f"report.html 不存在：{report}")
+        directory = report.parent
+        entry_url = f"http://{args.host}:{args.port}/{report.name}"
+    else:
+        directory = args.root.resolve()
+        if not directory.is_dir():
+            raise SystemExit(f"报告根目录不存在：{directory}")
+        entry_url = f"http://{args.host}:{args.port}/"
     handler = functools.partial(NoCacheHandler, directory=str(directory))
     try:
         with http.server.ThreadingHTTPServer((args.host, args.port), handler) as server:
-            url = f"http://{args.host}:{args.port}/{report.name}"
-            print(f"语言质量面板开发服务：{url}")
+            print(f"语言质量面板开发服务：{entry_url}")
             print(f"服务目录：{directory}")
             print("按 Ctrl+C 停止。重新运行 diff 后刷新页面即可读取新产物。")
             server.serve_forever()
