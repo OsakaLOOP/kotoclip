@@ -1,0 +1,63 @@
+{
+  "schema_version": "kotoclip.quality.gate-config.v1",
+  "require_comparable": true,
+  "allowed_quality_conclusions": [
+    "partial",
+    "eligible"
+  ],
+  "allowed_missing_stages": [
+    "ui_projection"
+  ],
+  "required_stages": [
+    "resource",
+    "source",
+    "preprocessing",
+    "morpheme",
+    "morphology",
+    "word_formation_candidate",
+    "word_formation",
+    "lexical_candidate",
+    "lexical_unit",
+    "bunsetsu_boundary",
+    "bunsetsu",
+    "grammar_candidate",
+    "grammar_occurrence",
+    "grammar_projection",
+    "grammar_residual",
+    "personalization",
+    "expression_candidate",
+    "expression"
+  ],
+  "max_root_changes": 0,
+  "max_churn_rate": 0.0,
+  "max_severities": {
+    "critical": 0,
+    "high": 0
+  },
+  "max_scope_changes": {
+    "decision": 0,
+    "range": 0
+  },
+  "max_status_transitions": {
+    "accepted->pending": 0,
+    "accepted->rejected": 0
+  },
+  "stage_rules": {
+    "morpheme": {
+      "max_changes": 0,
+      "max_churn_rate": 0.0
+    },
+    "bunsetsu_boundary": {
+      "max_scopes": {
+        "decision": 0,
+        "range": 0
+      }
+    },
+    "grammar_occurrence": {
+      "max_scopes": {
+        "decision": 0,
+        "range": 0
+      }
+    }
+  }
+}

@@ -114,6 +114,47 @@
 - CJClassifier 0.1.0 文档：<https://docs.rs/cjclassifier/0.1.0/cjclassifier/>。用于核对 `CJClassifier::load`、`detect_with_results`、`Results::gap` 与字符命中统计接口。
 - CJClassifier 0.1.0 crate：<https://crates.io/crates/cjclassifier/0.1.0>。用于锁定 Apache-2.0 许可的 Rust 依赖版本。
 
+## 语言频率资源与持续质量评估
+
+以下来源于 2026-07-22 复核。下载物、解压文件、临时 Python target、真实快照和浏览器截图只保存在 Git 忽略的 `experiments/`。
+
+### BCCWJ
+
+- **BCCWJ1 频度表入口**：<https://clrd.ninjal.ac.jp/bccwj/freq-list.html>。官方提供短单位、长单位、长单位频度 2 以上、品词构成和语种构成文件；页面明确限定研究、教育目的可免费使用，并要求阅读说明文件。
+- **BCCWJ 频度表说明 v1.0b**：<https://clrd.ninjal.ac.jp/bccwj/data-files/frequency-list/BCCWJ_frequencylist_manual_ver1_0b.pdf>。用于核对 UTF-8 TSV、SUW/LUW 身份字段、pmw、体裁列、185,137 行 SUW、2,434,620 行完整 LUW、841,912 行 LUW 频度 2 以上，以及“禁止再分发、商业使用需咨询、引用需注明来源和版本”的许可边界。
+- **BCCWJ 形态论信息**：<https://clrd.ninjal.ac.jp/bccwj/morphology.html>。用于核对短单位、长单位、UniDic 与文节的定义；证明该单位不能直接等同于 Kotoclip 当前 IPADIC token。
+- **BCCWJ2 项目入口**：<https://www2.ninjal.ac.jp/BCCWJ2/>。页面说明在既有约 1 亿词基础上追加 2006 至 2025 年数据，目标约 2 亿词；截至本次复核仍按批次发布，不能视为已经完成的单文件 BCCWJ1 替代品。
+
+### NWJC
+
+- **NWJC 项目页**：<https://masayu-a.github.io/NWJC/>。用于核对 2014 年 10 至 12 月采集、网页清理和句级去重，以及 MeCab 0.996 + UniDic 2.1.2 的形态分析流程。
+- **NWJC n-gram README**：<https://github.com/masayu-a/NWJC/blob/master/NWJC-n-gram/00README.md>。用于核对 258 亿词、surface 1-gram 格式、2021-01-23 版说明、免费 GitHub 文件与其他 GSK 付费资源的区别，以及 CC BY 4.0 许可和署名要求。本地完整扫描 `NWJC-surface-1gram.txt` 得到 8,537,519 行。
+
+### TUBELEX
+
+- **TUBELEX 仓库与频度说明**：<https://github.com/naist-nlp/tubelex>。用于核对 YouTube 人工字幕语料、日语 default／lemma／base／UniDic 3.1 频度变体、`count`／`videos`／`channels`／category 列、NFKC 规范化和完整字幕因版权不能公开的边界。
+- **TUBELEX BSD-3-Clause LICENSE**：<https://github.com/naist-nlp/tubelex/blob/main/LICENSE>。根仓库使用 BSD-3-Clause；由于 README 同时区分源码、频度表和不可公开的完整字幕，产品直接打包频度文件前仍需明确确认该许可证对派生数据的覆盖。
+- **TUBELEX 论文**：<https://aclanthology.org/2025.coling-main.641/>。用于核对其“口语词汇暴露近似”和与词汇熟悉度／心理语言学指标相关的研究结论；这些结论支持将其作为独立口语通道，不支持覆盖书面均衡频率。
+
+### wordfreq 与其他候选
+
+- **wordfreq 仓库**：<https://github.com/rspeer/wordfreq>。用于核对 small／large 词表、cBpack 频率桶、Zipf 定义、多来源去最高／最低后聚合的方法和 Japanese tokenizer 依赖。
+- **wordfreq SUNSET**：<https://github.com/rspeer/wordfreq/blob/master/SUNSET.md>。作者明确说明数据约覆盖到 2021 年且不再更新，并将开放网页受到生成式文本污染列为停止更新的原因之一；因此只将其作为稳定静态 sanity-check。
+- **wordfreq NOTICE**：<https://github.com/rspeer/wordfreq/blob/master/NOTICE.md>。用于区分 Apache-2.0 代码和可再分发的 CC BY-SA 4.0／其他署名数据来源，以及 SUBTLEX、Wikipedia、OpenSubtitles、Twitter 等来源的附加说明。
+- **wordfreq PyPI**：<https://pypi.org/project/wordfreq/>。本地实验锁定 3.1.1；直接读取 Japanese large cBpack 得到 214,960 项和 800 个频率桶。Windows Python 3.14 下 `_MeCab` DLL 无法加载，因此没有把 `zipf_frequency()` 的运行成功写入结论。
+- **FrequencyWords**：<https://github.com/hermitdave/FrequencyWords>。仅作为现成多语言列表候选；在上游组合、tokenization 与派生数据许可逐项审计前不采用。
+- **Wikimedia 日语 dump**：<https://dumps.wikimedia.org/jawiki/latest/>。可固定 dump 版本并自行生成周期性频度，但必须处理模板、列表、机器人、近重复和 CC BY-SA 署名／同方式共享要求；它是待构建语料通道，不是现成真值库。
+- **UD Japanese GSD**：<https://universaldependencies.org/treebanks/ja_gsd/>。用于分词、词性和依存金标候选，不是频率库。其标注采用 CC BY-SA 4.0，但上游 README 对底层句子版权另有免责声明，发布评测集时需分别处理。
+
+### 统计与评测方法
+
+- **Wilson score interval**：<https://doi.org/10.1080/01621459.1927.10502953>。当前结构 diff 用其显示实体 churn 的描述性 95% 区间；由于同一文档内实体相关，不能把该区间当作最终独立抽样显著性证明。
+- **Bootstrap**：<https://doi.org/10.1214/aos/1176344552>。作为下一阶段按文档／章节聚类的配对 bootstrap 方法来源，用于 F1、MRR、Brier 等非线性指标差值；当前脚本尚未实现。
+- **McNemar 检验**：<https://doi.org/10.1007/BF02295996>。作为同一实例在基准／候选间二元正确性变化的配对检验来源；当前脚本尚未实现。
+- **Brier score**：<https://doi.org/10.1175/1520-0493(1950)078%3C0001:VOFEIT%3E2.0.CO;2>。用于后续个性化与候选置信度的概率误差评测；当前脚本尚未实现。
+- **神经网络校准与 ECE**：<https://proceedings.mlr.press/v70/guo17a.html>。用于后续可靠性图、温度缩放和 Expected Calibration Error 的定义参照；binning 方案必须版本化。
+- **Benjamini-Hochberg FDR**：<https://doi.org/10.1111/j.2517-6161.1995.tb02031.x>。用于后续多阶段、多体裁和多规则族探索性告警的错误发现率控制；预登记阻断指标仍需单独策略。
+
 ## 项目内部权威文档与协议全面索引
 
 - **[README.md](file:///d:/PROJ/GIT/kotoclip/README.md)**
@@ -148,6 +189,10 @@
   - 跨文节表达检测与覆盖
 - **[docs/incremental_pipeline_roadmap.md](file:///d:/PROJ/GIT/kotoclip/docs/incremental_pipeline_roadmap.md)**
   - 增量分析管线与 DocumentSession 调度
+- **[docs/language_quality_evaluation_and_frequency_research.md](file:///d:/PROJ/GIT/kotoclip/docs/language_quality_evaluation_and_frequency_research.md)**
+  - 日语频率资源矩阵、许可边界和本地实测
+  - 持续反馈、抗污染、版本晋升与回滚协议
+  - 十九层快照差分、统计门禁及人／Agent 输出
 - **[docs/china_market_assessment.md](file:///d:/PROJ/GIT/kotoclip/docs/china_market_assessment.md)**
   - 中国区市场规模、竞品对比 (MOJi/jpdb) 与商业模式评估
 
