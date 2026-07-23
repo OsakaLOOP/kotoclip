@@ -55,11 +55,13 @@
 - `scripts/language_quality_import_legacy.py`：把已有审计产物包装为可比较的旧基线；
 - `scripts/language_quality_gate.py`：按显式策略输出 `passed`、`review_required` 或 `blocked`；
 - `scripts/language_quality_commit_diff.py`：为两个 Git 提交创建 detached worktree、隔离构建并运行快照／diff／gate；
+- `scripts/language_quality_history.py`：扫描全部完整对比轮次，关联两侧快照并生成外部 JSON 历史索引和浏览页；
 - `scripts/language_quality_dashboard_server.py`：为外部 JSON/JSONL 数据面板提供无缓存本地开发服务；
 - `scripts/test_language_quality_diff.py`：8 个小型合成契约测试；
+- `scripts/test_language_quality_history.py`：3 个历史索引、快照关联和外部数据页面契约测试；
 - `experiments/.gitignore`：实验目录全量忽略，仅保留忽略规则自身。
 
-未实现：频率资源正式 importer、反馈事件存储、金标评测器、历史趋势服务、CI 接入、自动 UI 投影导出和基线注册表。
+未实现：频率资源正式 importer、反馈事件存储、金标评测器、跨轮次统计仓库、CI 接入、自动 UI 投影导出和基线晋升注册表。
 
 ## 2. 范围与不变量
 
@@ -475,16 +477,22 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 - 默认读取完整 `diff.jsonl`，只把当前分页切片渲染为表格；根影响也按分页读取，所有记录可通过坐标、anchor、change ID 和页码访问；
 - 全量 JSON/JSONL 与面板分离，重跑 diff 只替换数据文件，不需要把数百 MiB 再编码进 HTML。
 
-报告没有 HTML 数据截断参数：面板始终读取完整 `diff.jsonl`，页面分页只改变当前 DOM 切片，不改变输入集合或机器产物。面板需要通过本地 HTTP 服务打开，避免浏览器 `file://` 的跨源限制。它目前是单次 before/after 报告，不是历史趋势系统。
+报告没有 HTML 数据截断参数：面板始终读取完整 `diff.jsonl`，页面分页只改变当前 DOM 切片，不改变输入集合或机器产物。面板需要通过本地 HTTP 服务打开，避免浏览器 `file://` 的跨源限制。单轮页负责 before/after 下钻，历史页负责发现和打开已有轮次。
 
-### 8.3 历史趋势
+### 8.3 历史对比轮次
 
-下一阶段增加只读 trend index：每个 run 一行，至少保存 release、语料版本、实现版本、资源版本、各层 churn、金标指标、性能和门禁状态。趋势图必须允许按 corpus/genre/stage/rule family 切片，并标注基线晋升和回滚事件。历史索引只引用不可变产物，不能复制或修改原始 summary。
+`language_quality_history.py` 递归扫描报告根目录中同时具有 `report.html`、`manifest.json`、`summary.json` 和 `diff.jsonl` 的完整对比轮次。它以 diff manifest 的 `run_id + snapshot manifest SHA-256` 关联 before/after 快照，不能唯一关联时将 Git、语料和资源字段保留为 `null`，不按目录名或当前仓库状态推测。
+
+`history.json` 为 Agent 提供每轮的 comparison ID、创建时间、适配器、summary、各阶段 churn、gate 状态，以及 report/manifest/summary/diff/stage-summary/root-causes/gate/构建日志的相对 URL、字节数和 SHA-256。两侧元数据包含 snapshot URL/hash、Git commit、dirty 状态、status hash、CLI hash、运行平台、语料选择/hash/字符计数和全部资源路径、字节数及 hash。`history.html` 只读取该外部索引，支持按轮次、提交、语料、适配器和状态筛选，并打开每轮报告或 manifest 元数据；它不嵌入或复制 `diff.jsonl`。
+
+当前历史页是可审计的轮次目录，不是跨轮次质量推断系统。后续趋势仓库仍需保存 release、genre、rule family、金标指标、性能、基线晋升和回滚事件，并提供对应切片；原始 summary 仍是权威数据。
 
 ### 8.4 建议目录
 
 ```text
 experiments/quality/
+  history.json
+  history.html
   registry.json
   runs/<run-id>/manifest.json
   runs/<run-id>/artifacts/*.json
@@ -682,17 +690,20 @@ python scripts/language_quality_commit_diff.py `
   --output-dir "experiments\quality-run\dictionary-resource-a-b"
 ```
 
-### 10.6 开发面板
+### 10.6 开发面板与历史轮次
 
-生成 diff 后，在报告目录启动无缓存开发服务：
+生成或更新 diff 后，重新扫描实验根目录，再以根目录模式启动无缓存开发服务：
 
 ```powershell
+python scripts/language_quality_history.py `
+  --root "experiments\quality-run"
+
 python scripts/language_quality_dashboard_server.py `
-  --report "experiments\quality-run\commit-HEAD^--HEAD\diff\report.html" `
+  --root "experiments\quality-run" `
   --port 8765
 ```
 
-打开命令输出的 URL（例如 `http://127.0.0.1:8765/report.html`）。服务只读该报告目录，页面通过 `fetch` 读取外部 JSON/JSONL；重新运行 diff 后刷新浏览器即可同步新结果。端口占用时换用其他端口，不要把报告数据复制进 HTML。
+打开 `http://127.0.0.1:8765/history.html`。服务只读整个报告根目录，历史页通过 `fetch` 读取 `history.json`，各轮页面继续读取自身 JSON/JSONL。新增轮次后重新运行 history 命令并刷新浏览器即可同步；端口占用时换用其他端口。只查看单轮时仍可使用 `--report <report.html>`。
 
 ### 10.7 建议运行频率
 
@@ -755,7 +766,7 @@ Playwright Chromium 已验证 1440px 桌面和 390px 移动视口：
 
 ### 11.5 合成契约测试
 
-8 项测试覆盖：文节分割／边界／嵌套字段变化；表达机器与外部数据面板输出；根变化和传播候选；章节提取；候选状态与 UI 投影分层；大 stdout hash 化；可选分层上限；默认全量外部数据文件。它们只验证工具协议。
+8 项 diff 测试覆盖：文节分割／边界／嵌套字段变化；表达机器与外部数据面板输出；根变化和传播候选；章节提取；候选状态与 UI 投影分层；大 stdout hash 化；全量外部数据文件；旧 HTML 截断参数已移除。另有 3 项历史测试覆盖完整轮次扫描、snapshot/Git/资源关联、缺失元数据和外部索引页面。它们只验证工具协议。
 
 ## 12. 已知限制与失败实验
 
@@ -765,7 +776,7 @@ Playwright Chromium 已验证 1440px 桌面和 390px 移动视口：
 
 ### 12.2 统计缺口
 
-当前没有 gold label ingestion、span F1、paired cluster bootstrap、McNemar、Brier/ECE、N-best Recall@K/MRR、MDE/power 或 FDR。Wilson churn 只能描述结构变化率。历史趋势和跨 run 数据仓库也尚未实现。
+当前没有 gold label ingestion、span F1、paired cluster bootstrap、McNemar、Brier/ECE、N-best Recall@K/MRR、MDE/power 或 FDR。Wilson churn 只能描述结构变化率。历史轮次已可索引和下钻，但跨 run 指标仓库、趋势推断和基线事件尚未实现。
 
 ### 12.3 `wordfreq` Windows 失败
 
@@ -815,7 +826,7 @@ Playwright Chromium 已验证 1440px 桌面和 390px 移动视口：
 - 实现 append-only 本地反馈事件和重放；
 - 加入 consent、导出、删除和跨设备边界；
 - 实现 quarantine、批次聚合、候选 release、shadow 和回滚；
-- 构建历史趋势面板和 Agent 查询入口；
+- 在现有历史索引上增加跨轮次指标仓库、趋势切片和 Agent 查询；
 - 观察真实撤销率、纠错率和体裁漂移后再调整个性化权重。
 
 ## 14. 完成定义
