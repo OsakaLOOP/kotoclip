@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -118,6 +119,70 @@ def snapshot(
     run(command, cwd=tool_root)
 
 
+def capture_dictionary_lookups(
+    cli: Path,
+    reading_diff: Path,
+    side: str,
+    input_path: Path,
+    output_path: Path,
+    repo: Path,
+    system_dict: Path,
+    dict_source_dir: Path,
+    dict_dir: Path,
+) -> None:
+    report = json.loads(reading_diff.read_text(encoding="utf-8"))
+    requests: dict[str, dict[str, object]] = {}
+    for unit in report.get("units", []):
+        for token in unit.get(side, {}).get("tokens", []):
+            request = token.get("lookup_request")
+            request_id = token.get("lookup_request_id")
+            if not isinstance(request, dict) or not request_id or not request.get("word"):
+                continue
+            requests[str(request_id)] = {
+                "request_id": str(request_id),
+                "word": request.get("word", ""),
+                "observed_form": request.get("observed_form"),
+                "reading": request.get("reading"),
+                "pos": request.get("pos"),
+                "selected_form": request.get("selected_form"),
+            }
+    input_path.write_text(
+        json.dumps(list(requests.values()), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    run(
+        [
+            str(cli),
+            "dictionary-lookup-batch",
+            "--input",
+            str(input_path),
+            "--json",
+            str(output_path),
+            "--system-dict",
+            str(system_dict),
+            "--dict-source-dir",
+            str(dict_source_dir),
+            "--dict-dir",
+            str(dict_dir),
+        ],
+        cwd=repo,
+    )
+
+
+def supports_dictionary_lookup_batch(cli: Path, cwd: Path) -> bool:
+    """旧提交可能尚未包含批量查询命令；此时保留明确的未捕获状态。"""
+    result = subprocess.run(
+        [str(cli), "help"],
+        cwd=cwd,
+        text=True,
+        encoding="utf-8",
+        errors="backslashreplace",
+        capture_output=True,
+    )
+    return result.returncode == 0 and "dictionary-lookup-batch" in result.stdout
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="比较两个提交的完整语言管线；提交两端使用独立 detached worktree。"
@@ -227,6 +292,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     diff_output = output / "diff"
     if any(path.exists() for path in (before_output, after_output, diff_output)):
         raise FileExistsError(f"提交比较输出目录已有内容，拒绝覆盖：{output}")
+    diff_command = [
+        sys.executable,
+        str(tool_root / "language_quality_diff.py"),
+        "--before-run",
+        str(before_output / "manifest.json"),
+        "--after-run",
+        str(after_output / "manifest.json"),
+        "--output-dir",
+        str(diff_output),
+    ]
 
     with tempfile.TemporaryDirectory(prefix="kotoclip-quality-commits-") as temporary:
         temporary_root = Path(temporary)
@@ -274,6 +349,37 @@ def main(argv: Sequence[str] | None = None) -> int:
                 after_dict_source_dir,
                 after_dict_dir,
             )
+            run(diff_command, cwd=repo)
+            lookup_capture: dict[str, object] = {
+                "schema_version": "kotoclip.quality.dictionary-lookup-capture.v1",
+                "before": {"status": "unsupported_cli"},
+                "after": {"status": "unsupported_cli"},
+            }
+            for side, cli, worktree, system_dict, source_dir, dict_dir in (
+                ("before", before_cli, worktrees[0], before_system_dict, before_dict_source_dir, before_dict_dir),
+                ("after", after_cli, worktrees[1], after_system_dict, after_dict_source_dir, after_dict_dir),
+            ):
+                if not supports_dictionary_lookup_batch(cli, worktree):
+                    print(f"{side} 提交未提供 dictionary-lookup-batch，保留未捕获状态")
+                    continue
+                capture_dictionary_lookups(
+                    cli,
+                    diff_output / "reading-diff.json",
+                    side,
+                    temporary_root / f"dictionary-requests-{side}.json",
+                    diff_output / f"dictionary-lookups-{side}.json",
+                    worktree,
+                    system_dict,
+                    source_dir,
+                    dict_dir,
+                )
+                request_count = len(json.loads((temporary_root / f"dictionary-requests-{side}.json").read_text(encoding="utf-8")))
+                lookup_capture[side] = {"status": "captured", "request_count": request_count}
+            (diff_output / "dictionary-lookup-capture.json").write_text(
+                json.dumps(lookup_capture, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
         finally:
             for worktree in reversed(worktrees):
                 subprocess.run(
@@ -286,17 +392,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             git(repo, "worktree", "prune")
 
-    diff_command = [
-        sys.executable,
-        str(tool_root / "language_quality_diff.py"),
-        "--before-run",
-        str(before_output / "manifest.json"),
-        "--after-run",
-        str(after_output / "manifest.json"),
-        "--output-dir",
-        str(diff_output),
-    ]
-    run(diff_command, cwd=repo)
     if args.gate_config:
         gate_output = diff_output / "gate.json"
         gate = subprocess.run(

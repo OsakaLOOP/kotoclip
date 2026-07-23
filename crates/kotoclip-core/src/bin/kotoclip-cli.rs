@@ -218,6 +218,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     match command.as_str() {
         "dict-info" => dict_info(&args),
         "lookup" => lookup(&args),
+        "dictionary-lookup-batch" => dictionary_lookup_batch(&args),
         "dict-bubble-html" => dict_bubble_html(&args),
         "analyze" => analyze(&args),
         "grammar-inspect" => grammar_inspect(&args),
@@ -348,6 +349,59 @@ fn lookup(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     if args.flags.contains("timing") {
         println!("诊断耗时：{}", serde_json::to_string_pretty(&timing)?);
     }
+    Ok(())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DictionaryLookupBatchRequest {
+    request_id: String,
+    word: String,
+    observed_form: Option<String>,
+    reading: Option<String>,
+    pos: Option<PosTag>,
+    selected_form: Option<String>,
+}
+
+#[derive(Serialize)]
+struct DictionaryLookupBatchItem {
+    request: DictionaryLookupBatchRequest,
+    lookup: kotoclip_core::models::DictionaryLookup,
+}
+
+#[derive(Serialize)]
+struct DictionaryLookupBatchReport {
+    schema_version: u32,
+    dictionary_order: Vec<String>,
+    items: Vec<DictionaryLookupBatchItem>,
+}
+
+fn dictionary_lookup_batch(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let input = PathBuf::from(args.required("input").map_err(io::Error::other)?);
+    let output = PathBuf::from(args.required("json").map_err(io::Error::other)?);
+    let requests: Vec<DictionaryLookupBatchRequest> =
+        serde_json::from_str(&std::fs::read_to_string(input)?)?;
+    let dictionary = dictionary(args)?;
+    let dictionary_order = dictionary.names();
+    let items = requests
+        .into_iter()
+        .map(|request| {
+            let lookup = dictionary.lookup_matrix_profiled(
+                &request.word,
+                request.observed_form.as_deref(),
+                request.reading.as_deref(),
+                request.pos.as_ref(),
+                request.selected_form.as_deref(),
+                &dictionary_order,
+            );
+            DictionaryLookupBatchItem { request, lookup }
+        })
+        .collect();
+    let report = DictionaryLookupBatchReport {
+        schema_version: 1,
+        dictionary_order,
+        items,
+    };
+    std::fs::write(output, serde_json::to_string_pretty(&report)?)?;
     Ok(())
 }
 
@@ -2954,6 +3008,7 @@ fn print_help() {
 命令：
   dict-info
   lookup --word WORD [--reading READING] [--full --timing]
+  dictionary-lookup-batch --input REQUESTS.json --json LOOKUPS.json
   dict-bubble-html --word WORD [--observed-form FORM --reading READING --selected-form FORM]
         [--pos-major POS --pos-sub1 POS]
         [--output PATH] [--raw --json PATH --timing --no-open]

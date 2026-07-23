@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from language_quality_diff import (  # noqa: E402
     SNAPSHOT_SCHEMA_VERSION,
+    _sentence_spans,
     compare_files,
     compare_snapshot_manifests,
     file_descriptor,
@@ -36,6 +37,14 @@ class LanguageQualityDiffTest(unittest.TestCase):
         path = root / name
         path.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
         return path
+
+    def test_sentence_spans_keep_compound_terminal_punctuation(self) -> None:
+        text = "前の文。彼女は驚いた!?」次の文。"
+        spans = _sentence_spans(text)
+        self.assertEqual(
+            [text[start:end] for start, end in spans],
+            ["前の文。", "彼女は驚いた!?」", "次の文。"],
+        )
 
     def test_bunsetsu_detects_segmentation_boundary_and_nested_field_changes(self) -> None:
         before = [
@@ -411,7 +420,8 @@ class LanguageQualityDiffTest(unittest.TestCase):
         grammar_row = next(
             row for row in bundle.summary["stages"] if row["stage"] == "grammar_candidate"
         )
-        self.assertEqual(grammar_row["churn"]["rate"], 1.0)
+        self.assertEqual(grammar_row["churn"]["rate"], 0.0)
+        self.assertEqual(grammar_row["evidence_churn"]["rate"], 1.0)
         self.assertEqual(
             bundle.summary["status_transitions"],
             [{"before": "pending", "after": "rejected", "count": 1}],

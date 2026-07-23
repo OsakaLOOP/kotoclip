@@ -434,13 +434,24 @@ resource     source
 
 每层统计 `stable`、`modified`、`added`、`removed`。严重级别由阶段、操作和 scope 共同决定；它是审查优先级，不是准确率结论。
 
-### 7.4 根变化与传播候选
+### 7.4 主计数与证据计数
+
+全层事件数不等于受影响的语言结果数。同一坐标上的候选、接受结果、文节边界、语法 occurrence
+和表达投影会沿依赖图重复出现；`rejected`／`pending` 探针、临时 ID、资源指纹和画像变化也不应
+被当作用户可观察结果。当前 diff 使用以下主计数契约：
+
+- 计入：morpheme、morphology、accepted word formation、accepted lexical unit、bunsetsu boundary、bunsetsu、accepted grammar occurrence／projection、accepted expression 和 UI projection；仅 `content`、`decision` 或 `range` 变化计入。
+- 不计入：resource、source／preprocessing 元数据、word formation／lexical／grammar／expression candidate、grammar residual、personalization，以及 `identity`／`evidence` scope。它们仍保留在 `diff.jsonl`，并标记 `counted_in_primary=false` 及排除原因。
+- `summary.changes` 是主结果实体数；`summary.evidence_changes` 是完整事件数。分层统计同时提供 `changes`／`churn` 和 `evidence_changes`／`evidence_churn`，禁止把两者混称为“变化数”。
+- 同一连续变化范围的多个主结果进一步聚合为阅读文节；其结构、语法、查询和表达子计数只在文节单元内展示，避免跨层传播把一句话重复计数。
+
+### 7.5 根变化与传播候选
 
 一个变化若没有与其范围重叠、且可通过 DAG 到达该阶段的上游变化，则标为 `root`；否则标为 `propagated_candidate` 并记录 `cause_change_ids`。无字符范围的资源变化按 `affects_stages` 参与归因。
 
 这里故意使用“传播候选”：空间重叠和依赖可达只能证明可能的因果路径，不能证明唯一原因。面板中的根变化用于优先下钻，不能代替人工或 trace 级因果分析。
 
-### 7.5 采集契约与可比较性
+### 7.6 采集契约与可比较性
 
 artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pending／rejected、是否启用词典、画像或表达。基准与候选的实际 capture contract 不同，则相关阶段标记 `contract_mismatch` 并停止比较；只有一侧存在则标记 `before_only`／`after_only`；两侧都没有则为 `missing`。
 
@@ -462,19 +473,25 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 - `diff.jsonl`：完整逐变化记录，不因 HTML 限制而截断；
 - `stage-summary.json`：十九层统计；
 - `root-causes.json`：根变化及其下游影响聚合；
+- `reading-diff.json`：按连续变化文节聚合的 before／after 整句、token 查询数据、主结果 ID 和证据 ID；
+- `dictionary-lookups-before.json`／`dictionary-lookups-after.json`：从阅读 token 查询请求捕获的桌面端同源 `DictionaryLookup` 矩阵；旧轮次没有该文件时面板必须显示未捕获，而不是复用另一侧结果；
+- `dictionary-lookup-capture.json`：两侧查询捕获状态与请求数；旧 CLI 不支持批量命令时记录 `unsupported_cli`，不伪造结果；
 - 门禁另写 `gate.json`，包含策略 hash、summary hash 和所有 violation。
 
 快照 manifest 只内联小于 8 KiB 的 stdout/stderr；大型 stdout 保存 byte 数、SHA-256 和已解码 artifact 引用，避免 manifest 膨胀到数百 MiB。
 
 ### 8.2 人类面板
 
-`report.html` 是面板壳，不嵌入大语料数据。它通过同目录 HTTP 读取 `manifest.json`、`summary.json`、`diff.jsonl` 和 `root-causes.json`，当前包含：
+`report.html` 是面板壳，不嵌入大语料数据。它通过同目录 HTTP 读取 `manifest.json`、`summary.json`、`diff.jsonl`、`root-causes.json` 和 `reading-diff.json`，当前包含：
 
-- 总变化、根变化、传播候选、全层 churn 和严重级别；
+- 受影响句数、连续变化文节数、主结果实体数和证据事件数；根变化、传播候选、全层证据 churn 和严重级别；
+- 按连续变化文节分页的左右 before／after 阅读对照；整句上下文保留，变化范围红色标注；
+- 领域筛选（结构／语法／查询／表达／投影）、句子／规则／坐标搜索；
+- 左右 token 悬浮同步高亮；点击任一 token 显示双方 head word、语素、构词、词典整体、语法和表达查询数据；
 - 十九层覆盖、前后实体数、变化率和 Wilson 95% 区间；
 - 变化类型、字段路径、状态转移和根变化影响；
 - 按文本、阶段、类型、归因和字符坐标筛选的明细；
-- 默认读取完整 `diff.jsonl`，只把当前分页切片渲染为表格；根影响也按分页读取，所有记录可通过坐标、anchor、change ID 和页码访问；
+- 默认读取完整 `diff.jsonl`，但主视图不逐条展示候选探针；原始记录只在下方明细按阶段、归因和坐标切片；
 - 全量 JSON/JSONL 与面板分离，重跑 diff 只替换数据文件，不需要把数百 MiB 再编码进 HTML。
 
 报告没有 HTML 数据截断参数：面板始终读取完整 `diff.jsonl`，页面分页只改变当前 DOM 切片，不改变输入集合或机器产物。面板需要通过本地 HTTP 服务打开，避免浏览器 `file://` 的跨源限制。单轮页负责 before/after 下钻，历史页负责发现和打开已有轮次。
@@ -667,8 +684,9 @@ runner 的行为固定为：
 3. 用独立 `CARGO_TARGET_DIR` 分别构建 `kotoclip-cli`，保存构建日志；
 4. 用相同 source/profile 和每一侧解析后的 dictionary 参数捕获 before/after snapshot；
 5. 运行十九阶段 diff，输出完整 `diff.jsonl`、阶段统计、根影响和外部数据开发面板；
-6. 若提供 gate config，写入 `gate.json` 并把 gate 退出码传给 Agent；
-7. 删除本次 runner 创建的临时 worktree，保留所有评估产物。
+6. 在 detached worktree 尚存在时，提取阅读 token 查询请求，分别调用两侧 CLI 的 `dictionary-lookup-batch`，写入两侧完整 `DictionaryLookup` 结果；
+7. 若提供 gate config，写入 `gate.json` 并把 gate 退出码传给 Agent；
+8. 删除本次 runner 创建的临时 worktree，保留所有评估产物。
 
 仓库内受版本控制的 grammar catalog 和规则由各自 detached worktree 读取。系统词典、词典源包和本机缓存是显式外部输入：默认两端共用 `--system-dict`、`--dict-source-dir`、`--dict-dir`，snapshot manifest 会记录其中每个文件的 SHA-256。
 

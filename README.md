@@ -148,6 +148,10 @@ python scripts/language_quality_gate.py --help
 # 提交级比较：为 before/after 创建 detached worktree，隔离构建后生成完整 diff
 python scripts/language_quality_commit_diff.py --help
 
+# 使用与桌面端相同的矩阵查询协议批量捕获词典结果
+cargo run -p kotoclip-core --bin kotoclip-cli -- dictionary-lookup-batch `
+  --input requests.json --json dictionary-lookups.json
+
 # 扫描所有历史对比轮次，生成外部 JSON 索引与历史页
 python scripts/language_quality_history.py --help
 

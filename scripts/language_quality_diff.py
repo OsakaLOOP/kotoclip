@@ -16,11 +16,26 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 
-SCHEMA_VERSION = "kotoclip.quality.diff.v3"
+SCHEMA_VERSION = "kotoclip.quality.diff.v4"
 SNAPSHOT_SCHEMA_VERSION = "kotoclip.quality.snapshot.v1"
-PRODUCER_VERSION = "3"
+PRODUCER_VERSION = "4"
 MAX_INLINE_VALUE_BYTES = 480
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "info": 3}
+
+# 主计数只覆盖会改变用户读解、结构判断或查询目标的最终结果。
+# 候选探针、资源指纹、画像和纯身份字段仍写入 diff.jsonl，作为根因与诊断证据。
+PRIMARY_CHANGE_DOMAINS = {
+    "morpheme": "structure",
+    "morphology": "structure",
+    "word_formation": "structure",
+    "lexical_unit": "lookup",
+    "bunsetsu_boundary": "structure",
+    "bunsetsu": "structure",
+    "grammar_occurrence": "grammar",
+    "grammar_projection": "grammar",
+    "expression": "expression",
+    "ui_projection": "projection",
+}
 
 STAGE_ORDER = (
     "resource",
@@ -88,6 +103,7 @@ class ComparisonBundle:
     manifest: dict[str, Any]
     summary: dict[str, Any]
     changes: list[dict[str, Any]]
+    reading_units: dict[str, Any] | None = None
 
 
 def canonical_json(value: Any) -> str:
@@ -1491,6 +1507,33 @@ def change_scope(differences: Sequence[dict[str, Any]]) -> str:
     return "content"
 
 
+def primary_change_domain(change: dict[str, Any]) -> str | None:
+    """返回主计数领域；None 表示仅作为诊断证据。"""
+    stage = str(change.get("stage", ""))
+    domain = PRIMARY_CHANGE_DOMAINS.get(stage)
+    if domain is None:
+        return None
+    if change.get("scope") in {"identity", "evidence"}:
+        return None
+    return domain
+
+
+def annotate_primary_count(changes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    primary: list[dict[str, Any]] = []
+    for change in changes:
+        domain = primary_change_domain(change)
+        if domain is None:
+            change["counted_in_primary"] = False
+            change["primary_exclusion"] = (
+                "non_result_stage_or_diagnostic_scope"
+            )
+            continue
+        change["counted_in_primary"] = True
+        change["primary_domain"] = domain
+        primary.append(change)
+    return primary
+
+
 def stage_change_severity(stage: str, operation: str, scope: str) -> str:
     if stage in {"source", "preprocessing"}:
         return "critical"
@@ -1839,6 +1882,7 @@ def pipeline_summary(
     contract_mismatches: list[dict[str, Any]],
     blocked_stages: set[str],
 ) -> dict[str, Any]:
+    primary_changes = [change for change in changes if change.get("counted_in_primary")]
     stage_rows = []
     for stage in STAGE_ORDER:
         before_present = stage in before_covered
@@ -1853,10 +1897,14 @@ def pipeline_summary(
             coverage_status = "after_only"
         else:
             coverage_status = "missing"
-        stage_changes = [change for change in changes if change["stage"] == stage]
+        evidence_stage_changes = [change for change in changes if change["stage"] == stage]
+        stage_changes = [change for change in primary_changes if change["stage"] == stage]
         before_count = len(before_entities.get(stage, []))
         after_count = len(after_entities.get(stage, []))
         statistics = stage_change_statistics(before_count, after_count, stage_changes)
+        evidence_statistics = stage_change_statistics(
+            before_count, after_count, evidence_stage_changes
+        )
         stage_rows.append(
             {
                 "stage": stage,
@@ -1864,6 +1912,7 @@ def pipeline_summary(
                 "before_entities": before_count,
                 "after_entities": after_count,
                 "changes": len(stage_changes),
+                "evidence_changes": len(evidence_stage_changes),
                 "root_changes": sum(
                     change.get("causal_status") == "root" for change in stage_changes
                 ),
@@ -1874,12 +1923,20 @@ def pipeline_summary(
                 "scopes": dict(
                     sorted(Counter(change["scope"] for change in stage_changes).items())
                 ),
+                "evidence_scopes": dict(
+                    sorted(Counter(change["scope"] for change in evidence_stage_changes).items())
+                ),
+                "evidence_churn": evidence_statistics["churn"],
                 **statistics,
             }
         )
-    type_counts = Counter(change["type"] for change in changes)
-    severity_counts = Counter(change["severity"] for change in changes)
+    type_counts = Counter(change["type"] for change in primary_changes)
+    evidence_type_counts = Counter(change["type"] for change in changes)
+    severity_counts = Counter(change["severity"] for change in primary_changes)
     causal_counts = Counter(change.get("causal_status", "unknown") for change in changes)
+    primary_causal_counts = Counter(
+        change.get("causal_status", "unknown") for change in primary_changes
+    )
     source_changed = any(change["stage"] == "source" for change in changes)
     comparable_stages = sum(row["coverage"] == "comparable" for row in stage_rows)
     missing_stages = [row["stage"] for row in stage_rows if row["coverage"] == "missing"]
@@ -1890,7 +1947,14 @@ def pipeline_summary(
     ]
     comparison_units = sum(row["churn"]["comparison_units"] for row in stage_rows)
     changed_units = sum(row["churn"]["changed_units"] for row in stage_rows)
-    scope_counts = Counter(change["scope"] for change in changes)
+    evidence_comparison_units = sum(
+        row["evidence_churn"]["comparison_units"] for row in stage_rows
+    )
+    evidence_changed_units = sum(
+        row["evidence_churn"]["changed_units"] for row in stage_rows
+    )
+    scope_counts = Counter(change["scope"] for change in primary_changes)
+    evidence_scope_counts = Counter(change["scope"] for change in changes)
     transitions = Counter(
         (
             str(change.get("status_before", "absent")),
@@ -1912,10 +1976,14 @@ def pipeline_summary(
             if missing_stages or noncomparable_stages or contract_mismatches
             else "eligible"
         ),
-        "changes": len(changes),
+        "changes": len(primary_changes),
+        "evidence_changes": len(changes),
         "root_changes": causal_counts.get("root", 0),
         "propagated_candidates": causal_counts.get("propagated_candidate", 0),
+        "meaningful_root_changes": primary_causal_counts.get("root", 0),
+        "meaningful_propagated_candidates": primary_causal_counts.get("propagated_candidate", 0),
         "change_types": dict(sorted(type_counts.items())),
+        "evidence_change_types": dict(sorted(evidence_type_counts.items())),
         "severities": {
             key: severity_counts.get(key, 0)
             for key in sorted(SEVERITY_ORDER, key=SEVERITY_ORDER.get)
@@ -1924,17 +1992,23 @@ def pipeline_summary(
         "churn": {
             "changed_units": changed_units,
             "comparison_units": comparison_units,
-            "rate": round(changed_units / comparison_units, 8)
-            if comparison_units
-            else 0.0,
+            "rate": round(changed_units / comparison_units, 8) if comparison_units else 0.0,
             "ci95": wilson_interval(changed_units, comparison_units),
+            "interval_method": "wilson_entity_units",
+        },
+        "evidence_churn": {
+            "changed_units": evidence_changed_units,
+            "comparison_units": evidence_comparison_units,
+            "rate": round(evidence_changed_units / evidence_comparison_units, 8) if evidence_comparison_units else 0.0,
+            "ci95": wilson_interval(evidence_changed_units, evidence_comparison_units),
             "interval_method": "wilson_entity_units",
         },
         "scope_counts": dict(sorted(scope_counts.items())),
         "scope_rates": {
-            scope: round(count / len(changes), 8) if changes else 0.0
+            scope: round(count / len(primary_changes), 8) if primary_changes else 0.0
             for scope, count in sorted(scope_counts.items())
         },
+        "evidence_scope_counts": dict(sorted(evidence_scope_counts.items())),
         "status_transitions": [
             {"before": before, "after": after, "count": count}
             for (before, after), count in sorted(transitions.items())
@@ -1945,6 +2019,242 @@ def pipeline_summary(
         "contract_mismatches": contract_mismatches,
         "root_impacts_total": len(root_impacts),
         "root_impacts": root_impacts[:100],
+    }
+
+
+def _snapshot_tokens(manifest_path: Path) -> list[dict[str, Any]]:
+    manifest = read_json(manifest_path)
+    descriptor = manifest.get("artifacts", {}).get("tokens")
+    if not isinstance(descriptor, dict):
+        return []
+    tokens = load_snapshot_artifact(manifest_path, "tokens", descriptor)
+    return tokens if isinstance(tokens, list) else []
+
+
+def _sentence_spans(text: str) -> list[tuple[int, int]]:
+    """按日文句末标点建立阅读句坐标，保留连续标点和闭合引号。"""
+    spans: list[tuple[int, int]] = []
+    start = 0
+    closers = set("」』）】》〉〕］］”’")
+    terminal_marks = set("。！？!?")
+    for index, char in enumerate(text):
+        if index < start:
+            continue
+        if char == "\n":
+            end = index + 1
+        elif char in terminal_marks:
+            end = index + 1
+            while end < len(text) and text[end] in terminal_marks:
+                end += 1
+        else:
+            continue
+        while end < len(text) and text[end] in closers:
+            end += 1
+        spans.append((start, end))
+        start = end
+    if start < len(text):
+        spans.append((start, len(text)))
+    return spans
+
+
+def _token_record(token: dict[str, Any]) -> dict[str, Any] | None:
+    bunsetsu = token.get("bunsetsu")
+    if not isinstance(bunsetsu, dict):
+        return None
+    char_range = normalized_range(bunsetsu.get("char_range"))
+    if char_range is None:
+        return None
+    # 只保留阅读和查询所需字段；画像分数不属于内容 diff。
+    lexical = (bunsetsu.get("lexical_units") or [None])[0]
+    formations = bunsetsu.get("word_formations") or []
+    morphemes = bunsetsu.get("morphemes") or []
+    if isinstance(lexical, dict):
+        query = {
+            "word": lexical.get("base_form", ""),
+            "observed_form": lexical.get("base_form", ""),
+            "reading": lexical.get("reading"),
+            "pos": lexical.get("output_pos"),
+        }
+    elif formations and isinstance(formations[0], dict) and isinstance(formations[0].get("head_morpheme"), int) and formations[0]["head_morpheme"] < len(morphemes):
+        morpheme = morphemes[formations[0]["head_morpheme"]]
+        pos = morpheme.get("pos") or {}
+        word = morpheme.get("surface") if pos.get("major") in {"助詞", "助動詞"} or (pos.get("major") == "動詞" and pos.get("sub1") == "接尾") else (morpheme.get("base_form") if morpheme.get("base_form") not in (None, "*") else morpheme.get("surface"))
+        query = {"word": word or "", "observed_form": word or "", "reading": morpheme.get("reading"), "pos": pos}
+    else:
+        head = bunsetsu.get("head_word") or {}
+        pos = head.get("pos") or {}
+        word = head.get("surface") if pos.get("major") in {"助詞", "助動詞"} or (pos.get("major") == "動詞" and pos.get("sub1") == "接尾") else (head.get("base_form") if head.get("base_form") not in (None, "*") else head.get("surface"))
+        query = {"word": word or "", "observed_form": word or "", "reading": head.get("reading"), "pos": pos}
+    request_id = content_hash(query)[:20]
+    return {
+        "surface": bunsetsu.get("surface", ""),
+        "char_range": list(char_range),
+        "head_word": bunsetsu.get("head_word"),
+        "morphemes": bunsetsu.get("morphemes", []),
+        "word_formations": bunsetsu.get("word_formations", []),
+        "lexical_units": bunsetsu.get("lexical_units", []),
+        "grammar_occurrences": bunsetsu.get("grammar_occurrences", []),
+        "grammar_tags": bunsetsu.get("grammar_tags", []),
+        "functional_residuals": bunsetsu.get("functional_residuals", []),
+        "function": bunsetsu.get("function"),
+        "expressions": token.get("expressions", []),
+        "display_class": token.get("display_class", "content"),
+        "lookup_request_id": request_id,
+        "lookup_request": query,
+    }
+
+
+def _reading_sentences(manifest_path: Path) -> list[dict[str, Any]]:
+    tokens = [_token_record(token) for token in _snapshot_tokens(manifest_path)]
+    clean_tokens = [token for token in tokens if token is not None]
+    text = "".join(str(token.get("surface", "")) for token in clean_tokens)
+    sentences: list[dict[str, Any]] = []
+    for ordinal, (start, end) in enumerate(_sentence_spans(text)):
+        sentence_tokens = [
+            token
+            for token in clean_tokens
+            if ranges_intersect(
+                [tuple(token["char_range"])], [(start, end)]
+            )
+        ]
+        sentences.append(
+            {
+                "index": ordinal,
+                "char_range": [start, end],
+                "text": text[start:end],
+                "tokens": sentence_tokens,
+            }
+        )
+    return sentences
+
+
+def _merge_ranges(ranges: Sequence[tuple[int, int]]) -> list[tuple[int, int]]:
+    merged: list[list[int]] = []
+    for start, end in sorted(ranges):
+        if not merged or start > merged[-1][1]:
+            merged.append([start, end])
+        else:
+            merged[-1][1] = max(merged[-1][1], end)
+    return [tuple(item) for item in merged]
+
+
+def _reading_unit_payload(
+    before_manifest_path: Path,
+    after_manifest_path: Path,
+    changes: Sequence[dict[str, Any]],
+) -> dict[str, Any]:
+    before_sentences = _reading_sentences(before_manifest_path)
+    after_sentences = _reading_sentences(after_manifest_path)
+    if not before_sentences and not after_sentences:
+        return {"schema_version": "kotoclip.quality.reading-diff.v1", "units": []}
+
+    primary = [change for change in changes if change.get("counted_in_primary")]
+    evidence_by_sentence: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    spans_by_sentence: dict[int, list[tuple[int, int]]] = defaultdict(list)
+    for change in primary:
+        for raw in change_ranges(change):
+            candidates = [
+                sentence
+                for sentence in after_sentences
+                if ranges_intersect([raw], [tuple(sentence["char_range"])])
+            ]
+            if not candidates:
+                candidates = [
+                    sentence
+                    for sentence in before_sentences
+                    if ranges_intersect([raw], [tuple(sentence["char_range"])])
+                ]
+            if not candidates:
+                continue
+            sentence = min(
+                candidates,
+                key=lambda item: abs(item["char_range"][0] - raw[0]),
+            )
+            sentence_index = int(sentence["index"])
+            token_ranges = [
+                tuple(token["char_range"])
+                for token in sentence.get("tokens", [])
+                if ranges_intersect([raw], [tuple(token["char_range"])])
+            ]
+            spans_by_sentence[sentence_index].append(
+                (min((item[0] for item in token_ranges), default=raw[0]),
+                 max((item[1] for item in token_ranges), default=raw[1]))
+            )
+            evidence_by_sentence[sentence_index].append(change)
+
+    units: list[dict[str, Any]] = []
+    for sentence_index, changed_ranges in sorted(spans_by_sentence.items()):
+        groups = _merge_ranges(changed_ranges)
+        sentence_after = next(
+            (item for item in after_sentences if item["index"] == sentence_index),
+            None,
+        )
+        sentence_before = next(
+            (
+                item
+                for item in before_sentences
+                if item.get("char_range") == (sentence_after or {}).get("char_range")
+            ),
+            None,
+        )
+        if sentence_before is None and sentence_index < len(before_sentences):
+            sentence_before = before_sentences[sentence_index]
+        if sentence_after is None:
+            continue
+        sentence_changes = evidence_by_sentence[sentence_index]
+        for group_index, group in enumerate(groups):
+            group_changes = list(
+                {
+                    change["change_id"]: change
+                    for change in sentence_changes
+                    if ranges_intersect(change_ranges(change), [group])
+                }.values()
+            )
+            evidence_changes = list(
+                {
+                    change["change_id"]: change
+                    for change in changes
+                    if ranges_intersect(change_ranges(change), [group])
+                }.values()
+            )
+            domain_counts = Counter(
+                str(change["primary_domain"])
+                for change in group_changes
+                if change.get("primary_domain")
+            )
+            unit_id = f"sentence-{sentence_index}-span-{group[0]}-{group[1]}-{group_index}"
+            units.append(
+                {
+                    "unit_id": unit_id,
+                    "sentence_index": sentence_index,
+                    "changed_range": list(group),
+                    "primary_change_count": len(group_changes),
+                    "evidence_change_count": len(evidence_changes),
+                    "domains": dict(sorted(domain_counts.items())),
+                    "stages": sorted(
+                        {str(change["stage"]) for change in group_changes},
+                        key=lambda stage: STAGE_INDEX.get(stage, 999),
+                    ),
+                    "change_ids": [change["change_id"] for change in group_changes],
+                    "evidence_change_ids": [
+                        change["change_id"] for change in evidence_changes
+                    ],
+                    "before": {
+                        "char_range": (sentence_before or sentence_after)["char_range"],
+                        "text": (sentence_before or sentence_after)["text"],
+                        "tokens": (sentence_before or {"tokens": []})["tokens"],
+                    },
+                    "after": {
+                        "char_range": sentence_after["char_range"],
+                        "text": sentence_after["text"],
+                        "tokens": sentence_after["tokens"],
+                    },
+                }
+            )
+    return {
+        "schema_version": "kotoclip.quality.reading-diff.v1",
+        "unit_count": len(units),
+        "units": units,
     }
 
 
@@ -1975,6 +2285,7 @@ def compare_snapshot_manifests(
             )
         )
     annotate_causality(changes)
+    annotate_primary_count(changes)
     changes.sort(
         key=lambda change: (
             STAGE_INDEX.get(change["stage"], 999),
@@ -1999,23 +2310,43 @@ def compare_snapshot_manifests(
             "run_id": after_manifest.get("run_id"),
             "label": after_manifest.get("label"),
         },
+        "implementation": {
+            "before": before_manifest.get("implementation", {}),
+            "after": after_manifest.get("implementation", {}),
+        },
         "stage_graph": [
             {"stage": stage, "depends_on": list(STAGE_DEPENDENCIES.get(stage, ()))}
             for stage in STAGE_ORDER
         ],
     }
+    reading_units = _reading_unit_payload(before_path, after_path, changes)
+    summary = pipeline_summary(
+        before_entities,
+        after_entities,
+        before_covered,
+        after_covered,
+        changes,
+        mismatches,
+        blocked_stages,
+    )
+    summary["reading_units"] = reading_units.get("unit_count", 0)
+    summary["affected_sentences"] = len(
+        {item["sentence_index"] for item in reading_units.get("units", [])}
+    )
+    summary["reading_unit_domains"] = dict(
+        sorted(
+            Counter(
+                domain
+                for item in reading_units.get("units", [])
+                for domain in item.get("domains", {})
+            ).items()
+        )
+    )
     return ComparisonBundle(
         manifest=manifest,
-        summary=pipeline_summary(
-            before_entities,
-            after_entities,
-            before_covered,
-            after_covered,
-            changes,
-            mismatches,
-            blocked_stages,
-        ),
+        summary=summary,
         changes=changes,
+        reading_units=reading_units,
     )
 
 
@@ -2088,6 +2419,10 @@ def html_report(bundle: ComparisonBundle) -> str:
             "summary": "summary.json",
             "diff": "diff.jsonl",
             "root_impacts": "root-causes.json",
+            "reading_units": "reading-diff.json",
+            "dictionary_lookups_before": "dictionary-lookups-before.json",
+            "dictionary_lookups_after": "dictionary-lookups-after.json",
+            "dictionary_lookup_capture": "dictionary-lookup-capture.json",
         },
         "detail_strategy": "full_external_jsonl",
         "total_changes": len(bundle.changes),
@@ -2153,7 +2488,36 @@ def html_report(bundle: ComparisonBundle) -> str:
     code {{ font-family: "Cascadia Mono", Consolas, monospace; font-size: .76rem; }}
     .empty {{ padding: 30px; text-align: center; color: #667279; }}
     .footnote {{ margin: 10px 0 0; font-size: .78rem; color: #667279; }}
+    .reader-toolbar {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid #dfe4e6; }}
+    .reader-toolbar input {{ flex: 1 1 260px; }}
+    .reader-toolbar .pager-info {{ margin-left: auto; }}
+    .reader-unit {{ border-bottom: 1px solid #dfe4e6; }}
+    .reader-unit:last-child {{ border-bottom: 0; }}
+    .reader-unit-head {{ display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 11px 14px; background: #f3f6f7; }}
+    .reader-unit-head strong {{ font-variant-numeric: tabular-nums; }}
+    .reader-badge {{ padding: 3px 7px; border: 1px solid #c9d3d7; border-radius: 3px; background: #fff; color: #3b4c53; font-size: .76rem; }}
+    .reader-badge.structure {{ border-color: #d89292; color: #8c2f2f; }}
+    .reader-badge.grammar {{ border-color: #9da7db; color: #33428b; }}
+    .reader-badge.lookup {{ border-color: #c8a76d; color: #75531d; }}
+    .reader-badge.expression {{ border-color: #83b5a0; color: #236b4f; }}
+    .reader-panes {{ display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #dfe4e6; }}
+    .reader-pane {{ min-width: 0; background: #fff; }}
+    .reader-pane-title {{ padding: 8px 12px; border-bottom: 1px solid #e3e8e9; color: #59686e; font-size: .78rem; font-weight: 700; }}
+    .reader-text {{ min-height: 112px; padding: 16px 14px; line-height: 2.05; white-space: pre-wrap; overflow-wrap: anywhere; }}
+    .reader-token {{ position: relative; display: inline; padding: 3px 2px; border-radius: 3px; cursor: pointer; }}
+    .reader-token:hover, .reader-token.sync-active {{ background: #dbeaf0; outline: 1px solid #5b98aa; }}
+    .reader-token.changed {{ background: #ffe2df; box-shadow: inset 0 -2px #c53a32; }}
+    .reader-token.changed.sync-active {{ background: #ffd0cb; outline-color: #b52d25; }}
+    .reader-inspector {{ display: none; border-top: 1px solid #dfe4e6; padding: 12px 14px; background: #fbfcfc; }}
+    .reader-inspector.open {{ display: block; }}
+    .reader-inspector-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }}
+    .reader-inspector h4 {{ margin: 0 0 6px; font-size: .82rem; color: #3f4d52; }}
+    .reader-inspector-head {{ display: flex; align-items: center; justify-content: space-between; gap: 8px; }}
+    .reader-inspector-close {{ min-width: 32px; width: 32px; min-height: 32px; padding: 0; border-radius: 3px; }}
+    .reader-inspector pre {{ max-height: 260px; margin: 0; padding: 9px; overflow: auto; background: #f1f4f5; border: 1px solid #dfe4e6; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .74rem; }}
+    .reader-empty {{ padding: 28px; color: #657178; text-align: center; }}
     @media (max-width: 760px) {{ .split {{ grid-template-columns: 1fr; }} .controls {{ grid-template-columns: 1fr; }} .pager-info {{ text-align: left; }} table {{ min-width: 900px; }} }}
+    @media (max-width: 760px) {{ .reader-panes, .reader-inspector-grid {{ grid-template-columns: 1fr; }} .reader-pane.after {{ border-top: 1px solid #dfe4e6; }} }}
   </style>
 </head>
 <body>
@@ -2166,9 +2530,23 @@ def html_report(bundle: ComparisonBundle) -> str:
       <div class="status-line"><span id="status" class="status"></span><span id="comparable" class="muted"></span></div>
       <div id="metrics" class="metrics"></div>
     </section>
+    <section id="reader-section">
+      <h2>变化文节阅读对照</h2>
+      <div class="panel">
+        <div class="reader-toolbar">
+          <input id="reader-search" type="search" placeholder="搜索句子、词面、规则或坐标">
+          <select id="reader-domain"><option value="">全部领域</option><option value="structure">结构</option><option value="grammar">语法</option><option value="lookup">查询</option><option value="expression">表达</option><option value="projection">投影</option></select>
+          <button id="reader-prev" type="button" title="上一处变化" aria-label="上一处变化">←</button>
+          <output id="reader-page-info" class="pager-info"></output>
+          <button id="reader-next" type="button" title="下一处变化" aria-label="下一处变化">→</button>
+        </div>
+        <div id="reader-units"></div>
+      </div>
+      <p id="reader-note" class="footnote"></p>
+    </section>
     <section id="stage-section" hidden>
       <h2>管线层级</h2>
-      <div class="panel table-wrap"><table><thead><tr><th>阶段</th><th>覆盖</th><th>基准实体</th><th>候选实体</th><th>变化</th><th>变化率（95% CI）</th><th>根变化</th><th>传播候选</th></tr></thead><tbody id="stage-rows"></tbody></table></div>
+      <div class="panel table-wrap"><table><thead><tr><th>阶段</th><th>覆盖</th><th>基准实体</th><th>候选实体</th><th>主变化</th><th>证据事件</th><th>主变化率（95% CI）</th><th>根变化</th><th>传播候选</th></tr></thead><tbody id="stage-rows"></tbody></table></div>
     </section>
     <section class="split">
       <div><h2>变化类型</h2><div id="type-bars" class="panel bars"></div></div>
@@ -2226,30 +2604,47 @@ def html_report(bundle: ComparisonBundle) -> str:
           if (!response.ok) throw new Error(`${{path}} HTTP ${{response.status}}`);
           return response.text();
         }};
-        const [manifest, summary, diffText, rootImpacts] = await Promise.all([
+        const loadOptionalJson = async path => {{
+          const response = await fetch(path, {{ cache: 'no-store' }});
+          if (response.status === 404) return null;
+          if (!response.ok) throw new Error(`${{path}} HTTP ${{response.status}}`);
+          return response.json();
+        }};
+        const [manifest, summary, diffText, rootImpacts, readingDiff, lookupsBefore, lookupsAfter, lookupCapture] = await Promise.all([
           loadJson(config.sources.manifest),
           loadJson(config.sources.summary),
           loadText(config.sources.diff),
           loadJson(config.sources.root_impacts),
+          loadJson(config.sources.reading_units),
+          loadOptionalJson(config.sources.dictionary_lookups_before),
+          loadOptionalJson(config.sources.dictionary_lookups_after),
+          loadOptionalJson(config.sources.dictionary_lookup_capture),
         ]);
         const changes = diffText.split(/\\r?\\n/).filter(Boolean).map((line, index) => {{
           try {{ return JSON.parse(line); }}
           catch (error) {{ throw new Error(`diff.jsonl 第 ${{index + 1}} 行无效: ${{error.message}}`); }}
         }});
-        const report = {{ manifest, summary, changes, root_impacts: rootImpacts, ...config }};
+        const report = {{ manifest, summary, changes, root_impacts: rootImpacts, reading_diff: readingDiff, dictionary_lookups: {{ before: lookupsBefore, after: lookupsAfter }}, dictionary_lookup_capture: lookupCapture, ...config }};
         const metricRoot = document.getElementById('metrics');
-        status.textContent = summary.status === 'unchanged' ? '无变化' : `发现 ${{summary.changes}} 项变化`;
+        status.textContent = summary.status === 'unchanged' ? '无变化' : `聚合条目 ${{summary.reading_units || 0}} · 影响 ${{summary.affected_sentences || 0}} 句`;
         status.classList.toggle('unchanged', summary.status === 'unchanged');
         const conclusion = summary.quality_conclusion || (summary.comparable ? 'eligible' : 'paused_input_changed');
         const conclusionLabels = {{ eligible: '输入与阶段契约可比较', partial: '阶段覆盖不完整，仅可作局部结论', paused_input_changed: '输入文本变化，质量结论已暂停' }};
         comparableNode.textContent = conclusionLabels[conclusion] || conclusion;
-        document.getElementById('run-meta').textContent = `${{report.manifest.adapter}} · ${{report.manifest.before.sha256.slice(0, 12)}} → ${{report.manifest.after.sha256.slice(0, 12)}} · ${{changes.length}} 条完整变化`;
+        document.getElementById('run-meta').textContent = `${{report.manifest.adapter}} · ${{report.manifest.before.label || report.manifest.before.sha256.slice(0, 12)}} → ${{report.manifest.after.label || report.manifest.after.sha256.slice(0, 12)}} · 主结果 ${{summary.changes || 0}} · 证据 ${{summary.evidence_changes ?? changes.length}}`;
 
     const formatPercent = value => `${{(Number(value || 0) * 100).toFixed(3)}}%`;
     const metrics = [
-      ['总变化', summary.changes],
+      ['聚合条目', summary.reading_units ?? 0],
+      ['受影响句子', summary.affected_sentences ?? 0],
+      ['主结果实体', summary.changes],
+      ['证据事件', summary.evidence_changes ?? changes.length],
+      ['结构条目', summary.reading_unit_domains?.structure ?? 0],
+      ['语法条目', summary.reading_unit_domains?.grammar ?? 0],
+      ['查询条目', summary.reading_unit_domains?.lookup ?? 0],
+      ['表达条目', summary.reading_unit_domains?.expression ?? 0],
       ['根变化', summary.root_changes ?? summary.changes],
-      ['传播候选', summary.propagated_candidates ?? 0],
+      ['传播候选（证据）', summary.propagated_candidates ?? 0],
       ['全层实体变化率', summary.churn ? formatPercent(summary.churn.rate) : '单产物'],
       ['严重', summary.severities.critical],
       ['高', summary.severities.high],
@@ -2295,7 +2690,7 @@ def html_report(bundle: ComparisonBundle) -> str:
       for (const item of summary.stages) {{
         const tr = document.createElement('tr');
         const churn = item.churn ? `${{formatPercent(item.churn.rate)}} (${{formatPercent(item.churn.ci95[0])}}–${{formatPercent(item.churn.ci95[1])}})` : '';
-        for (const [value, className] of [[item.stage, ''], [item.coverage, `coverage-${{item.coverage}}`], [item.before_entities, ''], [item.after_entities, ''], [item.changes, ''], [churn, ''], [item.root_changes, ''], [item.propagated_candidates, '']]) {{
+        for (const [value, className] of [[item.stage, ''], [item.coverage, `coverage-${{item.coverage}}`], [item.before_entities, ''], [item.after_entities, ''], [item.changes, ''], [item.evidence_changes ?? item.changes, ''], [churn, ''], [item.root_changes, ''], [item.propagated_candidates, '']]) {{
           const td = document.createElement('td'); td.textContent = value; td.className = className; tr.append(td);
         }}
         stageRows.append(tr);
@@ -2305,6 +2700,132 @@ def html_report(bundle: ComparisonBundle) -> str:
       document.getElementById('impact-section').hidden = false;
       document.getElementById('impact-section').dataset.available = String(report.root_impacts?.length || 0);
     }}
+
+    const readerSearch = document.getElementById('reader-search');
+    const readerDomain = document.getElementById('reader-domain');
+    const readerUnits = document.getElementById('reader-units');
+    const readerPageInfo = document.getElementById('reader-page-info');
+    const readerPrev = document.getElementById('reader-prev');
+    const readerNext = document.getElementById('reader-next');
+    let readerPage = 0;
+    let selectedToken = null;
+    const readerUnitValues = report.reading_diff?.units || [];
+    const changeById = new Map(changes.map(change => [change.change_id, change]));
+    const lookupBySide = {{
+      before: new Map((report.dictionary_lookups?.before?.items || []).map(item => [item.request.request_id, item.lookup])),
+      after: new Map((report.dictionary_lookups?.after?.items || []).map(item => [item.request.request_id, item.lookup])),
+    }};
+    function tokenText(token) {{
+      const head = token.head_word || {{}};
+      const labels = [head.surface, head.base_form, head.reading].filter(Boolean);
+      return labels.length ? labels.join(' / ') : token.surface || '';
+    }}
+    function tokenPayload(token) {{
+      return JSON.stringify(token, null, 2);
+    }}
+    function tokenIntersects(token, range) {{
+      const current = token.char_range || [];
+      if (current.length !== 2 || !range || range.length !== 2) return false;
+      return current[0] < range[1] && range[0] < current[1] || current[0] === range[0] || current[1] === range[1];
+    }}
+    function renderTokenSide(unit, side, token) {{
+      const span = document.createElement('span');
+      span.className = 'reader-token';
+      span.textContent = token.surface || '';
+      span.dataset.range = JSON.stringify(token.char_range || []);
+      span.title = tokenText(token);
+      if (tokenIntersects(token, unit.changed_range)) span.classList.add('changed');
+      span.addEventListener('mouseenter', () => {{
+        const range = token.char_range || [];
+        document.querySelectorAll('.reader-token').forEach(other => {{
+          try {{
+            const otherRange = JSON.parse(other.dataset.range || '[]');
+            if (tokenIntersects({{char_range: otherRange}}, range)) other.classList.add('sync-active');
+          }} catch (_) {{}}
+        }});
+      }});
+      span.addEventListener('mouseleave', () => document.querySelectorAll('.reader-token.sync-active').forEach(other => other.classList.remove('sync-active')));
+      span.addEventListener('click', () => showTokenInspector(unit, side, token));
+      return span;
+    }}
+    function showTokenInspector(unit, side, token) {{
+      const existing = document.getElementById(`inspector-${{unit.unit_id}}`);
+      if (existing?.classList.contains('open') && selectedToken?.unit === unit && selectedToken?.side === side && selectedToken?.token?.char_range?.join(',') === token.char_range?.join(',')) {{
+        existing.classList.remove('open');
+        selectedToken = null;
+        return;
+      }}
+      selectedToken = {{ unit, side, token }};
+      const inspector = existing;
+      if (!inspector) return;
+      inspector.classList.add('open');
+      inspector.querySelector('[data-inspector-title]').textContent = `${{side === 'before' ? '基准' : '候选'}} · ${{tokenText(token)}}`;
+      const counterpartSide = side === 'before' ? 'after' : 'before';
+      const counterpart = (unit[counterpartSide]?.tokens || []).find(other => tokenIntersects(other, token.char_range || []));
+      inspector.querySelector('[data-inspector-before]').textContent = tokenPayload(side === 'before' ? token : (counterpart || {{}}));
+      inspector.querySelector('[data-inspector-after]').textContent = tokenPayload(side === 'after' ? token : (counterpart || {{}}));
+      const beforeToken = side === 'before' ? token : counterpart;
+      const afterToken = side === 'after' ? token : counterpart;
+      const beforeLookup = beforeToken ? lookupBySide.before.get(beforeToken.lookup_request_id) : null;
+      const afterLookup = afterToken ? lookupBySide.after.get(afterToken.lookup_request_id) : null;
+      const missingLookupText = sideName => report.dictionary_lookup_capture?.[sideName]?.status === 'unsupported_cli' ? '此轮提交的 CLI 尚未提供批量桌面查询' : '此轮未捕获完整桌面查询';
+      inspector.querySelector('[data-inspector-before-query]').textContent = beforeLookup ? JSON.stringify(beforeLookup, null, 2) : `${{missingLookupText('before')}}\n${{JSON.stringify(beforeToken?.lookup_request || {{}}, null, 2)}}`;
+      inspector.querySelector('[data-inspector-after-query]').textContent = afterLookup ? JSON.stringify(afterLookup, null, 2) : `${{missingLookupText('after')}}\n${{JSON.stringify(afterToken?.lookup_request || {{}}, null, 2)}}`;
+      inspector.querySelector('[data-inspector-changes]').textContent = (unit.change_ids || []).map(id => changeById.get(id)).filter(Boolean).map(change => `${{change.stage}} · ${{change.type}} · ${{change.scope}}`).join('\\n') || '无主结果明细';
+    }}
+    function renderReader() {{
+      const needle = readerSearch.value.trim().toLocaleLowerCase();
+      const domain = readerDomain.value;
+      const filtered = readerUnitValues.filter(unit => {{
+        if (domain && !unit.domains?.[domain]) return false;
+        if (!needle) return true;
+        const haystack = JSON.stringify(unit).toLocaleLowerCase();
+        return haystack.includes(needle);
+      }});
+      const pageSize = 8;
+      const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+      readerPage = Math.min(readerPage, pageCount - 1);
+      const start = readerPage * pageSize;
+      readerUnits.replaceChildren();
+      for (const unit of filtered.slice(start, start + pageSize)) {{
+        const section = document.createElement('article');
+        section.className = 'reader-unit';
+        const header = document.createElement('div');
+        header.className = 'reader-unit-head';
+        const title = document.createElement('strong');
+        title.textContent = `句 ${{unit.sentence_index + 1}} · 坐标 ${{unit.changed_range[0]}}–${{unit.changed_range[1]}}`;
+        header.append(title);
+        for (const [name, count] of Object.entries(unit.domains || {{}})) {{
+          const badge = document.createElement('span'); badge.className = `reader-badge ${{name}}`; badge.textContent = `${{name}} ${{count}}`; header.append(badge);
+        }}
+        const counts = document.createElement('span'); counts.className = 'muted'; counts.textContent = `主结果 ${{unit.primary_change_count}} · 证据 ${{unit.evidence_change_count}}`; header.append(counts);
+        const panes = document.createElement('div'); panes.className = 'reader-panes';
+        for (const side of ['before', 'after']) {{
+          const pane = document.createElement('div'); pane.className = `reader-pane ${{side}}`;
+          const paneTitle = document.createElement('div'); paneTitle.className = 'reader-pane-title'; paneTitle.textContent = side === 'before' ? (report.manifest.before.label || '基准') : (report.manifest.after.label || '候选'); pane.append(paneTitle);
+          const text = document.createElement('div'); text.className = 'reader-text';
+          for (const token of unit[side]?.tokens || []) text.append(renderTokenSide(unit, side, token));
+          pane.append(text); panes.append(pane);
+        }}
+        const inspector = document.createElement('div'); inspector.id = `inspector-${{unit.unit_id}}`; inspector.className = 'reader-inspector';
+        const inspectorHead = document.createElement('div'); inspectorHead.className = 'reader-inspector-head';
+        const inspectorTitle = document.createElement('h4'); inspectorTitle.dataset.inspectorTitle = ''; inspectorTitle.textContent = '点击词块查看前后结构与查询证据';
+        const inspectorClose = document.createElement('button'); inspectorClose.className = 'reader-inspector-close'; inspectorClose.type = 'button'; inspectorClose.title = '关闭详情'; inspectorClose.setAttribute('aria-label', '关闭详情'); inspectorClose.textContent = '×'; inspectorClose.addEventListener('click', () => {{ inspector.classList.remove('open'); selectedToken = null; }});
+        inspectorHead.append(inspectorTitle, inspectorClose); inspector.append(inspectorHead);
+        const inspectorGrid = document.createElement('div'); inspectorGrid.className = 'reader-inspector-grid';
+        for (const [key, label] of [['before', '基准结构'], ['after', '候选结构'], ['beforeQuery', '基准词典查询'], ['afterQuery', '候选词典查询'], ['changes', '关联主结果']]) {{ const block = document.createElement('div'); const heading = document.createElement('h4'); heading.textContent = label; const pre = document.createElement('pre'); pre.dataset[`inspector${{key[0].toUpperCase() + key.slice(1)}}`] = ''; block.append(heading, pre); inspectorGrid.append(block); }}
+        inspector.append(inspectorGrid);
+        section.append(header, panes, inspector); readerUnits.append(section);
+      }}
+      readerPageInfo.textContent = filtered.length ? `${{start + 1}}–${{Math.min(start + pageSize, filtered.length)}} / ${{filtered.length}}` : '0 / 0';
+      readerPrev.disabled = readerPage <= 0; readerNext.disabled = readerPage >= pageCount - 1;
+      document.getElementById('reader-note').textContent = `主视图显示 ${{readerUnitValues.length}} 个聚合条目；同一句中的不连续变化分别成项。证据层保留 ${{summary.evidence_changes ?? changes.length}} 条原始事件，可在下方按阶段和坐标筛选。`;
+    }}
+    readerSearch.addEventListener('input', () => {{ readerPage = 0; renderReader(); }});
+    readerDomain.addEventListener('change', () => {{ readerPage = 0; renderReader(); }});
+    readerPrev.addEventListener('click', () => {{ readerPage = Math.max(0, readerPage - 1); renderReader(); }});
+    readerNext.addEventListener('click', () => {{ readerPage += 1; renderReader(); }});
+    renderReader();
 
     const stageFilter = document.getElementById('stage-filter');
     for (const stage of [...new Set(changes.map(change => change.stage || change.channel).filter(Boolean))]) {{
@@ -2463,6 +2984,16 @@ def write_bundle(bundle: ComparisonBundle, output_dir: Path) -> None:
         )
     (output_dir / "root-causes.json").write_text(
         json.dumps(root_impact_summary(bundle.changes), ensure_ascii=False, indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
+    (output_dir / "reading-diff.json").write_text(
+        json.dumps(
+            bundle.reading_units
+            or {"schema_version": "kotoclip.quality.reading-diff.v1", "units": []},
+            ensure_ascii=False,
+            indent=2,
+        )
         + "\n",
         encoding="utf-8",
     )
