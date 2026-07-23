@@ -139,6 +139,9 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- incremental-consistency `
 # 捕获固定语料、资源和画像下的语言质量快照
 python scripts/language_quality_snapshot.py --help
 
+# 统一入口：compare 会运行提交级比较并刷新历史，其他阶段也可从此入口调用
+python scripts/language_quality.py --help
+
 # 比较完整管线快照，生成 JSON/JSONL 与外部数据开发面板
 python scripts/language_quality_diff.py --help
 

@@ -57,8 +57,10 @@
 - `scripts/language_quality_commit_diff.py`：为两个 Git 提交创建 detached worktree、隔离构建并运行快照／diff／gate；
 - `scripts/language_quality_history.py`：扫描全部完整对比轮次，关联两侧快照并生成外部 JSON 历史索引和浏览页；
 - `scripts/language_quality_dashboard_server.py`：为外部 JSON/JSONL 数据面板提供无缓存本地开发服务；
-- `scripts/test_language_quality_diff.py`：8 个小型合成契约测试；
+- `scripts/language_quality.py`：统一入口；`compare` 串联提交比较与历史刷新，`snapshot`、`diff`、`gate`、`history`、`serve` 和 `status` 暴露同一生命周期下的阶段调用；
+- `scripts/test_language_quality_diff.py`：9 个小型合成契约测试；
 - `scripts/test_language_quality_history.py`：3 个历史索引、快照关联和外部数据页面契约测试；
+- `scripts/test_language_quality.py`：统一入口的参数转发和 UTF-8 生命周期写入测试；
 - `experiments/.gitignore`：实验目录全量忽略，仅保留忽略规则自身。
 
 未实现：频率资源正式 importer、反馈事件存储、金标评测器、跨轮次统计仓库、CI 接入、自动 UI 投影导出和基线晋升注册表。
@@ -660,10 +662,10 @@ python scripts/language_quality_gate.py `
 
 ### 10.5 提交级比较
 
-每次词典／语法改动提交后，Agent 使用同一语料和画像比较提交。runner 不切换当前工作树，而是同时创建两个临时 detached worktree：
+每次词典／语法改动提交后，Agent 从当前工作树调用统一入口。它不 checkout 当前工作树，而是同时创建两个临时 detached worktree：
 
 ```powershell
-python scripts/language_quality_commit_diff.py `
+python scripts/language_quality.py compare `
   --before HEAD^ `
   --after HEAD `
   --source "D:\path\to\output.md" `
@@ -674,10 +676,11 @@ python scripts/language_quality_commit_diff.py `
   --dict-source-dir "data\dict-sources" `
   --dict-dir "data\dicts" `
   --output-dir "experiments\quality-run\commit-HEAD^--HEAD" `
+  --history-root "experiments\quality-run" `
   --gate-config "scripts\language_quality_gate.example.json"
 ```
 
-runner 的行为固定为：
+统一入口的行为固定为：
 
 1. 校验两个 commit；
 2. 在临时目录创建两个 detached worktree；
@@ -686,7 +689,16 @@ runner 的行为固定为：
 5. 运行十九阶段 diff，输出完整 `diff.jsonl`、阶段统计、根影响和外部数据开发面板；
 6. 在 detached worktree 尚存在时，提取阅读 token 查询请求，分别调用两侧 CLI 的 `dictionary-lookup-batch`，写入两侧完整 `DictionaryLookup` 结果；
 7. 若提供 gate config，写入 `gate.json` 并把 gate 退出码传给 Agent；
-8. 删除本次 runner 创建的临时 worktree，保留所有评估产物。
+8. 删除本次 runner 创建的临时 worktree，保留所有评估产物；随后刷新 `history.json`／`history.html`。
+
+比较目录还会写入 `lifecycle.json`。它记录统一入口的 `run_id`、启动时 Git HEAD／分支／dirty 状态、请求参数 hash、`compare_commits` 和 `refresh_history` 阶段的开始／结束时间、退出码、失败阶段以及 report、summary、history 的路径。任务失败时生命周期文件保留在部分输出目录中，可用下面的命令读取：
+
+```powershell
+python scripts/language_quality.py status `
+  --lifecycle "experiments\quality-run\commit-HEAD^--HEAD\lifecycle.json"
+```
+
+`compare` 成功后默认自动刷新历史索引；只需要机器产物或正在调试中间步骤时可加 `--no-history`。底层脚本仍可直接调用，但不负责刷新历史或写统一生命周期状态。
 
 仓库内受版本控制的 grammar catalog 和规则由各自 detached worktree 读取。系统词典、词典源包和本机缓存是显式外部输入：默认两端共用 `--system-dict`、`--dict-source-dir`、`--dict-dir`，snapshot manifest 会记录其中每个文件的 SHA-256。
 
@@ -713,10 +725,10 @@ python scripts/language_quality_commit_diff.py `
 生成或更新 diff 后，重新扫描实验根目录，再以根目录模式启动无缓存开发服务：
 
 ```powershell
-python scripts/language_quality_history.py `
+python scripts/language_quality.py history `
   --root "experiments\quality-run"
 
-python scripts/language_quality_dashboard_server.py `
+python scripts/language_quality.py serve `
   --root "experiments\quality-run" `
   --port 8765
 ```
