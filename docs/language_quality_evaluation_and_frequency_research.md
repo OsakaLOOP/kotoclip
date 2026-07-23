@@ -502,7 +502,7 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 
 `language_quality_history.py` 递归扫描报告根目录中同时具有 `report.html`、`manifest.json`、`summary.json` 和 `diff.jsonl` 的完整对比轮次。它以 diff manifest 的 `run_id + snapshot manifest SHA-256` 关联 before/after 快照，不能唯一关联时将 Git、语料和资源字段保留为 `null`，不按目录名或当前仓库状态推测。
 
-`history.json` 为 Agent 提供每轮的 comparison ID、创建时间、适配器、summary、各阶段 churn、gate 状态，以及 report/manifest/summary/diff/stage-summary/root-causes/gate/构建日志的相对 URL、字节数和 SHA-256。两侧元数据包含 snapshot URL/hash、Git commit、dirty 状态、status hash、CLI hash、运行平台、语料选择/hash/字符计数和全部资源路径、字节数及 hash。`history.html` 只读取该外部索引，支持按轮次、提交、语料、适配器和状态筛选，并打开每轮报告或 manifest 元数据；它不嵌入或复制 `diff.jsonl`。
+`history.json` 为 Agent 提供每轮的 comparison ID、创建时间、适配器、summary、各阶段 churn、gate 状态，以及 report/manifest/summary/diff/stage-summary/root-causes/gate/lifecycle/构建日志的相对 URL、字节数和 SHA-256。两侧元数据包含 snapshot URL/hash、Git commit、dirty 状态、status hash、CLI hash、运行平台、语料选择/hash/字符计数和全部资源路径、字节数及 hash。`history.html` 只读取该外部索引，支持按轮次、提交、语料、适配器和状态筛选，并打开每轮报告、manifest 元数据或生命周期；它不嵌入或复制 `diff.jsonl`。
 
 当前历史页是可审计的轮次目录，不是跨轮次质量推断系统。后续趋势仓库仍需保存 release、genre、rule family、金标指标、性能、基线晋升和回滚事件，并提供对应切片；原始 summary 仍是权威数据。
 

@@ -116,6 +116,13 @@ class LanguageQualityHistoryTest(unittest.TestCase):
             "<!doctype html><title>单轮报告</title>", encoding="utf-8"
         )
         self.write_json(output / "gate.json", {"status": "review_required"})
+        self.write_json(
+            output / "lifecycle.json",
+            {
+                "schema_version": "kotoclip.quality.lifecycle.v1",
+                "status": "completed",
+            },
+        )
 
     def test_build_history_links_snapshots_and_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -148,6 +155,10 @@ class LanguageQualityHistoryTest(unittest.TestCase):
         self.assertTrue(record["manifest"]["sha256"])
         self.assertTrue(record["summary_artifact"]["sha256"])
         self.assertTrue(record["gate"]["sha256"])
+        self.assertEqual(
+            record["lifecycle"]["url"],
+            "comparisons/round-1/lifecycle.json",
+        )
 
     def test_missing_snapshot_is_explicit_and_incomplete_report_is_ignored(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -172,6 +183,7 @@ class LanguageQualityHistoryTest(unittest.TestCase):
         self.assertIn("fetch(config.source", page)
         self.assertIn("item.report.url", page)
         self.assertIn("item.manifest.url", page)
+        self.assertIn("item.lifecycle.url", page)
         self.assertNotIn("不得进入历史 HTML", page)
 
 
