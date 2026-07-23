@@ -527,11 +527,22 @@ mod tests {
             ("再集結", "prefix_noun", "再集結"),
             ("各中隊", "prefix_noun", "各中隊"),
             ("超高速", "prefix_noun", "超高速"),
+            ("超速い", "prefix_adjective", "超速い"),
+            ("超すごい", "prefix_adjective", "超すごい"),
             ("非人道的", "prefix_noun", "非人道的"),
             ("直掩部隊", "prefix_noun_suffix", "直掩部隊"),
             ("航程", "noun_with_misclassified_hodo", "航程"),
             ("伏し目がち", "noun_or_renyou_gachi", "伏し目がち"),
             ("ためらいがち", "renyou_gachi", "ためらいがち"),
+            ("やり終える", "compound_verb_renyou_nonself", "やり終える"),
+            ("見え始める", "compound_verb_renyou_nonself", "見え始める"),
+            ("蹴散らす", "compound_verb_renyou_independent", "蹴散らす"),
+            (
+                "一眠りしなおす",
+                "noun_sahen_compound_verb",
+                "一眠りしなおす",
+            ),
+            ("ライン帰り", "noun_with_kaeri_suffix", "ライン帰り"),
         ] {
             let result = matcher.match_morphemes(&analyzer.analyze(text));
             assert!(

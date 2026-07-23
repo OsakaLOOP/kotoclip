@@ -3,6 +3,25 @@
   "catalog_version": 1,
   "rules": [
     {
+      "id": "prefix_adjective",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "productive_prefixed_adjective",
+      "priority": 83,
+      "atoms": [
+        { "pos": { "major": "接頭詞", "sub1": "名詞接続" }, "capture": "prefix", "normalization": "surface" },
+        { "pos": { "major": "形容詞", "sub1": "自立" }, "capture": "adjective", "normalization": "base_form" }
+      ],
+      "output": {
+        "pos": { "major": "形容詞", "sub1": "自立", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 88
+      },
+      "examples": ["超速い", "超すごい", "超嬉しい"],
+      "counter_examples": ["速度を超える", "すごく超える"]
+    },
+    {
       "id": "prefix_noun_suffix",
       "rule_version": 1,
       "source": "annotation-audit-20260723",
@@ -97,6 +116,83 @@
       },
       "examples": ["航程"],
       "counter_examples": ["航ほど長い", "程なく到着"]
+    },
+    {
+      "id": "compound_verb_renyou_nonself",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "productive_compound_verb",
+      "priority": 87,
+      "atoms": [
+        { "pos": { "major": "動詞", "sub1": "自立" }, "conjugation_forms": ["連用形", "連用タ接続"], "capture": "base", "normalization": "surface" },
+        { "pos": { "major": "動詞", "sub1": "非自立" }, "base_forms": ["終える", "始める", "なおす"], "capture": "auxiliary", "normalization": "surface" }
+      ],
+      "output": {
+        "pos": { "major": "動詞", "sub1": "自立", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 88
+      },
+      "examples": ["やり終える", "見え始める", "しなおす"],
+      "counter_examples": ["終えるだけ", "始める前"]
+    },
+    {
+      "id": "compound_verb_renyou_independent",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "productive_compound_verb",
+      "priority": 86,
+      "atoms": [
+        { "pos": { "major": "動詞", "sub1": "自立" }, "conjugation_forms": ["連用形", "連用タ接続", "体言接続特殊２"], "capture": "base", "normalization": "surface" },
+        { "pos": { "major": "動詞", "sub1": "自立" }, "conjugation_forms": ["基本形"], "capture": "tail", "normalization": "surface" }
+      ],
+      "output": {
+        "pos": { "major": "動詞", "sub1": "自立", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 86
+      },
+      "examples": ["蹴散らす"],
+      "counter_examples": ["蹴って散らす", "蹴る散らす"]
+    },
+    {
+      "id": "noun_with_kaeri_suffix",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "productive_return_suffix",
+      "priority": 83,
+      "atoms": [
+        { "pos": { "major": "名詞" }, "capture": "base", "normalization": "surface" },
+        { "surfaces": ["帰り"], "pos": { "major": "名詞", "sub1": "接尾" }, "capture": "suffix", "normalization": "surface" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 84
+      },
+      "examples": ["ライン帰り"],
+      "counter_examples": ["ラインに帰り、", "帰り道"]
+    },
+    {
+      "id": "noun_sahen_compound_verb",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "productive_sahen_compound_verb",
+      "priority": 88,
+      "atoms": [
+        { "pos": { "major": "名詞", "sub1": "一般" }, "capture": "noun", "normalization": "surface" },
+        { "pos": { "major": "動詞", "sub1": "自立" }, "conjugation_forms": ["連用形"], "base_forms": ["する"], "capture": "suru", "normalization": "surface" },
+        { "pos": { "major": "動詞", "sub1": "非自立" }, "base_forms": ["なおす"], "capture": "auxiliary", "normalization": "surface" }
+      ],
+      "output": {
+        "pos": { "major": "動詞", "sub1": "自立", "sub2": "*", "sub3": "*" },
+        "head_atom": 2,
+        "confidence": 88
+      },
+      "examples": ["一眠りしなおす"],
+      "counter_examples": ["一眠りしてなおす", "一眠りをなおす"]
     },
     {
       "id": "deity_by_godan_action",
