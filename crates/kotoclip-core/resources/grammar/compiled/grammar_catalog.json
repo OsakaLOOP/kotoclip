@@ -6650,6 +6650,103 @@
       ]
     },
     {
+      "realization_id": "realization.functional.auxiliary.da.conditional_nara",
+      "concept_id": "grammar.auxiliary.da",
+      "possible_sense_ids": [
+        "grammar.auxiliary.da.copula"
+      ],
+      "rule_id": "functional.auxiliary.da.conditional_nara",
+      "connection_signature": "体言・形容动词语干＋ならば",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "予想外ならば"
+      ],
+      "counter_examples": [
+        "ならば を接続词として孤立使用する例"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.functional.auxiliary.da.conditional_tara",
+      "concept_id": "grammar.auxiliary.da",
+      "possible_sense_ids": [
+        "grammar.auxiliary.da.copula"
+      ],
+      "rule_id": "functional.auxiliary.da.conditional_tara",
+      "connection_signature": "体言・形容动词语干＋だったら",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "だったら話は早い"
+      ],
+      "counter_examples": [
+        "たら を独立的过去助动词として使用する例"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.functional.auxiliary.da.conjectural_darou",
+      "concept_id": "grammar.auxiliary.da",
+      "possible_sense_ids": [
+        "grammar.auxiliary.da.copula"
+      ],
+      "rule_id": "functional.auxiliary.da.conjectural_darou",
+      "connection_signature": "体言・形容动词语干＋だろう／だろ",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "そうだろう",
+        "そうだろ"
+      ],
+      "counter_examples": [
+        "だろ を单独词典词头使用的例子"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.functional.auxiliary.da.conjectural_daro",
+      "concept_id": "grammar.auxiliary.da",
+      "possible_sense_ids": [
+        "grammar.auxiliary.da.copula"
+      ],
+      "rule_id": "functional.auxiliary.da.conjectural_daro",
+      "connection_signature": "体言・形容动词语干＋だろ",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "そうだろ"
+      ],
+      "counter_examples": [
+        "だろ を独立词汇使用的例子"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
       "realization_id": "realization.functional.no.attributive",
       "concept_id": "grammar.functional.no",
       "possible_sense_ids": [
@@ -8057,6 +8154,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -8177,6 +8275,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -8227,6 +8326,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [
@@ -8294,6 +8394,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -8513,7 +8614,8 @@
             "動詞"
           ],
           "conjugation_forms": [
-            "連用タ接続"
+            "連用タ接続",
+            "連用形"
           ],
           "capture": "predicate"
         },
@@ -8543,6 +8645,7 @@
       ],
       "display_from": 1,
       "display_to": null,
+      "allow_intervening_particles": true,
       "captures": [
         "predicate",
         "connector",
@@ -9095,6 +9198,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -9146,6 +9250,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [
         "quotative",
@@ -9167,6 +9272,182 @@
       ],
       "rule_version": 1,
       "show_badge": true
+    },
+    {
+      "rule_id": "functional.auxiliary.da.conditional_nara",
+      "realization_id": "realization.functional.auxiliary.da.conditional_nara",
+      "concept_id": "grammar.auxiliary.da",
+      "kind": "functional_morpheme",
+      "priority": 76,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "surfaces": [
+            "なら"
+          ],
+          "base_forms": [
+            "だ"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "conjugation_forms": [
+            "仮定形"
+          ],
+          "capture": "auxiliary"
+        },
+        {
+          "base_forms": [
+            "ば"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "接続助詞"
+          ],
+          "capture": "conditional"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [],
+      "refines_rule_ids": [
+        "functional.particle.ba"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "予想外ならば"
+      ],
+      "counter_examples": [
+        "ならば を接続词として孤立使用する例"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": false
+    },
+    {
+      "rule_id": "functional.auxiliary.da.conditional_tara",
+      "realization_id": "realization.functional.auxiliary.da.conditional_tara",
+      "concept_id": "grammar.auxiliary.da",
+      "kind": "functional_morpheme",
+      "priority": 76,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "surfaces": [
+            "だっ"
+          ],
+          "base_forms": [
+            "だ"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "conjugation_forms": [
+            "連用タ接続"
+          ],
+          "capture": "auxiliary"
+        },
+        {
+          "surfaces": [
+            "たら"
+          ],
+          "base_forms": [
+            "た"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "conjugation_forms": [
+            "仮定形"
+          ],
+          "capture": "conditional"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [],
+      "refines_rule_ids": [
+        "functional.auxiliary.ta"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "だったら話は早い"
+      ],
+      "counter_examples": [
+        "たら を独立的过去助动词として使用する例"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": false
+    },
+    {
+      "rule_id": "functional.auxiliary.da.conjectural_darou",
+      "realization_id": "realization.functional.auxiliary.da.conjectural_darou",
+      "concept_id": "grammar.auxiliary.da",
+      "kind": "functional_morpheme",
+      "priority": 76,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "surfaces": [
+            "だろ"
+          ],
+          "base_forms": [
+            "だ"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "conjugation_forms": [
+            "未然形"
+          ],
+          "capture": "auxiliary"
+        },
+        {
+          "surfaces": [
+            "う"
+          ],
+          "base_forms": [
+            "う"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "capture": "conjectural"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [],
+      "refines_rule_ids": [],
+      "conflict_group": "auxiliary.da.conjectural",
+      "examples": [
+        "そうだろう",
+        "そうだろ"
+      ],
+      "counter_examples": [
+        "だろ を单独词典词头使用的例子"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": false
     },
     {
       "rule_id": "construction.de_wa",
@@ -9364,6 +9645,50 @@
       ],
       "rule_version": 1,
       "show_badge": true
+    },
+    {
+      "rule_id": "functional.auxiliary.da.conjectural_daro",
+      "realization_id": "realization.functional.auxiliary.da.conjectural_daro",
+      "concept_id": "grammar.auxiliary.da",
+      "kind": "functional_morpheme",
+      "priority": 74,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "surfaces": [
+            "だろ"
+          ],
+          "base_forms": [
+            "だ"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "conjugation_forms": [
+            "未然形"
+          ],
+          "capture": "auxiliary"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [],
+      "refines_rule_ids": [],
+      "conflict_group": "auxiliary.da.conjectural",
+      "examples": [
+        "そうだろ"
+      ],
+      "counter_examples": [
+        "だろ を独立词汇使用的例子"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": false
     },
     {
       "rule_id": "construction.nagara_mo",
@@ -10114,6 +10439,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10475,6 +10801,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10531,6 +10858,7 @@
         }
       ],
       "display_from": 2,
+      "allow_intervening_particles": false,
       "display_to": 3,
       "captures": [],
       "refines_rule_ids": [],
@@ -10580,6 +10908,7 @@
         }
       ],
       "display_from": 1,
+      "allow_intervening_particles": false,
       "display_to": 2,
       "captures": [],
       "refines_rule_ids": [],
@@ -10621,6 +10950,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10661,6 +10991,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10701,6 +11032,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10741,6 +11073,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10781,6 +11114,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10821,6 +11155,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10861,6 +11196,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10901,6 +11237,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10941,6 +11278,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -10981,6 +11319,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11021,6 +11360,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11061,6 +11401,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11102,6 +11443,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11143,6 +11485,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11184,6 +11527,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11224,6 +11568,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11264,6 +11609,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11306,6 +11652,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11346,6 +11693,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11386,6 +11734,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11426,6 +11775,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11467,6 +11817,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11507,6 +11858,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11547,6 +11899,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11587,6 +11940,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11628,6 +11982,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11669,6 +12024,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11709,6 +12065,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11749,6 +12106,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11789,6 +12147,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11829,6 +12188,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11870,6 +12230,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11910,6 +12271,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11951,6 +12313,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -11991,6 +12354,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -12031,6 +12395,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -12071,6 +12436,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -12111,6 +12477,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],
@@ -12953,6 +13320,7 @@
         }
       ],
       "display_from": 0,
+      "allow_intervening_particles": false,
       "display_to": null,
       "captures": [],
       "refines_rule_ids": [],

@@ -45,7 +45,13 @@ pub fn analyze_morphemes(morphemes: &[Morpheme], global_offset: usize) -> Morpho
         };
 
         let mut end = root.end;
-        while end < morphemes.len() && attaches_to_chain(&morphemes[end]) {
+        while end < morphemes.len()
+            && attaches_to_chain(
+                &morphemes[end],
+                root.role.clone(),
+                &morphemes[root.start..end],
+            )
+        {
             end += 1;
         }
 
@@ -522,12 +528,57 @@ fn push_anchor_form_operator(
     }
 }
 
-fn attaches_to_chain(morpheme: &Morpheme) -> bool {
-    morpheme.pos.major == "助動詞"
-        || (morpheme.pos.major == "動詞" && morpheme.pos.sub1 == "接尾")
-        || (morpheme.pos.major == "助詞"
-            && morpheme.pos.sub1 == "接続助詞"
-            && matches!(morpheme.base_form.as_str(), "て" | "で" | "ば"))
+fn attaches_to_chain(morpheme: &Morpheme, role: MorphologyChainRole, chain: &[Morpheme]) -> bool {
+    // 只有词汇谓词的 て／で 后面才把 いる／おる 的体貌用法收回词汇所有权。
+    // provider 可能把这里的 いる 标作自立动词，因此要先于词性过滤判断。
+    if role == MorphologyChainRole::Lexical
+        && matches!(morpheme.base_form.as_str(), "いる" | "おる")
+        && chain.last().is_some_and(|item| {
+            item.pos.major == "助詞"
+                && item.pos.sub1 == "接続助詞"
+                && matches!(item.base_form.as_str(), "て" | "で")
+        })
+    {
+        return true;
+    }
+    if morpheme.pos.major == "動詞" && morpheme.pos.sub1 == "接尾" {
+        return true;
+    }
+    if morpheme.pos.major == "助詞"
+        && morpheme.pos.sub1 == "接続助詞"
+        && matches!(morpheme.base_form.as_str(), "て" | "で" | "ば")
+    {
+        return true;
+    }
+    if morpheme.pos.major != "助動詞" {
+        return false;
+    }
+
+    // 助動词本身仍可能继续活用，但 `べし`、`だ＋ある` 等独立功能成分
+    // 不应因为 provider 都标作助动词而被吞进同一条链。
+    let owned_auxiliary = matches!(
+        morpheme.base_form.as_str(),
+        "た" | "ない"
+            | "ぬ"
+            | "ん"
+            | "ます"
+            | "たい"
+            | "う"
+            | "よう"
+            | "せる"
+            | "させる"
+            | "す"
+            | "れる"
+            | "られる"
+            | "がる"
+            | "やす"
+    );
+    if owned_auxiliary {
+        return true;
+    }
+
+    // くれる、みる、しまう 等补助用言保持独立的蓝色功能链。
+    false
 }
 
 fn is_sahen_stem(morpheme: &Morpheme) -> bool {
@@ -780,5 +831,33 @@ mod tests {
         assert_eq!(artifact.chains[0].surface_form, "読んで");
         assert_eq!(artifact.chains[1].role, MorphologyChainRole::Functional);
         assert_eq!(artifact.chains[1].surface_form, "くださった");
+    }
+
+    #[test]
+    fn te_iru_is_owned_by_the_lexical_predicate() {
+        let morphemes = vec![
+            morpheme("座っ", "座る", "動詞", "自立", "*", "連用タ接続", 0),
+            morpheme("て", "て", "助詞", "接続助詞", "*", "*", 2),
+            morpheme("い", "いる", "動詞", "非自立", "*", "未然形", 3),
+            morpheme("なかっ", "ない", "助動詞", "*", "*", "連用タ接続", 5),
+            morpheme("た", "た", "助動詞", "*", "*", "基本形", 8),
+        ];
+        let artifact = analyze_morphemes(&morphemes, 0);
+        assert_eq!(artifact.chains.len(), 1);
+        assert_eq!(artifact.chains[0].role, MorphologyChainRole::Lexical);
+        assert_eq!(artifact.chains[0].surface_form, "座っていなかった");
+    }
+
+    #[test]
+    fn independent_functional_verbs_stop_the_lexical_chain() {
+        let morphemes = vec![
+            morpheme("読ん", "読む", "動詞", "自立", "*", "連用タ接続", 0),
+            morpheme("で", "で", "助詞", "接続助詞", "*", "*", 2),
+            morpheme("くれ", "くれる", "動詞", "非自立", "*", "連用形", 3),
+        ];
+        let artifact = analyze_morphemes(&morphemes, 0);
+        assert_eq!(artifact.chains.len(), 2);
+        assert_eq!(artifact.chains[0].surface_form, "読んで");
+        assert_eq!(artifact.chains[1].role, MorphologyChainRole::Functional);
     }
 }

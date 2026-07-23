@@ -1,0 +1,209 @@
+{
+  "bundle_id": "annotation-batch-b01",
+  "audit_status": "verified",
+  "source_refs": [
+    "kotoclip-editorial:2026-07-23",
+    "annotation-audit:20260723"
+  ],
+  "review": {
+    "item_count": 1,
+    "baseline": "docs/analysis/annotation_error_audit_20260723.md",
+    "method": "按实际 IPADIC 语素与条件、推量例句补齐判断助动词 realization"
+  },
+  "items": [
+    {
+      "concept_id": "grammar.auxiliary.da",
+      "extend_existing": true,
+      "realizations": [
+        {
+          "realization_id": "realization.functional.auxiliary.da.conditional_nara",
+          "rule_id": "functional.auxiliary.da.conditional_nara",
+          "possible_sense_ids": [
+            "grammar.auxiliary.da.copula"
+          ],
+          "connection_signature": "体言・形容动词语干＋ならば",
+          "examples": [
+            "予想外ならば"
+          ],
+          "counter_examples": [
+            "ならば を接続词として孤立使用する例"
+          ],
+          "rule": {
+            "kind": "functional_morpheme",
+            "priority": 76,
+            "refines_rule_ids": [
+              "functional.particle.ba"
+            ],
+            "atoms": [
+              {
+                "surfaces": [
+                  "なら"
+                ],
+                "base_forms": [
+                  "だ"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "conjugation_forms": [
+                  "仮定形"
+                ],
+                "capture": "auxiliary"
+              },
+              {
+                "base_forms": [
+                  "ば"
+                ],
+                "pos_major": [
+                  "助詞"
+                ],
+                "pos_sub1": [
+                  "接続助詞"
+                ],
+                "capture": "conditional"
+              }
+            ]
+          }
+        },
+        {
+          "realization_id": "realization.functional.auxiliary.da.conditional_tara",
+          "rule_id": "functional.auxiliary.da.conditional_tara",
+          "possible_sense_ids": [
+            "grammar.auxiliary.da.copula"
+          ],
+          "connection_signature": "体言・形容动词语干＋だったら",
+          "examples": [
+            "だったら話は早い"
+          ],
+          "counter_examples": [
+            "たら を独立的过去助动词として使用する例"
+          ],
+          "rule": {
+            "kind": "functional_morpheme",
+            "priority": 76,
+            "refines_rule_ids": [
+              "functional.auxiliary.ta"
+            ],
+            "atoms": [
+              {
+                "surfaces": [
+                  "だっ"
+                ],
+                "base_forms": [
+                  "だ"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "conjugation_forms": [
+                  "連用タ接続"
+                ],
+                "capture": "auxiliary"
+              },
+              {
+                "surfaces": [
+                  "たら"
+                ],
+                "base_forms": [
+                  "た"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "conjugation_forms": [
+                  "仮定形"
+                ],
+                "capture": "conditional"
+              }
+            ]
+          }
+        },
+        {
+          "realization_id": "realization.functional.auxiliary.da.conjectural_darou",
+          "rule_id": "functional.auxiliary.da.conjectural_darou",
+          "possible_sense_ids": [
+            "grammar.auxiliary.da.copula"
+          ],
+          "connection_signature": "体言・形容动词语干＋だろう／だろ",
+          "examples": [
+            "そうだろう",
+            "そうだろ"
+          ],
+          "counter_examples": [
+            "だろ を单独词典词头使用的例子"
+          ],
+          "rule": {
+            "kind": "functional_morpheme",
+            "priority": 76,
+            "conflict_group": "auxiliary.da.conjectural",
+            "atoms": [
+              {
+                "surfaces": [
+                  "だろ"
+                ],
+                "base_forms": [
+                  "だ"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "conjugation_forms": [
+                  "未然形"
+                ],
+                "capture": "auxiliary"
+              },
+              {
+                "surfaces": [
+                  "う"
+                ],
+                "base_forms": [
+                  "う"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "capture": "conjectural"
+              }
+            ]
+          }
+        },
+        {
+          "realization_id": "realization.functional.auxiliary.da.conjectural_daro",
+          "rule_id": "functional.auxiliary.da.conjectural_daro",
+          "possible_sense_ids": [
+            "grammar.auxiliary.da.copula"
+          ],
+          "connection_signature": "体言・形容动词语干＋だろ",
+          "examples": [
+            "そうだろ"
+          ],
+          "counter_examples": [
+            "だろ を独立词汇使用的例子"
+          ],
+          "rule": {
+            "kind": "functional_morpheme",
+            "priority": 74,
+            "conflict_group": "auxiliary.da.conjectural",
+            "atoms": [
+              {
+                "surfaces": [
+                  "だろ"
+                ],
+                "base_forms": [
+                  "だ"
+                ],
+                "pos_major": [
+                  "助動詞"
+                ],
+                "conjugation_forms": [
+                  "未然形"
+                ],
+                "capture": "auxiliary"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

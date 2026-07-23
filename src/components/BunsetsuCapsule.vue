@@ -158,7 +158,8 @@ function isExpressionMorpheme(index: number) {
       :class="{
         'head-word-highlight': isLexicalMorpheme(idx),
         'helper-word': isHelperMorpheme(idx),
-        'grammar-match': isGrammarMorpheme(idx) || isFunctionalMorphologyMorpheme(idx),
+        'grammar-match': !isLexicalMorpheme(idx)
+          && (isGrammarMorpheme(idx) || isFunctionalMorphologyMorpheme(idx)),
         'expression-anchor': isExpressionMorpheme(idx),
       }"
     >

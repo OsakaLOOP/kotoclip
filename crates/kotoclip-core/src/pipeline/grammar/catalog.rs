@@ -117,6 +117,8 @@ pub struct GrammarRule {
     pub audit_status: String,
     pub atoms: Vec<GrammarRuleAtom>,
     #[serde(default)]
+    pub allow_intervening_particles: bool,
+    #[serde(default)]
     pub display_from: usize,
     pub display_to: Option<usize>,
     #[serde(default)]

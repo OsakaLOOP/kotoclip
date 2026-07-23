@@ -855,8 +855,17 @@ fn expand_functional_inflection(occurrence: &mut GrammarOccurrence, bunsetsus: &
         occurrence
             .display_ranges
             .extend(chain.source_ranges.iter().copied());
+        let capture_ranges = occurrence
+            .captures
+            .iter()
+            .map(|capture| capture.char_range)
+            .collect::<Vec<_>>();
         for capture in &mut occurrence.captures {
+            let overlaps_another_capture = capture_ranges.iter().any(|range| {
+                *range != capture.char_range && ranges_overlap(*range, chain.char_range)
+            });
             if ranges_overlap(capture.char_range, chain.anchor_range)
+                && !overlaps_another_capture
                 && (matches!(
                     capture.name.as_str(),
                     "functional_verb" | "support_verb" | "auxiliary"
@@ -930,6 +939,7 @@ fn match_rule_at(
     let mut cursor = start;
     let mut matched = Vec::with_capacity(rule.atoms.len());
     for atom in &rule.atoms {
+        let mut matched_atom = false;
         if cursor < flat.len() && atom_matches(atom, &flat[cursor]) {
             if cursor > start
                 && crosses_hard_boundary(&flat[cursor - 1].morpheme, &flat[cursor].morpheme)
@@ -938,9 +948,33 @@ fn match_rule_at(
             }
             matched.push(Some(cursor));
             cursor += 1;
-        } else if atom.optional {
+            matched_atom = true;
+        } else if rule.allow_intervening_particles {
+            let mut candidate = cursor;
+            while candidate < flat.len()
+                && candidate.saturating_sub(cursor) < 3
+                && flat[candidate].morpheme.pos.major == "助詞"
+            {
+                candidate += 1;
+                if candidate < flat.len() && atom_matches(atom, &flat[candidate]) {
+                    if candidate > start
+                        && crosses_hard_boundary(
+                            &flat[candidate - 1].morpheme,
+                            &flat[candidate].morpheme,
+                        )
+                    {
+                        return None;
+                    }
+                    matched.push(Some(candidate));
+                    cursor = candidate + 1;
+                    matched_atom = true;
+                    break;
+                }
+            }
+        }
+        if !matched_atom && atom.optional {
             matched.push(None);
-        } else {
+        } else if !matched_atom {
             return None;
         }
     }
@@ -1297,5 +1331,34 @@ mod tests {
             .grammar_tags
             .iter()
             .any(|item| item.concept_id == "grammar.request.te_kudasai"));
+    }
+
+    #[test]
+    fn te_iru_accepts_particle_insertion_without_coloring_the_gap() {
+        let matcher = GrammarMatcher::new().unwrap();
+        let mut bunsetsus = vec![
+            bunsetsu(
+                vec![
+                    m("信じ", "信じる", "動詞", "自立", "連用形", (0, 2)),
+                    m("て", "て", "助詞", "接続助詞", "*", (2, 3)),
+                    m("など", "など", "助詞", "副助詞", "*", (3, 5)),
+                ],
+                (0, 5),
+            ),
+            bunsetsu(
+                vec![
+                    m("い", "いる", "動詞", "自立", "未然形", (5, 6)),
+                    m("なかっ", "ない", "助動詞", "*", "連用タ接続", (6, 9)),
+                    m("た", "た", "助動詞", "*", "基本形", (9, 10)),
+                ],
+                (5, 10),
+            ),
+        ];
+        matcher.match_patterns(&mut bunsetsus);
+        assert!(bunsetsus
+            .iter()
+            .flat_map(|item| &item.grammar_occurrences)
+            .any(|item| item.concept_id == "grammar.aspect.te_iru"
+                && item.matched_ranges == vec![(0, 3), (5, 6)]));
     }
 }

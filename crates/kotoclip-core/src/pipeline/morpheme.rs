@@ -73,10 +73,76 @@ fn apply_tokenization_compatibility(morphemes: Vec<Morpheme>) -> Vec<Morpheme> {
             index += 2;
             continue;
         }
+        if index + 2 < morphemes.len()
+            && morphemes[index].pos.major == "名詞"
+            && morphemes[index].pos.sub1 == "一般"
+            && morphemes[index].surface.chars().all(
+                |character| matches!(character, '\u{3400}'..='\u{4dbf}' | '\u{4e00}'..='\u{9fff}'),
+            )
+            && morphemes[index + 1].surface == "る"
+            && morphemes[index + 1].pos.major == "助動詞"
+            && morphemes[index + 1].base_form == "る"
+            && morphemes[index + 2].pos.major == "助動詞"
+            && morphemes[index + 2].base_form == "べし"
+        {
+            let next = &morphemes[index + 1];
+            let surface = format!("{}る", morphemes[index].surface);
+            corrected.push(Morpheme {
+                surface: surface.clone(),
+                pos: PosTag {
+                    major: "動詞".to_string(),
+                    sub1: "自立".to_string(),
+                    sub2: "*".to_string(),
+                    sub3: "*".to_string(),
+                },
+                base_form: surface,
+                reading: String::new(),
+                conjugation_type: "provider-compatibility".to_string(),
+                conjugation_form: "基本形".to_string(),
+                char_range: (morphemes[index].char_range.0, next.char_range.1),
+            });
+            index += 2;
+            continue;
+        }
         corrected.push(morphemes[index].clone());
         index += 1;
     }
     corrected
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn morpheme(surface: &str, base: &str, major: &str, sub1: &str, start: usize) -> Morpheme {
+        Morpheme {
+            surface: surface.to_string(),
+            pos: PosTag {
+                major: major.to_string(),
+                sub1: sub1.to_string(),
+                sub2: "*".to_string(),
+                sub3: "*".to_string(),
+            },
+            base_form: base.to_string(),
+            reading: String::new(),
+            conjugation_type: String::new(),
+            conjugation_form: "基本形".to_string(),
+            char_range: (start, start + surface.chars().count()),
+        }
+    }
+
+    #[test]
+    fn restores_unknown_kanji_verb_before_beshi() {
+        let corrected = apply_tokenization_compatibility(vec![
+            morpheme("憚", "憚", "名詞", "一般", 0),
+            morpheme("る", "る", "助動詞", "*", 1),
+            morpheme("べき", "べし", "助動詞", "*", 2),
+        ]);
+        assert_eq!(corrected[0].surface, "憚る");
+        assert_eq!(corrected[0].base_form, "憚る");
+        assert_eq!(corrected[0].pos.major, "動詞");
+        assert_eq!(corrected[1].base_form, "べし");
+    }
 }
 
 impl MorphemeAnalyzer {

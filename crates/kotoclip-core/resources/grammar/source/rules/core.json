@@ -1763,7 +1763,8 @@
           "動詞"
         ],
         "conjugation_forms": [
-          "連用タ接続"
+          "連用タ接続",
+          "連用形"
         ],
         "capture": "predicate"
       },
@@ -1793,6 +1794,7 @@
     ],
     "display_from": 1,
     "display_to": null,
+    "allow_intervening_particles": true,
     "captures": [
       "predicate",
       "connector",

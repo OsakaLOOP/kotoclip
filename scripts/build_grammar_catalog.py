@@ -61,6 +61,7 @@ BUNDLE_RULE_FIELDS = {
     "kind", "priority", "enabled", "audit_status", "atoms", "display_from",
     "display_to", "captures", "refines_rule_ids", "conflict_group", "examples",
     "counter_examples", "source_refs", "rule_version", "show_badge",
+    "allow_intervening_particles",
 }
 BODY_BLOCK_FIELDS = {"kind", "label", "text"}
 BODY_BLOCK_KINDS = {
@@ -90,7 +91,7 @@ ALLOWED_FIELDS = {
         "rule_id", "realization_id", "concept_id", "kind", "priority", "enabled",
         "audit_status", "atoms", "display_from", "display_to", "captures",
         "refines_rule_ids", "conflict_group", "examples", "counter_examples",
-        "source_refs", "rule_version", "show_badge",
+        "source_refs", "rule_version", "show_badge", "allow_intervening_particles",
     },
     "explanations": {
         "explanation_id", "concept_id", "sense_id", "language", "title",
@@ -306,6 +307,7 @@ def expand_bundles(source: Path) -> dict[str, list[dict[str, Any]]]:
                     "audit_status": rule.get("audit_status", realization_status),
                     "atoms": rule["atoms"],
                     "display_from": rule.get("display_from", 0),
+                    "allow_intervening_particles": rule.get("allow_intervening_particles", False),
                     "display_to": rule.get("display_to"),
                     "captures": rule.get("captures", []),
                     "refines_rule_ids": rule.get("refines_rule_ids", []),

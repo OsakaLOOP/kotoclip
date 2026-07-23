@@ -53,12 +53,12 @@ target\debug\kotoclip-cli.exe lookup --word "词面" --reading "读音" --full
 | --- | --- | --- | --- | --- | --- |
 | M01 | `信じてなどいなかった` | `信じてなど／いなかった`；后项被当作独立 lexical `いる`，无 `〜ている` occurrence。 | 插入係助词后的非连续否定体貌；词汇谓词范围应覆盖 `信じて…いなかった`，`など` 单独解释。 | B06 | 待修 |
 | M02 | `してはいない` | `しては／いない`；同样无体貌构式。 | `は` 插入的 `〜ている` 否定 realization。 | B06 | 待修 |
-| M03 | `〜ている／〜ていた` | `座って` lexical、`いる` functional；正文黄蓝分裂。 | 将 `て＋いる` 及其否定、过去链归入前项 lexical 体貌所有权，保留非强制 badge。 | B01 | 待修 |
-| M04 | `だったら` | provider 可形成 `だったら`，但没有统一条件形解释。 | 判断助动词的过去条件形应作为同一 functional chain，不拆散词尾。 | B01 | 待修 |
-| M05 | `予想外ならば` | `予想外ならば` 同文节，仅 `ば` 蓝色。 | 增加判断条件 `ならば` realization；名词核心仍为 `予想外`。 | B01 | 待修 |
-| M06 | `だろう／だろ` | 可进入 `だ` 的 functional chain，但无稳定推量 occurrence；截断形未覆盖。 | 完整吸收判断助动词活用并输出推量／口语省略证据。 | B01 | 待修 |
-| M07 | `先鋒でありながら` | 命中 `〜である` 与 `〜ながら`，实际形显示 `でありあり`。 | 修正说明层重复拼接；保持两个独立功能范围。 | B01 | 待修 |
-| M08 | `憚るべきでありながら` | 词头 `憚`，错误 functional chain `るべきであり→る`。 | provider 修正 `憚る`，之后 `べき／であり／ながら` 分层。 | B01 | 待修 |
+| M03 | `〜ている／〜ていた` | `座って` lexical、`いる` functional；正文黄蓝分裂。 | 将 `て＋いる` 及其否定、过去链归入前项 lexical 体貌所有权，保留非强制 badge。 | B01 | 已修 |
+| M04 | `だったら` | provider 可形成 `だったら`，但没有统一条件形解释。 | 判断助动词的过去条件形应作为同一 functional chain，不拆散词尾。 | B01 | 已修 |
+| M05 | `予想外ならば` | `予想外ならば` 同文节，仅 `ば` 蓝色。 | 增加判断条件 `ならば` realization；名词核心仍为 `予想外`。 | B01 | 已修 |
+| M06 | `だろう／だろ` | 可进入 `だ` 的 functional chain，但无稳定推量 occurrence；截断形未覆盖。 | 完整吸收判断助动词活用并输出推量／口语省略证据。 | B01 | 已修 |
+| M07 | `先鋒でありながら` | 命中 `〜である` 与 `〜ながら`，实际形显示 `でありあり`。 | 修正说明层重复拼接；保持两个独立功能范围。 | B01 | 已修 |
+| M08 | `憚るべきでありながら` | 词头 `憚`，错误 functional chain `るべきであり→る`。 | provider 修正 `憚る`，之后 `べき／であり／ながら` 分层。 | B01 | 已修 |
 
 ### 3.2 生产型构词、复合词与词头
 
@@ -186,7 +186,7 @@ target\debug\kotoclip-cli.exe lookup --word "词面" --reading "读音" --full
 
 | 批次 | 范围 | 计划项数 | 提交 | 验证 | 状态 |
 | --- | --- | ---: | --- | --- | --- |
-| B01 | 活用所有权与 provider 边界 | 8 | - | focused Rust + UI tests | 待开始 |
+| B01 | 活用所有权与 provider 边界 | 8 | `修复活用所有权与功能链边界` | focused Rust + catalog + `npm run build` | 已完成 |
 | B02 | 名词接头构词与专门名词词头 | 9 | - | word-formation fixture + CLI | 待开始 |
 | B03 | 生产型复合动词与 `帰り` 接尾 | 6 | - | word-formation fixture + CLI | 待开始 |
 | B04 | 词典 fallback 与整体词上下文 | 5 | - | dictionary/lexical focused tests | 待开始 |
@@ -196,6 +196,14 @@ target\debug\kotoclip-cli.exe lookup --word "词面" --reading "读音" --full
 | B08 | 粒子栈与非连续框架 | 10，拆为两个提交 | - | grammar + expression fixtures | 待开始 |
 | B09 | 固定搭配与惯用表达 | 10，拆为两个提交 | - | expression positive/negative cases | 待开始 |
 | B10 | 口语表记、拟态词与 ruby | 7 | - | morpheme/ruby + lookup tests | 待开始 |
+
+### B01 实施记录
+
+- 形态链的助动词吸收改为结构白名单；`て／で＋いる／おる`（含后续否定、过去）并入词汇谓词，`くれる` 等补助用言仍为独立 functional chain。
+- 语法目录新增粒子插入能力，`信じてなどいなかった`、`してはいない` 可得到非连续 `〜ている` occurrence，插入粒子不进入显示范围。
+- `であり` 的说明 capture 不再在重叠 capture 上重复扩张；`憚＋る＋べし` 使用结构受限的 provider 兼容路径恢复为一个动词词头。
+- 判断助动词新增 `ならば／だったら／だろう／だろ` realization，并通过冲突／精化关系收束重复 occurrence。
+- 验证：B01 focused Rust tests 4 项、`python scripts/test_grammar_catalog.py`、`cargo check -p kotoclip-core`、CLI 样例复核均通过。全量 Rust 测试另有既存表达 fixture `F1_kuchiwohiraku_range` 的 `嘘をつく` pending 差异，未由本批代码定位为同类问题，暂不改动。
 
 每批提交前必须执行 `git diff --check` 和对应 focused tests；目录类修改还要执行
 `python scripts/build_grammar_catalog.py --check` 与 `python scripts/test_grammar_catalog.py`。
