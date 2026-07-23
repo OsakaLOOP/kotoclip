@@ -2020,6 +2020,280 @@
       "review_status": "ai_checked"
     },
     {
+      "explanation_id": "explanation.grammar.restriction.shika_nai",
+      "concept_id": "grammar.restriction.shika_nai",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "〜しかない／ほかない",
+      "compact_summary": "表示除此之外没有其他选择，或只能如此",
+      "function_summary": "表示除此之外没有其他选择，或只能如此",
+      "connection": "名词／动词普通形＋しかない；ほか＋ない。",
+      "formation": "前项＋しか／ほか＋ない",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "意味合いしかない",
+        "これしかない",
+        "ほかない"
+      ],
+      "counter_examples": [
+        "しか单独作限定助词而后项不与否定呼应"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
+      "explanation_id": "explanation.grammar.necessity.zaru_wo_enai",
+      "concept_id": "grammar.necessity.zaru_wo_enai",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "〜ざるを得ない",
+      "compact_summary": "表示在不情愿或无奈情况下不得不做某事",
+      "function_summary": "表示在不情愿或无奈情况下不得不做某事",
+      "connection": "动词未然形＋ざるを得ない。",
+      "formation": "未然形＋ざるを得ない",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "計画を変更せざるを得ない"
+      ],
+      "counter_examples": [
+        "ざる为普通名词时不触发"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
+      "explanation_id": "explanation.grammar.equivalence.douzen",
+      "concept_id": "grammar.equivalence.douzen",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "〜も同然だ",
+      "compact_summary": "表示实际上几乎等同于某种状态",
+      "function_summary": "表示实际上几乎等同于某种状态",
+      "connection": "名词／动词普通形＋も同然だ。",
+      "formation": "前项＋も同然だ",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "失敗したも同然だ"
+      ],
+      "counter_examples": [
+        "も同然作为两个独立名词或助词的偶然相邻"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
+      "explanation_id": "explanation.grammar.emphasis.sura_nai",
+      "concept_id": "grammar.emphasis.sura_nai",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "〜ですらない",
+      "compact_summary": "表示连最低限度或极端对象都不成立",
+      "function_summary": "表示连最低限度或极端对象都不成立",
+      "connection": "で＋すら＋ない。",
+      "formation": "で＋すら＋ない",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "冗談ですらない"
+      ],
+      "counter_examples": [
+        "すら的普通列举或极端助词用法不与否定呼应"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
+      "explanation_id": "explanation.grammar.modality.kanenai",
+      "concept_id": "grammar.modality.kanenai",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "〜かねない",
+      "compact_summary": "表示某种不希望发生的结果有可能发生",
+      "function_summary": "表示某种不希望发生的结果有可能发生",
+      "connection": "动词连用形＋かねない。",
+      "formation": "连用形＋かねない",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "誤解を招きかねない"
+      ],
+      "counter_examples": [
+        "かねる的独立否定或名词かね"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
+      "explanation_id": "explanation.grammar.obligation.neba_naranai",
+      "concept_id": "grammar.obligation.neba_naranai",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "〜ねばならない",
+      "compact_summary": "书面表达的必须、不得不",
+      "function_summary": "书面表达的必须、不得不",
+      "connection": "动词未然形＋ねばならない。",
+      "formation": "未然形＋ねばならない",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "行かねばならない"
+      ],
+      "counter_examples": [
+        "ね为终助词且不构成义务表达"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
+      "explanation_id": "explanation.grammar.modality.kamo_shirezu",
+      "concept_id": "grammar.modality.kamo_shirezu",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "〜かもしれず",
+      "compact_summary": "书面连接形的或许、可能",
+      "function_summary": "书面连接形的或许、可能",
+      "connection": "普通形＋かもしれず。",
+      "formation": "かも＋しれ（未然形）＋ず",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "保存されているかもしれず"
+      ],
+      "counter_examples": [
+        "かも单独作副助词而无知れる否定连接"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
+      "explanation_id": "explanation.grammar.evaluation.kono_ue_nai",
+      "concept_id": "grammar.evaluation.kono_ue_nai",
+      "sense_id": null,
+      "language": "zh-CN",
+      "title": "ことこの上ない",
+      "compact_summary": "表示程度达到极限、无以复加",
+      "function_summary": "表示程度达到极限、无以复加",
+      "connection": "こと＋この上ない。",
+      "formation": "こと＋この上ない",
+      "usage_notes": [],
+      "semantic_constraints": [],
+      "pragmatic_notes": [],
+      "examples": [
+        "ことこの上ない"
+      ],
+      "counter_examples": [
+        "この上ない单独作形容词时不强制吞并前项こと"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "authoring_status": "verified",
+      "content_version": 1,
+      "provenance": {
+        "origin": "ai",
+        "author": "Codex",
+        "date": "2026-07-16",
+        "version": "1"
+      },
+      "review_status": "ai_checked",
+      "body_blocks": []
+    },
+    {
       "explanation_id": "explanation.grammar.functional.no",
       "concept_id": "grammar.functional.no",
       "sense_id": null,

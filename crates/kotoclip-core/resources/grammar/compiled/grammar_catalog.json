@@ -1776,6 +1776,225 @@
       "enabled": true
     },
     {
+      "concept_id": "grammar.restriction.shika_nai",
+      "kind": "construction",
+      "canonical_label": "〜しかない／ほかない",
+      "aliases": [],
+      "semantic_domains": [
+        "restriction",
+        "necessity"
+      ],
+      "function_tags": [
+        "only_choice"
+      ],
+      "jlpt_level": 4,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.restriction.shika_nai",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "grammar.necessity.zaru_wo_enai",
+      "kind": "construction",
+      "canonical_label": "〜ざるを得ない",
+      "aliases": [],
+      "semantic_domains": [
+        "necessity",
+        "involuntary"
+      ],
+      "function_tags": [
+        "unavoidable"
+      ],
+      "jlpt_level": 2,
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.necessity.zaru_wo_enai",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "grammar.equivalence.douzen",
+      "kind": "construction",
+      "canonical_label": "〜も同然だ",
+      "aliases": [],
+      "semantic_domains": [
+        "evaluation",
+        "equivalence"
+      ],
+      "function_tags": [
+        "near_equivalence"
+      ],
+      "jlpt_level": 2,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.equivalence.douzen",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "grammar.emphasis.sura_nai",
+      "kind": "construction",
+      "canonical_label": "〜ですらない",
+      "aliases": [],
+      "semantic_domains": [
+        "negation",
+        "emphasis"
+      ],
+      "function_tags": [
+        "extreme_negation"
+      ],
+      "jlpt_level": 2,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.emphasis.sura_nai",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "grammar.modality.kanenai",
+      "kind": "construction",
+      "canonical_label": "〜かねない",
+      "aliases": [],
+      "semantic_domains": [
+        "modality",
+        "risk"
+      ],
+      "function_tags": [
+        "negative_possibility"
+      ],
+      "jlpt_level": 2,
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.modality.kanenai",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "grammar.obligation.neba_naranai",
+      "kind": "construction",
+      "canonical_label": "〜ねばならない",
+      "aliases": [],
+      "semantic_domains": [
+        "obligation"
+      ],
+      "function_tags": [
+        "obligation"
+      ],
+      "jlpt_level": 2,
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.obligation.neba_naranai",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "grammar.modality.kamo_shirezu",
+      "kind": "construction",
+      "canonical_label": "〜かもしれず",
+      "aliases": [],
+      "semantic_domains": [
+        "modality",
+        "possibility"
+      ],
+      "function_tags": [
+        "possibility"
+      ],
+      "jlpt_level": 3,
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.modality.kamo_shirezu",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
+      "concept_id": "grammar.evaluation.kono_ue_nai",
+      "kind": "construction",
+      "canonical_label": "ことこの上ない",
+      "aliases": [],
+      "semantic_domains": [
+        "evaluation",
+        "degree"
+      ],
+      "function_tags": [
+        "extreme_degree"
+      ],
+      "jlpt_level": 1,
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "default_explanation_id": "explanation.grammar.evaluation.kono_ue_nai",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "audit_status": "verified",
+      "concept_version": 1,
+      "enabled": true
+    },
+    {
       "concept_id": "grammar.functional.no",
       "kind": "functional_morpheme",
       "canonical_label": "の",
@@ -4412,6 +4631,134 @@
       "audit_status": "verified"
     },
     {
+      "sense_id": "grammar.restriction.shika_nai.only_choice",
+      "concept_id": "grammar.restriction.shika_nai",
+      "label": "只有这一选择",
+      "function_summary": "表示范围限定后只剩一个选择",
+      "semantic_features": {
+        "function": "only_choice"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.restriction.shika_nai",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "grammar.necessity.zaru_wo_enai.unavoidable",
+      "concept_id": "grammar.necessity.zaru_wo_enai",
+      "label": "不得不",
+      "function_summary": "表示没有其他可行选择",
+      "semantic_features": {
+        "function": "unavoidable"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.necessity.zaru_wo_enai",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "grammar.equivalence.douzen.near",
+      "concept_id": "grammar.equivalence.douzen",
+      "label": "几乎等同",
+      "function_summary": "表示结果或状态与所述对象几乎相同",
+      "semantic_features": {
+        "function": "near_equivalence"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.equivalence.douzen",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "grammar.emphasis.sura_nai.extreme",
+      "concept_id": "grammar.emphasis.sura_nai",
+      "label": "极端否定",
+      "function_summary": "表示连最低限度都不满足",
+      "semantic_features": {
+        "function": "extreme_negation"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.emphasis.sura_nai",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "grammar.modality.kanenai.risk",
+      "concept_id": "grammar.modality.kanenai",
+      "label": "负面可能性",
+      "function_summary": "表示存在发生不良结果的可能",
+      "semantic_features": {
+        "function": "negative_possibility"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.modality.kanenai",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "grammar.obligation.neba_naranai.must",
+      "concept_id": "grammar.obligation.neba_naranai",
+      "label": "书面义务",
+      "function_summary": "表示必须实施动作",
+      "semantic_features": {
+        "function": "obligation"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.obligation.neba_naranai",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "grammar.modality.kamo_shirezu.possible",
+      "concept_id": "grammar.modality.kamo_shirezu",
+      "label": "可能性连接形",
+      "function_summary": "表示不确定可能并连接后续分句",
+      "semantic_features": {
+        "function": "possibility"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.modality.kamo_shirezu",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
+      "sense_id": "grammar.evaluation.kono_ue_nai.extreme",
+      "concept_id": "grammar.evaluation.kono_ue_nai",
+      "label": "极致程度",
+      "function_summary": "表示某种性质或状态达到最高程度",
+      "semantic_features": {
+        "function": "extreme_degree"
+      },
+      "context_requirements": [],
+      "exclusion_conditions": [],
+      "related_sense_ids": [],
+      "contrast_sense_ids": [],
+      "explanation_id": "explanation.grammar.evaluation.kono_ue_nai",
+      "sense_version": 1,
+      "audit_status": "verified"
+    },
+    {
       "sense_id": "grammar.functional.no.attributive",
       "concept_id": "grammar.functional.no",
       "label": "の：连体关系",
@@ -6747,6 +7094,223 @@
       ]
     },
     {
+      "realization_id": "realization.construction.shika_nai",
+      "concept_id": "grammar.restriction.shika_nai",
+      "possible_sense_ids": [
+        "grammar.restriction.shika_nai.only_choice"
+      ],
+      "rule_id": "construction.shika_nai",
+      "connection_signature": "名词／普通形＋しか＋ない",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "意味合いしかない"
+      ],
+      "counter_examples": [
+        "本しか読まない（しか与否定分句分离）"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.hoka_nai",
+      "concept_id": "grammar.restriction.shika_nai",
+      "possible_sense_ids": [
+        "grammar.restriction.shika_nai.only_choice"
+      ],
+      "rule_id": "construction.hoka_nai",
+      "connection_signature": "ほか＋ない",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "ほかない"
+      ],
+      "counter_examples": [
+        "ほかにない（普通的名词＋格助词结构）"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.zaru_wo_enai",
+      "concept_id": "grammar.necessity.zaru_wo_enai",
+      "possible_sense_ids": [
+        "grammar.necessity.zaru_wo_enai.unavoidable"
+      ],
+      "rule_id": "construction.zaru_wo_enai",
+      "connection_signature": "动词未然形＋ざるを得ない",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "せざるを得ない",
+        "ざるを得ない"
+      ],
+      "counter_examples": [
+        "水を入れたざるを得ない（名词ざる）"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.mo_douzen_da",
+      "concept_id": "grammar.equivalence.douzen",
+      "possible_sense_ids": [
+        "grammar.equivalence.douzen.near"
+      ],
+      "rule_id": "construction.mo_douzen_da",
+      "connection_signature": "〜も同然だ",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "も同然だ"
+      ],
+      "counter_examples": [
+        "同然の理由（连体名词结构）"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.de_sura_nai",
+      "concept_id": "grammar.emphasis.sura_nai",
+      "possible_sense_ids": [
+        "grammar.emphasis.sura_nai.extreme"
+      ],
+      "rule_id": "construction.de_sura_nai",
+      "connection_signature": "で＋すら＋ない",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "ですらない"
+      ],
+      "counter_examples": [
+        "すらない（缺少系词前接）"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.kanenai",
+      "concept_id": "grammar.modality.kanenai",
+      "possible_sense_ids": [
+        "grammar.modality.kanenai.risk"
+      ],
+      "rule_id": "construction.kanenai",
+      "connection_signature": "动词连用形＋かねない",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "かねない"
+      ],
+      "counter_examples": [
+        "かねない作为普通词汇链而无风险语义"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.neba_naranai",
+      "concept_id": "grammar.obligation.neba_naranai",
+      "possible_sense_ids": [
+        "grammar.obligation.neba_naranai.must"
+      ],
+      "rule_id": "construction.neba_naranai",
+      "connection_signature": "动词未然形＋ねばならない",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "ねばならない"
+      ],
+      "counter_examples": [
+        "ねば单独作为终助词＋条件句"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.kamo_shirezu",
+      "concept_id": "grammar.modality.kamo_shirezu",
+      "possible_sense_ids": [
+        "grammar.modality.kamo_shirezu.possible"
+      ],
+      "rule_id": "construction.kamo_shirezu",
+      "connection_signature": "かも＋しれず",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "かもしれず"
+      ],
+      "counter_examples": [
+        "かも＋しれない"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
+      "realization_id": "realization.construction.koto_kono_ue_nai",
+      "concept_id": "grammar.evaluation.kono_ue_nai",
+      "possible_sense_ids": [
+        "grammar.evaluation.kono_ue_nai.extreme"
+      ],
+      "rule_id": "construction.koto_kono_ue_nai",
+      "connection_signature": "こと＋この上ない",
+      "morphology_requirements": [],
+      "functional_requirements": [],
+      "context_requirements": [],
+      "examples": [
+        "ことこの上ない"
+      ],
+      "counter_examples": [
+        "こと、この上ない（逗号分隔的独立成分）"
+      ],
+      "realization_version": 1,
+      "audit_status": "verified",
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ]
+    },
+    {
       "realization_id": "realization.functional.no.attributive",
       "concept_id": "grammar.functional.no",
       "possible_sense_ids": [
@@ -7991,6 +8555,539 @@
   ],
   "rules": [
     {
+      "rule_id": "construction.hoka_nai",
+      "realization_id": "realization.construction.hoka_nai",
+      "concept_id": "grammar.restriction.shika_nai",
+      "kind": "grammar_construction",
+      "priority": 120,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "base_forms": [
+            "ほか"
+          ],
+          "pos_major": [
+            "名詞"
+          ],
+          "capture": "alternative"
+        },
+        {
+          "base_forms": [
+            "ない"
+          ],
+          "pos_major": [
+            "形容詞",
+            "助動詞"
+          ],
+          "capture": "negative"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "alternative",
+        "negative"
+      ],
+      "refines_rule_ids": [],
+      "conflict_group": null,
+      "examples": [
+        "ほかない"
+      ],
+      "counter_examples": [
+        "ほかにない（普通的名词＋格助词结构）"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.shika_nai",
+      "realization_id": "realization.construction.shika_nai",
+      "concept_id": "grammar.restriction.shika_nai",
+      "kind": "grammar_construction",
+      "priority": 120,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "base_forms": [
+            "しか"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "係助詞"
+          ],
+          "capture": "restriction"
+        },
+        {
+          "base_forms": [
+            "ない"
+          ],
+          "pos_major": [
+            "形容詞",
+            "助動詞"
+          ],
+          "capture": "negative"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "restriction",
+        "negative"
+      ],
+      "refines_rule_ids": [
+        "functional.particle.shika"
+      ],
+      "conflict_group": "restriction.shika_nai",
+      "examples": [
+        "意味合いしかない"
+      ],
+      "counter_examples": [
+        "本しか読まない（しか与否定分句分离）"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.neba_naranai",
+      "realization_id": "realization.construction.neba_naranai",
+      "concept_id": "grammar.obligation.neba_naranai",
+      "kind": "grammar_construction",
+      "priority": 118,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "surfaces": [
+            "ね"
+          ],
+          "base_forms": [
+            "ね"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "終助詞"
+          ],
+          "capture": "obligation"
+        },
+        {
+          "base_forms": [
+            "ば"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "接続助詞"
+          ],
+          "capture": "conditional"
+        },
+        {
+          "base_forms": [
+            "なる"
+          ],
+          "pos_major": [
+            "動詞"
+          ],
+          "capture": "support"
+        },
+        {
+          "base_forms": [
+            "ない"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "capture": "negative"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "obligation",
+        "conditional",
+        "support",
+        "negative"
+      ],
+      "refines_rule_ids": [
+        "functional.sentence_particle.ne",
+        "functional.particle.ba",
+        "functional.auxiliary.nai"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "ねばならない"
+      ],
+      "counter_examples": [
+        "ねば单独作为终助词＋条件句"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.zaru_wo_enai",
+      "realization_id": "realization.construction.zaru_wo_enai",
+      "concept_id": "grammar.necessity.zaru_wo_enai",
+      "kind": "grammar_construction",
+      "priority": 118,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "surfaces": [
+            "ざる"
+          ],
+          "base_forms": [
+            "ざる"
+          ],
+          "pos_major": [
+            "名詞"
+          ],
+          "capture": "negative_form"
+        },
+        {
+          "base_forms": [
+            "を"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "格助詞"
+          ],
+          "capture": "object"
+        },
+        {
+          "base_forms": [
+            "得る"
+          ],
+          "pos_major": [
+            "動詞"
+          ],
+          "capture": "support"
+        },
+        {
+          "base_forms": [
+            "ない"
+          ],
+          "pos_major": [
+            "助動詞",
+            "形容詞"
+          ],
+          "capture": "negative"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "negative_form",
+        "object",
+        "support",
+        "negative"
+      ],
+      "refines_rule_ids": [
+        "functional.particle.wo",
+        "functional.auxiliary.nai"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "せざるを得ない",
+        "ざるを得ない"
+      ],
+      "counter_examples": [
+        "水を入れたざるを得ない（名词ざる）"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.de_sura_nai",
+      "realization_id": "realization.construction.de_sura_nai",
+      "concept_id": "grammar.emphasis.sura_nai",
+      "kind": "grammar_construction",
+      "priority": 116,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "base_forms": [
+            "だ"
+          ],
+          "surfaces": [
+            "で"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "capture": "copula"
+        },
+        {
+          "base_forms": [
+            "すら"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "係助詞"
+          ],
+          "capture": "extreme"
+        },
+        {
+          "base_forms": [
+            "ない"
+          ],
+          "pos_major": [
+            "形容詞",
+            "助動詞"
+          ],
+          "capture": "negative"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "copula",
+        "extreme",
+        "negative"
+      ],
+      "refines_rule_ids": [
+        "functional.auxiliary.da"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "ですらない"
+      ],
+      "counter_examples": [
+        "すらない（缺少系词前接）"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.kanenai",
+      "realization_id": "realization.construction.kanenai",
+      "concept_id": "grammar.modality.kanenai",
+      "kind": "grammar_construction",
+      "priority": 114,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "base_forms": [
+            "かねる"
+          ],
+          "pos_major": [
+            "動詞"
+          ],
+          "conjugation_forms": [
+            "未然形"
+          ],
+          "capture": "risk_base"
+        },
+        {
+          "base_forms": [
+            "ない"
+          ],
+          "pos_major": [
+            "助動詞",
+            "形容詞"
+          ],
+          "capture": "negative"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "risk_base",
+        "negative"
+      ],
+      "refines_rule_ids": [
+        "functional.auxiliary.nai"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "かねない"
+      ],
+      "counter_examples": [
+        "かねない作为普通词汇链而无风险语义"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.kamo_shirezu",
+      "realization_id": "realization.construction.kamo_shirezu",
+      "concept_id": "grammar.modality.kamo_shirezu",
+      "kind": "grammar_construction",
+      "priority": 113,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "base_forms": [
+            "かも"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "副助詞"
+          ],
+          "capture": "possibility"
+        },
+        {
+          "base_forms": [
+            "しれる"
+          ],
+          "pos_major": [
+            "動詞"
+          ],
+          "conjugation_forms": [
+            "未然形"
+          ],
+          "capture": "know"
+        },
+        {
+          "base_forms": [
+            "ぬ"
+          ],
+          "surfaces": [
+            "ず"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "capture": "negative"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "possibility",
+        "know",
+        "negative"
+      ],
+      "refines_rule_ids": [
+        "functional.modality.kamo"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "かもしれず"
+      ],
+      "counter_examples": [
+        "かも＋しれない"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.mo_douzen_da",
+      "realization_id": "realization.construction.mo_douzen_da",
+      "concept_id": "grammar.equivalence.douzen",
+      "kind": "grammar_construction",
+      "priority": 112,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "base_forms": [
+            "も"
+          ],
+          "pos_major": [
+            "助詞"
+          ],
+          "pos_sub1": [
+            "係助詞"
+          ],
+          "capture": "particle"
+        },
+        {
+          "base_forms": [
+            "同然"
+          ],
+          "pos_major": [
+            "名詞"
+          ],
+          "capture": "equivalence"
+        },
+        {
+          "base_forms": [
+            "だ"
+          ],
+          "pos_major": [
+            "助動詞"
+          ],
+          "capture": "copula"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "particle",
+        "equivalence",
+        "copula"
+      ],
+      "refines_rule_ids": [
+        "functional.particle.mo",
+        "functional.auxiliary.da"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "も同然だ"
+      ],
+      "counter_examples": [
+        "同然の理由（连体名词结构）"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
       "rule_id": "construction.nakereba_naranai",
       "realization_id": "realization.construction.nakereba_naranai",
       "concept_id": "grammar.obligation.nakereba_naranai",
@@ -8050,7 +9147,10 @@
         "support_verb",
         "negative"
       ],
-      "refines_rule_ids": [],
+      "refines_rule_ids": [
+        "functional.particle.ba",
+        "functional.auxiliary.nai"
+      ],
       "conflict_group": null,
       "examples": [
         "読まなければならない。"
@@ -8060,6 +9160,61 @@
       ],
       "source_refs": [
         "kotoclip-editorial:2026-07-16"
+      ],
+      "rule_version": 1,
+      "show_badge": true
+    },
+    {
+      "rule_id": "construction.koto_kono_ue_nai",
+      "realization_id": "realization.construction.koto_kono_ue_nai",
+      "concept_id": "grammar.evaluation.kono_ue_nai",
+      "kind": "grammar_construction",
+      "priority": 108,
+      "enabled": true,
+      "audit_status": "verified",
+      "atoms": [
+        {
+          "base_forms": [
+            "こと"
+          ],
+          "pos_major": [
+            "名詞"
+          ],
+          "pos_sub1": [
+            "非自立"
+          ],
+          "capture": "formal_noun"
+        },
+        {
+          "base_forms": [
+            "この上ない"
+          ],
+          "pos_major": [
+            "形容詞"
+          ],
+          "capture": "degree"
+        }
+      ],
+      "display_from": 0,
+      "allow_intervening_particles": false,
+      "display_to": null,
+      "captures": [
+        "formal_noun",
+        "degree"
+      ],
+      "refines_rule_ids": [
+        "functional.formal.koto"
+      ],
+      "conflict_group": null,
+      "examples": [
+        "ことこの上ない"
+      ],
+      "counter_examples": [
+        "こと、この上ない（逗号分隔的独立成分）"
+      ],
+      "source_refs": [
+        "kotoclip-editorial:2026-07-23",
+        "annotation-audit:20260723"
       ],
       "rule_version": 1,
       "show_badge": true

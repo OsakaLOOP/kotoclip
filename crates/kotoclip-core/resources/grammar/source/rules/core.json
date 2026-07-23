@@ -2626,7 +2626,10 @@
       "support_verb",
       "negative"
     ],
-    "refines_rule_ids": [],
+    "refines_rule_ids": [
+      "functional.particle.ba",
+      "functional.auxiliary.nai"
+    ],
     "conflict_group": null,
     "examples": [
       "読まなければならない。"

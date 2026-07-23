@@ -1778,6 +1778,210 @@
       ]
     },
     {
+      "concept_id": "grammar.restriction.shika_nai",
+      "label": "〜しかない／ほかない",
+      "aliases": [],
+      "semantic_domains": [
+        "restriction",
+        "necessity"
+      ],
+      "function_tags": [
+        "only_choice"
+      ],
+      "jlpt_level": 4,
+      "surface_hints": [
+        "名词／普通形＋しか＋ない",
+        "ほか＋ない"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "只有这一选择",
+        "表示范围限定后只剩一个选择"
+      ]
+    },
+    {
+      "concept_id": "grammar.necessity.zaru_wo_enai",
+      "label": "〜ざるを得ない",
+      "aliases": [],
+      "semantic_domains": [
+        "necessity",
+        "involuntary"
+      ],
+      "function_tags": [
+        "unavoidable"
+      ],
+      "jlpt_level": 2,
+      "surface_hints": [
+        "动词未然形＋ざるを得ない"
+      ],
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "不得不",
+        "表示没有其他可行选择"
+      ]
+    },
+    {
+      "concept_id": "grammar.equivalence.douzen",
+      "label": "〜も同然だ",
+      "aliases": [],
+      "semantic_domains": [
+        "evaluation",
+        "equivalence"
+      ],
+      "function_tags": [
+        "near_equivalence"
+      ],
+      "jlpt_level": 2,
+      "surface_hints": [
+        "〜も同然だ"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "几乎等同",
+        "表示结果或状态与所述对象几乎相同"
+      ]
+    },
+    {
+      "concept_id": "grammar.emphasis.sura_nai",
+      "label": "〜ですらない",
+      "aliases": [],
+      "semantic_domains": [
+        "negation",
+        "emphasis"
+      ],
+      "function_tags": [
+        "extreme_negation"
+      ],
+      "jlpt_level": 2,
+      "surface_hints": [
+        "で＋すら＋ない"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "极端否定",
+        "表示连最低限度都不满足"
+      ]
+    },
+    {
+      "concept_id": "grammar.modality.kanenai",
+      "label": "〜かねない",
+      "aliases": [],
+      "semantic_domains": [
+        "modality",
+        "risk"
+      ],
+      "function_tags": [
+        "negative_possibility"
+      ],
+      "jlpt_level": 2,
+      "surface_hints": [
+        "动词连用形＋かねない"
+      ],
+      "register": [
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "负面可能性",
+        "表示存在发生不良结果的可能"
+      ]
+    },
+    {
+      "concept_id": "grammar.obligation.neba_naranai",
+      "label": "〜ねばならない",
+      "aliases": [],
+      "semantic_domains": [
+        "obligation"
+      ],
+      "function_tags": [
+        "obligation"
+      ],
+      "jlpt_level": 2,
+      "surface_hints": [
+        "动词未然形＋ねばならない"
+      ],
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "书面义务",
+        "表示必须实施动作"
+      ]
+    },
+    {
+      "concept_id": "grammar.modality.kamo_shirezu",
+      "label": "〜かもしれず",
+      "aliases": [],
+      "semantic_domains": [
+        "modality",
+        "possibility"
+      ],
+      "function_tags": [
+        "possibility"
+      ],
+      "jlpt_level": 3,
+      "surface_hints": [
+        "かも＋しれず"
+      ],
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "可能性连接形",
+        "表示不确定可能并连接后续分句"
+      ]
+    },
+    {
+      "concept_id": "grammar.evaluation.kono_ue_nai",
+      "label": "ことこの上ない",
+      "aliases": [],
+      "semantic_domains": [
+        "evaluation",
+        "degree"
+      ],
+      "function_tags": [
+        "extreme_degree"
+      ],
+      "jlpt_level": 1,
+      "surface_hints": [
+        "こと＋この上ない"
+      ],
+      "register": [
+        "written",
+        "modern_standard"
+      ],
+      "related_concept_ids": [],
+      "contrast_concept_ids": [],
+      "sense_hints": [
+        "极致程度",
+        "表示某种性质或状态达到最高程度"
+      ]
+    },
+    {
       "concept_id": "grammar.functional.no",
       "label": "の",
       "aliases": [

@@ -1361,4 +1361,119 @@ mod tests {
             .any(|item| item.concept_id == "grammar.aspect.te_iru"
                 && item.matched_ranges == vec![(0, 3), (5, 6)]));
     }
+
+    #[test]
+    fn annotation_b05_constructions_match_and_refine_components() {
+        let matcher = GrammarMatcher::new().unwrap();
+        let cases = vec![
+            (
+                "grammar.restriction.shika_nai",
+                vec![
+                    m("しか", "しか", "助詞", "係助詞", "*", (0, 2)),
+                    m("ない", "ない", "形容詞", "自立", "基本形", (2, 4)),
+                ],
+            ),
+            (
+                "grammar.restriction.shika_nai",
+                vec![
+                    m("ほか", "ほか", "名詞", "副詞可能", "*", (0, 2)),
+                    m("ない", "ない", "形容詞", "自立", "基本形", (2, 4)),
+                ],
+            ),
+            (
+                "grammar.necessity.zaru_wo_enai",
+                vec![
+                    m("ざる", "ざる", "名詞", "一般", "*", (0, 2)),
+                    m("を", "を", "助詞", "格助詞", "*", (2, 3)),
+                    m("得", "得る", "動詞", "自立", "未然形", (3, 4)),
+                    m("ない", "ない", "助動詞", "*", "基本形", (4, 6)),
+                ],
+            ),
+            (
+                "grammar.equivalence.douzen",
+                vec![
+                    m("も", "も", "助詞", "係助詞", "*", (0, 1)),
+                    m("同然", "同然", "名詞", "形容動詞語幹", "*", (1, 3)),
+                    m("だ", "だ", "助動詞", "*", "基本形", (3, 4)),
+                ],
+            ),
+            (
+                "grammar.emphasis.sura_nai",
+                vec![
+                    m("で", "だ", "助動詞", "*", "連用形", (0, 1)),
+                    m("すら", "すら", "助詞", "係助詞", "*", (1, 3)),
+                    m("ない", "ない", "形容詞", "自立", "基本形", (3, 5)),
+                ],
+            ),
+            (
+                "grammar.modality.kanenai",
+                vec![
+                    m("かね", "かねる", "動詞", "自立", "未然形", (0, 2)),
+                    m("ない", "ない", "助動詞", "*", "基本形", (2, 4)),
+                ],
+            ),
+            (
+                "grammar.obligation.neba_naranai",
+                vec![
+                    m("ね", "ね", "助詞", "終助詞", "*", (0, 1)),
+                    m("ば", "ば", "助詞", "接続助詞", "*", (1, 2)),
+                    m("なら", "なる", "動詞", "非自立", "未然形", (2, 4)),
+                    m("ない", "ない", "助動詞", "*", "基本形", (4, 6)),
+                ],
+            ),
+            (
+                "grammar.modality.kamo_shirezu",
+                vec![
+                    m("かも", "かも", "助詞", "副助詞", "*", (0, 2)),
+                    m("しれ", "しれる", "動詞", "自立", "未然形", (2, 4)),
+                    m("ず", "ぬ", "助動詞", "*", "連用ニ接続", (4, 5)),
+                ],
+            ),
+            (
+                "grammar.evaluation.kono_ue_nai",
+                vec![
+                    m("こと", "こと", "名詞", "非自立", "*", (0, 2)),
+                    m(
+                        "この上ない",
+                        "この上ない",
+                        "形容詞",
+                        "自立",
+                        "基本形",
+                        (2, 7),
+                    ),
+                ],
+            ),
+        ];
+
+        for (expected, morphemes) in cases {
+            let range = (0, morphemes.last().unwrap().char_range.1);
+            let mut bunsetsus = vec![bunsetsu(morphemes, range)];
+            matcher.match_patterns(&mut bunsetsus);
+            assert!(
+                bunsetsus[0].grammar_occurrences.iter().any(|item| {
+                    item.concept_id == expected && item.status == GrammarOccurrenceStatus::Accepted
+                }),
+                "missing accepted concept {expected}"
+            );
+        }
+
+        let mut obligation = vec![bunsetsu(
+            vec![
+                m("なけれ", "ない", "助動詞", "*", "仮定形", (0, 3)),
+                m("ば", "ば", "助詞", "接続助詞", "*", (3, 4)),
+                m("なら", "なる", "動詞", "非自立", "未然形", (4, 6)),
+                m("ない", "ない", "助動詞", "*", "基本形", (6, 8)),
+            ],
+            (0, 8),
+        )];
+        matcher.match_patterns(&mut obligation);
+        assert!(obligation[0].grammar_occurrences.iter().any(|item| {
+            item.rule_id == "construction.nakereba_naranai"
+                && item.status == GrammarOccurrenceStatus::Accepted
+        }));
+        assert!(obligation[0].grammar_occurrences.iter().any(|item| {
+            item.rule_id == "functional.particle.ba"
+                && item.status == GrammarOccurrenceStatus::Rejected
+        }));
+    }
 }

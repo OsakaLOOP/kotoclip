@@ -1,0 +1,409 @@
+{
+  "bundle_id": "annotation-batch-b05",
+  "audit_status": "verified",
+  "source_refs": [
+    "kotoclip-editorial:2026-07-23",
+    "annotation-audit:20260723"
+  ],
+  "review": {
+    "item_count": 8,
+    "baseline": "docs/analysis/annotation_error_audit_20260723.md",
+    "method": "按实际 IPADIC 语素序列补齐限定、义务、推量与评价构式，并保留反例边界"
+  },
+  "items": [
+    {
+      "concept_id": "grammar.restriction.shika_nai",
+      "kind": "construction",
+      "canonical_label": "〜しかない／ほかない",
+      "semantic_domains": ["restriction", "necessity"],
+      "function_tags": ["only_choice"],
+      "jlpt_level": 4,
+      "register": ["modern_standard"],
+      "explanation": {
+        "compact_summary": "表示除此之外没有其他选择，或只能如此",
+        "connection": "名词／动词普通形＋しかない；ほか＋ない。",
+        "formation": "前项＋しか／ほか＋ない",
+        "examples": ["意味合いしかない", "これしかない", "ほかない"],
+        "counter_examples": ["しか单独作限定助词而后项不与否定呼应"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.restriction.shika_nai.only_choice",
+          "label": "只有这一选择",
+          "function_summary": "表示范围限定后只剩一个选择",
+          "semantic_features": {"function": "only_choice"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.shika_nai",
+          "rule_id": "construction.shika_nai",
+          "possible_sense_ids": ["grammar.restriction.shika_nai.only_choice"],
+          "connection_signature": "名词／普通形＋しか＋ない",
+          "examples": ["意味合いしかない"],
+          "counter_examples": ["本しか読まない（しか与否定分句分离）"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 120,
+            "refines_rule_ids": ["functional.particle.shika"],
+            "conflict_group": "restriction.shika_nai",
+            "atoms": [
+              {"base_forms": ["しか"], "pos_major": ["助詞"], "pos_sub1": ["係助詞"], "capture": "restriction"},
+              {"base_forms": ["ない"], "pos_major": ["形容詞", "助動詞"], "capture": "negative"}
+            ],
+            "captures": ["restriction", "negative"],
+            "show_badge": true
+          }
+        },
+        {
+          "realization_id": "realization.construction.hoka_nai",
+          "rule_id": "construction.hoka_nai",
+          "possible_sense_ids": ["grammar.restriction.shika_nai.only_choice"],
+          "connection_signature": "ほか＋ない",
+          "examples": ["ほかない"],
+          "counter_examples": ["ほかにない（普通的名词＋格助词结构）"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 120,
+            "atoms": [
+              {"base_forms": ["ほか"], "pos_major": ["名詞"], "capture": "alternative"},
+              {"base_forms": ["ない"], "pos_major": ["形容詞", "助動詞"], "capture": "negative"}
+            ],
+            "captures": ["alternative", "negative"],
+            "show_badge": true
+          }
+        }
+      ]
+    },
+    {
+      "concept_id": "grammar.necessity.zaru_wo_enai",
+      "kind": "construction",
+      "canonical_label": "〜ざるを得ない",
+      "semantic_domains": ["necessity", "involuntary"],
+      "function_tags": ["unavoidable"],
+      "jlpt_level": 2,
+      "register": ["written", "modern_standard"],
+      "explanation": {
+        "compact_summary": "表示在不情愿或无奈情况下不得不做某事",
+        "connection": "动词未然形＋ざるを得ない。",
+        "formation": "未然形＋ざるを得ない",
+        "examples": ["計画を変更せざるを得ない"],
+        "counter_examples": ["ざる为普通名词时不触发"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.necessity.zaru_wo_enai.unavoidable",
+          "label": "不得不",
+          "function_summary": "表示没有其他可行选择",
+          "semantic_features": {"function": "unavoidable"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.zaru_wo_enai",
+          "rule_id": "construction.zaru_wo_enai",
+          "possible_sense_ids": ["grammar.necessity.zaru_wo_enai.unavoidable"],
+          "connection_signature": "动词未然形＋ざるを得ない",
+          "examples": ["せざるを得ない", "ざるを得ない"],
+          "counter_examples": ["水を入れたざるを得ない（名词ざる）"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 118,
+            "refines_rule_ids": ["functional.particle.wo", "functional.auxiliary.nai"],
+            "atoms": [
+              {"surfaces": ["ざる"], "base_forms": ["ざる"], "pos_major": ["名詞"], "capture": "negative_form"},
+              {"base_forms": ["を"], "pos_major": ["助詞"], "pos_sub1": ["格助詞"], "capture": "object"},
+              {"base_forms": ["得る"], "pos_major": ["動詞"], "capture": "support"},
+              {"base_forms": ["ない"], "pos_major": ["助動詞", "形容詞"], "capture": "negative"}
+            ],
+            "captures": ["negative_form", "object", "support", "negative"],
+            "show_badge": true
+          }
+        }
+      ]
+    },
+    {
+      "concept_id": "grammar.equivalence.douzen",
+      "kind": "construction",
+      "canonical_label": "〜も同然だ",
+      "semantic_domains": ["evaluation", "equivalence"],
+      "function_tags": ["near_equivalence"],
+      "jlpt_level": 2,
+      "register": ["modern_standard"],
+      "explanation": {
+        "compact_summary": "表示实际上几乎等同于某种状态",
+        "connection": "名词／动词普通形＋も同然だ。",
+        "formation": "前项＋も同然だ",
+        "examples": ["失敗したも同然だ"],
+        "counter_examples": ["も同然作为两个独立名词或助词的偶然相邻"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.equivalence.douzen.near",
+          "label": "几乎等同",
+          "function_summary": "表示结果或状态与所述对象几乎相同",
+          "semantic_features": {"function": "near_equivalence"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.mo_douzen_da",
+          "rule_id": "construction.mo_douzen_da",
+          "possible_sense_ids": ["grammar.equivalence.douzen.near"],
+          "connection_signature": "〜も同然だ",
+          "examples": ["も同然だ"],
+          "counter_examples": ["同然の理由（连体名词结构）"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 112,
+            "refines_rule_ids": ["functional.particle.mo", "functional.auxiliary.da"],
+            "atoms": [
+              {"base_forms": ["も"], "pos_major": ["助詞"], "pos_sub1": ["係助詞"], "capture": "particle"},
+              {"base_forms": ["同然"], "pos_major": ["名詞"], "capture": "equivalence"},
+              {"base_forms": ["だ"], "pos_major": ["助動詞"], "capture": "copula"}
+            ],
+            "captures": ["particle", "equivalence", "copula"],
+            "show_badge": true
+          }
+        }
+      ]
+    },
+    {
+      "concept_id": "grammar.emphasis.sura_nai",
+      "kind": "construction",
+      "canonical_label": "〜ですらない",
+      "semantic_domains": ["negation", "emphasis"],
+      "function_tags": ["extreme_negation"],
+      "jlpt_level": 2,
+      "register": ["modern_standard"],
+      "explanation": {
+        "compact_summary": "表示连最低限度或极端对象都不成立",
+        "connection": "で＋すら＋ない。",
+        "formation": "で＋すら＋ない",
+        "examples": ["冗談ですらない"],
+        "counter_examples": ["すら的普通列举或极端助词用法不与否定呼应"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.emphasis.sura_nai.extreme",
+          "label": "极端否定",
+          "function_summary": "表示连最低限度都不满足",
+          "semantic_features": {"function": "extreme_negation"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.de_sura_nai",
+          "rule_id": "construction.de_sura_nai",
+          "possible_sense_ids": ["grammar.emphasis.sura_nai.extreme"],
+          "connection_signature": "で＋すら＋ない",
+          "examples": ["ですらない"],
+          "counter_examples": ["すらない（缺少系词前接）"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 116,
+            "refines_rule_ids": ["functional.auxiliary.da"],
+            "atoms": [
+              {"base_forms": ["だ"], "surfaces": ["で"], "pos_major": ["助動詞"], "capture": "copula"},
+              {"base_forms": ["すら"], "pos_major": ["助詞"], "pos_sub1": ["係助詞"], "capture": "extreme"},
+              {"base_forms": ["ない"], "pos_major": ["形容詞", "助動詞"], "capture": "negative"}
+            ],
+            "captures": ["copula", "extreme", "negative"],
+            "show_badge": true
+          }
+        }
+      ]
+    },
+    {
+      "concept_id": "grammar.modality.kanenai",
+      "kind": "construction",
+      "canonical_label": "〜かねない",
+      "semantic_domains": ["modality", "risk"],
+      "function_tags": ["negative_possibility"],
+      "jlpt_level": 2,
+      "register": ["modern_standard"],
+      "explanation": {
+        "compact_summary": "表示某种不希望发生的结果有可能发生",
+        "connection": "动词连用形＋かねない。",
+        "formation": "连用形＋かねない",
+        "examples": ["誤解を招きかねない"],
+        "counter_examples": ["かねる的独立否定或名词かね"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.modality.kanenai.risk",
+          "label": "负面可能性",
+          "function_summary": "表示存在发生不良结果的可能",
+          "semantic_features": {"function": "negative_possibility"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.kanenai",
+          "rule_id": "construction.kanenai",
+          "possible_sense_ids": ["grammar.modality.kanenai.risk"],
+          "connection_signature": "动词连用形＋かねない",
+          "examples": ["かねない"],
+          "counter_examples": ["かねない作为普通词汇链而无风险语义"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 114,
+            "refines_rule_ids": ["functional.auxiliary.nai"],
+            "atoms": [
+              {"base_forms": ["かねる"], "pos_major": ["動詞"], "conjugation_forms": ["未然形"], "capture": "risk_base"},
+              {"base_forms": ["ない"], "pos_major": ["助動詞", "形容詞"], "capture": "negative"}
+            ],
+            "captures": ["risk_base", "negative"],
+            "show_badge": true
+          }
+        }
+      ]
+    },
+    {
+      "concept_id": "grammar.obligation.neba_naranai",
+      "kind": "construction",
+      "canonical_label": "〜ねばならない",
+      "semantic_domains": ["obligation"],
+      "function_tags": ["obligation"],
+      "jlpt_level": 2,
+      "register": ["written", "modern_standard"],
+      "explanation": {
+        "compact_summary": "书面表达的必须、不得不",
+        "connection": "动词未然形＋ねばならない。",
+        "formation": "未然形＋ねばならない",
+        "examples": ["行かねばならない"],
+        "counter_examples": ["ね为终助词且不构成义务表达"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.obligation.neba_naranai.must",
+          "label": "书面义务",
+          "function_summary": "表示必须实施动作",
+          "semantic_features": {"function": "obligation"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.neba_naranai",
+          "rule_id": "construction.neba_naranai",
+          "possible_sense_ids": ["grammar.obligation.neba_naranai.must"],
+          "connection_signature": "动词未然形＋ねばならない",
+          "examples": ["ねばならない"],
+          "counter_examples": ["ねば单独作为终助词＋条件句"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 118,
+            "refines_rule_ids": ["functional.sentence_particle.ne", "functional.particle.ba", "functional.auxiliary.nai"],
+            "atoms": [
+              {"surfaces": ["ね"], "base_forms": ["ね"], "pos_major": ["助詞"], "pos_sub1": ["終助詞"], "capture": "obligation"},
+              {"base_forms": ["ば"], "pos_major": ["助詞"], "pos_sub1": ["接続助詞"], "capture": "conditional"},
+              {"base_forms": ["なる"], "pos_major": ["動詞"], "capture": "support"},
+              {"base_forms": ["ない"], "pos_major": ["助動詞"], "capture": "negative"}
+            ],
+            "captures": ["obligation", "conditional", "support", "negative"],
+            "show_badge": true
+          }
+        }
+      ]
+    },
+    {
+      "concept_id": "grammar.modality.kamo_shirezu",
+      "kind": "construction",
+      "canonical_label": "〜かもしれず",
+      "semantic_domains": ["modality", "possibility"],
+      "function_tags": ["possibility"],
+      "jlpt_level": 3,
+      "register": ["written", "modern_standard"],
+      "explanation": {
+        "compact_summary": "书面连接形的或许、可能",
+        "connection": "普通形＋かもしれず。",
+        "formation": "かも＋しれ（未然形）＋ず",
+        "examples": ["保存されているかもしれず"],
+        "counter_examples": ["かも单独作副助词而无知れる否定连接"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.modality.kamo_shirezu.possible",
+          "label": "可能性连接形",
+          "function_summary": "表示不确定可能并连接后续分句",
+          "semantic_features": {"function": "possibility"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.kamo_shirezu",
+          "rule_id": "construction.kamo_shirezu",
+          "possible_sense_ids": ["grammar.modality.kamo_shirezu.possible"],
+          "connection_signature": "かも＋しれず",
+          "examples": ["かもしれず"],
+          "counter_examples": ["かも＋しれない"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 113,
+            "refines_rule_ids": ["functional.modality.kamo"],
+            "atoms": [
+              {"base_forms": ["かも"], "pos_major": ["助詞"], "pos_sub1": ["副助詞"], "capture": "possibility"},
+              {"base_forms": ["しれる"], "pos_major": ["動詞"], "conjugation_forms": ["未然形"], "capture": "know"},
+              {"base_forms": ["ぬ"], "surfaces": ["ず"], "pos_major": ["助動詞"], "capture": "negative"}
+            ],
+            "captures": ["possibility", "know", "negative"],
+            "show_badge": true
+          }
+        }
+      ]
+    },
+    {
+      "concept_id": "grammar.evaluation.kono_ue_nai",
+      "kind": "construction",
+      "canonical_label": "ことこの上ない",
+      "semantic_domains": ["evaluation", "degree"],
+      "function_tags": ["extreme_degree"],
+      "jlpt_level": 1,
+      "register": ["written", "modern_standard"],
+      "explanation": {
+        "compact_summary": "表示程度达到极限、无以复加",
+        "connection": "こと＋この上ない。",
+        "formation": "こと＋この上ない",
+        "examples": ["ことこの上ない"],
+        "counter_examples": ["この上ない单独作形容词时不强制吞并前项こと"],
+        "body_blocks": []
+      },
+      "senses": [
+        {
+          "sense_id": "grammar.evaluation.kono_ue_nai.extreme",
+          "label": "极致程度",
+          "function_summary": "表示某种性质或状态达到最高程度",
+          "semantic_features": {"function": "extreme_degree"}
+        }
+      ],
+      "realizations": [
+        {
+          "realization_id": "realization.construction.koto_kono_ue_nai",
+          "rule_id": "construction.koto_kono_ue_nai",
+          "possible_sense_ids": ["grammar.evaluation.kono_ue_nai.extreme"],
+          "connection_signature": "こと＋この上ない",
+          "examples": ["ことこの上ない"],
+          "counter_examples": ["こと、この上ない（逗号分隔的独立成分）"],
+          "rule": {
+            "kind": "grammar_construction",
+            "priority": 108,
+            "refines_rule_ids": ["functional.formal.koto"],
+            "atoms": [
+              {"base_forms": ["こと"], "pos_major": ["名詞"], "pos_sub1": ["非自立"], "capture": "formal_noun"},
+              {"base_forms": ["この上ない"], "pos_major": ["形容詞"], "capture": "degree"}
+            ],
+            "captures": ["formal_noun", "degree"],
+            "show_badge": true
+          }
+        }
+      ]
+    }
+  ]
+}
