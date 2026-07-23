@@ -556,6 +556,23 @@ mod tests {
     }
 
     #[test]
+    fn limits_misclassified_hodo_compatibility_to_koutei() {
+        let Some(analyzer) = analyzer() else {
+            return;
+        };
+        let matcher = WordFormationMatcher::new().unwrap();
+        for text in ["彼程", "友達程", "三日程"] {
+            let result = matcher.match_morphemes(&analyzer.analyze(text));
+            assert!(
+                result.accepted.iter().all(|item| {
+                    item.annotation.rule_id != "noun_with_misclassified_hodo"
+                }),
+                "{text} 不应命中航程的有限兼容规则"
+            );
+        }
+    }
+
+    #[test]
     fn accepted_formation_drives_bunsetsu_head_without_losing_morphemes() {
         let Some(path) = [
             "../../ipadic/system.dic",

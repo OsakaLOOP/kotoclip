@@ -106,7 +106,7 @@
       "category": "provider_compound_noun",
       "priority": 88,
       "atoms": [
-        { "pos": { "major": "名詞" }, "capture": "base", "normalization": "surface" },
+        { "surfaces": ["航"], "pos": { "major": "名詞" }, "capture": "base", "normalization": "surface" },
         { "surfaces": ["程"], "pos": { "major": "助詞", "sub1": "副助詞" }, "capture": "suffix", "normalization": "surface" }
       ],
       "output": {
