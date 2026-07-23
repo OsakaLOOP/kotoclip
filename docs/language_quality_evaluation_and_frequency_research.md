@@ -489,7 +489,7 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 - 受影响句数、连续变化文节数、主结果实体数和证据事件数；根变化、传播候选、全层证据 churn 和严重级别；
 - 按连续变化文节分页的左右 before／after 阅读对照；整句上下文保留，变化范围红色标注；
 - 领域筛选（结构／语法／查询／表达／投影）、句子／规则／坐标搜索；
-- 左右 token 悬浮同步高亮；点击任一 token 显示双方 head word、语素、构词、词典整体、语法和表达查询数据；
+- 左右 token 悬浮同步高亮；在命中位置打开固定双面板浮层，按“词典／语法／表达／结构”切换并显示双方 head word、语素、构词、词典整体、语法和表达数据；浮层可进入以取消关闭宽限，离开后 140ms 关闭，Escape、外部点击或关闭按钮均可收起；
 - 十九层覆盖、前后实体数、变化率和 Wilson 95% 区间；
 - 变化类型、字段路径、状态转移和根变化影响；
 - 按文本、阶段、类型、归因和字符坐标筛选的明细；
@@ -497,6 +497,8 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 - 全量 JSON/JSONL 与面板分离，重跑 diff 只替换数据文件，不需要把数百 MiB 再编码进 HTML。
 
 报告没有 HTML 数据截断参数：面板始终读取完整 `diff.jsonl`，页面分页只改变当前 DOM 切片，不改变输入集合或机器产物。面板需要通过本地 HTTP 服务打开，避免浏览器 `file://` 的跨源限制。单轮页负责 before/after 下钻，历史页负责发现和打开已有轮次。
+
+阅读浮层遵循桌面端的命中交互协议，但不在报告中伪造后端查询：有 `dictionary-lookups-before.json`／`dictionary-lookups-after.json` 时，词典 tab 使用捕获的 `DictionaryLookup` 条目按表记、词典和 occurrence 选择并渲染 `definition_html`；捕获状态为 `unsupported_cli` 或文件缺失时，浮层显示结构化查询请求和明确的未捕获原因。表记切换按钮在静态报告中仅标识本轮实际捕获的表记，不能假装触发未保存的后端查询。
 
 ### 8.3 历史对比轮次
 

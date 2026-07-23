@@ -2508,16 +2508,43 @@ def html_report(bundle: ComparisonBundle) -> str:
     .reader-token:hover, .reader-token.sync-active {{ background: #dbeaf0; outline: 1px solid #5b98aa; }}
     .reader-token.changed {{ background: #ffe2df; box-shadow: inset 0 -2px #c53a32; }}
     .reader-token.changed.sync-active {{ background: #ffd0cb; outline-color: #b52d25; }}
-    .reader-inspector {{ display: none; border-top: 1px solid #dfe4e6; padding: 12px 14px; background: #fbfcfc; }}
-    .reader-inspector.open {{ display: block; }}
-    .reader-inspector-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }}
-    .reader-inspector h4 {{ margin: 0 0 6px; font-size: .82rem; color: #3f4d52; }}
-    .reader-inspector-head {{ display: flex; align-items: center; justify-content: space-between; gap: 8px; }}
-    .reader-inspector-close {{ min-width: 32px; width: 32px; min-height: 32px; padding: 0; border-radius: 3px; }}
-    .reader-inspector pre {{ max-height: 260px; margin: 0; padding: 9px; overflow: auto; background: #f1f4f5; border: 1px solid #dfe4e6; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .74rem; }}
+    .quality-popover {{ position: fixed; z-index: 20; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; width: min(900px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: min(620px, calc(100vh - 24px)); overflow: auto; overscroll-behavior: contain; background: #c8d2d6; border: 1px solid #9eabb0; border-radius: 7px; box-shadow: 0 18px 48px rgba(24, 42, 49, .22); opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease; }}
+    .quality-popover.open {{ opacity: 1; pointer-events: auto; transform: translateY(0); }}
+    .quality-popover-panel {{ min-width: 0; margin: 0; overflow: auto; padding: 13px 14px 16px; background: #fff; color: #202426; }}
+    .quality-popover-panel.after {{ background: #fbfdfd; }}
+    .quality-popover-header {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 0 0 9px; color: inherit; background: transparent; border: 0; border-bottom: 1px solid #e0e6e8; }}
+    .quality-popover-side {{ color: #667279; font-size: .68rem; font-weight: 700; }}
+    .quality-popover-word {{ margin: 2px 0 0; color: #17617a; font-size: 1.12rem; line-height: 1.35; }}
+    .quality-popover-reading {{ color: #657178; font-size: .75rem; }}
+    .quality-popover-pos {{ margin-top: 3px; color: #657178; font-size: .72rem; }}
+    .quality-popover-close {{ flex: 0 0 30px; width: 30px; min-width: 30px; min-height: 30px; padding: 0; border: 1px solid #c8d2d6; border-radius: 4px; background: #fff; color: #526168; font-size: 1.15rem; line-height: 1; }}
+    .quality-popover-tabs {{ display: flex; gap: 12px; margin: 9px 0 8px; border-bottom: 1px solid #e0e6e8; }}
+    .quality-popover-tab {{ min-height: 28px; padding: 2px 0 5px; border: 0; border-radius: 0; background: transparent; color: #657178; font-size: .74rem; font-weight: 700; cursor: pointer; }}
+    .quality-popover-tab.active {{ color: #17617a; box-shadow: inset 0 -2px #17617a; }}
+    .quality-popover-choice-row {{ display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 9px; }}
+    .quality-popover-choice {{ min-height: 26px; padding: 3px 8px; border: 1px solid #c6d0d4; border-radius: 999px; background: #fff; color: #35525e; font-size: .7rem; cursor: pointer; }}
+    .quality-popover-choice.active {{ border-color: #17617a; background: #e5f1f4; color: #17617a; }}
+    .quality-popover-choice:disabled {{ color: #9ba7ab; background: #f4f6f7; cursor: default; }}
+    .quality-popover-section {{ margin-top: 9px; padding-top: 9px; border-top: 1px solid #e3e8e9; }}
+    .quality-popover-label {{ display: block; margin-bottom: 5px; color: #657178; font-size: .68rem; font-weight: 700; }}
+    .quality-popover-field {{ display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px; margin-top: 4px; color: #53646a; font-size: .74rem; line-height: 1.45; }}
+    .quality-popover-field-label {{ color: #768188; font-weight: 700; }}
+    .quality-popover-field-value {{ min-width: 0; overflow-wrap: anywhere; }}
+    .quality-popover-definition {{ color: #27363c; font-size: .79rem; line-height: 1.55; overflow-wrap: anywhere; }}
+    .quality-popover-definition ol, .quality-popover-definition ul {{ margin: 4px 0 4px 18px; padding: 0; }}
+    .quality-popover-definition p {{ margin: 3px 0; }}
+    .quality-popover-empty {{ color: #657178; font-size: .76rem; }}
+    .quality-popover-card {{ margin-top: 7px; padding: 8px 9px; border-left: 2px solid #638da0; background: #f2f6f7; }}
+    .quality-popover-card.grammar {{ border-left-color: #6673b5; background: #f3f4fb; }}
+    .quality-popover-card.expression {{ border-left-color: #4e9676; background: #f1f8f4; }}
+    .quality-popover-card strong {{ display: block; color: #314850; font-size: .78rem; }}
+    .quality-popover-card p {{ margin: 3px 0 0; color: #53646a; font-size: .75rem; line-height: 1.5; }}
+    .quality-popover-chips {{ display: flex; flex-wrap: wrap; gap: 4px; }}
+    .quality-popover-chip {{ padding: 3px 6px; border: 1px solid #d0dadd; border-radius: 4px; background: #f7f9fa; color: #40535b; font-size: .7rem; }}
+    .quality-popover-change {{ margin-top: 9px; padding-top: 8px; border-top: 1px dotted #cbd5d8; color: #657178; font-size: .68rem; line-height: 1.45; }}
     .reader-empty {{ padding: 28px; color: #657178; text-align: center; }}
     @media (max-width: 760px) {{ .split {{ grid-template-columns: 1fr; }} .controls {{ grid-template-columns: 1fr; }} .pager-info {{ text-align: left; }} table {{ min-width: 900px; }} }}
-    @media (max-width: 760px) {{ .reader-panes, .reader-inspector-grid {{ grid-template-columns: 1fr; }} .reader-pane.after {{ border-top: 1px solid #dfe4e6; }} }}
+    @media (max-width: 760px) {{ .reader-panes, .quality-popover {{ grid-template-columns: 1fr; }} .reader-pane.after, .quality-popover-panel.after {{ border-top: 1px solid #dfe4e6; }} .quality-popover {{ max-height: min(620px, calc(100vh - 16px)); }} }}
   </style>
 </head>
 <body>
@@ -2709,69 +2736,276 @@ def html_report(bundle: ComparisonBundle) -> str:
     const readerNext = document.getElementById('reader-next');
     let readerPage = 0;
     let selectedToken = null;
+    let popoverPinned = false;
+    let popoverTab = 'dictionary';
+    let closeTimer = 0;
+    const popoverSelection = new Map();
     const readerUnitValues = report.reading_diff?.units || [];
     const changeById = new Map(changes.map(change => [change.change_id, change]));
     const lookupBySide = {{
-      before: new Map((report.dictionary_lookups?.before?.items || []).map(item => [item.request.request_id, item.lookup])),
-      after: new Map((report.dictionary_lookups?.after?.items || []).map(item => [item.request.request_id, item.lookup])),
+      before: new Map((report.dictionary_lookups?.before?.items || []).map(item => [item.request.request_id, item])),
+      after: new Map((report.dictionary_lookups?.after?.items || []).map(item => [item.request.request_id, item])),
     }};
+    const readerPopover = document.createElement('aside');
+    readerPopover.id = 'reader-popover';
+    readerPopover.className = 'quality-popover';
+    readerPopover.setAttribute('aria-hidden', 'true');
+    readerPopover.setAttribute('role', 'dialog');
+    readerPopover.setAttribute('aria-label', '语言对象详情');
+    document.body.append(readerPopover);
     function tokenText(token) {{
       const head = token.head_word || {{}};
       const labels = [head.surface, head.base_form, head.reading].filter(Boolean);
       return labels.length ? labels.join(' / ') : token.surface || '';
-    }}
-    function tokenPayload(token) {{
-      return JSON.stringify(token, null, 2);
     }}
     function tokenIntersects(token, range) {{
       const current = token.char_range || [];
       if (current.length !== 2 || !range || range.length !== 2) return false;
       return current[0] < range[1] && range[0] < current[1] || current[0] === range[0] || current[1] === range[1];
     }}
+    function tokenKey(unit, side, token) {{
+      return `${{unit.unit_id}}:${{side}}:${{(token.char_range || []).join('-')}}`;
+    }}
+    function counterpartFor(unit, side, token) {{
+      const counterpartSide = side === 'before' ? 'after' : 'before';
+      return (unit[counterpartSide]?.tokens || []).find(other => tokenIntersects(other, token.char_range || [])) || null;
+    }}
+    function clearTokenHighlights() {{
+      document.querySelectorAll('.reader-token.sync-active').forEach(other => other.classList.remove('sync-active'));
+    }}
+    function highlightTokenPair(unit, token) {{
+      clearTokenHighlights();
+      const range = token.char_range || [];
+      document.querySelectorAll(`.reader-token[data-unit-id="${{CSS.escape(unit.unit_id)}}"]`).forEach(other => {{
+        try {{
+          if (tokenIntersects({{char_range: JSON.parse(other.dataset.range || '[]')}}, range)) other.classList.add('sync-active');
+        }} catch (_) {{}}
+      }});
+    }}
+    function appendField(parent, label, value) {{
+      if (value === undefined || value === null || value === '') return;
+      const row = document.createElement('div'); row.className = 'quality-popover-field';
+      const labelNode = document.createElement('span'); labelNode.className = 'quality-popover-field-label'; labelNode.textContent = label;
+      const valueNode = document.createElement('span'); valueNode.className = 'quality-popover-field-value'; valueNode.textContent = String(value);
+      row.append(labelNode, valueNode); parent.append(row);
+    }}
+    function appendChips(parent, values, className = '') {{
+      const list = (values || []).filter(Boolean);
+      if (!list.length) return;
+      const row = document.createElement('div'); row.className = `quality-popover-chips ${{className}}`;
+      list.forEach(value => {{ const chip = document.createElement('span'); chip.className = 'quality-popover-chip'; chip.textContent = String(value); row.append(chip); }});
+      parent.append(row);
+    }}
+    function appendSafeHtml(parent, html) {{
+      if (!html) return false;
+      const template = document.createElement('template');
+      template.innerHTML = String(html);
+      template.content.querySelectorAll('script,style,iframe,object,embed,form').forEach(node => node.remove());
+      template.content.querySelectorAll('*').forEach(node => {{
+        [...node.attributes].forEach(attribute => {{
+          if (/^on/i.test(attribute.name) || (attribute.name === 'href' && /^javascript:/i.test(attribute.value))) node.removeAttribute(attribute.name);
+        }});
+      }});
+      parent.append(template.content);
+      return true;
+    }}
+    function appendLookup(parent, side, token) {{
+      const item = token?.lookup_request_id ? lookupBySide[side].get(token.lookup_request_id) : null;
+      const lookup = item?.lookup || null;
+      const section = document.createElement('div'); section.className = 'quality-popover-section';
+      const label = document.createElement('span'); label.className = 'quality-popover-label'; label.textContent = '词典'; section.append(label);
+      if (!lookup) {{
+        const empty = document.createElement('p'); empty.className = 'quality-popover-empty';
+        const status = report.dictionary_lookup_capture?.[side]?.status;
+        empty.textContent = status === 'unsupported_cli' ? '此轮提交的 CLI 不支持同源批量查询，未捕获词典正文。' : '此轮未捕获桌面端词典查询。';
+        section.append(empty);
+        const request = token?.lookup_request || {{}};
+        const requestBox = document.createElement('div'); requestBox.className = 'quality-popover-card';
+        appendField(requestBox, '请求表记', request.word || token?.surface || '');
+        appendField(requestBox, '观察表记', request.observed_form);
+        appendField(requestBox, '读音', request.reading);
+        appendField(requestBox, '词性', request.pos?.major ? [request.pos.major, request.pos.sub1].filter(Boolean).join(' / ') : '');
+        section.append(requestBox); parent.append(section); return;
+      }}
+      const selectionKey = tokenKey(currentPopoverUnit, side, token);
+      const selection = popoverSelection.get(selectionKey) || {{ formId: lookup.selected_form_id || lookup.forms?.[0]?.form_id || '', dictionary: '', occurrence: '' }};
+      const groups = new Map();
+      (lookup.entries || []).forEach(entry => {{ const group = groups.get(entry.dict_name) || []; group.push(entry); groups.set(entry.dict_name, group); }});
+      const dictionaries = lookup.dictionary_names?.length ? lookup.dictionary_names : [...groups.keys()];
+      if (!selection.dictionary || !groups.has(selection.dictionary)) selection.dictionary = dictionaries.find(name => groups.get(name)?.length) || dictionaries[0] || '';
+      const entries = groups.get(selection.dictionary) || [];
+      const activeEntry = entries.find(entry => entry.occurrence_id === selection.occurrence) || entries.find(entry => entry.is_preferred) || entries[0] || null;
+      selection.occurrence = activeEntry?.occurrence_id || '';
+      popoverSelection.set(selectionKey, selection);
+      if (lookup.forms?.length) {{
+        const formRow = document.createElement('div'); formRow.className = 'quality-popover-choice-row';
+        lookup.forms.forEach(form => {{
+          const button = document.createElement('button'); button.type = 'button'; button.className = 'quality-popover-choice'; button.textContent = form.display_form || form.form_id;
+          button.classList.toggle('active', form.form_id === lookup.selected_form_id); button.disabled = form.form_id !== lookup.selected_form_id; button.title = button.disabled ? '此轮只捕获当前表记的查询结果' : '当前捕获表记';
+          formRow.append(button);
+        }});
+        section.append(formRow);
+      }}
+      if (dictionaries.length) {{
+        const dictRow = document.createElement('div'); dictRow.className = 'quality-popover-choice-row';
+        dictionaries.forEach(name => {{
+          const button = document.createElement('button'); button.type = 'button'; button.className = 'quality-popover-choice'; button.textContent = name; button.classList.toggle('active', name === selection.dictionary); button.disabled = !(groups.get(name) || []).length;
+          button.addEventListener('click', () => {{ selection.dictionary = name; selection.occurrence = ''; popoverSelection.set(selectionKey, selection); showPopover(currentPopoverUnit, currentPopoverSide, currentPopoverToken, currentPopoverAnchor); }});
+          dictRow.append(button);
+        }});
+        section.append(dictRow);
+      }}
+      if (entries.length > 1) {{
+        const occurrenceRow = document.createElement('div'); occurrenceRow.className = 'quality-popover-choice-row';
+        entries.forEach((entry, index) => {{
+          const button = document.createElement('button'); button.type = 'button'; button.className = 'quality-popover-choice'; button.textContent = entry.header?.reading || entry.reading || `条目 ${{index + 1}}`; button.classList.toggle('active', entry.occurrence_id === activeEntry?.occurrence_id); button.title = entry.headword || '';
+          button.addEventListener('click', () => {{ selection.occurrence = entry.occurrence_id; popoverSelection.set(selectionKey, selection); showPopover(currentPopoverUnit, currentPopoverSide, currentPopoverToken, currentPopoverAnchor); }});
+          occurrenceRow.append(button);
+        }});
+        section.append(occurrenceRow);
+      }}
+      if (activeEntry) {{
+        const heading = document.createElement('div'); heading.className = 'quality-popover-card';
+        appendField(heading, '词条', activeEntry.header?.display_form || activeEntry.headword || lookup.query);
+        appendField(heading, '读音', activeEntry.header?.reading || activeEntry.reading);
+        appendField(heading, '命中', activeEntry.match_evidence?.kind || activeEntry.match_type);
+        section.append(heading);
+        const definition = document.createElement('div'); definition.className = 'quality-popover-definition';
+        if (!appendSafeHtml(definition, activeEntry.definition_html)) {{
+          (activeEntry.content_blocks || []).forEach(block => {{ const blockNode = document.createElement('div'); if (block.label) {{ const blockLabel = document.createElement('strong'); blockLabel.textContent = block.label; blockNode.append(blockLabel); }} appendSafeHtml(blockNode, block.html); definition.append(blockNode); }});
+        }}
+        section.append(definition);
+      }}
+      parent.append(section);
+    }}
+    function appendGrammar(parent, token) {{
+      const section = document.createElement('div'); section.className = 'quality-popover-section';
+      const label = document.createElement('span'); label.className = 'quality-popover-label'; label.textContent = '语法'; section.append(label);
+      const tags = token?.grammar_tags || [];
+      if (!tags.length) {{ const empty = document.createElement('p'); empty.className = 'quality-popover-empty'; empty.textContent = '本 token 没有语法命中。'; section.append(empty); parent.append(section); return; }}
+      tags.forEach(tag => {{
+        const explanation = tag.explanation || {{}};
+        const card = document.createElement('article'); card.className = 'quality-popover-card grammar';
+        const title = document.createElement('strong'); title.textContent = `${{explanation.title || tag.name_ja || tag.pattern_id}}${{tag.jlpt_level ? ` · JLPT N${{tag.jlpt_level}}` : ''}}`; card.append(title);
+        const summary = explanation.compact_summary || explanation.function_summary || tag.description;
+        if (summary) {{ const text = document.createElement('p'); text.textContent = summary; card.append(text); }}
+        appendField(card, '本句形态', explanation.actual_form);
+        appendField(card, '接续', explanation.connection);
+        if (explanation.content_blocks?.length) explanation.content_blocks.forEach(block => {{ const text = document.createElement('p'); text.textContent = [block.label, block.text].filter(Boolean).join('：'); card.append(text); }});
+        appendChips(card, explanation.morphology_chain, 'grammar');
+        appendField(card, '状态', explanation.audit_status || explanation.review_status || tag.status);
+        section.append(card);
+      }});
+      parent.append(section);
+    }}
+    function appendExpressions(parent, token) {{
+      const section = document.createElement('div'); section.className = 'quality-popover-section';
+      const label = document.createElement('span'); label.className = 'quality-popover-label'; label.textContent = '表达'; section.append(label);
+      const expressions = token?.expressions || [];
+      if (!expressions.length) {{ const empty = document.createElement('p'); empty.className = 'quality-popover-empty'; empty.textContent = '本 token 没有表达命中。'; section.append(empty); parent.append(section); return; }}
+      expressions.forEach(expression => {{
+        const card = document.createElement('article'); card.className = 'quality-popover-card expression';
+        const title = document.createElement('strong'); title.textContent = expression.label || expression.surface || expression.rule_id || '表达'; card.append(title);
+        appendField(card, '类型', expression.expression_type);
+        appendField(card, '状态', expression.status);
+        appendField(card, '置信度', expression.confidence === undefined ? '' : `${{expression.confidence}}%`);
+        if (expression.description) {{ const text = document.createElement('p'); text.textContent = expression.description; card.append(text); }}
+        appendChips(card, (expression.captures || []).map(capture => `${{capture.name}}：${{capture.surface}}`), 'expression');
+        appendChips(card, expression.evidence, 'expression');
+        section.append(card);
+      }});
+      parent.append(section);
+    }}
+    function appendStructure(parent, unit, token, side) {{
+      const section = document.createElement('div'); section.className = 'quality-popover-section';
+      const label = document.createElement('span'); label.className = 'quality-popover-label'; label.textContent = '结构'; section.append(label);
+      const head = token?.head_word || {{}};
+      appendField(section, '词头', [head.surface || token?.surface, head.base_form].filter(Boolean).join(' → '));
+      appendField(section, '读音', head.reading);
+      appendField(section, '词性', head.pos ? [head.pos.major, head.pos.sub1, head.pos.sub2].filter(Boolean).join(' / ') : '');
+      const morphemes = token?.morphemes || [];
+      if (morphemes.length) {{
+        const card = document.createElement('div'); card.className = 'quality-popover-card';
+        const heading = document.createElement('strong'); heading.textContent = `语素 · ${{morphemes.length}}`; card.append(heading);
+        morphemes.forEach(morpheme => {{ const text = document.createElement('p'); text.textContent = `${{morpheme.surface}} → ${{morpheme.base_form || ''}}${{morpheme.reading ? `【${{morpheme.reading}}】` : ''}} · ${{morpheme.pos?.major || ''}}`; card.append(text); }});
+        section.append(card);
+      }}
+      (token?.word_formations || []).forEach(formation => {{ const card = document.createElement('div'); card.className = 'quality-popover-card'; const title = document.createElement('strong'); title.textContent = `构词 · ${{formation.category || formation.rule_id || '规则'}}`; card.append(title); appendField(card, '表记', formation.surface); appendField(card, '读音', formation.reading); appendChips(card, (formation.captures || []).map(capture => `${{capture.name}}：${{capture.surface}}`)); section.append(card); }});
+      (token?.lexical_units || []).forEach(unitValue => {{ const card = document.createElement('div'); card.className = 'quality-popover-card'; const title = document.createElement('strong'); title.textContent = `整体词 · ${{unitValue.surface || unitValue.base_form || ''}}`; card.append(title); appendField(card, '词形', unitValue.lexical_shape); appendField(card, '置信度', unitValue.confidence === undefined ? '' : `${{unitValue.confidence}}%`); appendChips(card, (unitValue.dictionary_refs || []).map(reference => `${{reference.dict_name}}：${{reference.headword}}`)); section.append(card); }});
+      appendField(section, '来源', `${{side === 'before' ? '基准' : '候选'}} · 坐标 ${{(token?.char_range || []).join('–')}}`);
+      parent.append(section);
+    }}
+    function appendChanges(parent, unit) {{
+      const section = document.createElement('div'); section.className = 'quality-popover-change';
+      const rows = (unit.change_ids || []).map(id => changeById.get(id)).filter(Boolean);
+      section.textContent = rows.length ? rows.map(change => `${{change.stage || change.channel}} · ${{change.type}} · ${{change.scope || ''}}`).join('；') : '无主结果明细';
+      parent.append(section);
+    }}
+    function renderPopoverPanel(side, unit, token) {{
+      const panel = document.createElement('section'); panel.className = `quality-popover-panel ${{side}}`;
+      const header = document.createElement('header'); header.className = 'quality-popover-header';
+      const heading = document.createElement('div');
+      const sideLabel = document.createElement('span'); sideLabel.className = 'quality-popover-side'; sideLabel.textContent = side === 'before' ? (report.manifest.before.label || '基准') : (report.manifest.after.label || '候选'); heading.append(sideLabel);
+      const word = document.createElement('h3'); word.className = 'quality-popover-word'; word.textContent = token ? (token.head_word?.surface || token.surface || '') : '无对应 token'; heading.append(word);
+      const reading = token?.head_word?.reading; if (reading) {{ const readingNode = document.createElement('div'); readingNode.className = 'quality-popover-reading'; readingNode.textContent = `【${{reading}}】`; heading.append(readingNode); }}
+      const pos = token?.head_word?.pos; if (pos) {{ const posNode = document.createElement('div'); posNode.className = 'quality-popover-pos'; posNode.textContent = [pos.major, pos.sub1].filter(Boolean).join(' / '); heading.append(posNode); }}
+      header.append(heading);
+      if (side === 'after') {{ const close = document.createElement('button'); close.type = 'button'; close.className = 'quality-popover-close'; close.title = '关闭详情'; close.setAttribute('aria-label', '关闭详情'); close.textContent = '×'; close.addEventListener('click', closePopover); header.append(close); }}
+      panel.append(header);
+      const tabs = document.createElement('nav'); tabs.className = 'quality-popover-tabs'; tabs.setAttribute('aria-label', '详情类别');
+      [['dictionary', '词典'], ['grammar', '语法'], ['expression', '表达'], ['structure', '结构']].forEach(([key, label]) => {{ const tab = document.createElement('button'); tab.type = 'button'; tab.className = 'quality-popover-tab'; tab.classList.toggle('active', popoverTab === key); tab.textContent = label; tab.addEventListener('click', () => {{ popoverTab = key; showPopover(currentPopoverUnit, currentPopoverSide, currentPopoverToken, currentPopoverAnchor); }}); tabs.append(tab); }});
+      panel.append(tabs);
+      if (popoverTab === 'dictionary') appendLookup(panel, side, token);
+      if (popoverTab === 'grammar') appendGrammar(panel, token);
+      if (popoverTab === 'expression') appendExpressions(panel, token);
+      if (popoverTab === 'structure') appendStructure(panel, unit, token, side);
+      appendChanges(panel, unit);
+      return panel;
+    }}
+    let currentPopoverUnit = null;
+    let currentPopoverSide = null;
+    let currentPopoverToken = null;
+    let currentPopoverAnchor = null;
+    function positionPopover(anchor) {{
+      const margin = 12;
+      const width = Math.min(900, window.innerWidth - margin * 2);
+      readerPopover.style.width = `${{width}}px`;
+      readerPopover.style.left = `${{Math.max(margin, Math.min(window.innerWidth - width - margin, anchor.left + anchor.width / 2 - width / 2))}}px`;
+      readerPopover.style.top = `${{Math.max(margin, anchor.bottom + 8)}}px`;
+      const rect = readerPopover.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight - margin) readerPopover.style.top = `${{Math.max(margin, anchor.top - rect.height - 8)}}px`;
+      const finalRect = readerPopover.getBoundingClientRect();
+      if (finalRect.bottom > window.innerHeight - margin) readerPopover.style.top = `${{Math.max(margin, window.innerHeight - finalRect.height - margin)}}px`;
+    }}
+    function showPopover(unit, side, token, anchor, pin = false) {{
+      clearTimeout(closeTimer); currentPopoverUnit = unit; currentPopoverSide = side; currentPopoverToken = token; currentPopoverAnchor = anchor; selectedToken = {{ unit, side, token }}; popoverPinned = pin || popoverPinned;
+      highlightTokenPair(unit, token); readerPopover.replaceChildren(renderPopoverPanel('before', unit, side === 'before' ? token : counterpartFor(unit, side, token)), renderPopoverPanel('after', unit, side === 'after' ? token : counterpartFor(unit, side, token)));
+      readerPopover.classList.add('open'); readerPopover.setAttribute('aria-hidden', 'false'); positionPopover(anchor);
+    }}
+    function schedulePopoverClose() {{
+      clearTimeout(closeTimer); if (popoverPinned) return;
+      closeTimer = window.setTimeout(() => closePopover(), 140);
+    }}
+    function closePopover() {{
+      clearTimeout(closeTimer); popoverPinned = false; selectedToken = null; currentPopoverUnit = null; currentPopoverSide = null; currentPopoverToken = null; currentPopoverAnchor = null; clearTokenHighlights(); readerPopover.classList.remove('open'); readerPopover.setAttribute('aria-hidden', 'true');
+    }}
+    readerPopover.addEventListener('pointerenter', () => clearTimeout(closeTimer));
+    readerPopover.addEventListener('pointerleave', schedulePopoverClose);
+    document.addEventListener('pointerdown', event => {{ if (readerPopover.classList.contains('open') && !readerPopover.contains(event.target)) closePopover(); }});
+    document.addEventListener('keydown', event => {{ if (event.key === 'Escape' && readerPopover.classList.contains('open')) closePopover(); }});
+    window.addEventListener('resize', () => {{ if (readerPopover.classList.contains('open') && currentPopoverAnchor) positionPopover(currentPopoverAnchor); }});
     function renderTokenSide(unit, side, token) {{
       const span = document.createElement('span');
       span.className = 'reader-token';
       span.textContent = token.surface || '';
       span.dataset.range = JSON.stringify(token.char_range || []);
+      span.dataset.unitId = unit.unit_id;
       span.title = tokenText(token);
       if (tokenIntersects(token, unit.changed_range)) span.classList.add('changed');
-      span.addEventListener('mouseenter', () => {{
-        const range = token.char_range || [];
-        document.querySelectorAll('.reader-token').forEach(other => {{
-          try {{
-            const otherRange = JSON.parse(other.dataset.range || '[]');
-            if (tokenIntersects({{char_range: otherRange}}, range)) other.classList.add('sync-active');
-          }} catch (_) {{}}
-        }});
-      }});
-      span.addEventListener('mouseleave', () => document.querySelectorAll('.reader-token.sync-active').forEach(other => other.classList.remove('sync-active')));
-      span.addEventListener('click', () => showTokenInspector(unit, side, token));
+      span.addEventListener('pointerenter', () => showPopover(unit, side, token, span.getBoundingClientRect()));
+      span.addEventListener('pointerleave', schedulePopoverClose);
+      span.addEventListener('click', event => {{ event.stopPropagation(); const same = selectedToken && selectedToken.unit === unit && selectedToken.side === side && (selectedToken.token.char_range || []).join(',') === (token.char_range || []).join(','); if (same && popoverPinned) closePopover(); else showPopover(unit, side, token, span.getBoundingClientRect(), true); }});
       return span;
-    }}
-    function showTokenInspector(unit, side, token) {{
-      const existing = document.getElementById(`inspector-${{unit.unit_id}}`);
-      if (existing?.classList.contains('open') && selectedToken?.unit === unit && selectedToken?.side === side && selectedToken?.token?.char_range?.join(',') === token.char_range?.join(',')) {{
-        existing.classList.remove('open');
-        selectedToken = null;
-        return;
-      }}
-      selectedToken = {{ unit, side, token }};
-      const inspector = existing;
-      if (!inspector) return;
-      inspector.classList.add('open');
-      inspector.querySelector('[data-inspector-title]').textContent = `${{side === 'before' ? '基准' : '候选'}} · ${{tokenText(token)}}`;
-      const counterpartSide = side === 'before' ? 'after' : 'before';
-      const counterpart = (unit[counterpartSide]?.tokens || []).find(other => tokenIntersects(other, token.char_range || []));
-      inspector.querySelector('[data-inspector-before]').textContent = tokenPayload(side === 'before' ? token : (counterpart || {{}}));
-      inspector.querySelector('[data-inspector-after]').textContent = tokenPayload(side === 'after' ? token : (counterpart || {{}}));
-      const beforeToken = side === 'before' ? token : counterpart;
-      const afterToken = side === 'after' ? token : counterpart;
-      const beforeLookup = beforeToken ? lookupBySide.before.get(beforeToken.lookup_request_id) : null;
-      const afterLookup = afterToken ? lookupBySide.after.get(afterToken.lookup_request_id) : null;
-      const missingLookupText = sideName => report.dictionary_lookup_capture?.[sideName]?.status === 'unsupported_cli' ? '此轮提交的 CLI 尚未提供批量桌面查询' : '此轮未捕获完整桌面查询';
-      inspector.querySelector('[data-inspector-before-query]').textContent = beforeLookup ? JSON.stringify(beforeLookup, null, 2) : `${{missingLookupText('before')}}\n${{JSON.stringify(beforeToken?.lookup_request || {{}}, null, 2)}}`;
-      inspector.querySelector('[data-inspector-after-query]').textContent = afterLookup ? JSON.stringify(afterLookup, null, 2) : `${{missingLookupText('after')}}\n${{JSON.stringify(afterToken?.lookup_request || {{}}, null, 2)}}`;
-      inspector.querySelector('[data-inspector-changes]').textContent = (unit.change_ids || []).map(id => changeById.get(id)).filter(Boolean).map(change => `${{change.stage}} · ${{change.type}} · ${{change.scope}}`).join('\\n') || '无主结果明细';
     }}
     function renderReader() {{
       const needle = readerSearch.value.trim().toLocaleLowerCase();
@@ -2786,6 +3020,7 @@ def html_report(bundle: ComparisonBundle) -> str:
       const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
       readerPage = Math.min(readerPage, pageCount - 1);
       const start = readerPage * pageSize;
+      closePopover();
       readerUnits.replaceChildren();
       for (const unit of filtered.slice(start, start + pageSize)) {{
         const section = document.createElement('article');
@@ -2807,15 +3042,7 @@ def html_report(bundle: ComparisonBundle) -> str:
           for (const token of unit[side]?.tokens || []) text.append(renderTokenSide(unit, side, token));
           pane.append(text); panes.append(pane);
         }}
-        const inspector = document.createElement('div'); inspector.id = `inspector-${{unit.unit_id}}`; inspector.className = 'reader-inspector';
-        const inspectorHead = document.createElement('div'); inspectorHead.className = 'reader-inspector-head';
-        const inspectorTitle = document.createElement('h4'); inspectorTitle.dataset.inspectorTitle = ''; inspectorTitle.textContent = '点击词块查看前后结构与查询证据';
-        const inspectorClose = document.createElement('button'); inspectorClose.className = 'reader-inspector-close'; inspectorClose.type = 'button'; inspectorClose.title = '关闭详情'; inspectorClose.setAttribute('aria-label', '关闭详情'); inspectorClose.textContent = '×'; inspectorClose.addEventListener('click', () => {{ inspector.classList.remove('open'); selectedToken = null; }});
-        inspectorHead.append(inspectorTitle, inspectorClose); inspector.append(inspectorHead);
-        const inspectorGrid = document.createElement('div'); inspectorGrid.className = 'reader-inspector-grid';
-        for (const [key, label] of [['before', '基准结构'], ['after', '候选结构'], ['beforeQuery', '基准词典查询'], ['afterQuery', '候选词典查询'], ['changes', '关联主结果']]) {{ const block = document.createElement('div'); const heading = document.createElement('h4'); heading.textContent = label; const pre = document.createElement('pre'); pre.dataset[`inspector${{key[0].toUpperCase() + key.slice(1)}}`] = ''; block.append(heading, pre); inspectorGrid.append(block); }}
-        inspector.append(inspectorGrid);
-        section.append(header, panes, inspector); readerUnits.append(section);
+        section.append(header, panes); readerUnits.append(section);
       }}
       readerPageInfo.textContent = filtered.length ? `${{start + 1}}–${{Math.min(start + pageSize, filtered.length)}} / ${{filtered.length}}` : '0 / 0';
       readerPrev.disabled = readerPage <= 0; readerNext.disabled = readerPage >= pageCount - 1;
