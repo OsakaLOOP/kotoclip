@@ -51,6 +51,33 @@ class LanguageQualityEntryPointTest(unittest.TestCase):
             )
             self.assertEqual(list(path.parent.glob("*.tmp")), [])
 
+    def test_gate_outcome_keeps_reviewable_comparison_in_lifecycle(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            gate = output / "diff" / "gate.json"
+            gate.parent.mkdir(parents=True)
+            gate.write_text(
+                json.dumps({"status": "review_required"}),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                language_quality.gate_outcome(output, 1),
+                (True, "review_required"),
+            )
+            self.assertEqual(language_quality.gate_outcome(output, 2), (False, None))
+            gate.write_text(json.dumps({"status": "blocked"}), encoding="utf-8")
+            self.assertEqual(
+                language_quality.gate_outcome(output, 2),
+                (True, "blocked"),
+            )
+
+    def test_gate_outcome_rejects_unexplained_nonzero_exit(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            self.assertEqual(
+                language_quality.gate_outcome(Path(temporary), 1),
+                (False, None),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

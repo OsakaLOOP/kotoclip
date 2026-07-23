@@ -132,6 +132,23 @@ def run_delegate(command: str, arguments: Sequence[str], cwd: Path) -> int:
     return result.returncode
 
 
+def gate_outcome(output: Path, returncode: int) -> tuple[bool, str | None]:
+    """区分比较执行失败与预期的门禁非零退出。"""
+    if returncode == 0:
+        return True, None
+    gate_path = output / "diff" / "gate.json"
+    if not gate_path.is_file():
+        return False, None
+    try:
+        gate = json.loads(gate_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False, None
+    status = gate.get("status")
+    if (returncode, status) in {(1, "review_required"), (2, "blocked")}:
+        return True, str(status)
+    return False, None
+
+
 def compare(values: Sequence[str]) -> int:
     commit_args, history_root, lifecycle_path, no_history = split_compare_args(values)
     from language_quality_commit_diff import parse_args as parse_commit_args
@@ -181,8 +198,11 @@ def compare(values: Sequence[str]) -> int:
     compare_phase["status"] = "completed" if result.returncode == 0 else "failed"
     compare_phase["completed_at"] = now()
     compare_phase["exit_code"] = result.returncode
+    comparison_completed, gate_status = gate_outcome(output, result.returncode)
+    if gate_status is not None:
+        compare_phase["gate_status"] = gate_status
     save()
-    if result.returncode != 0:
+    if not comparison_completed:
         lifecycle["status"] = "failed"
         lifecycle["failed_phase"] = "compare_commits"
         lifecycle["completed_at"] = now()
@@ -218,7 +238,7 @@ def compare(values: Sequence[str]) -> int:
             save()
             return history_result.returncode
 
-    lifecycle["status"] = "completed"
+    lifecycle["status"] = gate_status or "completed"
     lifecycle["completed_at"] = now()
     lifecycle["artifacts"] = {
         "comparison_dir": str(output),
@@ -232,7 +252,7 @@ def compare(values: Sequence[str]) -> int:
     print(f"生命周期：{lifecycle_path}")
     if not no_history:
         print(f"历史索引：{history_root / 'history.json'}")
-    return 0
+    return result.returncode
 
 
 def status(values: Sequence[str]) -> int:

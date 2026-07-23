@@ -698,7 +698,7 @@ python scripts/language_quality.py status `
   --lifecycle "experiments\quality-run\commit-HEAD^--HEAD\lifecycle.json"
 ```
 
-`compare` 成功后默认自动刷新历史索引；只需要机器产物或正在调试中间步骤时可加 `--no-history`。底层脚本仍可直接调用，但不负责刷新历史或写统一生命周期状态。
+`compare` 产出完整比较后默认自动刷新历史索引；门禁的 `review_required`／`blocked` 非零退出不会被误记为执行失败，生命周期保留门禁状态并继续刷新历史，同时原退出码仍返回给 CI／Agent。只有未生成有效 `gate.json` 的非零退出才标记 `failed`。只需要机器产物或正在调试中间步骤时可加 `--no-history`。底层脚本仍可直接调用，但不负责刷新历史或写统一生命周期状态。
 
 仓库内受版本控制的 grammar catalog 和规则由各自 detached worktree 读取。系统词典、词典源包和本机缓存是显式外部输入：默认两端共用 `--system-dict`、`--dict-source-dir`、`--dict-dir`，snapshot manifest 会记录其中每个文件的 SHA-256。
 
