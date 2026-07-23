@@ -3,6 +3,102 @@
   "catalog_version": 1,
   "rules": [
     {
+      "id": "prefix_noun_suffix",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "productive_prefixed_noun",
+      "priority": 82,
+      "atoms": [
+        { "pos": { "major": "接頭詞", "sub1": "名詞接続" }, "capture": "prefix" },
+        { "pos": { "major": "名詞" }, "capture": "base", "normalization": "surface" },
+        { "pos": { "major": "名詞", "sub1": "接尾" }, "capture": "suffix", "normalization": "base_form" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 88
+      },
+      "examples": ["異世界人", "直掩部隊"],
+      "counter_examples": ["異世界 の 人", "直 に 掩部隊"]
+    },
+    {
+      "id": "prefix_noun",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "productive_prefixed_noun",
+      "priority": 80,
+      "atoms": [
+        { "pos": { "major": "接頭詞", "sub1": "名詞接続" }, "capture": "prefix" },
+        { "pos": { "major": "名詞" }, "capture": "base", "normalization": "surface" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 86
+      },
+      "examples": ["半笑い", "再集結", "各中隊", "超高速", "非人道的"],
+      "counter_examples": ["半 に 笑う", "再び集結", "各々の人"]
+    },
+    {
+      "id": "noun_or_renyou_gachi",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "tendency_suffix",
+      "priority": 84,
+      "atoms": [
+        { "pos": { "major": "名詞" }, "capture": "base", "normalization": "surface" },
+        { "surfaces": ["がち"], "pos": { "major": "名詞", "sub1": "接尾" }, "capture": "suffix", "normalization": "base_form" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 86
+      },
+      "examples": ["伏し目がち", "ためらいがち"],
+      "counter_examples": ["がちに走る", "伏し目で話す"]
+    },
+    {
+      "id": "renyou_gachi",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "tendency_suffix",
+      "priority": 85,
+      "atoms": [
+        { "pos": { "major": "動詞", "sub1": "自立" }, "conjugation_forms": ["連用形", "連用タ接続"], "capture": "base", "normalization": "surface" },
+        { "surfaces": ["がち"], "pos": { "major": "名詞", "sub1": "接尾" }, "capture": "suffix", "normalization": "base_form" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 86
+      },
+      "examples": ["ためらいがち"],
+      "counter_examples": ["ためらってがちに話す"]
+    },
+    {
+      "id": "noun_with_misclassified_hodo",
+      "rule_version": 1,
+      "source": "annotation-audit-20260723",
+      "enabled": true,
+      "category": "provider_compound_noun",
+      "priority": 88,
+      "atoms": [
+        { "pos": { "major": "名詞" }, "capture": "base", "normalization": "surface" },
+        { "surfaces": ["程"], "pos": { "major": "助詞", "sub1": "副助詞" }, "capture": "suffix", "normalization": "surface" }
+      ],
+      "output": {
+        "pos": { "major": "名詞", "sub1": "一般", "sub2": "*", "sub3": "*" },
+        "head_atom": 1,
+        "confidence": 90
+      },
+      "examples": ["航程"],
+      "counter_examples": ["航ほど長い", "程なく到着"]
+    },
+    {
       "id": "deity_by_godan_action",
       "rule_version": 1,
       "source": "project_representative_cases",

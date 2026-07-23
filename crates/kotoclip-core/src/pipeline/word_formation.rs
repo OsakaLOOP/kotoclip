@@ -516,6 +516,35 @@ mod tests {
     }
 
     #[test]
+    fn matches_annotation_audit_prefix_suffix_and_provider_cases() {
+        let Some(analyzer) = analyzer() else {
+            return;
+        };
+        let matcher = WordFormationMatcher::new().unwrap();
+        for (text, expected_rule, expected_surface) in [
+            ("異世界人", "prefix_noun_suffix", "異世界人"),
+            ("半笑い", "prefix_noun", "半笑い"),
+            ("再集結", "prefix_noun", "再集結"),
+            ("各中隊", "prefix_noun", "各中隊"),
+            ("超高速", "prefix_noun", "超高速"),
+            ("非人道的", "prefix_noun", "非人道的"),
+            ("直掩部隊", "prefix_noun_suffix", "直掩部隊"),
+            ("航程", "noun_with_misclassified_hodo", "航程"),
+            ("伏し目がち", "noun_or_renyou_gachi", "伏し目がち"),
+            ("ためらいがち", "renyou_gachi", "ためらいがち"),
+        ] {
+            let result = matcher.match_morphemes(&analyzer.analyze(text));
+            assert!(
+                result.accepted.iter().any(|item| {
+                    item.annotation.rule_id == expected_rule
+                        && item.annotation.surface == expected_surface
+                }),
+                "{text} 未命中 {expected_rule}"
+            );
+        }
+    }
+
+    #[test]
     fn accepted_formation_drives_bunsetsu_head_without_losing_morphemes() {
         let Some(path) = [
             "../../ipadic/system.dic",
