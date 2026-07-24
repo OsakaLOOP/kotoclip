@@ -186,11 +186,11 @@ target\debug\kotoclip-cli.exe lookup --word "词面" --reading "读音" --full
 
 | 批次 | 范围 | 计划项数 | 提交 | 验证 | 状态 |
 | --- | --- | ---: | --- | --- | --- |
-| B01 | 活用所有权与 provider 边界 | 8 | `修复活用所有权与功能链边界` | focused Rust + catalog + `npm run build` | 已完成 |
+| B01 | 活用所有权与 provider 边界 | 8 | `修复活用所有权与功能链边界` | 真实 tokenizer + focused Rust + CLI | 复审修复中 |
 | B02 | 名词接头构词与专门名词词头 | 9 | `补齐生产型名词构词边界` | word-formation focused + CLI | 已完成 |
 | B03 | 生产型复合动词与 `帰り` 接尾 | 6 | `补齐生产型用言构词` | word-formation focused + CLI | 已完成 |
-| B04 | 词典 fallback 与整体词上下文 | 5 | `修复词典回退与整体词边界` | dictionary/lexical focused tests + CLI 对照 | 已完成 |
-| B05 | 限定、义务、推量构式 | 10 | `补齐限定义务与推量构式` | grammar catalog + CLI fixture | 已完成 |
+| B04 | 词典 fallback 与整体词上下文 | 5 | `修复词典回退与整体词边界` | 真实 tokenizer + synthetic dictionary + CLI | 复审固化中 |
+| B05 | 限定、义务、推量构式 | 10 | `补齐限定义务与推量构式` | 真实 tokenizer + grammar catalog + CLI | 复审修复中 |
 | B06 | 体貌、让步与补助用言 | 12，拆为两个提交 | - | grammar catalog + ownership tests | 待开始 |
 | B07 | 接续与形式名词构式 | 12，拆为两个提交 | - | grammar catalog + audit fixture | 待开始 |
 | B08 | 粒子栈与非连续框架 | 10，拆为两个提交 | - | grammar + expression fixtures | 待开始 |
@@ -229,8 +229,57 @@ target\debug\kotoclip-cli.exe lookup --word "词面" --reading "读音" --full
 
 - 新增 `しかない／ほかない`、`ざるを得ない`、`も同然だ`、`ですらない`、`かねない`、`ねばならない`、`かもしれず`、`ことこの上ない` 八个构式及对应说明。
 - 义务与限定构式通过 `refines_rule_ids` 收束 `ば／ない／しか／を／も／だ` 等子项，保留可下钻证据但不重复显示入口。
-- 验证：focused Rust matcher、grammar catalog build/check、catalog tests、CLI 9 个正例及反例边界复核通过。
+- 2026-07-24 复审确认：`ざるを得ない` 与 `ねばならない` 的人工 token fixture 不符合实际 IPADIC 输出，原验证结论撤销；其余六个构式的代表正例仍可由真实 CLI 命中。
 
 每批提交前必须执行 `git diff --check` 和对应 focused tests；目录类修改还要执行
 `python scripts/build_grammar_catalog.py --check` 与 `python scripts/test_grammar_catalog.py`。
 只有触及共享 Pipeline 或前端投影时才扩大到 `cargo test -p kotoclip-core`／`npm run test:ui`。
+
+## 5. 复审修复设计与状态
+
+本节记录当前实现的修复契约。阶段只有在真实 `MorphemeAnalyzer` 输出、规则匹配、下游投影和反例均通过后才能标记完成；直接构造 matcher token 只用于隔离规则冲突，不能代替端到端验收。
+
+### 5.1 B01：插入粒子的体貌所有权
+
+当前 `信じてなどいなかった／してはいない` 已生成非连续 `grammar.aspect.te_iru` occurrence，插入粒子不进入显示范围；但 morphology 仍保留为前后两条独立 chain，M01/M02 尚未完成词汇谓词所有权收束。
+
+修复边界：
+
+- 不把 `など／は` 吞入体貌范围，也不修改字符坐标；体貌关系使用现有非连续 `matched_ranges` 表达。
+- `いる／おる` 及其否定、过去活用必须归属于前项 `Vて／Vで` 的体貌 occurrence；下游不得再把后项投影为独立词汇或独立功能入口。
+- `庭にいる／本はある／本をくれる` 等自立存在、所有和授受用法保持独立。
+- 不建立跨标点、换行或超过受控粒子槽的关系。
+
+验收矩阵：正例至少包含 `座っている／信じてなどいなかった／してはいない／読んではおらず`；反例至少包含 `庭にいる／彼はいる／読んで、いる／本をくれた`。每例必须由真实 tokenizer 驱动，并检查 occurrence 范围、独立入口抑制和字符范围。
+
+分支：`fix/audit-b01-aspect-ownership`。状态：待实施。
+
+### 5.2 B04：词典回退与整体词边界
+
+当前真实 CLI 已确认 `高校生／コウコウセイ` 不再误回退到 `向光性`，纯假名 `こうこうせい` 仍允许读音回退；`事実上の空文化` 与独立 `上の空だった` 的边界也符合预期。该阶段不扩大语义，只补齐能够阻止回退复发的端到端契约。
+
+修复边界：
+
+- 含汉字查询的 reading fallback 必须具有同一表记关系；纯假名查询维持读音检索能力。
+- reading key 返回规范表记，不把读音本身伪装成词头。
+- `上の空` 只在已确认的名词复合夹持结构中拆分；独立惯用词、`語り草` 与 `弁当箱` 保持现状。
+- 测试使用 synthetic dictionary 固化同音词、别名和规范表记，不依赖开发机完整词典内容；真实 tokenizer 用例使用仓库 IPADIC，资源缺失时明确跳过而不是伪造 token。
+
+验收矩阵：`高校生` 不命中 `向光性`、`こうこうせい` 可命中、正确汉字表记可命中；`事実上の空文化／上の空だった／語り草／弁当箱` 的 token、文节和词汇单元均须核对。
+
+分支：`fix/audit-b04-dictionary-boundary`。状态：待实施。
+
+### 5.3 B05：限定、义务与推量构式
+
+复审确认两组双向错误：真实 `変更せざるを得ない` 中 `ざる` 是 `ぬ／助动词／体言接续`，旧规则要求 `ざる／名词`，导致正例漏检并误收名词 `ざる`；真实 `行かねばならない` 中 `ね` 是 `ぬ／助动词／仮定形`，旧规则要求终助词 `ね`，导致正例漏检并误收无前接谓词的 `ねばならない`。
+
+修复边界：
+
+- `ざるを得ない` 必须要求前接用言未然形和 `ぬ` 的 `ざる` 活用，再匹配 `を＋得る＋ない`；普通名词 `ざる` 必须拒绝。
+- `ねばならない` 必须要求前接动词未然形和 `ぬ／仮定形`，再匹配 `ば＋なる＋ない`；终助词 `ね` 与无前接谓词的片段必须拒绝。
+- 继续通过 `refines_rule_ids` 抑制已被完整构式覆盖的子项，但不得抑制未形成完整构式的普通助词或否定成分。
+- B05 其余六个构式保留并加入真实 tokenizer 代表正例，防止修复共享 matcher 时回退。
+
+验收矩阵：正例至少包含 `変更せざるを得ない／行かねばならない／行かねばならなかった`；反例至少包含 `水を入れたざるを得ない／ざるを洗う／ねばならない／そうですね、場合によってはならない`。必须同时断言 accepted 构式、rejected 子项和实际 capture 范围。
+
+分支：`fix/audit-b05-obligation-rules`。状态：待实施。
