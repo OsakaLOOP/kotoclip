@@ -513,8 +513,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     before_output = output / "before"
     after_output = output / "after"
     diff_output = output / "diff"
-    if any(path.exists() for path in (before_output, after_output, diff_output)):
-        raise FileExistsError(f"提交比较输出目录已有内容，拒绝覆盖：{output}")
+    if diff_output.exists():
+        raise FileExistsError(f"提交比较已有 diff，拒绝覆盖：{diff_output}")
+    for side_output in (before_output, after_output):
+        if side_output.exists() and not side_output.is_dir():
+            raise FileExistsError(f"提交比较快照路径不是目录：{side_output}")
     rust_diff = resolve_quality_diff(repo)
     diff_command = [
         str(rust_diff),
@@ -555,6 +558,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
             def snapshot_side(name: str, commit: str) -> None:
                 side_output = before_output if name == "before" else after_output
+                if (side_output / "manifest.json").is_file():
+                    print(f"{name} 复用已完成快照：{side_output}")
+                    return
                 side_system = before_system_dict if name == "before" else after_system_dict
                 side_source = before_dict_source_dir if name == "before" else after_dict_source_dir
                 side_cache = before_dict_dir if name == "before" else after_dict_dir

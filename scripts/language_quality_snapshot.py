@@ -317,7 +317,12 @@ def iter_json_array(path: Path):
     position = 0
     end_of_file = False
 
-    with path.open("r", encoding="utf-8") as source:
+    source_context = (
+        gzip.open(path, "rt", encoding="utf-8")
+        if path.suffix == ".gz"
+        else path.open("r", encoding="utf-8")
+    )
+    with source_context as source:
         def fill() -> None:
             nonlocal buffer, end_of_file
             chunk = source.read(1024 * 1024)
@@ -388,7 +393,12 @@ def count_named_object_arrays(path: Path, fields: set[str]) -> dict[str, int]:
     position = 0
     end_of_file = False
 
-    with path.open("r", encoding="utf-8") as source:
+    source_context = (
+        gzip.open(path, "rt", encoding="utf-8")
+        if path.suffix == ".gz"
+        else path.open("r", encoding="utf-8")
+    )
+    with source_context as source:
         def fill() -> None:
             nonlocal buffer, end_of_file
             chunk = source.read(1024 * 1024)
@@ -413,6 +423,7 @@ def count_named_object_arrays(path: Path, fields: set[str]) -> dict[str, int]:
         def decode_value() -> Any:
             nonlocal buffer, position
             while True:
+                next_non_whitespace()
                 try:
                     value, next_position = decoder.raw_decode(buffer, position)
                 except json.JSONDecodeError:
@@ -626,12 +637,16 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
             )
             executions.append(merged_execution)
 
+        token_path = artifact_dir / "tokens.json"
         raw_token_path = (
             merged_raw_dir / "tokens.json"
             if merged_snapshot
             else Path(temporary) / "tokens.json"
         )
-        if not merged_snapshot:
+        reused_token = token_path.is_file() and token_path.stat().st_size > 0
+        if reused_token:
+            raw_token_path = token_path
+        elif not merged_snapshot:
             execution = run_cli_to_file(
                 args.cli.resolve(),
                 ["analyze", "--source", str(selected_path), *common_resources],
@@ -641,18 +656,18 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
             executions.append(execution)
         # tokens 是同一机器上 compare 与阅读扫描的主输入，保留未压缩内容避免重复解压。
         # artifact store 与 snapshot cache 均通过硬链接复用，不增加同卷物理副本。
-        token_path = artifact_dir / "tokens.json"
         analysis_text_sha256, analysis_characters = reconstructed_text_descriptor(
             raw_token_path
         )
-        install_artifact_file(token_path, raw_token_path, artifact_store)
+        if raw_token_path != token_path:
+            install_artifact_file(token_path, raw_token_path, artifact_store)
         artifacts["tokens"] = artifact_entry(
             output_dir,
             token_path,
             "annotated_tokens",
             {"dictionary": True, "profile": False, "expressions": False},
         )
-        if not merged_snapshot:
+        if not merged_snapshot and not reused_token:
             execution["stdout"]["decoded_artifact"] = artifacts["tokens"]["path"]
 
         scans = (
@@ -715,7 +730,13 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
                 else artifact_dir / f"{name}.json"
             )
             path = artifact_dir / f"{name}.json.gz"
-            if not merged_snapshot:
+            if path.is_file() and path.stat().st_size > 0:
+                stage_counts = stage_counts_for_artifact(name, path)
+                artifacts[name] = artifact_entry(
+                    output_dir, path, adapter, capture, stage_counts
+                )
+                continue
+            if not merged_snapshot and not raw_path.is_file():
                 command_args = [command]
                 if command in {
                     "word-formation-scan",
@@ -749,22 +770,32 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
             else artifact_dir / "catalogs.json"
         )
         catalog_path = artifact_dir / "catalogs.json.gz"
-        if not merged_snapshot:
-            _, execution = run_cli(
-                args.cli.resolve(),
-                ["schema-audit", *common_resources, "--json", str(raw_catalog_path), "--quiet"],
-                repo,
+        if catalog_path.is_file() and catalog_path.stat().st_size > 0:
+            catalog_stage_counts = stage_counts_for_artifact("catalogs", catalog_path)
+            artifacts["catalogs"] = artifact_entry(
+                output_dir,
+                catalog_path,
+                "catalog_audit",
+                {},
+                catalog_stage_counts,
             )
-            executions.append(execution)
-        catalog_stage_counts = stage_counts_for_artifact("catalogs", raw_catalog_path)
-        compress_file_artifact(raw_catalog_path, catalog_path, artifact_store)
-        artifacts["catalogs"] = artifact_entry(
-            output_dir,
-            catalog_path,
-            "catalog_audit",
-            {},
-            catalog_stage_counts,
-        )
+        else:
+            if not merged_snapshot and not raw_catalog_path.is_file():
+                _, execution = run_cli(
+                    args.cli.resolve(),
+                    ["schema-audit", *common_resources, "--json", str(raw_catalog_path), "--quiet"],
+                    repo,
+                )
+                executions.append(execution)
+            catalog_stage_counts = stage_counts_for_artifact("catalogs", raw_catalog_path)
+            compress_file_artifact(raw_catalog_path, catalog_path, artifact_store)
+            artifacts["catalogs"] = artifact_entry(
+                output_dir,
+                catalog_path,
+                "catalog_audit",
+                {},
+                catalog_stage_counts,
+            )
 
         if args.ui_projection is not None:
             ui_projection = json.loads(
