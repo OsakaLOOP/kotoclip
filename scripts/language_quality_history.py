@@ -265,8 +265,14 @@ def _run_record(
 def build_history(root: Path) -> dict[str, Any]:
     """扫描 root 下完整对比目录，生成确定性索引。"""
     root = root.resolve()
+
+    def is_internal(path: Path) -> bool:
+        return any(part.startswith(".") for part in path.relative_to(root).parts)
+
     snapshots: dict[str, list[tuple[Path, dict[str, Any], str]]] = {}
     for manifest_path in sorted(root.rglob("manifest.json")):
+        if is_internal(manifest_path):
+            continue
         try:
             manifest = _read_json(manifest_path)
         except (OSError, ValueError, json.JSONDecodeError):
@@ -280,6 +286,8 @@ def build_history(root: Path) -> dict[str, Any]:
             )
     records = []
     for summary_path in sorted(root.rglob("summary.json")):
+        if is_internal(summary_path):
+            continue
         record = _run_record(summary_path.parent, root, snapshots)
         if record is not None:
             records.append(record)
