@@ -23,6 +23,8 @@ Kotoclip 是一个本地运行的日文词汇、语法分析与摘录工具。�
 - `docs/grammar_morphology_and_functional_pipeline.md`：通用活用、功能语素、语法构式、语义知识 schema、讲解库构建、精确查询、蓝色解释投影与覆盖验收设计。
 - `docs/llm_dictionary_disambiguation.md`：LLM 词典消歧候选框架、网络边界、证据 schema 与待开发路线。
 - `docs/language_quality_evaluation_and_frequency_research.md`：日语频率资源选型、反馈数据治理、十九层快照差分、统计门禁与人／Agent 报告协议。
+- `docs/language_quality_audit.md`：提交级全量语言质量审计的计数实体、按条阅读差异、开发版原生界面、机器产物、生命周期与空间协议。
+- `docs/kotoclip_quality_diff_performance.md`：quality-diff 的单扫描、内容寻址缓存、空间预算与 180 秒性能验收架构。
 - `docs/incremental_pipeline_roadmap.md`：加载管线拆分、文档会话、增量失效、首屏调度、缓存与 P6 架构审计。
 - `docs/reader_library_and_scroll_reader.md`：可见书库、EPUB 前置清理、Markdown 阅读文档、滚动虚拟化、章节与进度的权威协议。
 - `docs/epub_import_research.md`：EPUB3 nav／EPUB2 NCX、XHTML 清洗、规范 Markdown 和当前书架逐书验收的专项研究与阶段记录。
@@ -139,10 +141,11 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- incremental-consistency `
 # 捕获固定语料、资源和画像下的语言质量快照
 python scripts/language_quality_snapshot.py --help
 
-# 统一入口：compare 会运行提交级比较并刷新历史，其他阶段也可从此入口调用
+# 统一入口：只传两个 Git commit，自动读取全用户书库并刷新历史
 python scripts/language_quality.py --help
+python scripts/language_quality.py compare BEFORE_COMMIT AFTER_COMMIT
 
-# 比较完整管线快照，生成 JSON/JSONL 与外部数据开发面板
+# 比较完整管线快照，生成机器差分、阅读条目和原生界面分页索引
 python scripts/language_quality_diff.py --help
 
 # 按显式策略输出 passed、review_required 或 blocked
@@ -155,10 +158,10 @@ python scripts/language_quality_commit_diff.py --help
 cargo run -p kotoclip-core --bin kotoclip-cli -- dictionary-lookup-batch `
   --input requests.json --json dictionary-lookups.json
 
-# 扫描所有历史对比轮次，生成外部 JSON 索引与历史页
+# 扫描所有历史对比轮次，生成供开发版与 Agent 读取的 JSON 索引
 python scripts/language_quality_history.py --help
 
-# 开发时提供外部 JSON/JSONL 数据面板（报告目录需通过 HTTP 打开）
+# 需要 HTTP 调试访问机器产物时使用（桌面审计视图不依赖它）
 python scripts/language_quality_dashboard_server.py --help
 ```
 

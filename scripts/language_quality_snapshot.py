@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import os
 import platform
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -29,8 +31,9 @@ from language_quality_diff import (  # noqa: E402
 )
 
 
-PRODUCER_VERSION = "2"
+PRODUCER_VERSION = "3"
 MAX_INLINE_STREAM_BYTES = 8 * 1024
+ARTIFACT_GZIP_LEVEL = 1
 
 
 def configure_utf8_stdio() -> None:
@@ -55,6 +58,15 @@ def stream_descriptor(value: str) -> dict[str, Any]:
     return descriptor
 
 
+def stream_file_descriptor(path: Path) -> dict[str, Any]:
+    """描述已落盘的 stdout，不把大文件重新读入内存。"""
+    descriptor = file_descriptor(path)
+    descriptor.pop("path", None)
+    if descriptor["bytes"] <= MAX_INLINE_STREAM_BYTES:
+        descriptor["inline"] = path.read_text(encoding="utf-8")
+    return descriptor
+
+
 def stable_resource_descriptor(path: Path, logical_name: str) -> dict[str, Any]:
     descriptor = file_descriptor(path)
     descriptor["path"] = logical_name
@@ -64,9 +76,13 @@ def stable_resource_descriptor(path: Path, logical_name: str) -> dict[str, Any]:
 
 def copy_profile_snapshot(source: Path, destination: Path) -> None:
     source_uri = source.resolve().as_uri() + "?mode=ro"
-    with sqlite3.connect(source_uri, uri=True) as source_connection:
-        with sqlite3.connect(destination) as destination_connection:
-            source_connection.backup(destination_connection)
+    source_connection = sqlite3.connect(source_uri, uri=True)
+    destination_connection = sqlite3.connect(destination)
+    try:
+        source_connection.backup(destination_connection)
+    finally:
+        destination_connection.close()
+        source_connection.close()
 
 
 def extract_chapter(source: str, chapter: str | None) -> str:
@@ -99,6 +115,88 @@ def write_json(path: Path, value: Any) -> None:
         newline="\n",
     )
     temporary.replace(path)
+
+
+def compressed_json(value: Any) -> bytes:
+    """以固定 gzip 时间戳压缩 JSON，避免相同内容因生成时间不同而失去复用。"""
+    payload = canonical_json(value).encode("utf-8")
+    return gzip.compress(payload, compresslevel=ARTIFACT_GZIP_LEVEL, mtime=0)
+
+
+def install_compressed_artifact(
+    path: Path,
+    payload: bytes,
+    artifact_store: Path,
+) -> None:
+    """写入内容寻址 artifact，并在同卷时用硬链接复用物理文件。"""
+    digest = hashlib.sha256(payload).hexdigest()
+    stored = artifact_store / digest[:2] / f"{digest}.blob"
+    stored.parent.mkdir(parents=True, exist_ok=True)
+    if not stored.exists():
+        temporary = stored.with_suffix(".tmp")
+        temporary.write_bytes(payload)
+        try:
+            temporary.replace(stored)
+        except FileExistsError:
+            temporary.unlink(missing_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.unlink(missing_ok=True)
+    try:
+        os.link(stored, path)
+    except OSError:
+        path.write_bytes(payload)
+
+
+def write_compressed_artifact(
+    path: Path,
+    value: Any,
+    artifact_store: Path,
+) -> None:
+    install_compressed_artifact(path, compressed_json(value), artifact_store)
+
+
+def compress_file_artifact(
+    source: Path,
+    target: Path,
+    artifact_store: Path,
+) -> None:
+    temporary = target.with_suffix(target.suffix + ".tmp")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with source.open("rb") as input_stream, temporary.open("wb") as output_stream:
+        with gzip.GzipFile(
+            fileobj=output_stream,
+            mode="wb",
+            compresslevel=ARTIFACT_GZIP_LEVEL,
+            mtime=0,
+        ) as compressed:
+            shutil.copyfileobj(input_stream, compressed, length=1024 * 1024)
+    source.unlink()
+    install_artifact_file(target, temporary, artifact_store)
+
+
+def install_artifact_file(
+    path: Path,
+    payload_path: Path,
+    artifact_store: Path,
+) -> None:
+    """安装已压缩文件并复用内容寻址硬链接，全程不聚合 payload。"""
+    digest = str(file_descriptor(payload_path)["sha256"])
+    stored = artifact_store / digest[:2] / f"{digest}.blob"
+    stored.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.link(payload_path, stored)
+    except FileExistsError:
+        pass
+    except OSError:
+        if not stored.exists():
+            shutil.copyfile(payload_path, stored)
+    payload_path.unlink(missing_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.unlink(missing_ok=True)
+    try:
+        os.link(stored, path)
+    except OSError:
+        shutil.copyfile(stored, path)
 
 
 def git_value(repo: Path, *arguments: str) -> str | None:
@@ -175,19 +273,280 @@ def run_cli(
         ) from error
 
 
+def run_cli_to_file(
+    cli: Path,
+    arguments: list[str],
+    cwd: Path,
+    output_path: Path,
+) -> dict[str, Any]:
+    """将大规模 CLI stdout 直接写入文件，避免 subprocess 内存聚合。"""
+    command = [str(cli), *arguments]
+    started = time.perf_counter()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("wb") as output:
+        completed = subprocess.run(
+            command,
+            cwd=cwd,
+            env=command_environment(),
+            stdout=output,
+            stderr=subprocess.PIPE,
+            check=False,
+            encoding="utf-8",
+            errors="strict",
+        )
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 3)
+    execution = {
+        "command": command,
+        "elapsed_ms": elapsed_ms,
+        "exit_code": completed.returncode,
+        "stdout": stream_file_descriptor(output_path),
+        "stderr": stream_descriptor(completed.stderr or ""),
+    }
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"CLI 命令失败（exit={completed.returncode}）：{' '.join(command)}\n"
+            f"{(completed.stderr or '').strip()}"
+        )
+    return execution
+
+
+def iter_json_array(path: Path):
+    """增量解析 CLI 输出数组，每次只保留一个 token 对象。"""
+    decoder = json.JSONDecoder()
+    buffer = ""
+    position = 0
+    end_of_file = False
+
+    with path.open("r", encoding="utf-8") as source:
+        def fill() -> None:
+            nonlocal buffer, end_of_file
+            chunk = source.read(1024 * 1024)
+            if chunk:
+                buffer += chunk
+            else:
+                end_of_file = True
+
+        fill()
+        while True:
+            while position >= len(buffer):
+                if end_of_file:
+                    raise ValueError(f"JSON 数组意外结束：{path}")
+                buffer = ""
+                position = 0
+                fill()
+            while position < len(buffer) and buffer[position].isspace():
+                position += 1
+            if position < len(buffer):
+                break
+        if buffer[position] != "[":
+            raise ValueError(f"CLI 输出不是 JSON 数组：{path}")
+        position += 1
+        expect_value = True
+
+        while True:
+            while True:
+                while position < len(buffer) and buffer[position].isspace():
+                    position += 1
+                if position < len(buffer):
+                    break
+                if end_of_file:
+                    raise ValueError(f"JSON 数组缺少结束符：{path}")
+                buffer = ""
+                position = 0
+                fill()
+            if not expect_value:
+                if buffer[position] == ",":
+                    position += 1
+                    expect_value = True
+                    continue
+                if buffer[position] == "]":
+                    return
+                raise ValueError(f"JSON 数组缺少逗号：{path}")
+            if buffer[position] == "]":
+                return
+            while True:
+                try:
+                    value, next_position = decoder.raw_decode(buffer, position)
+                except json.JSONDecodeError:
+                    if end_of_file:
+                        raise ValueError(f"JSON 数组元素不完整：{path}")
+                    if position:
+                        buffer = buffer[position:]
+                        position = 0
+                    fill()
+                    continue
+                yield value
+                position = next_position
+                expect_value = False
+                break
+
+
+def count_named_object_arrays(path: Path, fields: set[str]) -> dict[str, int]:
+    """增量统计顶层对象中的目标数组，不物化审计报告。"""
+    decoder = json.JSONDecoder()
+    buffer = ""
+    position = 0
+    end_of_file = False
+
+    with path.open("r", encoding="utf-8") as source:
+        def fill() -> None:
+            nonlocal buffer, end_of_file
+            chunk = source.read(1024 * 1024)
+            if chunk:
+                buffer += chunk
+            else:
+                end_of_file = True
+
+        def next_non_whitespace() -> str:
+            nonlocal buffer, position
+            while True:
+                while position < len(buffer) and buffer[position].isspace():
+                    position += 1
+                if position < len(buffer):
+                    return buffer[position]
+                if end_of_file:
+                    raise ValueError(f"JSON 对象意外结束：{path}")
+                buffer = ""
+                position = 0
+                fill()
+
+        def decode_value() -> Any:
+            nonlocal buffer, position
+            while True:
+                try:
+                    value, next_position = decoder.raw_decode(buffer, position)
+                except json.JSONDecodeError:
+                    if end_of_file:
+                        raise ValueError(f"JSON 值不完整：{path}") from None
+                    if position:
+                        buffer = buffer[position:]
+                        position = 0
+                    fill()
+                    continue
+                position = next_position
+                return value
+
+        def consume_array() -> int:
+            nonlocal position
+            if next_non_whitespace() != "[":
+                raise ValueError(f"目标字段不是数组：{path}")
+            position += 1
+            count = 0
+            expect_value = True
+            while True:
+                character = next_non_whitespace()
+                if not expect_value:
+                    if character == ",":
+                        position += 1
+                        expect_value = True
+                        continue
+                    if character == "]":
+                        position += 1
+                        return count
+                    raise ValueError(f"JSON 数组缺少逗号：{path}")
+                if character == "]":
+                    position += 1
+                    return count
+                decode_value()
+                count += 1
+                expect_value = False
+
+        fill()
+        if next_non_whitespace() != "{":
+            raise ValueError(f"CLI 输出不是 JSON 对象：{path}")
+        position += 1
+        counts: dict[str, int] = {}
+        expect_key = True
+        while True:
+            character = next_non_whitespace()
+            if not expect_key:
+                if character == ",":
+                    position += 1
+                    expect_key = True
+                    continue
+                if character == "}":
+                    return counts
+                raise ValueError(f"JSON 对象缺少逗号：{path}")
+            if character == "}":
+                return counts
+            key = decode_value()
+            if not isinstance(key, str):
+                raise ValueError(f"JSON 对象键必须为字符串：{path}")
+            if next_non_whitespace() != ":":
+                raise ValueError(f"JSON 对象键缺少冒号：{path}")
+            position += 1
+            if key in fields:
+                counts[key] = consume_array()
+            else:
+                decode_value()
+            expect_key = False
+
+
+def stage_counts_for_artifact(name: str, path: Path) -> dict[str, int]:
+    """计算 compare 可直接复用的稳定阶段计数。"""
+    if name == "word_formations":
+        counts = count_named_object_arrays(path, {"items", "rejected"})
+        return {"word_formation_candidate": sum(counts.values())}
+    if name == "lexical_candidates":
+        counts = count_named_object_arrays(path, {"items"})
+        return {"lexical_candidate": counts.get("items", 0)}
+    if name == "bunsetsu":
+        return {
+            "bunsetsu_boundary": sum(
+                len(report.get("boundaries", []))
+                for report in iter_json_array(path)
+                if isinstance(report, dict)
+                and isinstance(report.get("boundaries"), list)
+            )
+        }
+    if name == "expressions":
+        accepted = 0
+        rejected = 0
+        for expression in iter_json_array(path):
+            if not isinstance(expression, dict):
+                continue
+            if expression.get("status", "accepted") == "accepted":
+                accepted += 1
+            else:
+                rejected += 1
+        return {"expression": accepted, "expression_candidate": rejected}
+    if name == "catalogs":
+        return {"resource": sum(1 for _ in iter_json_array(path))}
+    return {}
+
+
+def reconstructed_text_descriptor(path: Path) -> tuple[str, int]:
+    digest = hashlib.sha256()
+    characters = 0
+    for token in iter_json_array(path):
+        if not isinstance(token, dict):
+            raise ValueError(f"token 必须为对象：{path}")
+        bunsetsu = token.get("bunsetsu")
+        surface = bunsetsu.get("surface", "") if isinstance(bunsetsu, dict) else ""
+        if not isinstance(surface, str):
+            raise ValueError(f"bunsetsu.surface 必须为字符串：{path}")
+        digest.update(surface.encode("utf-8"))
+        characters += len(surface)
+    return digest.hexdigest(), characters
+
+
 def artifact_entry(
     output_dir: Path,
     path: Path,
     adapter: str,
     capture: dict[str, Any],
+    stage_counts: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     descriptor = file_descriptor(path)
     descriptor["path"] = path.relative_to(output_dir).as_posix()
-    return {
+    entry = {
         **descriptor,
         "adapter": adapter,
         "capture": capture,
     }
+    if stage_counts:
+        entry["stage_counts"] = stage_counts
+    return entry
 
 
 def resource_arguments(args: argparse.Namespace) -> list[str]:
@@ -199,6 +558,18 @@ def resource_arguments(args: argparse.Namespace) -> list[str]:
         "--dict-dir",
         str(args.dict_dir.resolve()),
     ]
+
+
+def supports_quality_snapshot(cli: Path, cwd: Path) -> bool:
+    completed = subprocess.run(
+        [str(cli), "help"],
+        cwd=cwd,
+        text=True,
+        encoding="utf-8",
+        errors="backslashreplace",
+        capture_output=True,
+    )
+    return completed.returncode == 0 and "quality-snapshot" in completed.stdout
 
 
 def capture_snapshot(args: argparse.Namespace) -> Path:
@@ -220,6 +591,7 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     artifact_dir = output_dir / "artifacts"
     artifact_dir.mkdir(parents=True, exist_ok=True)
+    artifact_store = (args.artifact_store or output_dir.parent / "artifact-store").resolve()
     source = source_path.read_text(encoding="utf-8")
     selected = extract_chapter(source, args.chapter)
     executions: list[dict[str, Any]] = []
@@ -233,22 +605,55 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
         profile_snapshot = Path(temporary) / "profile.sqlite"
         copy_profile_snapshot(args.profile.resolve(), profile_snapshot)
 
-        tokens, execution = run_cli(
-            args.cli.resolve(),
-            ["analyze", "--source", str(selected_path), *common_resources],
-            repo,
-            expect_json_stdout=True,
+        merged_raw_dir = Path(temporary) / "quality-snapshot"
+        merged_snapshot = supports_quality_snapshot(args.cli.resolve(), repo)
+        if merged_snapshot:
+            merged_raw_dir.mkdir()
+            _, merged_execution = run_cli(
+                args.cli.resolve(),
+                [
+                    "quality-snapshot",
+                    "--source",
+                    str(selected_path),
+                    "--profile",
+                    str(profile_snapshot),
+                    "--output-dir",
+                    str(merged_raw_dir),
+                    *common_resources,
+                    "--quiet",
+                ],
+                repo,
+            )
+            executions.append(merged_execution)
+
+        raw_token_path = (
+            merged_raw_dir / "tokens.json"
+            if merged_snapshot
+            else Path(temporary) / "tokens.json"
         )
-        executions.append(execution)
+        if not merged_snapshot:
+            execution = run_cli_to_file(
+                args.cli.resolve(),
+                ["analyze", "--source", str(selected_path), *common_resources],
+                repo,
+                raw_token_path,
+            )
+            executions.append(execution)
+        # tokens 是同一机器上 compare 与阅读扫描的主输入，保留未压缩内容避免重复解压。
+        # artifact store 与 snapshot cache 均通过硬链接复用，不增加同卷物理副本。
         token_path = artifact_dir / "tokens.json"
-        write_json(token_path, tokens)
+        analysis_text_sha256, analysis_characters = reconstructed_text_descriptor(
+            raw_token_path
+        )
+        install_artifact_file(token_path, raw_token_path, artifact_store)
         artifacts["tokens"] = artifact_entry(
             output_dir,
             token_path,
             "annotated_tokens",
             {"dictionary": True, "profile": False, "expressions": False},
         )
-        execution["stdout"]["decoded_artifact"] = artifacts["tokens"]["path"]
+        if not merged_snapshot:
+            execution["stdout"]["decoded_artifact"] = artifacts["tokens"]["path"]
 
         scans = (
             (
@@ -304,42 +709,61 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
             ),
         )
         for name, command, adapter, flags, capture in scans:
-            path = artifact_dir / f"{name}.json"
-            command_args = [command]
-            if command in {
-                "word-formation-scan",
-                "lexical-unit-scan",
-                "bunsetsu-scan",
-                "expression-scan",
-            }:
-                command_args.extend(["--profile", str(profile_snapshot)])
-            command_args.extend(
-                [
-                    *common_resources,
-                    "--source",
-                    str(selected_path),
-                    *flags,
-                    "--json",
-                    str(path),
-                    "--quiet",
-                ]
+            raw_path = (
+                merged_raw_dir / f"{name}.json"
+                if merged_snapshot
+                else artifact_dir / f"{name}.json"
             )
-            _, execution = run_cli(args.cli.resolve(), command_args, repo)
-            executions.append(execution)
-            artifacts[name] = artifact_entry(output_dir, path, adapter, capture)
+            path = artifact_dir / f"{name}.json.gz"
+            if not merged_snapshot:
+                command_args = [command]
+                if command in {
+                    "word-formation-scan",
+                    "lexical-unit-scan",
+                    "bunsetsu-scan",
+                    "expression-scan",
+                }:
+                    command_args.extend(["--profile", str(profile_snapshot)])
+                command_args.extend(
+                    [
+                        *common_resources,
+                        "--source",
+                        str(selected_path),
+                        *flags,
+                        "--json",
+                        str(raw_path),
+                        "--quiet",
+                    ]
+                )
+                _, execution = run_cli(args.cli.resolve(), command_args, repo)
+                executions.append(execution)
+            stage_counts = stage_counts_for_artifact(name, raw_path)
+            compress_file_artifact(raw_path, path, artifact_store)
+            artifacts[name] = artifact_entry(
+                output_dir, path, adapter, capture, stage_counts
+            )
 
-        catalog_path = artifact_dir / "catalogs.json"
-        _, execution = run_cli(
-            args.cli.resolve(),
-            ["schema-audit", *common_resources, "--json", str(catalog_path), "--quiet"],
-            repo,
+        raw_catalog_path = (
+            merged_raw_dir / "catalogs.json"
+            if merged_snapshot
+            else artifact_dir / "catalogs.json"
         )
-        executions.append(execution)
+        catalog_path = artifact_dir / "catalogs.json.gz"
+        if not merged_snapshot:
+            _, execution = run_cli(
+                args.cli.resolve(),
+                ["schema-audit", *common_resources, "--json", str(raw_catalog_path), "--quiet"],
+                repo,
+            )
+            executions.append(execution)
+        catalog_stage_counts = stage_counts_for_artifact("catalogs", raw_catalog_path)
+        compress_file_artifact(raw_catalog_path, catalog_path, artifact_store)
         artifacts["catalogs"] = artifact_entry(
             output_dir,
             catalog_path,
             "catalog_audit",
             {},
+            catalog_stage_counts,
         )
 
         if args.ui_projection is not None:
@@ -355,8 +779,8 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
                 raise ValueError(
                     "--ui-projection 必须是 kotoclip.quality.ui-projection.v1 对象"
                 )
-            ui_path = artifact_dir / "ui_projection.json"
-            write_json(ui_path, ui_projection)
+            ui_path = artifact_dir / "ui_projection.json.gz"
+            write_compressed_artifact(ui_path, ui_projection, artifact_store)
             artifacts["ui_projection"] = artifact_entry(
                 output_dir,
                 ui_path,
@@ -368,9 +792,6 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
     if profile_resource is None:
         raise RuntimeError("画像快照未生成资源指纹")
 
-    reconstructed = "".join(
-        str(token.get("bunsetsu", {}).get("surface", "")) for token in tokens
-    )
     git_status = git_value(repo, "status", "--porcelain=v1")
     resources = {
         "cli": stable_resource_descriptor(args.cli.resolve(), "kotoclip-cli"),
@@ -412,8 +833,8 @@ def capture_snapshot(args: argparse.Namespace) -> Path:
             "selected_sha256": sha256_text(selected),
             "selected_bytes": len(selected.encode("utf-8")),
             "selected_characters": len(selected),
-            "analysis_text_sha256": sha256_text(reconstructed),
-            "analysis_characters": len(reconstructed),
+            "analysis_text_sha256": analysis_text_sha256,
+            "analysis_characters": analysis_characters,
         },
         "implementation": {
             "git_commit": git_value(repo, "rev-parse", "HEAD"),
@@ -450,6 +871,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--system-dict", required=True, type=Path)
     parser.add_argument("--dict-source-dir", required=True, type=Path)
     parser.add_argument("--dict-dir", required=True, type=Path)
+    parser.add_argument(
+        "--artifact-store",
+        type=Path,
+        help="共享内容寻址 artifact 存储；默认使用 output-dir 的同级 artifact-store",
+    )
     parser.add_argument(
         "--ui-projection",
         type=Path,

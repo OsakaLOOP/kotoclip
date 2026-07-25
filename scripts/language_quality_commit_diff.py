@@ -4,13 +4,20 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
+import gzip
+import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Iterable, Sequence
+
+
+ARTIFACT_GZIP_LEVEL = 1
 
 
 def run(command: Sequence[str], *, cwd: Path, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -44,6 +51,26 @@ def resolve_executable(target: Path) -> Path:
         if candidate.is_file():
             return candidate
     raise FileNotFoundError(f"构建成功但找不到 kotoclip-cli：{target}")
+
+
+def resolve_quality_diff(repo: Path) -> Path:
+    """构建当前工作树中的审计协调器；被比较提交只负责生成各自快照。"""
+    run(
+        [
+            "cargo",
+            "build",
+            "--locked",
+            "-p",
+            "kotoclip-quality-diff",
+            "--release",
+        ],
+        cwd=repo,
+    )
+    suffix = ".exe" if os.name == "nt" else ""
+    executable = repo / "target" / "release" / f"kotoclip-quality-diff{suffix}"
+    if not executable.is_file():
+        raise FileNotFoundError(f"构建成功但找不到 Rust diff：{executable}")
+    return executable
 
 
 def build_cli(worktree: Path, target_dir: Path, log_path: Path, profile: str) -> Path:
@@ -111,12 +138,158 @@ def snapshot(
         str(dict_source_dir),
         "--dict-dir",
         str(dict_dir),
+        "--artifact-store",
+        str(args.artifact_store),
     ]
     if args.chapter:
         command.extend(["--chapter", args.chapter])
     if args.ui_projection:
         command.extend(["--ui-projection", str(args.ui_projection)])
     run(command, cwd=tool_root)
+
+
+def update_file_digest(digest: Any, path: Path) -> None:
+    digest.update(str(path.resolve()).encode("utf-8"))
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+
+
+def update_directory_fingerprint(digest: Any, directory: Path) -> None:
+    for path in sorted(item for item in directory.rglob("*") if item.is_file()):
+        stat = path.stat()
+        digest.update(path.relative_to(directory).as_posix().encode("utf-8"))
+        digest.update(str(stat.st_size).encode("ascii"))
+        digest.update(str(stat.st_mtime_ns).encode("ascii"))
+
+
+def snapshot_cache_key(
+    commit: str,
+    cli: Path,
+    args: argparse.Namespace,
+    system_dict: Path,
+    dict_source_dir: Path,
+    dict_dir: Path,
+) -> str:
+    digest = hashlib.sha256()
+    digest.update(commit.encode("ascii"))
+    digest.update((args.chapter or "").encode("utf-8"))
+    digest.update(args.corpus_id.encode("utf-8"))
+    for path in (args.source, args.profile, cli, system_dict):
+        update_file_digest(digest, path.resolve())
+    update_directory_fingerprint(digest, dict_source_dir.resolve())
+    update_directory_fingerprint(digest, dict_dir.resolve())
+    return digest.hexdigest()
+
+
+def copy_snapshot_tree(source: Path, target: Path) -> None:
+    def link_or_copy(source_file: str, target_file: str) -> str:
+        try:
+            os.link(source_file, target_file)
+            return target_file
+        except OSError:
+            return shutil.copy2(source_file, target_file)
+
+    shutil.copytree(source, target, copy_function=link_or_copy)
+
+
+def iter_json_object_array(path: Path, field: str) -> Iterable[object]:
+    """增量读取顶层 JSON 对象中的数组字段，避免加载 reading-diff 全文。"""
+    decoder = json.JSONDecoder()
+    buffer = ""
+    position = 0
+    end_of_file = False
+    source_context = (
+        gzip.open(path, "rt", encoding="utf-8")
+        if path.suffix == ".gz"
+        else path.open("r", encoding="utf-8")
+    )
+
+    with source_context as source:
+        def fill() -> None:
+            nonlocal buffer, end_of_file
+            chunk = source.read(1024 * 1024)
+            if chunk:
+                buffer += chunk
+            else:
+                end_of_file = True
+
+        def skip_space() -> None:
+            nonlocal buffer, position
+            while True:
+                while position < len(buffer) and buffer[position].isspace():
+                    position += 1
+                if position < len(buffer) or end_of_file:
+                    return
+                buffer = ""
+                position = 0
+                fill()
+
+        def decode_value() -> object:
+            nonlocal buffer, position
+            while True:
+                try:
+                    value, next_position = decoder.raw_decode(buffer, position)
+                except json.JSONDecodeError:
+                    if end_of_file:
+                        raise ValueError(f"JSON 值不完整：{path}")
+                    if position:
+                        buffer = buffer[position:]
+                        position = 0
+                    fill()
+                    continue
+                position = next_position
+                return value
+
+        fill()
+        skip_space()
+        if position >= len(buffer) or buffer[position] != "{":
+            raise ValueError(f"reading-diff 不是顶层 JSON 对象：{path}")
+        position += 1
+        while True:
+            skip_space()
+            if position >= len(buffer):
+                raise ValueError(f"reading-diff 意外结束：{path}")
+            if buffer[position] == "}":
+                return
+            key = decode_value()
+            if not isinstance(key, str):
+                raise ValueError(f"reading-diff 键不是字符串：{path}")
+            skip_space()
+            if position >= len(buffer) or buffer[position] != ":":
+                raise ValueError(f"reading-diff 键缺少冒号：{path}")
+            position += 1
+            skip_space()
+            if key != field:
+                decode_value()
+            else:
+                if position >= len(buffer) or buffer[position] != "[":
+                    raise ValueError(f"reading-diff.{field} 不是数组：{path}")
+                position += 1
+                while True:
+                    skip_space()
+                    if position >= len(buffer):
+                        raise ValueError(f"reading-diff.{field} 意外结束：{path}")
+                    if buffer[position] == "]":
+                        position += 1
+                        break
+                    yield decode_value()
+                    skip_space()
+                    if position < len(buffer) and buffer[position] == ",":
+                        position += 1
+                        continue
+                    if position < len(buffer) and buffer[position] == "]":
+                        position += 1
+                        break
+                    raise ValueError(f"reading-diff.{field} 数组缺少分隔符：{path}")
+            skip_space()
+            if position < len(buffer) and buffer[position] == ",":
+                position += 1
+                continue
+            if position < len(buffer) and buffer[position] == "}":
+                return
+            if end_of_file:
+                raise ValueError(f"reading-diff 对象缺少结束符：{path}")
 
 
 def capture_dictionary_lookups(
@@ -129,28 +302,40 @@ def capture_dictionary_lookups(
     system_dict: Path,
     dict_source_dir: Path,
     dict_dir: Path,
-) -> None:
-    report = json.loads(reading_diff.read_text(encoding="utf-8"))
-    requests: dict[str, dict[str, object]] = {}
-    for unit in report.get("units", []):
-        for token in unit.get(side, {}).get("tokens", []):
-            request = token.get("lookup_request")
-            request_id = token.get("lookup_request_id")
-            if not isinstance(request, dict) or not request_id or not request.get("word"):
+) -> int:
+    seen_request_ids: set[str] = set()
+    request_count = 0
+    with input_path.open("w", encoding="utf-8", newline="\n") as input_stream:
+        input_stream.write("[")
+        for unit in iter_json_object_array(reading_diff, "units"):
+            if not isinstance(unit, dict):
                 continue
-            requests[str(request_id)] = {
-                "request_id": str(request_id),
-                "word": request.get("word", ""),
-                "observed_form": request.get("observed_form"),
-                "reading": request.get("reading"),
-                "pos": request.get("pos"),
-                "selected_form": request.get("selected_form"),
-            }
-    input_path.write_text(
-        json.dumps(list(requests.values()), ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+            for token in unit.get(side, {}).get("tokens", []):
+                request = token.get("lookup_request")
+                request_id = token.get("lookup_request_id")
+                if not isinstance(request, dict) or not request_id or not request.get("word"):
+                    continue
+                request_id = str(request_id)
+                if request_id in seen_request_ids:
+                    continue
+                seen_request_ids.add(request_id)
+                if request_count:
+                    input_stream.write(",")
+                json.dump(
+                    {
+                        "request_id": request_id,
+                        "word": request.get("word", ""),
+                        "observed_form": request.get("observed_form"),
+                        "reading": request.get("reading"),
+                        "pos": request.get("pos"),
+                        "selected_form": request.get("selected_form"),
+                    },
+                    input_stream,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+                request_count += 1
+        input_stream.write("]\n")
     run(
         [
             str(cli),
@@ -168,6 +353,7 @@ def capture_dictionary_lookups(
         ],
         cwd=repo,
     )
+    return request_count
 
 
 def supports_dictionary_lookup_batch(cli: Path, cwd: Path) -> bool:
@@ -183,6 +369,41 @@ def supports_dictionary_lookup_batch(cli: Path, cwd: Path) -> bool:
     return result.returncode == 0 and "dictionary-lookup-batch" in result.stdout
 
 
+def compress_file(source: Path, target: Path) -> None:
+    with source.open("rb") as input_stream, target.open("wb") as output_stream:
+        with gzip.GzipFile(
+            fileobj=output_stream,
+            mode="wb",
+            compresslevel=ARTIFACT_GZIP_LEVEL,
+            mtime=0,
+        ) as compressed:
+            shutil.copyfileobj(input_stream, compressed, length=1024 * 1024)
+    source.unlink()
+
+
+def install_artifact_file(path: Path, artifact_store: Path) -> None:
+    """将现有不可变产物放入内容寻址存储，并尽量以硬链接保留轮次路径。"""
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    checksum = digest.hexdigest()
+    stored = artifact_store / checksum[:2] / f"{checksum}.blob"
+    stored.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.link(path, stored)
+    except FileExistsError:
+        pass
+    except OSError:
+        if not stored.exists():
+            shutil.copyfile(path, stored)
+    path.unlink()
+    try:
+        os.link(stored, path)
+    except OSError:
+        shutil.copyfile(stored, path)
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="比较两个提交的完整语言管线；提交两端使用独立 detached worktree。"
@@ -196,6 +417,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--system-dict", required=True, type=Path)
     parser.add_argument("--dict-source-dir", required=True, type=Path)
     parser.add_argument("--dict-dir", required=True, type=Path)
+    parser.add_argument("--artifact-store", type=Path)
     parser.add_argument(
         "--before-system-dict",
         type=Path,
@@ -258,6 +480,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     source = args.source.resolve()
     profile = args.profile.resolve()
     output = args.output_dir.resolve()
+    args.artifact_store = (args.artifact_store or output.parent / "artifact-store").resolve()
     for path in (source, profile):
         if not path.exists():
             raise FileNotFoundError(f"缺少提交比较输入：{path}")
@@ -292,104 +515,148 @@ def main(argv: Sequence[str] | None = None) -> int:
     diff_output = output / "diff"
     if any(path.exists() for path in (before_output, after_output, diff_output)):
         raise FileExistsError(f"提交比较输出目录已有内容，拒绝覆盖：{output}")
+    rust_diff = resolve_quality_diff(repo)
     diff_command = [
-        sys.executable,
-        str(tool_root / "language_quality_diff.py"),
+        str(rust_diff),
+        "compare",
         "--before-run",
         str(before_output / "manifest.json"),
         "--after-run",
         str(after_output / "manifest.json"),
         "--output-dir",
         str(diff_output),
+        "--python-script",
+        str(tool_root / "language_quality_diff.py"),
+        "--python",
+        sys.executable,
     ]
 
+    args.artifact_store = args.artifact_store.resolve()
     with tempfile.TemporaryDirectory(prefix="kotoclip-quality-commits-") as temporary:
         temporary_root = Path(temporary)
-        worktrees: list[Path] = []
         try:
+            stable_clis: dict[str, Path] = {}
+            worktrees: dict[str, Path] = {}
+            shared_target = (repo / "target").resolve()
             for name, commit in (("before", args.before), ("after", args.after)):
                 worktree = temporary_root / f"worktree-{name}"
-                run(
-                    ["git", "worktree", "add", "--detach", "--force", str(worktree), commit],
-                    cwd=repo,
+                run(["git", "worktree", "add", "--detach", "--force", str(worktree), commit], cwd=repo)
+                worktrees[name] = worktree
+                cli = build_cli(
+                    worktree,
+                    shared_target,
+                    output / f"build-{name}.log",
+                    args.build_profile,
                 )
-                worktrees.append(worktree)
+                stable_cli = temporary_root / "bin" / name / cli.name
+                stable_cli.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(cli, stable_cli)
+                stable_clis[name] = stable_cli
 
-            before_cli = build_cli(
-                worktrees[0],
-                temporary_root / "target-before",
-                output / "build-before.log",
-                args.build_profile,
-            )
-            after_cli = build_cli(
-                worktrees[1],
-                temporary_root / "target-after",
-                output / "build-after.log",
-                args.build_profile,
-            )
-            snapshot(
-                tool_root,
-                worktrees[0],
-                before_cli,
-                args,
-                before_output,
-                f"before-{args.before}",
-                before_system_dict,
-                before_dict_source_dir,
-                before_dict_dir,
-            )
-            snapshot(
-                tool_root,
-                worktrees[1],
-                after_cli,
-                args,
-                after_output,
-                f"after-{args.after}",
-                after_system_dict,
-                after_dict_source_dir,
-                after_dict_dir,
-            )
+            def snapshot_side(name: str, commit: str) -> None:
+                side_output = before_output if name == "before" else after_output
+                side_system = before_system_dict if name == "before" else after_system_dict
+                side_source = before_dict_source_dir if name == "before" else after_dict_source_dir
+                side_cache = before_dict_dir if name == "before" else after_dict_dir
+                cache_root = args.output_dir.resolve().parent / ".cache" / "snapshots"
+                cache_path = cache_root / snapshot_cache_key(
+                    commit,
+                    stable_clis[name],
+                    args,
+                    side_system,
+                    side_source,
+                    side_cache,
+                )
+                if (cache_path / "manifest.json").is_file():
+                    copy_snapshot_tree(cache_path, side_output)
+                    print(f"{name} 快照缓存命中：{cache_path.name}")
+                    return
+                snapshot(
+                    tool_root,
+                    worktrees[name],
+                    stable_clis[name],
+                    args,
+                    side_output,
+                    f"{name}-{commit}",
+                    side_system,
+                    side_source,
+                    side_cache,
+                )
+                cache_root.mkdir(parents=True, exist_ok=True)
+                if not cache_path.exists():
+                    copy_snapshot_tree(side_output, cache_path)
+
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    futures = [
+                        executor.submit(snapshot_side, name, commit)
+                        for name, commit in (("before", args.before), ("after", args.after))
+                    ]
+                    for future in futures:
+                        future.result()
+            finally:
+                for worktree in worktrees.values():
+                    subprocess.run(
+                        ["git", "worktree", "remove", "--force", str(worktree)],
+                        cwd=repo,
+                        text=True,
+                        encoding="utf-8",
+                        errors="backslashreplace",
+                        capture_output=True,
+                    )
+            before_cli = stable_clis["before"]
+            after_cli = stable_clis["after"]
             run(diff_command, cwd=repo)
             lookup_capture: dict[str, object] = {
                 "schema_version": "kotoclip.quality.dictionary-lookup-capture.v1",
                 "before": {"status": "unsupported_cli"},
                 "after": {"status": "unsupported_cli"},
             }
-            for side, cli, worktree, system_dict, source_dir, dict_dir in (
-                ("before", before_cli, worktrees[0], before_system_dict, before_dict_source_dir, before_dict_dir),
-                ("after", after_cli, worktrees[1], after_system_dict, after_dict_source_dir, after_dict_dir),
-            ):
-                if not supports_dictionary_lookup_batch(cli, worktree):
+            lookup_sides = (
+                ("before", before_cli, before_system_dict, before_dict_source_dir, before_dict_dir),
+                ("after", after_cli, after_system_dict, after_dict_source_dir, after_dict_dir),
+            )
+
+            def capture_side(
+                side: str,
+                cli: Path,
+                system_dict: Path,
+                source_dir: Path,
+                dict_dir: Path,
+            ) -> tuple[str, dict[str, object]]:
+                if not supports_dictionary_lookup_batch(cli, repo):
                     print(f"{side} 提交未提供 dictionary-lookup-batch，保留未捕获状态")
-                    continue
-                capture_dictionary_lookups(
+                    return side, {"status": "unsupported_cli"}
+                raw_lookup_path = temporary_root / f"dictionary-lookups-{side}.json"
+                request_count = capture_dictionary_lookups(
                     cli,
-                    diff_output / "reading-diff.json",
+                    diff_output / "reading-diff.json.gz",
                     side,
                     temporary_root / f"dictionary-requests-{side}.json",
-                    diff_output / f"dictionary-lookups-{side}.json",
-                    worktree,
+                    raw_lookup_path,
+                    repo,
                     system_dict,
                     source_dir,
                     dict_dir,
                 )
-                request_count = len(json.loads((temporary_root / f"dictionary-requests-{side}.json").read_text(encoding="utf-8")))
-                lookup_capture[side] = {"status": "captured", "request_count": request_count}
+                compress_file(raw_lookup_path, diff_output / f"dictionary-lookups-{side}.json.gz")
+                return side, {"status": "captured", "request_count": request_count}
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                futures = [executor.submit(capture_side, *values) for values in lookup_sides]
+                for future in futures:
+                    side, result = future.result()
+                    lookup_capture[side] = result
             (diff_output / "dictionary-lookup-capture.json").write_text(
                 json.dumps(lookup_capture, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
                 newline="\n",
             )
+            for artifact in sorted(
+                [*diff_output.glob("*.gz"), *diff_output.glob("*.bin")]
+            ):
+                install_artifact_file(artifact, args.artifact_store)
         finally:
-            for worktree in reversed(worktrees):
-                subprocess.run(
-                    ["git", "worktree", "remove", "--force", str(worktree)],
-                    cwd=repo,
-                    text=True,
-                    encoding="utf-8",
-                    errors="backslashreplace",
-                    capture_output=True,
-                )
             git(repo, "worktree", "prune")
 
     if args.gate_config:

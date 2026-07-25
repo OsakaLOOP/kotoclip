@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""生成语言质量对比轮次索引和外部数据历史页。"""
+"""生成语言质量对比轮次 JSON 索引。"""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -136,14 +137,15 @@ def _snapshot_side(
 
 
 def _run_record(
-    report: Path,
+    directory: Path,
     root: Path,
     snapshots: dict[str, list[tuple[Path, dict[str, Any], str]]],
 ) -> dict[str, Any] | None:
-    directory = report.parent
     manifest_path = directory / "manifest.json"
     summary_path = directory / "summary.json"
-    diff_path = directory / "diff.jsonl"
+    diff_path = directory / "diff.jsonl.gz"
+    if not diff_path.is_file():
+        diff_path = directory / "diff.jsonl"
     if not manifest_path.is_file() or not summary_path.is_file() or not diff_path.is_file():
         return None
     try:
@@ -158,13 +160,30 @@ def _run_record(
             if isinstance(rate, (int, float)):
                 stage_churn[str(stage.get("stage", ""))] = rate
     gate_path = directory / "gate.json"
-    stage_summary_path = directory / "stage-summary.json"
-    root_causes_path = directory / "root-causes.json"
+    stage_summary_path = directory / "stage-summary.json.gz"
+    root_causes_path = directory / "root-causes.json.gz"
+    memory_profile_path = directory / "memory-profile.json"
     build_root = directory.parent if directory.name == "diff" else directory
     lifecycle_path = build_root / "lifecycle.json"
     build_before_path = build_root / "build-before.log"
     build_after_path = build_root / "build-after.log"
     gate_status = None
+    memory_summary: dict[str, Any] = {}
+    if memory_profile_path.is_file():
+        try:
+            memory_profile = _read_json(memory_profile_path)
+            memory_summary = {
+                key: memory_profile.get(key)
+                for key in (
+                    "target_peak_bytes",
+                    "observed_peak_rss_bytes",
+                    "within_target",
+                    "elapsed_seconds",
+                    "sample_count",
+                )
+            }
+        except (OSError, ValueError, json.JSONDecodeError):
+            memory_summary = {"invalid": True}
     if gate_path.is_file():
         try:
             gate = _read_json(gate_path)
@@ -174,16 +193,43 @@ def _run_record(
     relative_directory = directory.relative_to(root).as_posix()
     before_side = _snapshot_side(manifest.get("before"), snapshots, root)
     after_side = _snapshot_side(manifest.get("after"), snapshots, root)
+
+    # 快照保存完整 SHA；历史索引在本地仓库可用时补充可读的 Git 提交信息。
+    repository = root.parents[1] if len(root.parents) > 1 else None
+    for side in (before_side, after_side):
+        commit = side.get("implementation", {}).get("git_commit")
+        if not commit or repository is None or not (repository / ".git").exists():
+            continue
+        result = subprocess.run(
+            ["git", "show", "-s", "--format=%s%x1f%an%x1f%aI%x1f%cI", commit],
+            cwd=repository,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            values = result.stdout.strip().split("\x1f")
+            if len(values) == 4:
+                side["implementation"].update({
+                    "git_subject": values[0],
+                    "git_author": values[1],
+                    "git_author_time": values[2],
+                    "git_committer_time": values[3],
+                })
     record: dict[str, Any] = {
         "comparison_id": relative_directory,
         "created_at": after_side.get("created_at") or before_side.get("created_at"),
         "adapter": manifest.get("adapter", "unknown"),
-        "report": _artifact(report, root),
         "manifest": _artifact(manifest_path, root),
         "summary_artifact": _artifact(summary_path, root),
         "diff": _artifact(diff_path, root),
+        "reading_diff": _artifact(directory / "reading-diff.json.gz", root),
+        "reading_index": _artifact(directory / "reading-index.json.gz", root),
+        "reading_units": _artifact(directory / "reading-units.bin", root),
         "stage_summary": _artifact(stage_summary_path, root),
         "root_causes": _artifact(root_causes_path, root),
+        "memory_profile": _artifact(memory_profile_path, root),
         "gate": _artifact(gate_path, root),
         "lifecycle": _artifact(lifecycle_path, root),
         "build_before_log": _artifact(build_before_path, root),
@@ -196,6 +242,7 @@ def _run_record(
             "complete_stage_coverage": summary.get("complete_stage_coverage"),
             "quality_conclusion": summary.get("quality_conclusion"),
             "changes": summary.get("changes", 0),
+            "evidence_changes": summary.get("evidence_changes", 0),
             "root_changes": summary.get("root_changes", 0),
             "propagated_candidates": summary.get("propagated_candidates", 0),
             "churn_rate": (summary.get("churn") or {}).get("rate"),
@@ -206,6 +253,9 @@ def _run_record(
             "status_transitions": summary.get("status_transitions", []),
             "missing_stages": summary.get("missing_stages", []),
             "stage_churn": stage_churn,
+            "reading_units": summary.get("reading_units", 0),
+            "affected_sentences": summary.get("affected_sentences", 0),
+            "memory": memory_summary,
         },
         "gate_status": gate_status,
     }
@@ -229,8 +279,8 @@ def build_history(root: Path) -> dict[str, Any]:
                 (manifest_path, manifest, _sha256(manifest_path))
             )
     records = []
-    for report in sorted(root.rglob("report.html")):
-        record = _run_record(report, root, snapshots)
+    for summary_path in sorted(root.rglob("summary.json")):
+        record = _run_record(summary_path.parent, root, snapshots)
         if record is not None:
             records.append(record)
     records.sort(
@@ -240,36 +290,10 @@ def build_history(root: Path) -> dict[str, Any]:
     return {"schema_version": SCHEMA_VERSION, "root": ".", "comparisons": records}
 
 
-def history_page(config_name: str = "history.json") -> str:
-    encoded = json.dumps(
-        {"source": config_name}, ensure_ascii=False, separators=(",", ":")
-    ).replace("</", "<\\/")
-    return f'''<!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kotoclip 语言质量对比历史</title>
-<style>
-:root {{ color-scheme: light; font-family: Inter,"Segoe UI","Microsoft YaHei",sans-serif; color:#202426; background:#f4f6f7; }}
-* {{ box-sizing:border-box; }} body {{ margin:0; min-width:320px; }} header {{ padding:24px clamp(18px,4vw,48px); color:#f8fafb; background:#202a2f; border-bottom:4px solid #27a376; }}
-main {{ width:min(1500px,100%); margin:0 auto; padding:22px clamp(14px,3vw,36px) 48px; }} h1 {{ margin:0; font-size:1.45rem; }} header p {{ margin:8px 0 0; color:#cbd5d9; }}
-.controls {{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }} input,select {{ min-height:36px; border:1px solid #b9c3c8; border-radius:4px; padding:7px 9px; font:inherit; }}
-.panel {{ overflow:auto; border:1px solid #d6dcdf; border-radius:6px; background:#fff; }} table {{ width:100%; border-collapse:collapse; min-width:950px; font-size:.82rem; }} th,td {{ padding:9px 10px; border-bottom:1px solid #e2e6e8; text-align:left; vertical-align:top; overflow-wrap:anywhere; }} th {{ position:sticky; top:0; background:#eef2f3; color:#445158; }} a {{ color:#17617a; }} .muted {{ color:#657178; }} code {{ font-family:"Cascadia Mono",Consolas,monospace; font-size:.76rem; }}
-</style></head><body><header><h1>Kotoclip 语言质量对比历史</h1><p id="meta">正在读取 history.json…</p></header><main>
-<div class="controls"><input id="search" type="search" placeholder="筛选轮次、提交或适配器"><select id="adapter"><option value="">全部适配器</option></select><select id="status"><option value="">全部状态</option></select></div>
-<div class="panel"><table><thead><tr><th>轮次</th><th>适配器</th><th>基准 → 候选</th><th>提交</th><th>语料</th><th>变化</th><th>根变化</th><th>传播候选</th><th>churn</th><th>结论</th><th>门禁</th><th>报告 / 元数据</th></tr></thead><tbody id="rows"></tbody></table></div></main>
-<script id="config" type="application/json">{encoded}</script><script>
-const config=JSON.parse(document.getElementById('config').textContent); const rows=document.getElementById('rows'); const search=document.getElementById('search'); const adapter=document.getElementById('adapter'); const status=document.getElementById('status'); let records=[];
-const esc=value=>String(value??''); const pct=value=>typeof value==='number'?(value*100).toFixed(3)+'%':'—';
-function render() {{ const needle=search.value.trim().toLowerCase(); rows.replaceChildren(); const filtered=records.filter(item=>{{ const hay=[item.comparison_id,item.adapter,item.before.label,item.after.label,item.before.implementation.git_commit,item.after.implementation.git_commit,item.before.corpus?.id,item.after.corpus?.id].join(' ').toLowerCase(); return (!needle||hay.includes(needle))&&(!adapter.value||item.adapter===adapter.value)&&(!status.value||item.summary.status===status.value); }}); for(const item of filtered) {{ const tr=document.createElement('tr'); const report=document.createElement('a'); report.href=item.report.url; report.textContent='查看差分'; report.target='_blank'; const manifest=document.createElement('a'); manifest.href=item.manifest.url; manifest.textContent='元数据'; manifest.target='_blank'; const links=[report,manifest]; if(item.lifecycle) {{ const lifecycle=document.createElement('a'); lifecycle.href=item.lifecycle.url; lifecycle.textContent='生命周期'; lifecycle.target='_blank'; links.push(lifecycle); }} const values=[item.comparison_id,item.adapter,`${{item.before.label||'—'}} → ${{item.after.label||'—'}}`,`${{item.before.implementation.git_commit||'—'}} → ${{item.after.implementation.git_commit||'—'}}`,`${{item.before.corpus?.id||'—'}} → ${{item.after.corpus?.id||'—'}}`,item.summary.changes,item.summary.root_changes,item.summary.propagated_candidates,pct(item.summary.churn_rate),item.summary.quality_conclusion||'—',item.gate_status||'—']; for(const value of values) {{ const td=document.createElement('td'); td.textContent=esc(value); tr.append(td); }} const td=document.createElement('td'); links.forEach((link,index)=>{{if(index)td.append(document.createTextNode(' · '));td.append(link);}}); tr.append(td); rows.append(tr); }} document.getElementById('meta').textContent=`共 ${{filtered.length}} / ${{records.length}} 个对比轮次；索引只引用各轮外部产物`; }}
-[search,adapter,status].forEach(node=>node.addEventListener('input',render));
-fetch(config.source,{{cache:'no-store'}}).then(response=>{{if(!response.ok)throw Error(`history.json HTTP ${{response.status}}`);return response.json();}}).then(history=>{{ records=history.comparisons||[]; for(const value of [...new Set(records.map(item=>item.adapter))].sort()) {{ const option=document.createElement('option'); option.value=value; option.textContent=value; adapter.append(option); }} for(const value of [...new Set(records.map(item=>item.summary.status).filter(Boolean))].sort()) {{ const option=document.createElement('option'); option.value=value; option.textContent=value; status.append(option); }} render(); }}).catch(error=>{{document.getElementById('meta').textContent=error.message;}});
-</script></body></html>'''
-
-
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="生成语言质量对比轮次索引与历史页")
+    parser = argparse.ArgumentParser(description="生成语言质量对比轮次 JSON 索引")
     parser.add_argument("--root", type=Path, required=True, help="包含多个对比目录的实验根目录")
     parser.add_argument("--output", type=Path, help="history.json 输出路径；默认 root/history.json")
-    parser.add_argument("--page", type=Path, help="history.html 输出路径；默认 root/history.html")
     return parser.parse_args(argv)
 
 
@@ -283,7 +307,6 @@ def main(argv: list[str] | None = None) -> int:
     if not root.is_dir():
         raise SystemExit(f"历史根目录不存在：{root}")
     output = (args.output or root / "history.json").resolve()
-    page = (args.page or root / "history.html").resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     history = build_history(root)
     output.write_text(
@@ -291,9 +314,7 @@ def main(argv: list[str] | None = None) -> int:
         encoding="utf-8",
         newline="\n",
     )
-    page.write_text(history_page(), encoding="utf-8", newline="\n")
     print(f"历史索引：{output}（{len(history['comparisons'])} 轮）")
-    print(f"历史页面：{page}")
     return 0
 
 

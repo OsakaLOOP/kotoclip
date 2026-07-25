@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import gzip
 import json
 import sys
 import tempfile
@@ -13,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from language_quality_history import build_history, history_page  # noqa: E402
+from language_quality_history import build_history  # noqa: E402
 
 
 class LanguageQualityHistoryTest(unittest.TestCase):
@@ -109,13 +110,26 @@ class LanguageQualityHistoryTest(unittest.TestCase):
                 ],
             },
         )
-        (output / "diff.jsonl").write_text(
-            '{"context":"不得进入历史 HTML"}\n', encoding="utf-8"
-        )
-        (output / "report.html").write_text(
-            "<!doctype html><title>单轮报告</title>", encoding="utf-8"
+        (output / "diff.jsonl.gz").write_bytes(
+            gzip.compress(
+                '{"context":"不得进入历史 HTML"}\n'.encode("utf-8"),
+                compresslevel=6,
+                mtime=0,
+            )
         )
         self.write_json(output / "gate.json", {"status": "review_required"})
+        self.write_json(
+            output / "memory-profile.json",
+            {
+                "schema_version": "kotoclip.quality.memory-profile.v1",
+                "target_peak_bytes": 1610612736,
+                "observed_peak_rss_bytes": 932052992,
+                "within_target": True,
+                "elapsed_seconds": 934.2,
+                "sample_count": 1831,
+                "samples": [],
+            },
+        )
         self.write_json(
             output / "lifecycle.json",
             {
@@ -136,7 +150,8 @@ class LanguageQualityHistoryTest(unittest.TestCase):
         self.assertEqual(len(history["comparisons"]), 1)
         record = history["comparisons"][0]
         self.assertEqual(record["comparison_id"], "comparisons/round-1")
-        self.assertEqual(record["report"]["url"], "comparisons/round-1/report.html")
+        self.assertIsNone(record["reading_diff"])
+        self.assertEqual(record["diff"]["url"], "comparisons/round-1/diff.jsonl.gz")
         self.assertEqual(record["summary"]["stage_churn"], {"morpheme": 0.25})
         self.assertEqual(record["gate_status"], "review_required")
         self.assertEqual(record["created_at"], "2026-07-23T02:00:00+00:00")
@@ -155,12 +170,15 @@ class LanguageQualityHistoryTest(unittest.TestCase):
         self.assertTrue(record["manifest"]["sha256"])
         self.assertTrue(record["summary_artifact"]["sha256"])
         self.assertTrue(record["gate"]["sha256"])
+        self.assertEqual(record["memory_profile"]["url"], "comparisons/round-1/memory-profile.json")
+        self.assertEqual(record["summary"]["memory"]["observed_peak_rss_bytes"], 932052992)
+        self.assertTrue(record["summary"]["memory"]["within_target"])
         self.assertEqual(
             record["lifecycle"]["url"],
             "comparisons/round-1/lifecycle.json",
         )
 
-    def test_missing_snapshot_is_explicit_and_incomplete_report_is_ignored(self) -> None:
+    def test_missing_snapshot_is_explicit_and_incomplete_comparison_is_ignored(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             before = self.write_snapshot(root, "before", "before-id")
@@ -169,7 +187,7 @@ class LanguageQualityHistoryTest(unittest.TestCase):
             before.unlink()
             incomplete = root / "incomplete"
             incomplete.mkdir()
-            (incomplete / "report.html").write_text("x", encoding="utf-8")
+            (incomplete / "summary.json").write_text("{}", encoding="utf-8")
             record = build_history(root)["comparisons"][0]
 
         self.assertIsNone(record["before"]["snapshot"])
@@ -177,14 +195,15 @@ class LanguageQualityHistoryTest(unittest.TestCase):
         self.assertIsNone(record["before"]["corpus"])
         self.assertIsNone(record["before"]["resources"])
 
-    def test_history_page_loads_external_registry_only(self) -> None:
-        page = history_page("history.json")
-        self.assertIn('"source":"history.json"', page)
-        self.assertIn("fetch(config.source", page)
-        self.assertIn("item.report.url", page)
-        self.assertIn("item.manifest.url", page)
-        self.assertIn("item.lifecycle.url", page)
-        self.assertNotIn("不得进入历史 HTML", page)
+    def test_history_does_not_require_a_static_page(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            before = self.write_snapshot(root, "before", "before-id")
+            after = self.write_snapshot(root, "after", "after-id")
+            self.write_comparison(root, "round", before, after)
+            history = build_history(root)
+        self.assertEqual(len(history["comparisons"]), 1)
+        self.assertNotIn("report", history["comparisons"][0])
 
 
 if __name__ == "__main__":

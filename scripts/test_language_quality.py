@@ -4,42 +4,70 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
 import language_quality
+import language_quality_snapshot
 
 
 class LanguageQualityEntryPointTest(unittest.TestCase):
-    def test_split_compare_args_keeps_commit_runner_arguments(self) -> None:
-        commit, history, lifecycle, no_history = language_quality.split_compare_args(
-            [
-                "--history-root",
-                "experiments/quality",
-                "--before",
-                "HEAD^",
-                "--after",
-                "HEAD",
-                "--output-dir",
-                "experiments/quality/runs/a",
-                "--no-history",
-            ]
-        )
-        self.assertEqual(history, Path("experiments/quality"))
-        self.assertIsNone(lifecycle)
-        self.assertTrue(no_history)
+    def test_snapshot_stage_counts_stream_reports(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            reports = {
+                "word_formations": {"items": [{"id": 1}], "rejected": [{"id": 2}]},
+                "lexical_candidates": {"items": [{"id": 1}, {"id": 2}]},
+                "bunsetsu": [{"boundaries": [{}, {}]}, {"boundaries": [{}]}],
+                "expressions": [{"status": "accepted"}, {"status": "rejected"}],
+                "catalogs": [{"layer": "grammar"}, {"layer": "dictionary"}],
+            }
+            observed: dict[str, dict[str, int]] = {}
+            for name, report in reports.items():
+                path = root / f"{name}.json"
+                path.write_text(json.dumps(report), encoding="utf-8")
+                observed[name] = language_quality_snapshot.stage_counts_for_artifact(
+                    name, path
+                )
+
+        self.assertEqual(observed["word_formations"], {"word_formation_candidate": 2})
+        self.assertEqual(observed["lexical_candidates"], {"lexical_candidate": 2})
+        self.assertEqual(observed["bunsetsu"], {"bunsetsu_boundary": 3})
         self.assertEqual(
-            commit,
-            [
-                "--before",
-                "HEAD^",
-                "--after",
-                "HEAD",
-                "--output-dir",
-                "experiments/quality/runs/a",
-            ],
+            observed["expressions"], {"expression": 1, "expression_candidate": 1}
         )
+        self.assertEqual(observed["catalogs"], {"resource": 2})
+
+    def test_default_library_corpus_uses_all_books_deterministically(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            library = root / "library"
+            library.mkdir()
+            connection = sqlite3.connect(library / "library.sqlite")
+            try:
+                connection.execute(
+                    "CREATE TABLE books (id TEXT PRIMARY KEY, title TEXT, author TEXT, language TEXT)"
+                )
+                connection.executemany(
+                    "INSERT INTO books VALUES (?, ?, ?, ?)",
+                    [("book-b", "乙", "作者乙", "ja"), ("book-a", "甲", "作者甲", "ja")],
+                )
+                connection.commit()
+            finally:
+                connection.close()
+            for book_id, content in (("book-a", "甲の本文。"), ("book-b", "乙の本文。")):
+                book = library / "books" / book_id
+                book.mkdir(parents=True)
+                (book / "content.md").write_text(content, encoding="utf-8")
+            first, first_id = language_quality.default_library_corpus(library, root / "cache")
+            second, second_id = language_quality.default_library_corpus(library, root / "cache")
+            text = first.read_text(encoding="utf-8")
+
+        self.assertEqual(first, second)
+        self.assertEqual(first_id, second_id)
+        self.assertLess(text.index("甲の本文"), text.index("乙の本文"))
 
     def test_write_json_is_utf8_and_replaces_atomically(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -6,16 +6,23 @@ use kotoclip_core::pipeline::{ruby, Pipeline};
 use kotoclip_core::transport::CompactAnalysis;
 use kotoclip_core::Engine;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct CliArgs {
     options: HashMap<String, String>,
     flags: HashSet<String>,
+}
+
+thread_local! {
+    static PIPELINE_CACHE: RefCell<HashMap<String, Rc<Pipeline>>> = RefCell::new(HashMap::new());
+    static DICTIONARY_CACHE: RefCell<HashMap<String, Rc<DictionaryEngine>>> = RefCell::new(HashMap::new());
 }
 
 impl CliArgs {
@@ -221,6 +228,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         "dictionary-lookup-batch" => dictionary_lookup_batch(&args),
         "dict-bubble-html" => dict_bubble_html(&args),
         "analyze" => analyze(&args),
+        "quality-snapshot" => quality_snapshot(&args),
         "grammar-inspect" => grammar_inspect(&args),
         "grammar-scan" => grammar_scan(&args),
         "grammar-residual" => grammar_residual(&args),
@@ -283,23 +291,39 @@ fn schema_audit(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn dictionary(args: &CliArgs) -> Result<DictionaryEngine, Box<dyn Error>> {
-    Ok(DictionaryEngine::prepare(
-        args.options
-            .get("dict-source-dir")
-            .map_or("data/dict-sources", String::as_str),
-        args.options
-            .get("dict-dir")
-            .map_or("data/dicts", String::as_str),
-    )?)
+fn dictionary(args: &CliArgs) -> Result<Rc<DictionaryEngine>, Box<dyn Error>> {
+    let source = args
+        .options
+        .get("dict-source-dir")
+        .map_or("data/dict-sources", String::as_str);
+    let cache = args
+        .options
+        .get("dict-dir")
+        .map_or("data/dicts", String::as_str);
+    let key = format!("{source}\0{cache}");
+    if let Some(value) = DICTIONARY_CACHE.with(|values| values.borrow().get(&key).cloned()) {
+        return Ok(value);
+    }
+    let value = Rc::new(DictionaryEngine::prepare(source, cache)?);
+    DICTIONARY_CACHE.with(|values| values.borrow_mut().insert(key, Rc::clone(&value)));
+    Ok(value)
 }
 
-fn pipeline(args: &CliArgs) -> Result<Pipeline, Box<dyn Error>> {
-    Ok(Pipeline::new(
-        args.options
-            .get("system-dict")
-            .map_or("ipadic/system.dic", String::as_str),
-    )?)
+fn pipeline(args: &CliArgs) -> Result<Rc<Pipeline>, Box<dyn Error>> {
+    let path = args
+        .options
+        .get("system-dict")
+        .map_or("ipadic/system.dic", String::as_str);
+    if let Some(value) = PIPELINE_CACHE.with(|values| values.borrow().get(path).cloned()) {
+        return Ok(value);
+    }
+    let value = Rc::new(Pipeline::new(path)?);
+    PIPELINE_CACHE.with(|values| {
+        values
+            .borrow_mut()
+            .insert(path.to_owned(), Rc::clone(&value))
+    });
+    Ok(value)
 }
 
 fn engine(args: &CliArgs) -> Result<Engine, Box<dyn Error>> {
@@ -486,7 +510,60 @@ fn analyze(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let dictionary = dictionary(args)?;
     let pipeline = pipeline(args)?;
     let tokens = pipeline.process_with_dictionary(&text, &[], &dictionary);
-    println!("{}", serde_json::to_string_pretty(&tokens)?);
+    output_json(args, &tokens)
+}
+
+fn quality_snapshot(args: &CliArgs) -> Result<(), Box<dyn Error>> {
+    let output_dir = PathBuf::from(args.required("output-dir").map_err(io::Error::other)?);
+    std::fs::create_dir_all(&output_dir)?;
+    let commands: [(&str, &str, &[&str]); 8] = [
+        ("analyze", "tokens.json", &[]),
+        (
+            "word-formation-scan",
+            "word_formations.json",
+            &["include-rejected"],
+        ),
+        (
+            "lexical-unit-scan",
+            "lexical_candidates.json",
+            &["include-pending", "include-rejected"],
+        ),
+        ("bunsetsu-scan", "bunsetsu.json", &["include-alternatives"]),
+        (
+            "grammar-scan",
+            "grammar_occurrences.json",
+            &["include-pending", "include-rejected"],
+        ),
+        ("grammar-residual", "grammar_residuals.json", &[]),
+        (
+            "expression-scan",
+            "expressions.json",
+            &["include-pending", "include-rejected"],
+        ),
+        ("schema-audit", "catalogs.json", &[]),
+    ];
+    for (command, file_name, flags) in commands {
+        let mut child = args.clone();
+        child.options.insert(
+            "json".to_owned(),
+            output_dir.join(file_name).to_string_lossy().into_owned(),
+        );
+        child.flags.insert("quiet".to_owned());
+        child
+            .flags
+            .extend(flags.iter().map(|value| (*value).to_owned()));
+        match command {
+            "analyze" => analyze(&child)?,
+            "word-formation-scan" => word_formation_scan(&child)?,
+            "lexical-unit-scan" => lexical_unit_scan(&child)?,
+            "bunsetsu-scan" => bunsetsu_scan(&child)?,
+            "grammar-scan" => grammar_scan(&child)?,
+            "grammar-residual" => grammar_residual(&child)?,
+            "expression-scan" => expression_scan(&child)?,
+            "schema-audit" => schema_audit(&child)?,
+            _ => unreachable!("固定 quality-snapshot 命令"),
+        }
+    }
     Ok(())
 }
 
@@ -1908,7 +1985,8 @@ fn print_nbest(pipeline: &Pipeline, text: &str, top_n: usize) {
 fn nbest(args: &CliArgs) -> Result<(), Box<dyn Error>> {
     let text = read_text_selection(args)?;
     let top_n = args.usize("top-n", 5).map_err(io::Error::other)?.max(1);
-    print_nbest(&pipeline(args)?, &text, top_n);
+    let pipeline = pipeline(args)?;
+    print_nbest(pipeline.as_ref(), &text, top_n);
     Ok(())
 }
 
@@ -3013,6 +3091,7 @@ fn print_help() {
         [--pos-major POS --pos-sub1 POS]
         [--output PATH] [--raw --json PATH --timing --no-open]
   analyze (--text TEXT | --source PATH)
+  quality-snapshot --source PATH --profile PATH --output-dir PATH
   grammar-inspect (--text TEXT | --source PATH)
   grammar-scan (--text TEXT | --source PATH) [--chapter TITLE]
         [--include-pending --include-rejected --json PATH]

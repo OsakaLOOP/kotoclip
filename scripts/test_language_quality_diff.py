@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import gzip
 import sys
 import tempfile
 import unittest
@@ -15,6 +16,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from language_quality_diff import (  # noqa: E402
     SNAPSHOT_SCHEMA_VERSION,
+    _candidate_cache_directory,
+    _restore_candidate_cache,
+    _store_candidate_cache,
     _sentence_spans,
     compare_files,
     compare_snapshot_manifests,
@@ -38,6 +42,10 @@ class LanguageQualityDiffTest(unittest.TestCase):
         path.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
         return path
 
+    def read_gzip_text(self, path: Path) -> str:
+        with gzip.open(path, "rt", encoding="utf-8") as stream:
+            return stream.read()
+
     def test_sentence_spans_keep_compound_terminal_punctuation(self) -> None:
         text = "前の文。彼女は驚いた!?」次の文。"
         spans = _sentence_spans(text)
@@ -45,6 +53,42 @@ class LanguageQualityDiffTest(unittest.TestCase):
             [text[start:end] for start, end in spans],
             ["前の文。", "彼女は驚いた!?」", "次の文。"],
         )
+
+    def test_candidate_cache_is_content_addressed_and_restorable(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            spool_parent = root / "comparison"
+            spool_parent.mkdir()
+            accelerator = root / "accelerator.exe"
+            before = root / "before.json"
+            after = root / "after.json"
+            accelerator.write_bytes(b"accelerator-v1")
+            before.write_text('{"run":"before"}', encoding="utf-8")
+            after.write_text('{"run":"after"}', encoding="utf-8")
+            cache = _candidate_cache_directory(
+                spool_parent, accelerator, before, after
+            )
+            self.assertIsNotNone(cache)
+            candidates = root / "candidates.jsonl"
+            metadata = root / "metadata.json"
+            candidates.write_text('{"kind":"pair"}\n', encoding="utf-8")
+            metadata.write_text('{"supported":true}', encoding="utf-8")
+            _store_candidate_cache(cache, candidates, metadata)
+
+            restored_candidates = root / "restored.jsonl"
+            restored_metadata = root / "restored-metadata.json"
+            self.assertTrue(
+                _restore_candidate_cache(cache, restored_candidates, restored_metadata)
+            )
+            self.assertEqual(
+                restored_candidates.read_text(encoding="utf-8"),
+                candidates.read_text(encoding="utf-8"),
+            )
+            accelerator.write_bytes(b"accelerator-v2")
+            self.assertNotEqual(
+                cache,
+                _candidate_cache_directory(spool_parent, accelerator, before, after),
+            )
 
     def test_bunsetsu_detects_segmentation_boundary_and_nested_field_changes(self) -> None:
         before = [
@@ -153,12 +197,9 @@ class LanguageQualityDiffTest(unittest.TestCase):
             write_bundle(bundle, output)
             self.assertTrue((output / "manifest.json").is_file())
             self.assertTrue((output / "summary.json").is_file())
-            self.assertEqual(len((output / "diff.jsonl").read_text(encoding="utf-8").splitlines()), 2)
-            report = (output / "report.html").read_text(encoding="utf-8")
-            self.assertIn("Kotoclip 语言质量差分", report)
-            self.assertIn("diff.jsonl", report)
-            self.assertNotIn("expression_fields_changed", report)
-            self.assertIn("expression_fields_changed", (output / "diff.jsonl").read_text(encoding="utf-8"))
+            self.assertEqual(len(self.read_gzip_text(output / "diff.jsonl.gz").splitlines()), 2)
+            self.assertFalse((output / "report.html").exists())
+            self.assertIn("expression_fields_changed", self.read_gzip_text(output / "diff.jsonl.gz"))
         self.assertEqual(bundle.summary["change_types"]["expression_added"], 1)
         self.assertEqual(bundle.summary["change_types"]["expression_fields_changed"], 1)
 
@@ -319,9 +360,9 @@ class LanguageQualityDiffTest(unittest.TestCase):
             output = root / "report"
             write_bundle(bundle, output)
 
-            self.assertTrue((output / "stage-summary.json").is_file())
-            self.assertTrue((output / "root-causes.json").is_file())
-            self.assertIn("管线层级", (output / "report.html").read_text(encoding="utf-8"))
+            self.assertTrue((output / "stage-summary.json.gz").is_file())
+            self.assertTrue((output / "root-causes.json.gz").is_file())
+            self.assertFalse((output / "report.html").exists())
 
         morpheme = next(change for change in bundle.changes if change["stage"] == "morpheme")
         bunsetsu = next(change for change in bundle.changes if change["stage"] == "bunsetsu")
@@ -445,7 +486,7 @@ class LanguageQualityDiffTest(unittest.TestCase):
         self.assertNotIn("inline", large)
         self.assertEqual(large["bytes"], MAX_INLINE_STREAM_BYTES + 1)
 
-    def test_html_uses_external_full_data_files(self) -> None:
+    def test_machine_artifacts_keep_external_full_data_files(self) -> None:
         before = [{"match_id": "old", "rule_id": "test", "origin": "builtin", "surface": "手を引く", "char_range": [0, 3]}]
         after = [{"match_id": "new", "rule_id": "test", "origin": "builtin", "surface": "手を引く", "char_range": [0, 3]}]
         with tempfile.TemporaryDirectory() as temporary:
@@ -457,16 +498,9 @@ class LanguageQualityDiffTest(unittest.TestCase):
             )
             output = root / "report"
             write_bundle(bundle, output)
-            report = (output / "report.html").read_text(encoding="utf-8")
-            self.assertIn('"detail_strategy":"full_external_jsonl"', report)
-            self.assertIn('"diff":"diff.jsonl"', report)
-            self.assertIn('quality-popover', report)
-            self.assertIn('showPopover', report)
-            self.assertIn('140', report)
-            self.assertNotIn('reader-inspector', report)
-            self.assertNotIn("手を引く", report)
-            self.assertEqual(len((output / "diff.jsonl").read_text(encoding="utf-8").splitlines()), 1)
-            self.assertTrue((output / "root-causes.json").is_file())
+            self.assertFalse((output / "report.html").exists())
+            self.assertEqual(len(self.read_gzip_text(output / "diff.jsonl.gz").splitlines()), 1)
+            self.assertTrue((output / "root-causes.json.gz").is_file())
 
     def test_html_detail_limit_is_removed(self) -> None:
         with self.assertRaises(SystemExit):

@@ -472,11 +472,12 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 
 - `manifest.json`：schema、工具版本、基准／候选 descriptor 和阶段图；
 - `summary.json`：全局状态、覆盖、变化类型、scope、状态转移、churn、区间和前 100 个根影响；
-- `diff.jsonl`：完整逐变化记录，不因 HTML 限制而截断；
-- `stage-summary.json`：十九层统计；
-- `root-causes.json`：根变化及其下游影响聚合；
-- `reading-diff.json`：按连续变化文节聚合的 before／after 整句、token 查询数据、主结果 ID 和证据 ID；
-- `dictionary-lookups-before.json`／`dictionary-lookups-after.json`：从阅读 token 查询请求捕获的桌面端同源 `DictionaryLookup` 矩阵；旧轮次没有该文件时面板必须显示未捕获，而不是复用另一侧结果；
+- `diff.jsonl.gz`：完整逐变化记录的 gzip 流，不因 HTML 限制而截断；
+- `stage-summary.json.gz`：十九层统计的 gzip JSON；
+- `root-causes.json.gz`：根变化及其下游影响聚合的 gzip JSON；
+- `reading-diff.json.gz`：按连续变化文节聚合的 before／after 整句、token 查询数据、主结果 ID 和证据 ID；
+- `reading-index.json.gz`／`reading-units.bin`：开发版原生界面的轻量筛选索引和按偏移随机读取 bundle；二者是可重建派生物，不替代权威 reading diff；
+- `dictionary-lookups-before.json.gz`／`dictionary-lookups-after.json.gz`：从阅读 token 查询请求捕获的桌面端同源 `DictionaryLookup` 矩阵；
 - `dictionary-lookup-capture.json`：两侧查询捕获状态与请求数；旧 CLI 不支持批量命令时记录 `unsupported_cli`，不伪造结果；
 - 门禁另写 `gate.json`，包含策略 hash、summary hash 和所有 violation。
 
@@ -484,46 +485,38 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 
 ### 8.2 人类面板
 
-`report.html` 是面板壳，不嵌入大语料数据。它通过同目录 HTTP 读取 `manifest.json`、`summary.json`、`diff.jsonl`、`root-causes.json` 和 `reading-diff.json`，当前包含：
+人类面板是 Kotoclip 开发版中的原生 Tauri 视图，不生成或打开静态 HTML。后端命令读取 `history.json`、轻量 reading index 和当前页对应的独立压缩 unit；页面只接收并挂载当前分页条目，完整变化集合仍由 Agent 文件保留。禁止将完整 reading diff 解压后通过 IPC 发送到 WebView。
 
-- 受影响句数、连续变化文节数、主结果实体数和证据事件数；根变化、传播候选、全层证据 churn 和严重级别；
-- 按连续变化文节分页的左右 before／after 阅读对照；整句上下文保留，变化范围红色标注；
-- 领域筛选（结构／语法／查询／表达／投影）、句子／规则／坐标搜索；
-- 左右 token 悬浮同步高亮；在命中位置打开固定双面板浮层，按“词典／语法／表达／结构”切换并显示双方 head word、语素、构词、词典整体、语法和表达数据；浮层可进入以取消关闭宽限，离开后 140ms 关闭，Escape、外部点击或关闭按钮均可收起；
-- 十九层覆盖、前后实体数、变化率和 Wilson 95% 区间；
-- 变化类型、字段路径、状态转移和根变化影响；
-- 按文本、阶段、类型、归因和字符坐标筛选的明细；
-- 默认读取完整 `diff.jsonl`，但主视图不逐条展示候选探针；原始记录只在下方明细按阶段、归因和坐标切片；
-- 全量 JSON/JSONL 与面板分离，重跑 diff 只替换数据文件，不需要把数百 MiB 再编码进 HTML。
-
-报告没有 HTML 数据截断参数：面板始终读取完整 `diff.jsonl`，页面分页只改变当前 DOM 切片，不改变输入集合或机器产物。面板需要通过本地 HTTP 服务打开，避免浏览器 `file://` 的跨源限制。单轮页负责 before/after 下钻，历史页负责发现和打开已有轮次。
-
-阅读浮层遵循桌面端的命中交互协议，但不在报告中伪造后端查询：有 `dictionary-lookups-before.json`／`dictionary-lookups-after.json` 时，词典 tab 使用捕获的 `DictionaryLookup` 条目按表记、词典和 occurrence 选择并渲染 `definition_html`；捕获状态为 `unsupported_cli` 或文件缺失时，浮层显示结构化查询请求和明确的未捕获原因。表记切换按钮在静态报告中仅标识本轮实际捕获的表记，不能假装触发未保存的后端查询。
+- 顶部显示历史轮次、before／after Git subject／作者／时间、聚合条目、主变化、根变化、证据变化、churn 和门禁；详细 comparison、schema、语料、运行 HEAD／分支／dirty 和生命周期可展开查看；
+- 差异按连续变化范围聚合为条目，每条携带 before／after 完整句子，不加载全文；
+- 每条左右两侧使用共享原生分析条目和 `BunsetsuCapsule`，变化范围按字符标红，悬浮字符向另一侧同步坐标；
+- 词典和语法气泡直接复用阅读器的会话、命中、排版和 `lookup_word` 后端，不增加结构／原始数据／词典／语法审计选项卡；
+- 历史轮次、文本、领域、阶段、字符坐标和条目页码均可来回切换；切换轮次会收束两侧悬浮会话；
+- Tauri 读取 gzip 索引并按 bundle 偏移取当前页，不把完整 JSONL／reading diff 嵌入前端 bundle、IPC 或 HTML。
 
 ### 8.3 历史对比轮次
 
-`language_quality_history.py` 递归扫描报告根目录中同时具有 `report.html`、`manifest.json`、`summary.json` 和 `diff.jsonl` 的完整对比轮次。它以 diff manifest 的 `run_id + snapshot manifest SHA-256` 关联 before/after 快照，不能唯一关联时将 Git、语料和资源字段保留为 `null`，不按目录名或当前仓库状态推测。
+`language_quality_history.py` 递归扫描具有 `manifest.json`、`summary.json` 和 `diff.jsonl(.gz)` 的对比目录，不依赖 HTML。它以 diff manifest 的 `run_id + snapshot manifest SHA-256` 关联 before/after 快照，不能唯一关联时将 Git、语料和资源字段保留为 `null`；在本地仓库可用时补充 Git subject、作者和时间。
 
-`history.json` 为 Agent 提供每轮的 comparison ID、创建时间、适配器、summary、各阶段 churn、gate 状态，以及 report/manifest/summary/diff/stage-summary/root-causes/gate/lifecycle/构建日志的相对 URL、字节数和 SHA-256。两侧元数据包含 snapshot URL/hash、Git commit、dirty 状态、status hash、CLI hash、运行平台、语料选择/hash/字符计数和全部资源路径、字节数及 hash。`history.html` 只读取该外部索引，支持按轮次、提交、语料、适配器和状态筛选，并打开每轮报告、manifest 元数据或生命周期；它不嵌入或复制 `diff.jsonl`。
+`history.json` 为 Agent 和开发版提供每轮的 comparison ID、创建时间、适配器、summary、各阶段 churn、gate 状态，以及 manifest/summary/diff/reading-diff/reading-index/reading-units/stage-summary/root-causes/gate/lifecycle/构建日志的相对 URL、字节数和 SHA-256。两侧元数据包含 snapshot URL/hash、Git commit、subject、作者、时间、dirty 状态、status hash、CLI hash、运行平台、语料选择/hash/字符计数和全部资源路径、字节数及 hash。
 
-当前历史页是可审计的轮次目录，不是跨轮次质量推断系统。后续趋势仓库仍需保存 release、genre、rule family、金标指标、性能、基线晋升和回滚事件，并提供对应切片；原始 summary 仍是权威数据。
+当前历史索引是可审计的轮次目录，不是跨轮次质量推断系统。后续趋势仓库仍需保存 release、genre、rule family、金标指标、性能、基线晋升和回滚事件，并提供对应切片；原始 summary 仍是权威数据。
 
 ### 8.4 建议目录
 
 ```text
-experiments/quality/
+experiments/quality-audit-series/
   history.json
-  history.html
-  registry.json
-  runs/<run-id>/manifest.json
-  runs/<run-id>/artifacts/*.json
-  comparisons/<before>--<after>/
+  artifact-store/<sha-prefix>/<sha>.blob
+  <before-sha12>-to-<after-sha12>/
     manifest.json
     summary.json
-    diff.jsonl
-    stage-summary.json
-    root-causes.json
-    report.html
+    diff.jsonl.gz
+    reading-diff.json.gz
+    reading-index.json.gz
+    reading-units.bin
+    stage-summary.json.gz
+    root-causes.json.gz
     gate.json
     build-before.log
     build-after.log
@@ -628,7 +621,7 @@ python scripts/language_quality_diff.py `
   --output-dir "experiments\quality-run\baseline-to-candidate"
 ```
 
-完整变化始终写入 `diff.jsonl`，报告壳在打开时读取完整文件，并只把当前分页切片渲染到 DOM。CLI 不提供缩减面板输入集合的参数。
+完整变化始终写入 `diff.jsonl.gz`，权威阅读条目始终写入 `reading-diff.json.gz`。原生界面只读取派生索引与当前页 unit，不改变或缩减机器产物输入集合。
 
 单产物兼容模式仅用于已有文节／表达 JSON 的迁移诊断：
 
@@ -667,40 +660,27 @@ python scripts/language_quality_gate.py `
 每次词典／语法改动提交后，Agent 从当前工作树调用统一入口。它不 checkout 当前工作树，而是同时创建两个临时 detached worktree：
 
 ```powershell
-python scripts/language_quality.py compare `
-  --before HEAD^ `
-  --after HEAD `
-  --source "D:\path\to\output.md" `
-  --chapter "## 第一話　冷やし神" `
-  --profile "experiments\quality-run\profile.sqlite" `
-  --corpus-id "nanoka-first-chapter-v1" `
-  --system-dict "ipadic\system.dic" `
-  --dict-source-dir "data\dict-sources" `
-  --dict-dir "data\dicts" `
-  --output-dir "experiments\quality-run\commit-HEAD^--HEAD" `
-  --history-root "experiments\quality-run" `
-  --gate-config "scripts\language_quality_gate.example.json"
+python scripts/language_quality.py compare HEAD^ HEAD
 ```
 
 统一入口的行为固定为：
 
 1. 校验两个 commit；
-2. 在临时目录创建两个 detached worktree；
-3. 用独立 `CARGO_TARGET_DIR` 分别构建 `kotoclip-cli`，保存构建日志；
-4. 用相同 source/profile 和每一侧解析后的 dictionary 参数捕获 before/after snapshot；
-5. 运行十九阶段 diff，输出完整 `diff.jsonl`、阶段统计、根影响和外部数据开发面板；
-6. 在 detached worktree 尚存在时，提取阅读 token 查询请求，分别调用两侧 CLI 的 `dictionary-lookup-batch`，写入两侧完整 `DictionaryLookup` 结果；
-7. 若提供 gate config，写入 `gate.json` 并把 gate 退出码传给 Agent；
-8. 删除本次 runner 创建的临时 worktree，保留所有评估产物；随后刷新 `history.json`／`history.html`。
+2. 从 `Documents/Kotoclip Library/library.sqlite` 按数据库顺序读取全部 `content.md`，按内容哈希缓存合并语料；
+3. 在临时目录逐侧创建 detached worktree，共用仓库 `target` 构建 `kotoclip-cli`，复制已构建二进制后立即释放该 worktree；
+4. 用固定的 IPADIC、词典源／缓存和 `data/research-profile.sqlite` 捕获 before/after snapshot；大型 artifact 使用确定性 gzip 并写入共享内容寻址存储；
+5. 运行十九阶段 diff，输出 gzip diff、阅读条目、阶段统计和根影响；
+6. 若两侧 CLI 支持 `dictionary-lookup-batch`，分别捕获并压缩完整 `DictionaryLookup` 结果；
+7. 使用仓库内固定门禁配置写入 `gate.json`，删除临时 worktree，随后刷新 `history.json`。
 
-比较目录还会写入 `lifecycle.json`。它记录统一入口的 `run_id`、启动时 Git HEAD／分支／dirty 状态、请求参数 hash、`compare_commits` 和 `refresh_history` 阶段的开始／结束时间、退出码、失败阶段以及 report、summary、history 的路径。任务失败时生命周期文件保留在部分输出目录中，可用下面的命令读取：
+比较目录还会写入 `lifecycle.json`。它记录统一入口的 `run_id`、启动时 Git HEAD／分支／dirty 状态、请求参数 hash、`compare_commits` 和 `refresh_history` 阶段的开始／结束时间、退出码、失败阶段以及 summary、reading-diff、history 的路径。任务失败时生命周期文件保留在部分输出目录中，可用下面的命令读取：
 
 ```powershell
 python scripts/language_quality.py status `
   --lifecycle "experiments\quality-run\commit-HEAD^--HEAD\lifecycle.json"
 ```
 
-`compare` 产出完整比较后默认自动刷新历史索引；门禁的 `review_required`／`blocked` 非零退出不会被误记为执行失败，生命周期保留门禁状态并继续刷新历史，同时原退出码仍返回给 CI／Agent。只有未生成有效 `gate.json` 的非零退出才标记 `failed`。只需要机器产物或正在调试中间步骤时可加 `--no-history`。底层脚本仍可直接调用，但不负责刷新历史或写统一生命周期状态。
+`compare` 产出完整比较后默认自动刷新历史索引；门禁的 `review_required`／`blocked` 非零退出不会被误记为执行失败，生命周期保留门禁状态并继续刷新历史，同时原退出码仍返回给 CI／Agent。统一入口不再接受 source、chapter、profile、词典目录或 output 参数；底层脚本仍可直接调用，但不负责刷新历史或写统一生命周期状态。
 
 仓库内受版本控制的 grammar catalog 和规则由各自 detached worktree 读取。系统词典、词典源包和本机缓存是显式外部输入：默认两端共用 `--system-dict`、`--dict-source-dir`、`--dict-dir`，snapshot manifest 会记录其中每个文件的 SHA-256。
 
@@ -724,18 +704,13 @@ python scripts/language_quality_commit_diff.py `
 
 ### 10.6 开发面板与历史轮次
 
-生成或更新 diff 后，重新扫描实验根目录，再以根目录模式启动无缓存开发服务：
+`compare` 完成后已自动刷新历史。开发时启动 Kotoclip，点击顶部的比较图标进入语言质量审计：
 
 ```powershell
-python scripts/language_quality.py history `
-  --root "experiments\quality-run"
-
-python scripts/language_quality.py serve `
-  --root "experiments\quality-run" `
-  --port 8765
+npm run dev
 ```
 
-打开 `http://127.0.0.1:8765/history.html`。服务只读整个报告根目录，历史页通过 `fetch` 读取 `history.json`，各轮页面继续读取自身 JSON/JSONL。新增轮次后重新运行 history 命令并刷新浏览器即可同步；端口占用时换用其他端口。只查看单轮时仍可使用 `--report <report.html>`。
+应用内可以切换历史轮次、筛选并分页查看聚合差异条目。新增轮次后点击审计视图顶部刷新按钮即可重新读取 `history.json`。Agent 直接读取 JSON/gzip 文件；只有需要从其他本地工具以 HTTP 访问机器产物时才启动 `language_quality_dashboard_server.py --root ...`，该服务不提供人类面板。
 
 ### 10.7 建议运行频率
 

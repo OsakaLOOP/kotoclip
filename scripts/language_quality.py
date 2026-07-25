@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -27,6 +28,7 @@ DELEGATES = {
     "history": "language_quality_history.py",
     "serve": "language_quality_dashboard_server.py",
 }
+QUALITY_ROOT_NAME = "experiments/quality-audit-series"
 
 
 def now() -> str:
@@ -90,34 +92,113 @@ def phase(name: str, status: str, started_at: str | None = None, **extra: Any) -
     return value
 
 
-def split_compare_args(values: Sequence[str]) -> tuple[list[str], Path | None, Path | None, bool]:
-    """取出统一入口自己的选项，其余参数原样交给 commit_diff。"""
-    commit_args: list[str] = []
-    history_root: Path | None = None
-    lifecycle_path: Path | None = None
-    no_history = False
-    index = 0
-    while index < len(values):
-        value = values[index]
-        if value == "--history-root":
-            if index + 1 >= len(values):
-                raise SystemExit("--history-root 需要路径")
-            history_root = Path(values[index + 1])
-            index += 2
-            continue
-        if value == "--lifecycle":
-            if index + 1 >= len(values):
-                raise SystemExit("--lifecycle 需要路径")
-            lifecycle_path = Path(values[index + 1])
-            index += 2
-            continue
-        if value == "--no-history":
-            no_history = True
-            index += 1
-            continue
-        commit_args.append(value)
-        index += 1
-    return commit_args, history_root, lifecycle_path, no_history
+def resolve_commit(repo: Path, reference: str) -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{reference}^{{commit}}"],
+        cwd=repo,
+        text=True,
+        encoding="utf-8",
+        errors="backslashreplace",
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f"无法解析 Git commit：{reference}\n{result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def default_library_corpus(library: Path, cache_root: Path) -> tuple[Path, str]:
+    """按 library.sqlite 顺序合并用户书库正文，结果按内容哈希缓存。"""
+    database = library / "library.sqlite"
+    if not database.is_file():
+        raise SystemExit(f"用户书库数据库不存在：{database}")
+    database_uri = database.resolve().as_uri() + "?mode=ro"
+    connection = sqlite3.connect(database_uri, uri=True)
+    try:
+        rows = connection.execute(
+            "SELECT id, title, author, language FROM books ORDER BY id"
+        ).fetchall()
+    finally:
+        connection.close()
+    if not rows:
+        raise SystemExit(f"用户书库没有可比较的书籍：{library}")
+    digest = hashlib.sha256()
+    for book_id, title, author, language in rows:
+        content_path = library / "books" / str(book_id) / "content.md"
+        if not content_path.is_file():
+            raise SystemExit(f"书库数据库记录缺少正文：{content_path}")
+        digest.update(
+            "\x1f".join(
+                (str(book_id), str(title or ""), str(author or ""), str(language or ""))
+            ).encode("utf-8")
+        )
+        digest.update(b"\x1e")
+        content_digest = hashlib.sha256()
+        with content_path.open("rb") as content:
+            for chunk in iter(lambda: content.read(1024 * 1024), b""):
+                content_digest.update(chunk)
+        digest.update(content_digest.digest())
+    corpus_hash = digest.hexdigest()
+    source_path = cache_root / "corpora" / f"library-{corpus_hash[:20]}.md"
+    if not source_path.is_file():
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                newline="\n",
+                dir=source_path.parent,
+                prefix=f".{source_path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as output:
+                temporary = Path(output.name)
+                output.write("# Kotoclip 语言质量全书库语料\n")
+                for book_id, title, author, language in rows:
+                    heading = " / ".join(
+                        item.replace("\n", " ").strip()
+                        for item in (str(title or ""), str(author or ""), str(language or ""))
+                        if item and item.strip()
+                    )
+                    output.write(f"\n## {heading or book_id}\n\n")
+                    content_path = library / "books" / str(book_id) / "content.md"
+                    with content_path.open("r", encoding="utf-8", newline="") as content:
+                        for chunk in iter(lambda: content.read(1024 * 1024), ""):
+                            output.write(chunk)
+                output.write("\n")
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(temporary, source_path)
+        finally:
+            if temporary is not None and temporary.exists():
+                temporary.unlink()
+    return source_path, f"library-{corpus_hash[:20]}"
+
+
+def default_commit_arguments(repo: Path, before: str, after: str) -> tuple[list[str], Path, Path]:
+    quality_root = (repo / QUALITY_ROOT_NAME).resolve()
+    cache_root = quality_root / ".cache"
+    library = Path.home() / "Documents" / "Kotoclip Library"
+    source, corpus_id = default_library_corpus(library, cache_root)
+    before_commit = resolve_commit(repo, before)
+    after_commit = resolve_commit(repo, after)
+    comparison = quality_root / f"{before_commit[:12]}-to-{after_commit[:12]}"
+    common = [
+        "--before", before_commit,
+        "--after", after_commit,
+        "--source", str(source),
+        "--profile", str(repo / "data" / "research-profile.sqlite"),
+        "--corpus-id", corpus_id,
+        "--system-dict", str(repo / "ipadic" / "system.dic"),
+        "--dict-source-dir", str(repo / "data" / "dict-sources"),
+        "--dict-dir", str(repo / "data" / "dicts"),
+        "--output-dir", str(comparison),
+        "--repo", str(repo),
+        "--build-profile", "release",
+        "--artifact-store", str(quality_root / "artifact-store"),
+        "--gate-config", str(repo / "scripts" / "language_quality_gate.example.json"),
+    ]
+    return common, comparison, quality_root
 
 
 def run_delegate(command: str, arguments: Sequence[str], cwd: Path) -> int:
@@ -150,14 +231,12 @@ def gate_outcome(output: Path, returncode: int) -> tuple[bool, str | None]:
 
 
 def compare(values: Sequence[str]) -> int:
-    commit_args, history_root, lifecycle_path, no_history = split_compare_args(values)
-    from language_quality_commit_diff import parse_args as parse_commit_args
-
-    parsed = parse_commit_args(commit_args)
-    repo = parsed.repo.resolve()
-    output = parsed.output_dir.resolve()
-    history_root = (history_root or output.parent).resolve()
-    lifecycle_path = (lifecycle_path or output / "lifecycle.json").resolve()
+    if len(values) != 2 or any(value.startswith("-") for value in values):
+        raise SystemExit("统一 compare 入口只接受两个 Git commit：python scripts/language_quality.py compare BEFORE AFTER")
+    repo = Path.cwd().resolve()
+    commit_args, output, history_root = default_commit_arguments(repo, values[0], values[1])
+    lifecycle_path = (output / "lifecycle.json").resolve()
+    no_history = False
     started_at = now()
     lifecycle: dict[str, Any] = {
         "schema_version": "kotoclip.quality.lifecycle.v1",
@@ -168,8 +247,8 @@ def compare(values: Sequence[str]) -> int:
         "updated_at": started_at,
         "git": git_state(repo),
         "request": {
-            "before": parsed.before,
-            "after": parsed.after,
+            "before": values[0],
+            "after": values[1],
             "output_dir": str(output),
             "history_root": str(history_root),
             "no_history": no_history,
@@ -242,8 +321,10 @@ def compare(values: Sequence[str]) -> int:
     lifecycle["completed_at"] = now()
     lifecycle["artifacts"] = {
         "comparison_dir": str(output),
-        "report": str(output / "diff" / "report.html"),
         "summary": str(output / "diff" / "summary.json"),
+        "reading_diff": str(output / "diff" / "reading-diff.json.gz"),
+        "reading_index": str(output / "diff" / "reading-index.json.gz"),
+        "reading_units": str(output / "diff" / "reading-units.bin"),
         "lifecycle": str(lifecycle_path),
         "history": None if no_history else str(history_root / "history.json"),
     }
@@ -271,7 +352,7 @@ def print_help() -> None:
         """Kotoclip 语言质量统一入口
 
 用法：
-  language_quality.py compare [统一选项] <language_quality_commit_diff.py 选项>
+  language_quality.py compare BEFORE_COMMIT AFTER_COMMIT
   language_quality.py snapshot <language_quality_snapshot.py 选项>
   language_quality.py diff <language_quality_diff.py 选项>
   language_quality.py gate <language_quality_gate.py 选项>
@@ -279,17 +360,13 @@ def print_help() -> None:
   language_quality.py serve <language_quality_dashboard_server.py 选项>
   language_quality.py status --lifecycle PATH
 
-compare 统一选项：
-  --history-root PATH  比较完成后刷新该目录的 history.json/history.html，默认 output-dir 的父目录
-  --lifecycle PATH     生命周期 JSON 路径，默认 output-dir/lifecycle.json
-  --no-history         只运行比较，不刷新历史索引
-
 示例：
-  python scripts/language_quality.py compare `
-    --before HEAD^ --after HEAD `
-    --output-dir experiments/quality/runs/current `
-    --history-root experiments/quality
-  python scripts/language_quality.py serve --root experiments/quality --port 8765
+  python scripts/language_quality.py compare HEAD^ HEAD
+  python scripts/language_quality.py serve --root experiments/quality-audit-series --port 8765
+
+compare 固定读取用户 Documents/Kotoclip Library 全部书籍，并使用仓库内 IPADIC、
+词典源／缓存、data/research-profile.sqlite、release 构建和统一门禁配置。
+输出、内容寻址 artifact、生命周期与历史索引均位于 experiments/quality-audit-series。
 """
     )
 

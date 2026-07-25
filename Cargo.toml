@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/kotoclip-core",
+    "crates/kotoclip-quality-diff",
     "src-tauri",
 ]
 resolver = "2"
