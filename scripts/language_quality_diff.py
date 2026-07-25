@@ -20,6 +20,7 @@ import sys
 import tempfile
 import time
 import threading
+import unicodedata
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -151,7 +152,7 @@ def process_memory_snapshot() -> dict[str, int | None]:
         get_process_memory_info = ctypes.windll.psapi.GetProcessMemoryInfo
         get_process_memory_info.argtypes = (
             wintypes.HANDLE,
-            ctypes.POINTER(ProcessMemoryCountersEx),
+            ctypes.c_void_p,
             wintypes.DWORD,
         )
         get_process_memory_info.restype = wintypes.BOOL
@@ -2949,6 +2950,39 @@ def _merge_ranges(ranges: Sequence[tuple[int, int]]) -> list[tuple[int, int]]:
     return [tuple(item) for item in merged]
 
 
+def _is_reading_separator(text: str) -> bool:
+    return all(
+        char.isspace() or unicodedata.category(char).startswith(("P", "Z"))
+        for char in text
+    )
+
+
+def _merge_reading_ranges(
+    ranges: Sequence[tuple[int, int]],
+    sentence: dict[str, Any],
+) -> list[tuple[tuple[int, int], list[tuple[int, int]]]]:
+    """跨纯标点或空白合并连续阅读变化，同时保留精确着色范围。"""
+    exact_ranges = _merge_ranges(ranges)
+    if not exact_ranges:
+        return []
+    sentence_start = int(sentence["char_range"][0])
+    text = str(sentence.get("text", ""))
+    groups: list[list[tuple[int, int]]] = [[exact_ranges[0]]]
+    for current in exact_ranges[1:]:
+        previous = groups[-1][-1]
+        gap_start = max(0, previous[1] - sentence_start)
+        gap_end = max(gap_start, current[0] - sentence_start)
+        gap = text[gap_start:gap_end]
+        if gap and _is_reading_separator(gap):
+            groups[-1].append(current)
+        else:
+            groups.append([current])
+    return [
+        ((group[0][0], group[-1][1]), group)
+        for group in groups
+    ]
+
+
 def _reading_unit_payload(
     before_manifest_path: Path,
     after_manifest_path: Path,
@@ -3066,16 +3100,16 @@ def _reading_unit_payload(
 
     units: list[dict[str, Any]] = []
     for sentence_index, changed_ranges in sorted(spans_by_sentence.items()):
-        groups = _merge_ranges(changed_ranges)
         sentence_after = after_by_index.get(sentence_index)
         sentence_before = before_by_after_index.get(sentence_index)
         if sentence_after is None:
             continue
+        groups = _merge_reading_ranges(changed_ranges, sentence_after)
         sentence_changes = [
             change
             for _, change in primary_ranges_by_sentence[sentence_index]
         ]
-        for group_index, group in enumerate(groups):
+        for group_index, (group, exact_ranges) in enumerate(groups):
             group_changes = list(
                 {
                     change["change_id"]: change
@@ -3101,6 +3135,7 @@ def _reading_unit_payload(
                     "unit_id": unit_id,
                     "sentence_index": sentence_index,
                     "changed_range": list(group),
+                    "changed_ranges": [list(item) for item in exact_ranges],
                     "primary_change_count": len(group_changes),
                     "evidence_change_count": len(evidence_changes),
                     "domains": dict(sorted(domain_counts.items())),
@@ -3367,13 +3402,13 @@ def _write_reading_unit_payload(
                                         max((item[1] for item in token_ranges), default=raw[1]),
                                     )
                                 )
-                            groups = _merge_ranges(spans)
+                            groups = _merge_reading_ranges(spans, sentence_after)
                             sentence_changes = [
                                 change
                                 for _, change in primary_ranges_by_sentence[sentence_index]
                             ]
                             wrote_sentence = False
-                            for group_index, group in enumerate(groups):
+                            for group_index, (group, exact_ranges) in enumerate(groups):
                                 group_changes = list(
                                     {
                                         change["change_id"]: change
@@ -3401,6 +3436,7 @@ def _write_reading_unit_payload(
                                     "unit_id": f"sentence-{sentence_index}-span-{group[0]}-{group[1]}-{group_index}",
                                     "sentence_index": sentence_index,
                                     "changed_range": list(group),
+                                    "changed_ranges": [list(item) for item in exact_ranges],
                                     "primary_change_count": len(group_changes),
                                     "evidence_change_count": len(evidence_changes),
                                     "domains": domains,
@@ -3451,6 +3487,7 @@ def _write_reading_unit_payload(
                                         "unit_id": unit["unit_id"],
                                         "sentence_index": unit["sentence_index"],
                                         "changed_range": unit["changed_range"],
+                                        "changed_ranges": unit["changed_ranges"],
                                         "primary_change_count": unit[
                                             "primary_change_count"
                                         ],
@@ -4278,6 +4315,9 @@ def write_reading_artifacts(output_dir: Path, payload: dict[str, Any]) -> None:
                         "unit_id": unit.get("unit_id"),
                         "sentence_index": unit.get("sentence_index"),
                         "changed_range": unit.get("changed_range"),
+                        "changed_ranges": unit.get(
+                            "changed_ranges", [unit.get("changed_range")]
+                        ),
                         "primary_change_count": unit.get("primary_change_count", 0),
                         "evidence_change_count": unit.get("evidence_change_count", 0),
                         "domains": unit.get("domains", {}),

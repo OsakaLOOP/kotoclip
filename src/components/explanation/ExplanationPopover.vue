@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { AnnotatedToken, DictionaryLookup } from "../../types";
 import { floatDebug } from "../../explanation/floatDebug";
 import { explanationPanelWidth, measureIntrinsicPanel, placeExplanationPanels, type PopoverPlacement, type RectSnapshot, type Size } from "../../explanation/geometry";
@@ -18,6 +18,8 @@ const props = defineProps<{
   componentLoading: boolean;
   componentCanGoBack: boolean;
   componentLabel: string;
+  panelPrefix?: string;
+  shortcutsEnabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -43,6 +45,11 @@ function intrinsicPanelSize(panelId: string): Size | undefined {
   return measureIntrinsicPanel(panel);
 }
 
+const panelPrefix = computed(() => props.panelPrefix || "explanation");
+const wholePanelId = computed(() => `${panelPrefix.value}-whole-panel`);
+const componentPanelId = computed(() => `${panelPrefix.value}-component-panel`);
+const enableShortcuts = computed(() => props.shortcutsEnabled ?? true);
+
 function place() {
   if (!props.show || !props.anchor || !props.componentAnchor) {
     floatDebug.record("layout", "explanation-popover", "place-skipped", "render-input-missing", {
@@ -52,12 +59,12 @@ function place() {
     });
     return;
   }
-  const componentSize = intrinsicPanelSize("explanation-component-panel");
+  const componentSize = intrinsicPanelSize(componentPanelId.value);
   if (!componentSize) {
     floatDebug.record("layout", "explanation-popover", "place-skipped", "component-panel-unmounted");
     return;
   }
-  const wholeSize = intrinsicPanelSize("explanation-whole-panel");
+  const wholeSize = intrinsicPanelSize(wholePanelId.value);
   placement.value = placeExplanationPanels(
     props.anchor,
     props.componentAnchor,
@@ -91,7 +98,10 @@ async function connectAndPlace() {
   await nextTick();
   observer?.disconnect();
   observer = new ResizeObserver(place);
-  const contents = document.querySelectorAll("[data-explanation-content]");
+  const contents = [
+    document.querySelector(`[data-explanation-content="${wholePanelId.value}"]`),
+    document.querySelector(`[data-explanation-content="${componentPanelId.value}"]`),
+  ].filter((content): content is Element => Boolean(content));
   contents.forEach((content) => observer?.observe(content));
   floatDebug.record("layout", "explanation-popover", "observer-connected", `${contents.length} content nodes`);
   place();
@@ -113,8 +123,8 @@ function placementSnapshot(value: PopoverPlacement["component"] | undefined) {
 }
 
 function capturePanelBoxes() {
-  const component = document.getElementById("explanation-component-panel");
-  const whole = document.getElementById("explanation-whole-panel");
+  const component = document.getElementById(componentPanelId.value);
+  const whole = document.getElementById(wholePanelId.value);
   floatDebug.snapshot("panelBoxes", {
     component: elementRectSnapshot(component),
     whole: elementRectSnapshot(whole),
@@ -154,7 +164,7 @@ onBeforeUnmount(() => {
 <template>
   <TooltipPanel
     v-if="wholeLookup || wholeLoading"
-    panel-id="explanation-whole-panel"
+    :panel-id="wholePanelId"
     :show="show"
     :x="placement.whole?.left ?? -10000"
     :y="placement.whole?.top ?? -10000"
@@ -173,7 +183,7 @@ onBeforeUnmount(() => {
     @back="emit('backWhole')"
   />
   <TooltipPanel
-    panel-id="explanation-component-panel"
+    :panel-id="componentPanelId"
     :show="show"
     :x="placement.component.left"
     :y="placement.component.top"
@@ -184,7 +194,7 @@ onBeforeUnmount(() => {
     :loading="componentLoading"
     :kind-label="componentLabel"
     :can-go-back="componentCanGoBack"
-    shortcuts-enabled
+    :shortcuts-enabled="enableShortcuts"
     @enter="emit('enter', $event)"
     @leave="emit('leave', $event)"
     @navigate="emit('navigateComponent', $event)"

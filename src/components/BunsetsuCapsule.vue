@@ -10,6 +10,10 @@ const props = defineProps<{
   tokenIndex: number;
   isDragSelected: boolean;
   tokens?: AnnotatedToken[];
+  characterHits?: boolean;
+  activeCharacter?: number | null;
+  changedRange?: [number, number] | null;
+  changedRanges?: [number, number][];
 }>();
 
 const hasSentencePause = computed(() => {
@@ -141,6 +145,22 @@ function isExpressionMorpheme(index: number) {
     return ranges.some((range) => morpheme.char_range[0] >= range[0] && morpheme.char_range[1] <= range[1]);
   });
 }
+
+function morphemeCharacters(morpheme: AnnotatedToken["bunsetsu"]["morphemes"][number]) {
+  return Array.from(morpheme.surface).map((character, index) => ({
+    character,
+    offset: morpheme.char_range[0] + index,
+  }));
+}
+
+function characterChanged(offset: number) {
+  const ranges = props.changedRanges?.length
+    ? props.changedRanges
+    : props.changedRange
+      ? [props.changedRange]
+      : [];
+  return ranges.some((range) => range[0] <= offset && offset < range[1]);
+}
 </script>
 
 <template>
@@ -163,7 +183,19 @@ function isExpressionMorpheme(index: number) {
         'expression-anchor': isExpressionMorpheme(idx),
       }"
     >
-      {{ m.surface }}
+      <template v-if="characterHits">
+        <span
+          v-for="item in morphemeCharacters(m)"
+          :key="item.offset"
+          class="audit-character"
+          :class="{
+            'audit-character--active': activeCharacter === item.offset,
+            'audit-character--changed': characterChanged(item.offset),
+          }"
+          :data-character-offset="item.offset"
+        >{{ item.character }}</span>
+      </template>
+      <template v-else>{{ m.surface }}</template>
     </span>
 
     <!-- 渲染语法 Badge 徽章 -->
@@ -180,3 +212,24 @@ function isExpressionMorpheme(index: number) {
     </template>
   </span>
 </template>
+
+<style scoped>
+.audit-character {
+  border-radius: 3px;
+  transition: background-color 100ms ease, box-shadow 100ms ease;
+}
+
+.audit-character--changed {
+  background: color-mix(in srgb, #d9534f 22%, transparent);
+  box-shadow: inset 0 -2px #c53a32;
+}
+
+.audit-character--active {
+  background: color-mix(in srgb, var(--accent-color) 18%, transparent);
+  box-shadow: inset 0 -2px var(--accent-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audit-character { transition: none; }
+}
+</style>

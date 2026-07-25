@@ -13,6 +13,7 @@ import {
   BriefcaseBusiness,
   FileUp,
   Gauge,
+  GitCompareArrows,
   Link2,
   Library,
   ListTree,
@@ -41,7 +42,6 @@ import {
   GrammarDictionaryTarget,
 } from "../types";
 
-import BunsetsuCapsule from "./BunsetsuCapsule.vue";
 import ExplanationPopover from "./explanation/ExplanationPopover.vue";
 import GrammarPopover from "./explanation/GrammarPopover.vue";
 import GrammarLibraryPanel from "./GrammarLibraryPanel.vue";
@@ -52,6 +52,8 @@ import RuleWorkbench from "./RuleWorkbench.vue";
 import DictionaryContent from "./dictionary/DictionaryContent.vue";
 import DictionarySettingsPanel from "./dictionary/DictionarySettingsPanel.vue";
 import LibraryHome from "./reader/LibraryHome.vue";
+import AnalyzedTextItem from "./reader/AnalyzedTextItem.vue";
+import QualityAuditView from "./quality/QualityAuditView.vue";
 import ReaderAppearancePanel from "./reader/ReaderAppearancePanel.vue";
 import ReaderImageBlock from "./reader/ReaderImageBlock.vue";
 import ReaderNavigationPanel from "./reader/ReaderNavigationPanel.vue";
@@ -127,6 +129,7 @@ const appearanceStorageKey = "kotoclip:reader-appearance:v1";
 const readerAppearance = ref<ReaderAppearance>(loadReaderAppearance());
 const showDevMetrics =
   import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_METRICS === "true";
+const isDevelopment = import.meta.env.DEV;
 const analysisMetrics = ref<{
   characterCount: number;
   durationMs: number;
@@ -325,6 +328,7 @@ const candidatesLoading = ref(false);
 
 // 侧边栏导出面板显示状态
 const showExportPanel = ref(false);
+const showQualityAudit = ref(false);
 const showGrammarLibrary = ref(false);
 const showDictionarySettings = ref(false);
 const expressionRules = ref<ExpressionRule[]>([]);
@@ -524,9 +528,18 @@ function measureVirtualRow(
   element: Element | ComponentPublicInstance | null,
   key: string,
 ) {
-  if (element instanceof HTMLElement) {
-    virtualRowElements.set(key, element);
-    virtualizer.value.measureElement(element);
+  const componentElement =
+    element && !(element instanceof HTMLElement) && "$el" in element
+      ? element.$el
+      : null;
+  const resolved = element instanceof HTMLElement
+    ? element
+    : componentElement instanceof HTMLElement
+      ? componentElement
+      : null;
+  if (resolved) {
+    virtualRowElements.set(key, resolved);
+    virtualizer.value.measureElement(resolved);
   } else {
     const previous = virtualRowElements.get(key);
     if (previous && !previous.isConnected) virtualRowElements.delete(key);
@@ -1259,6 +1272,11 @@ function clearAllSelections() {
 function removeSelectedKey(paragraphId: number, tokenIndex: number) {
   toggleSelect(paragraphId, tokenIndex);
 }
+
+function openQualityAudit() {
+  explanation.closeAll("open-quality-audit");
+  showQualityAudit.value = true;
+}
 </script>
 
 <template>
@@ -1275,6 +1293,17 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
         <VersionBadge />
       </template>
       <template #actions>
+      <button
+        v-if="isDevelopment"
+        class="icon-btn compact-tool"
+        :class="{ active: showQualityAudit }"
+        type="button"
+        title="语言质量审计"
+        aria-label="语言质量审计"
+        @click="openQualityAudit"
+      >
+        <GitCompareArrows :size="17" aria-hidden="true" />
+      </button>
       <div v-if="isReading" class="action-bar">
         <div v-if="showDevMetrics && analysisMetrics" class="dev-metrics-entry">
           <button
@@ -1569,9 +1598,33 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
           }"
         >
           <!-- 虚拟滚动段落渲染 -->
-          <div
+          <template
             v-for="virtualRow in virtualizer.getVirtualItems()"
             :key="readerRows[virtualRow.index].key"
+          >
+          <div
+            v-if="readerRows[virtualRow.index].kind === 'image'"
+            :style="{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: `translateY(${virtualRow.start}px) translateX(-50%)`,
+            }"
+            :data-index="virtualRow.index"
+            :ref="
+              (element) =>
+                measureVirtualRow(element, readerRows[virtualRow.index].key)
+            "
+            class="reader-row reader-image-row"
+          >
+            <ReaderImageBlock
+              :items="imageRowAt(virtualRow.index).items"
+              :layout="imageRowAt(virtualRow.index).layout"
+              @settled="measureSettledImage(imageRowAt(virtualRow.index).key)"
+            />
+          </div>
+          <AnalyzedTextItem
+            v-else
             :style="{
               position: 'absolute',
               top: 0,
@@ -1585,87 +1638,46 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
             "
             :class="[
               'reader-row',
-              readerRows[virtualRow.index].kind === 'text'
-                ? 'paragraph-block'
-                : 'reader-image-row',
+              'paragraph-block',
               {
-                'dialogue-block':
-                  readerRows[virtualRow.index].kind === 'text' &&
-                  textRowAt(virtualRow.index).paragraph.isDialogue,
-                'reader-heading-row':
-                  readerRows[virtualRow.index].kind === 'text' &&
-                  textRowAt(virtualRow.index).heading,
+                'dialogue-block': textRowAt(virtualRow.index).paragraph.isDialogue,
+                'reader-heading-row': textRowAt(virtualRow.index).heading,
               },
-              readerRows[virtualRow.index].kind === 'text' &&
               textRowAt(virtualRow.index).heading
                 ? `heading-level-${textRowAt(virtualRow.index).heading?.level || 2}`
                 : '',
             ]"
-            @pointerover="
-              readerRows[virtualRow.index].kind === 'text' &&
-              explanationInteraction.handleParagraphPointerOver($event)
+            :tokens="textRowAt(virtualRow.index).paragraph.tokens"
+            :paragraph-id="textRowAt(virtualRow.index).paragraph.id"
+            :is-drag-selected="
+              (tokenIndex) =>
+                isTokenDragSelected(
+                  textRowAt(virtualRow.index).paragraph.id,
+                  tokenIndex,
+                )
             "
-            @pointerout="
-              readerRows[virtualRow.index].kind === 'text' &&
-              explanationInteraction.handleParagraphPointerOut($event)
-            "
+            @pointerover="explanationInteraction.handleParagraphPointerOver"
+            @pointerout="explanationInteraction.handleParagraphPointerOut"
             @mousedown="
-              readerRows[virtualRow.index].kind === 'text' &&
               handleMouseDown($event, textRowAt(virtualRow.index).paragraph.id)
             "
             @mousemove="
-              readerRows[virtualRow.index].kind === 'text' &&
               handleMouseMove($event, textRowAt(virtualRow.index).paragraph.id)
             "
             @click="
-              readerRows[virtualRow.index].kind === 'text' &&
               handleParagraphClick(
                 $event,
                 textRowAt(virtualRow.index).paragraph.id,
               )
             "
             @contextmenu.prevent="
-              readerRows[virtualRow.index].kind === 'text' &&
               handleParagraphContextMenu(
                 $event,
                 textRowAt(virtualRow.index).paragraph.id,
               )
             "
-          >
-            <ReaderImageBlock
-              v-if="readerRows[virtualRow.index].kind === 'image'"
-              :items="imageRowAt(virtualRow.index).items"
-              :layout="imageRowAt(virtualRow.index).layout"
-              @settled="measureSettledImage(imageRowAt(virtualRow.index).key)"
-            />
-            <template
-              v-else-if="
-                textRowAt(virtualRow.index).paragraph.tokens.length > 0
-              "
-            >
-              <template
-                v-for="(token, tokenIndex) in textRowAt(virtualRow.index)
-                  .paragraph.tokens"
-                :key="tokenIndex"
-              >
-                <BunsetsuCapsule
-                  :token="token"
-                  :paragraphId="textRowAt(virtualRow.index).paragraph.id"
-                  :tokenIndex="tokenIndex"
-                  :isDragSelected="
-                    isTokenDragSelected(
-                      textRowAt(virtualRow.index).paragraph.id,
-                      tokenIndex,
-                    )
-                  "
-                  :tokens="textRowAt(virtualRow.index).paragraph.tokens"
-                />
-              </template>
-            </template>
-            <template v-else>
-              <span class="empty-line-placeholder">&nbsp;</span>
-            </template>
-          </div>
+          />
+          </template>
         </div>
       </div>
     </div>
@@ -1727,6 +1739,12 @@ function removeSelectedKey(paragraphId: number, tokenIndex: number) {
       @enter="explanationInteraction.handlePopoverEnter"
       @leave="explanationInteraction.handlePopoverLeave"
       @open-dictionary="openGrammarDictionary"
+    />
+
+    <QualityAuditView
+      v-if="isDevelopment"
+      :show="showQualityAudit"
+      @close="showQualityAudit = false"
     />
 
     <!-- 4. 右键上下文操作菜单 -->

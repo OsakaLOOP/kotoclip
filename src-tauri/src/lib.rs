@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod paths;
+pub mod quality_audit;
 pub mod state;
 
 use kotoclip_core::library::ReaderLibrary;
@@ -194,6 +195,9 @@ pub fn run() {
             commands::get_candidates,
             commands::choose_segmentation,
             commands::export_selected,
+            quality_audit::quality_audit_history,
+            quality_audit::quality_audit_comparison,
+            quality_audit::quality_audit_reading_units,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri 桌面应用运行出错");
