@@ -235,7 +235,7 @@ class MemoryProbe:
 
 
 class EntitySpool:
-    """将规范实体按阶段写入临时 JSONL，避免全管线实体同时常驻内存。"""
+    """将规范实体按阶段写入临时 gzip JSONL，避免同时占用内存和大量磁盘。"""
 
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -247,10 +247,12 @@ class EntitySpool:
         stage = str(entity["stage"])
         stream = self._streams.get(stage)
         if stream is None:
-            stream = (self.root / f"{stage}.jsonl").open(
-                "w",
+            stream = gzip.open(
+                self.root / f"{stage}.jsonl.gz",
+                "wt",
                 encoding="utf-8",
                 newline="\n",
+                compresslevel=TRANSIENT_GZIP_LEVEL,
             )
             self._streams[stage] = stream
         stream.write(canonical_json(entity))
@@ -303,8 +305,14 @@ def _iter_external_sorted_jsonl(
             if not chunk:
                 return
             chunk.sort(key=key)
-            chunk_path = temporary_root / f"chunk-{len(chunk_paths):06d}.jsonl"
-            with chunk_path.open("w", encoding="utf-8", newline="\n") as output:
+            chunk_path = temporary_root / f"chunk-{len(chunk_paths):06d}.jsonl.gz"
+            with gzip.open(
+                chunk_path,
+                "wt",
+                encoding="utf-8",
+                newline="\n",
+                compresslevel=TRANSIENT_GZIP_LEVEL,
+            ) as output:
                 for entity in chunk:
                     output.write(canonical_json(entity))
                     output.write("\n")
@@ -336,12 +344,12 @@ def _iter_stage_changes_from_spools(
     temporary_parent: Path,
 ) -> Iterable[dict[str, Any]]:
     """以实体 key 与 anchor 两次外部归并取代全量索引和未匹配列表。"""
-    before_path = before_root / f"{stage}.jsonl"
-    after_path = after_root / f"{stage}.jsonl"
+    before_path = before_root / f"{stage}.jsonl.gz"
+    after_path = after_root / f"{stage}.jsonl.gz"
     with tempfile.TemporaryDirectory(prefix=f".quality-stage-{stage}-", dir=temporary_parent) as temporary:
         temporary_root = Path(temporary)
-        before_unmatched_path = temporary_root / "before-unmatched.jsonl"
-        after_unmatched_path = temporary_root / "after-unmatched.jsonl"
+        before_unmatched_path = temporary_root / "before-unmatched.jsonl.gz"
+        after_unmatched_path = temporary_root / "after-unmatched.jsonl.gz"
         before_groups = iter(
             _iter_entity_groups(
                 _iter_external_sorted_jsonl(before_path, temporary_root, _entity_key),
@@ -356,7 +364,19 @@ def _iter_stage_changes_from_spools(
         )
         before_group = next(before_groups, None)
         after_group = next(after_groups, None)
-        with before_unmatched_path.open("w", encoding="utf-8", newline="\n") as before_unmatched, after_unmatched_path.open("w", encoding="utf-8", newline="\n") as after_unmatched:
+        with gzip.open(
+            before_unmatched_path,
+            "wt",
+            encoding="utf-8",
+            newline="\n",
+            compresslevel=TRANSIENT_GZIP_LEVEL,
+        ) as before_unmatched, gzip.open(
+            after_unmatched_path,
+            "wt",
+            encoding="utf-8",
+            newline="\n",
+            compresslevel=TRANSIENT_GZIP_LEVEL,
+        ) as after_unmatched:
             while before_group is not None or after_group is not None:
                 if after_group is None or (
                     before_group is not None and before_group[0] < after_group[0]
@@ -489,7 +509,7 @@ def write_annotated_diff(
         ) as compressed:
             for stage in STAGE_ORDER:
                 records = _iter_external_sorted_jsonl(
-                    raw_root / f"{stage}.jsonl",
+                    raw_root / f"{stage}.jsonl.gz",
                     raw_root,
                     lambda change: (
                         SEVERITY_ORDER.get(change["severity"], 99),
@@ -3844,10 +3864,12 @@ def compare_snapshot_manifests(
                     )
                 )
             else:
-                with (raw_change_root / f"{stage}.jsonl").open(
-                    "w",
+                with gzip.open(
+                    raw_change_root / f"{stage}.jsonl.gz",
+                    "wt",
                     encoding="utf-8",
                     newline="\n",
+                    compresslevel=TRANSIENT_GZIP_LEVEL,
                 ) as raw_stream:
                     for change in _iter_stage_changes_from_spools(
                         stage,
@@ -4115,10 +4137,12 @@ def _compare_snapshot_manifests_accelerated(
             if diff_output_path is None:
                 changes.extend(stage_changes)
             else:
-                with (raw_change_root / f"{stage}.jsonl").open(
-                    "w",
+                with gzip.open(
+                    raw_change_root / f"{stage}.jsonl.gz",
+                    "wt",
                     encoding="utf-8",
                     newline="\n",
+                    compresslevel=TRANSIENT_GZIP_LEVEL,
                 ) as raw_stream:
                     for change in stage_changes:
                         raw_stream.write(canonical_json(change))

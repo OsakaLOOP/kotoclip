@@ -17,7 +17,9 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from language_quality_diff import (  # noqa: E402
+    EntitySpool,
     SNAPSHOT_SCHEMA_VERSION,
+    _iter_external_sorted_jsonl,
     _candidate_cache_directory,
     _restore_candidate_cache,
     _store_candidate_cache,
@@ -49,6 +51,43 @@ class LanguageQualityDiffTest(unittest.TestCase):
     def read_gzip_text(self, path: Path) -> str:
         with gzip.open(path, "rt", encoding="utf-8") as stream:
             return stream.read()
+
+    def test_temporary_entity_spools_and_sort_chunks_are_compressed(self) -> None:
+        entities = [
+            {"stage": "token", "key": "b", "anchor": "b", "value": index}
+            for index in range(3)
+        ]
+        entities.append(
+            {"stage": "token", "key": "a", "anchor": "a", "value": 0}
+        )
+        observed_chunks: list[list[str]] = []
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with EntitySpool(root) as spool:
+                for entity in entities:
+                    spool.append(entity)
+            source = root / "token.jsonl.gz"
+            self.assertTrue(source.is_file())
+            with patch("language_quality_diff.EXTERNAL_SORT_CHUNK_ENTITIES", 2), patch(
+                "language_quality_diff.gzip.open", wraps=gzip.open
+            ) as gzip_open:
+                sorted_entities = list(
+                    _iter_external_sorted_jsonl(
+                        source,
+                        root,
+                        lambda entity: (entity["key"], entity["value"]),
+                    )
+                )
+                observed_chunks = [
+                    [str(call.args[0]), str(call.args[1])]
+                    for call in gzip_open.call_args_list
+                    if str(call.args[0]).endswith(".jsonl.gz")
+                ]
+
+        self.assertEqual(
+            [entity["key"] for entity in sorted_entities], ["a", "b", "b", "b"]
+        )
+        self.assertTrue(any(mode == "wt" for _, mode in observed_chunks))
 
     def test_sentence_spans_keep_compound_terminal_punctuation(self) -> None:
         text = "前の文。彼女は驚いた!?」次の文。"
