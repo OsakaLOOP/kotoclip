@@ -67,7 +67,7 @@ EPUB 解包、OPF/spine 解析、XHTML 前置清理、ruby 注音规范化和图
 
 ### 分词与字符坐标协议
 
-正文使用 Vibrato 0.5.2 与 IPADIC 分词。分词前，Rust 权威入口 `pipeline::ruby::prepare_text` 将有效的 `漢字《かな》` ruby 标记转换为汉字基底文本，同时保存作者读音；渐进文档切块、Token `char_range`、章节跳转和阅读进度都使用该预处理文本的坐标。
+正文使用 Vibrato 0.5.2 与 IPADIC 分词。书库 Markdown 先由前端 `compileReaderDocument(...).analysisText` 编译为阅读器正文；Rust 审计使用 `reader_markdown::compile_analysis_text` 的等价实现，两端由 `src/reader/fixtures/markdown_analysis_cases.json` 共同约束。随后 Rust 权威入口 `pipeline::ruby::prepare_text` 将有效的 `漢字《かな》` ruby 标记转换为汉字基底文本，同时保存作者读音；渐进文档切块、Token `char_range`、章节跳转、阅读进度和语言质量审计都使用该预处理文本的坐标。
 
 字符坐标按 Unicode scalar value（Rust `char`）计数，不是 UTF-8 字节偏移，也不是 JavaScript UTF-16 code unit。前端不得用 `string.length` 生成阅读锚点；`src/reader/document.ts` 的 `preparedCharacterLength` 必须与 Rust `ruby::prepare_text` 保持相同的 ruby 有效性和计数规则。原始 ruby 标记仍保留在 `analysisText` 中供后端提取读音，但章节、图片和文本块范围必须使用预处理后的字符长度。
 

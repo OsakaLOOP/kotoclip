@@ -101,11 +101,14 @@ MorphemeColumn[]
 
 禁止保存构词、词典命中、文节、语法、表达、画像和 UI token。底座使用分书、分块的紧凑二进制格式，顺序读取时不物化全书；目录只保存文件偏移和校验和，不建立 occurrence 倒排索引。
 
+`content.md` 不能直接进入 ruby 和分词协议。底座先通过 `kotoclip-core::reader_markdown::compile_analysis_text` 执行与 Web 阅读器 `compileReaderDocument(...).analysisText` 等价的清理，再调用 `ruby::prepare_text`。两端共用 `src/reader/fixtures/markdown_analysis_cases.json`，覆盖 frontmatter、标题、TOC、链接、图片、Pandoc 属性、HTML fence、实体和 ruby；任一端改变语义而未同步 fixture 时测试失败。
+
 ### 5.2 身份与失效
 
 底座键只包含：
 
 - 原始书籍内容 hash；
+- Markdown 到 `analysisText` 的协议版本；
 - ruby／规范文本协议版本；
 - `system.dic` 内容 hash；
 - Vibrato 版本；
@@ -379,29 +382,40 @@ reading unit 的用户可见结构保持：
 首个纵向 adapter 已在 `crates/kotoclip-quality-audit` 完成。它覆盖 `d29827a` 的 lexical／formation proper-containment 语义变化，包含：
 
 - 只读冻结 `library.sqlite` 中全部书籍，严格校验 UTF-8、正文 hash 和规范文本 hash；
-- 内容寻址的 IPADIC v2 底座，保存分书形态素、production segment、段落、reading sentence 和 ruby 注释；
+- 内容寻址的 IPADIC v3 底座，先按阅读器协议编译 Markdown，再保存分书形态素、production segment、段落、reading sentence 和 ruby 注释；
 - accepted formation、proper-containment、exact-form 批查、old/new lexical DP 四级短路；
 - 从 lexical 分叉点共享两侧公共前缀，并分别执行文节、语法、内置表达、呼应表达和 UI token 投影；
 - 独立已知样例门禁、可选全域 oracle、原子轮次发布、原子 history 更新和现有 Tauri reading bundle；
 - 总时间、分阶段时间、分阶段 RSS、临时空间、产物空间和底座空间硬预算；
 - N-best 永久排除，不进入 inventory、selector、observation 或 gate 判定。
 
-真实书库为 7 本、1,085,347 规范字符、547,304 形态素、79,180 个 clause。release 二进制、无任何上层结果缓存的实测如下：
+真实书库为 7 本、1,069,266 个阅读器规范字符、532,888 个形态素、78,620 个 clause。此前记录的 1,085,347 字符包含 frontmatter、TOC、图片和 Markdown 标记，不是阅读器实际送入后端的 `analysisText`。release 二进制、无任何上层结果缓存的修正后实测如下：
 
 | 层 | 处理范围 | 时间 | 空间／结果 |
 | --- | ---: | ---: | ---: |
-| 首次 IPADIC v2 底座 | 全部 7 本 | 5.84 秒 | 96,723,060 bytes |
+| 首次 IPADIC v3 底座 | 全部 7 本 | 约 4.5 秒，不含 release 编译 | 94,592,802 bytes |
 | 初始化与完整指纹 | system.dic、词典树、资源树 | 约 0.37 秒 | 阶段 RSS 约 68 MiB |
-| 全库轻量选择扫描 | 1,085,347 字符／79,180 clause | 1.39 秒 | 2,660 clause 命中，约 3.36% |
-| exact-form 与 old/new lexical DP | 11,250 个 selector 查询 | 0.29 秒 | 325 个变化段落 |
-| 双侧真实下游管线 | 22,866 字符 | 2.01 秒 | 排除 97.89% 字符的重处理 |
-| 机器变化与 UI bundle | 356 个 reading unit | 4.47 秒 | 4,895,958 bytes |
-| 日常总计 | 全库扫描、选择式执行、原子产物 | 8.54 秒 | 峰值 RSS 168,161,280 bytes |
-| 带全域 oracle 总计 | 额外检查全部 79,180 clause | 12.41 秒 | oracle 3.87 秒并通过 |
+| 全库轻量选择扫描 | 1,069,266 字符／78,620 clause | 1.29 秒 | 2,628 clause 命中，约 3.34% |
+| exact-form 与 old/new lexical DP | 11,250 个 selector 查询 | 0.28 秒 | 302 个变化段落 |
+| 双侧真实下游管线 | 21,984 字符 | 3.33 秒 | 排除 97.94% 字符的重处理 |
+| 机器变化与 UI bundle | 310 个 reading unit | 4.21 秒 | 4,506,901 bytes |
+| 日常总计 | 全库扫描、选择式执行、原子产物 | 9.56 秒 | 峰值 RSS 177,627,136 bytes |
+| 带全域 oracle 总计 | 额外检查全部 78,620 clause | 13.45 秒 | oracle 3.92 秒并通过 |
 
-与旧管线约 458 秒、超过 8 GiB RSS、单轮 1～2 GiB 结果相比，当前 adapter 的日常时间下降约 98.1%，峰值 RSS 下降约 98.0%，轮次结果下降 99.5% 以上。持久底座约 92.2 MiB，替代原先各约 20 GiB 的全库索引和上层缓存；不保存构词、整体词、文节、语法、表达、查询结果或比较结果缓存。
+与旧管线约 458 秒、超过 8 GiB RSS、单轮 1～2 GiB 结果相比，当前 adapter 的日常时间下降约 97.9%，峰值 RSS 至少下降约 97.9%，轮次结果下降 99.5% 以上。持久底座约 90.2 MiB，替代原先各约 20 GiB 的全库索引和上层缓存；不保存构词、整体词、文节、语法、表达、查询结果或比较结果缓存。`artifact_serialization` 的 4.21 秒已成为最大单阶段，后续性能工作应直接优化唯一 UI bundle 的投影和压缩，不能为此恢复上层结果缓存。
 
-重分析最初仍需 67.46 秒，原因是 325 个段落的两侧分别重复 IPADIC、构词和 SQLite 查询。改为从底座恢复形态素、全体段落一次批查、只在 lexical 谓词处分叉后，降到约 2 秒。机器变化记录不再复制完整 token；完整 token 只在 UI bundle 保存一次，轮次从约 9.0 MiB 降到约 4.7 MiB。
+重分析最初仍需 67.46 秒，原因是变化段落的两侧分别重复 IPADIC、构词和 SQLite 查询。改为从底座恢复形态素、全体段落一次批查、只在 lexical 谓词处分叉后，本轮 302 个段落的重分析与观察规范化合计 3.33 秒。机器变化记录不再复制完整 token；完整 token 只在 UI bundle 保存一次，轮次约 4.30 MiB。
+
+### 17.1 结构化结果复核
+
+可见观察比较保留 lexical unit、构词、文节、语法和表达的身份、字符范围、matched／display／anchor ranges、词典引用、读音与 UI 投影。仅规范化两个随同句前部 token 合并而传播、但用户不可见的 ordinal：
+
+- `grammar_occurrences[].covered_token_range`；
+- `expressions[].token_range`。
+
+修正后记录到 276 个 ordinal-only token 范围，保存在 `counts.ordinal_only_token_propagations` 和 summary 的 `propagated_candidates`，但不生成主 reading unit。`changes.jsonl.gz` 共 310 条、201 种 lexical 转移、覆盖全部 7 本；before／after lexical 对象完全相同的主条目为 0，带 `[[#...]]` 或 Markdown 标题标记的句文本为 0。代表结果仍包括 `[] -> 不登校`、`一句 -> 一言一句`、`一時間 -> 一時間目`、`[] -> 超能力` 和 `[] -> 各方面`。
+
+日常轮次与全域 oracle 轮次的 `changes.jsonl.gz` SHA-256 均为 `27529605e74518ef5308de9515f1e919235495bbff450b80e6754cf2a70ec26f`，说明 oracle 只增加覆盖证明，没有改变结构化变化集合。oracle 门禁状态为 `passed`。
 
 ## 18. 当前覆盖边界
 
