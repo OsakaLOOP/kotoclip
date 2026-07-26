@@ -167,6 +167,20 @@ cargo run -p kotoclip-core --bin kotoclip-cli -- dictionary-lookup-batch `
 # 扫描所有历史对比轮次，生成供开发版与 Agent 读取的 JSON 索引
 python scripts/language_quality_history.py --help
 
+# 冻结书库、生成唯一允许持久化的 IPADIC 底座并执行选择式审计
+cargo run --release -p kotoclip-quality-audit -- freeze-library `
+  --library "$env:USERPROFILE\Documents\Kotoclip Library" `
+  --output experiments/quality-audit-selective/corpus.json
+cargo run --release -p kotoclip-quality-audit -- build-substrate `
+  --corpus experiments/quality-audit-selective/corpus.json `
+  --system-dict ipadic/system.dic `
+  --output-root experiments/quality-audit-selective/substrates
+cargo run --release -p kotoclip-quality-audit -- audit-containment `
+  --repository-root . --substrate SUBSTRATE_DIR `
+  --system-dict ipadic/system.dic --dict-dir data/dicts `
+  --output experiments/quality-audit-series/selective/ROUND_ID `
+  --history-root experiments/quality-audit-series
+
 # 需要 HTTP 调试访问机器产物时使用（桌面审计视图不依赖它）
 python scripts/language_quality_dashboard_server.py --help
 ```

@@ -373,3 +373,44 @@ reading unit 的用户可见结构保持：
 6. 兼容 reading index/bundle 的最小产物写出。
 
 完成该纵向切片后，再扩展到目录规则、跨 Git runner、语法、表达和词典；在关系谓词路径证明架构成立前，不提前增加任何结果缓存。
+
+## 17. 2026-07-26 实现与实测
+
+首个纵向 adapter 已在 `crates/kotoclip-quality-audit` 完成。它覆盖 `d29827a` 的 lexical／formation proper-containment 语义变化，包含：
+
+- 只读冻结 `library.sqlite` 中全部书籍，严格校验 UTF-8、正文 hash 和规范文本 hash；
+- 内容寻址的 IPADIC v2 底座，保存分书形态素、production segment、段落、reading sentence 和 ruby 注释；
+- accepted formation、proper-containment、exact-form 批查、old/new lexical DP 四级短路；
+- 从 lexical 分叉点共享两侧公共前缀，并分别执行文节、语法、内置表达、呼应表达和 UI token 投影；
+- 独立已知样例门禁、可选全域 oracle、原子轮次发布、原子 history 更新和现有 Tauri reading bundle；
+- 总时间、分阶段时间、分阶段 RSS、临时空间、产物空间和底座空间硬预算；
+- N-best 永久排除，不进入 inventory、selector、observation 或 gate 判定。
+
+真实书库为 7 本、1,085,347 规范字符、547,304 形态素、79,180 个 clause。release 二进制、无任何上层结果缓存的实测如下：
+
+| 层 | 处理范围 | 时间 | 空间／结果 |
+| --- | ---: | ---: | ---: |
+| 首次 IPADIC v2 底座 | 全部 7 本 | 5.84 秒 | 96,723,060 bytes |
+| 初始化与完整指纹 | system.dic、词典树、资源树 | 约 0.37 秒 | 阶段 RSS 约 68 MiB |
+| 全库轻量选择扫描 | 1,085,347 字符／79,180 clause | 1.39 秒 | 2,660 clause 命中，约 3.36% |
+| exact-form 与 old/new lexical DP | 11,250 个 selector 查询 | 0.29 秒 | 325 个变化段落 |
+| 双侧真实下游管线 | 22,866 字符 | 2.01 秒 | 排除 97.89% 字符的重处理 |
+| 机器变化与 UI bundle | 356 个 reading unit | 4.47 秒 | 4,895,958 bytes |
+| 日常总计 | 全库扫描、选择式执行、原子产物 | 8.54 秒 | 峰值 RSS 168,161,280 bytes |
+| 带全域 oracle 总计 | 额外检查全部 79,180 clause | 12.41 秒 | oracle 3.87 秒并通过 |
+
+与旧管线约 458 秒、超过 8 GiB RSS、单轮 1～2 GiB 结果相比，当前 adapter 的日常时间下降约 98.1%，峰值 RSS 下降约 98.0%，轮次结果下降 99.5% 以上。持久底座约 92.2 MiB，替代原先各约 20 GiB 的全库索引和上层缓存；不保存构词、整体词、文节、语法、表达、查询结果或比较结果缓存。
+
+重分析最初仍需 67.46 秒，原因是 325 个段落的两侧分别重复 IPADIC、构词和 SQLite 查询。改为从底座恢复形态素、全体段落一次批查、只在 lexical 谓词处分叉后，降到约 2 秒。机器变化记录不再复制完整 token；完整 token 只在 UI bundle 保存一次，轮次从约 9.0 MiB 降到约 4.7 MiB。
+
+## 18. 当前覆盖边界
+
+proper-containment adapter 在其声明的语义域内已经完成真实全库 oracle，但新模块还不能把任意 Git diff 自动转换为选择式任务。以下输入必须明确处理，不能沿用本 adapter 的结论：
+
+1. 构词目录、语法目录、表达目录和词典内容变化尚无独立 inventory／delta／selector adapter；接入前只能 `FullDomain` 或 `Blocked`。
+2. before／after 当前是同一 release runner 内的两种显式 lexical policy；跨 Git revision 的常驻 runner 协议和二进制 inventory 尚未实现。
+3. 用户画像评分、持久分词选择和自定义画像表达被显式排除。语言本体的内置／呼应表达已执行，但个人状态不进入本 adapter 的指纹或观察值。
+4. 当前机器变化记录审计 lexical unit 身份和范围；完整词典释义渲染只在后续词典内容 adapter 中比较。现有 UI 可按 reading token 打开当前词典，但这不等价于审计词典数据库本身的 before／after 内容变化。
+5. 选择器的性质测试目前覆盖已知 fixture、零变化语料和真实全库 oracle；随机序列、变异测试与跨句最大包络仍应在新增 adapter 时补齐。
+
+因此，当前可用于该 lexical guard 及同构关系谓词变化的正式审计；对未分类变化必须 fail closed，不允许因本轮性能结果而默认选择式执行。
