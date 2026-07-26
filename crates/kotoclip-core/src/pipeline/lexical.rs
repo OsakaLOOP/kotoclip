@@ -110,7 +110,7 @@ pub fn catalog_audit() -> Result<crate::models::RuleCatalogAudit, Box<dyn std::e
             "morpheme_window_generation".to_string(),
             "lexical_shape_routing".to_string(),
             "interval_dynamic_programming".to_string(),
-            "word_formation_overlap_guard".to_string(),
+            "word_formation_crossing_overlap_guard".to_string(),
             "stable_entry_key".to_string(),
         ],
     })
@@ -280,6 +280,14 @@ fn overlaps(left: (usize, usize), right: (usize, usize)) -> bool {
     left.0 < right.1 && right.0 < left.1
 }
 
+fn contains(outer: (usize, usize), inner: (usize, usize)) -> bool {
+    outer.0 <= inner.0 && inner.1 <= outer.1
+}
+
+fn crosses(left: (usize, usize), right: (usize, usize)) -> bool {
+    overlaps(left, right) && !contains(left, right) && !contains(right, left)
+}
+
 fn resolve_candidates(
     morphemes: &[Morpheme],
     raw: Vec<RawCandidate>,
@@ -292,14 +300,14 @@ fn resolve_candidates(
             continue;
         };
         let range = (item.start, item.end);
-        let partial_formation = formations.iter().find(|formation| {
-            overlaps(range, formation.morpheme_range) && range != formation.morpheme_range
-        });
-        let (status, reason, counter) = if partial_formation.is_some() {
+        let crossing_formation = formations
+            .iter()
+            .find(|formation| crosses(range, formation.morpheme_range));
+        let (status, reason, counter) = if crossing_formation.is_some() {
             (
                 LexicalCandidateStatus::Rejected,
                 Some("word_formation_overlap".to_string()),
-                vec!["partial_overlap_with_word_formation".to_string()],
+                vec!["crossing_overlap_with_word_formation".to_string()],
             )
         } else if item.auto_accept {
             (LexicalCandidateStatus::Accepted, None, Vec::new())

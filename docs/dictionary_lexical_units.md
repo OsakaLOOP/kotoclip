@@ -56,6 +56,7 @@ Morpheme
 - `WordFormationCandidate` 说明生产型构词结构。
 - `DictionaryLexicalCandidate` 说明完整表记存在可绑定词条。
 - 两者同范围时可以同时接受。例如某个生产型构词后来进入词典，既保留构词说明，也获得整体词典入口。
+- 两者为包含关系时同样可以同时接受；整体词作为查询入口优先，构词保留外层或内层结构证据。只有彼此交叉且都不完整包含另一方的范围才冲突。
 - 阶段 D 不再承担无助词词汇整体的恢复。
 
 ## 4. 数据模型
@@ -93,6 +94,7 @@ DictionaryLexicalUnitAnnotation
 ```
 
 `Bunsetsu` 增加 `lexical_units`。原始 morpheme 不合并、不替换；accepted 词汇跨度只作为不可拆原子、整体词头和整体词典入口。
+当 accepted 整体词与构词都覆盖文节中心词时，`head_word` 使用整体词；构词注解仍保留在 `word_formations`，供结构说明和内部查询使用。
 
 边界成立与读音选定必须分开：
 
