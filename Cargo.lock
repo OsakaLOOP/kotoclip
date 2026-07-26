@@ -2141,6 +2141,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "kotoclip-quality-audit"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "flate2",
+ "kotoclip-core",
+ "rmp-serde",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "kotoclip-quality-diff"
 version = "0.1.0"
 dependencies = [
