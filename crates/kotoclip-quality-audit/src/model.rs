@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-pub const AUDIT_SCHEMA_VERSION: &str = "kotoclip.quality.selective-audit.v2";
+pub const AUDIT_SCHEMA_VERSION: &str = "kotoclip.quality.selective-audit.v3";
 pub const SUBSTRATE_SCHEMA_VERSION: &str = "kotoclip.quality.morpheme-substrate.v3";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -170,6 +170,7 @@ pub struct AuditCounts {
     pub observation_dictionary_queries: usize,
     pub changed_paragraphs: usize,
     pub changes: usize,
+    pub ordinal_only_token_propagations: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

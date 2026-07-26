@@ -267,7 +267,9 @@ pub fn run_containment_audit(options: &ContainmentAuditOptions) -> Result<PathBu
             .map_err(|error| anyhow!(error))?;
         offset_token_ranges(&mut before_tokens, paragraph.range.start, 0);
         offset_token_ranges(&mut after_tokens, paragraph.range.start, 0);
-        let changed_ranges = changed_token_ranges(&before_tokens, &after_tokens)?;
+        let token_changes = classify_token_ranges(&before_tokens, &after_tokens)?;
+        counts.ordinal_only_token_propagations += token_changes.ordinal_only.len();
+        let changed_ranges = token_changes.visible;
         for (reading_sentence_id, sentence_range, sentence_text) in paragraph.reading_sentences {
             let sentence_changed: Vec<CharRange> = changed_ranges
                 .iter()
@@ -327,7 +329,7 @@ pub fn run_containment_audit(options: &ContainmentAuditOptions) -> Result<PathBu
             "changes": changes.len(),
             "evidence_changes": 0,
             "root_changes": usize::from(!changes.is_empty()),
-            "propagated_candidates": 0,
+            "propagated_candidates": counts.ordinal_only_token_propagations,
             "churn_rate": if counts.characters == 0 { 0.0 } else { changes.len() as f64 / counts.characters as f64 },
             "heavy_pipeline_character_rate": if counts.characters == 0 { 0.0 } else { counts.executed_paragraph_characters as f64 / counts.characters as f64 },
             "reading_units": changes.len(),
@@ -537,7 +539,10 @@ fn verify_known_example(pipeline: &Pipeline, dictionary: &DictionaryEngine) -> R
     let after_has_target = lexical_units(&after)
         .iter()
         .any(|unit| unit.surface == "不登校");
-    if before_has_target || !after_has_target || changed_token_ranges(&before, &after)?.is_empty() {
+    if before_has_target
+        || !after_has_target
+        || classify_token_ranges(&before, &after)?.visible.is_empty()
+    {
         bail!("已知 proper-containment 样例未产生预期 lexical unit 变化");
     }
     Ok(())
@@ -650,25 +655,71 @@ fn accepted_signature(
     result
 }
 
-fn changed_token_ranges(
+struct ClassifiedTokenRanges {
+    visible: Vec<CharRange>,
+    ordinal_only: Vec<CharRange>,
+}
+
+fn classify_token_ranges(
     before: &[AnnotatedToken],
     after: &[AnnotatedToken],
-) -> Result<Vec<CharRange>> {
-    let mut values = BTreeSet::new();
+) -> Result<ClassifiedTokenRanges> {
+    let mut visible = BTreeSet::new();
+    let mut ordinal_only = BTreeSet::new();
     let mut before_by_range = BTreeMap::new();
     let mut after_by_range = BTreeMap::new();
     for token in before {
-        before_by_range.insert(token.bunsetsu.char_range, serde_json::to_vec(token)?);
+        let full = serde_json::to_value(token)?;
+        before_by_range.insert(
+            token.bunsetsu.char_range,
+            (full.clone(), visible_token_observation(full)),
+        );
     }
     for token in after {
-        after_by_range.insert(token.bunsetsu.char_range, serde_json::to_vec(token)?);
+        let full = serde_json::to_value(token)?;
+        after_by_range.insert(
+            token.bunsetsu.char_range,
+            (full.clone(), visible_token_observation(full)),
+        );
     }
     for range in before_by_range.keys().chain(after_by_range.keys()) {
-        if before_by_range.get(range) != after_by_range.get(range) {
-            values.insert(CharRange::new(range.0, range.1));
+        let before_value = before_by_range.get(range);
+        let after_value = after_by_range.get(range);
+        if before_value.map(|value| &value.1) != after_value.map(|value| &value.1) {
+            visible.insert(CharRange::new(range.0, range.1));
+        } else if before_value.map(|value| &value.0) != after_value.map(|value| &value.0) {
+            ordinal_only.insert(CharRange::new(range.0, range.1));
         }
     }
-    Ok(values.into_iter().collect())
+    Ok(ClassifiedTokenRanges {
+        visible: visible.into_iter().collect(),
+        ordinal_only: ordinal_only.into_iter().collect(),
+    })
+}
+
+/// token ordinal 是句内执行布局，不属于阅读器可见身份；字符范围和语义身份仍完整比较。
+fn visible_token_observation(mut token: serde_json::Value) -> serde_json::Value {
+    if let Some(occurrences) = token
+        .pointer_mut("/bunsetsu/grammar_occurrences")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for occurrence in occurrences {
+            if let Some(object) = occurrence.as_object_mut() {
+                object.remove("covered_token_range");
+            }
+        }
+    }
+    if let Some(expressions) = token
+        .get_mut("expressions")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for expression in expressions {
+            if let Some(object) = expression.as_object_mut() {
+                object.remove("token_range");
+            }
+        }
+    }
+    token
 }
 
 fn tokens_in_range(tokens: &[AnnotatedToken], range: CharRange) -> Vec<AnnotatedToken> {
@@ -742,4 +793,45 @@ fn current_rss_bytes() -> u64 {
 #[cfg(not(windows))]
 fn current_rss_bytes() -> u64 {
     0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::visible_token_observation;
+
+    #[test]
+    fn token_ordinal_propagation_is_not_a_visible_observation_change() {
+        let before = serde_json::json!({
+            "bunsetsu": {
+                "char_range": [20, 24],
+                "grammar_occurrences": [{
+                    "occurrence_id": "grammar:20:24",
+                    "matched_ranges": [[20, 24]],
+                    "covered_token_range": [3, 4]
+                }]
+            },
+            "expressions": [{
+                "match_id": "expression:20:24",
+                "char_range": [20, 24],
+                "matched_ranges": [[20, 24]],
+                "token_range": [3, 4]
+            }]
+        });
+        let mut after = before.clone();
+        after["bunsetsu"]["grammar_occurrences"][0]["covered_token_range"] =
+            serde_json::json!([2, 3]);
+        after["expressions"][0]["token_range"] = serde_json::json!([2, 3]);
+
+        assert_ne!(before, after);
+        assert_eq!(
+            visible_token_observation(before.clone()),
+            visible_token_observation(after.clone())
+        );
+
+        after["expressions"][0]["char_range"] = serde_json::json!([19, 24]);
+        assert_ne!(
+            visible_token_observation(before),
+            visible_token_observation(after)
+        );
+    }
 }
