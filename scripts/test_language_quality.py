@@ -82,6 +82,25 @@ class LanguageQualityEntryPointTest(unittest.TestCase):
             )
             self.assertEqual(list(path.parent.glob("*.tmp")), [])
 
+    def test_largest_files_reports_deterministic_budget_breakdown(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "nested").mkdir()
+            (root / "small.bin").write_bytes(b"x")
+            (root / "nested" / "beta.bin").write_bytes(b"xx")
+            (root / "nested" / "alpha.bin").write_bytes(b"xx")
+
+            files = language_quality.largest_files(root, limit=2)
+
+        self.assertEqual(
+            files,
+            [("nested/alpha.bin", 2), ("nested/beta.bin", 2)],
+        )
+        self.assertEqual(
+            language_quality.format_file_sizes(files),
+            "nested/alpha.bin=0.0 MiB，nested/beta.bin=0.0 MiB",
+        )
+
     def test_gate_outcome_keeps_reviewable_comparison_in_lifecycle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)

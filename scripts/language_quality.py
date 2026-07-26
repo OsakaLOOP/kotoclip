@@ -73,6 +73,21 @@ def directory_bytes(path: Path) -> int:
     return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
 
 
+def largest_files(path: Path, limit: int = 12) -> list[tuple[str, int]]:
+    files = (
+        (item.relative_to(path).as_posix(), item.stat().st_size)
+        for item in path.rglob("*")
+        if item.is_file()
+    )
+    return sorted(files, key=lambda entry: (-entry[1], entry[0]))[:limit]
+
+
+def format_file_sizes(files: Sequence[tuple[str, int]]) -> str:
+    return "，".join(
+        f"{name}={size / 1024 / 1024:.1f} MiB" for name, size in files
+    )
+
+
 def unique_directory_bytes(path: Path) -> int:
     seen: set[tuple[int, int]] = set()
     total = 0
@@ -391,9 +406,11 @@ def compare(values: Sequence[str]) -> int:
 
         retained_bytes = directory_bytes(staging)
         if retained_bytes > MAX_COMPARISON_BYTES:
+            details = format_file_sizes(largest_files(staging))
             raise RuntimeError(
                 f"轮次持久产物 {retained_bytes / 1024 / 1024:.1f} MiB，"
-                f"超过 {MAX_COMPARISON_BYTES / 1024 / 1024:.0f} MiB 预算"
+                f"超过 {MAX_COMPARISON_BYTES / 1024 / 1024:.0f} MiB 预算；"
+                f"最大文件：{details}"
             )
         prune_cache_directory(
             history_root / ".cache" / "snapshots",
