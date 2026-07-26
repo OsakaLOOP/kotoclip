@@ -1,7 +1,11 @@
 use crate::models::{Bunsetsu, HeadWord, Morpheme};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// ruby 清理与规范坐标协议。该值变化时，审计形态素底座必须失效。
+pub const PREPARE_TEXT_PROTOCOL_VERSION: &str = "kotoclip.prepare-text.v1";
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RubyAnnotation {
     pub base: String,
     pub reading: String,

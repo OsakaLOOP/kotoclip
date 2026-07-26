@@ -37,6 +37,13 @@ pub struct DictionaryLexicalSegment {
     pub result: lexical::DictionaryLexicalMatchResult,
 }
 
+/// 选择式审计从 IPADIC 底座恢复的生产 content segment。
+#[derive(Debug, Clone)]
+pub struct PreanalyzedContentSegment {
+    pub char_range: (usize, usize),
+    pub morphemes: Vec<crate::models::Morpheme>,
+}
+
 fn cancellation_requested(check: Option<&dyn Fn() -> bool>) -> bool {
     check.is_some_and(|check| check())
 }
@@ -46,6 +53,22 @@ enum SegmentType {
     Content,
     Punctuation,
     LineBreak,
+}
+
+/// 生产管线文本安全分段协议。该值变化时，审计形态素底座必须失效。
+pub const TEXT_BOUNDARY_PROTOCOL_VERSION: &str = "kotoclip.production-boundary.v1";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProductionSegmentKind {
+    Content,
+    Punctuation,
+    LineBreak,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProductionSegment {
+    pub kind: ProductionSegmentKind,
+    pub char_range: (usize, usize),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -166,6 +189,24 @@ fn segment_text(chars: &[char]) -> Vec<TextSegment> {
     segments
 }
 
+/// 使用生产管线的规则切分已经完成 ruby 规范化的文本。
+///
+/// 调用方必须先使用 [`ruby::prepare_text`]，避免原文与规范坐标混用。
+pub fn segment_prepared_text(text: &str) -> Vec<ProductionSegment> {
+    let chars: Vec<char> = text.chars().collect();
+    segment_text(&chars)
+        .into_iter()
+        .map(|segment| ProductionSegment {
+            kind: match segment.seg_type {
+                SegmentType::Content => ProductionSegmentKind::Content,
+                SegmentType::Punctuation => ProductionSegmentKind::Punctuation,
+                SegmentType::LineBreak => ProductionSegmentKind::LineBreak,
+            },
+            char_range: (segment.start_char_idx, segment.end_char_idx),
+        })
+        .collect()
+}
+
 fn literal_token(chars: &[char], segment: TextSegment) -> AnnotatedToken {
     let surface: String = chars[segment.start_char_idx..segment.end_char_idx]
         .iter()
@@ -245,7 +286,166 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         dictionary: &crate::dictionary::lookup::DictionaryEngine,
     ) -> Vec<AnnotatedToken> {
-        self.process_internal(text, merge_rules, &mut |_| {}, None, Some(dictionary), None)
+        self.process_internal(
+            text,
+            merge_rules,
+            &mut |_| {},
+            None,
+            Some(dictionary),
+            None,
+            lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
+        )
+    }
+
+    /// 使用显式 lexical/formation overlap 语义执行生产管线。
+    ///
+    /// 常规产品入口固定使用当前 crossing policy；此入口只供提交级语义审计。
+    pub fn process_with_dictionary_overlap_policy(
+        &self,
+        text: &str,
+        merge_rules: &[Vec<String>],
+        dictionary: &crate::dictionary::lookup::DictionaryEngine,
+        policy: lexical::WordFormationOverlapPolicy,
+    ) -> Vec<AnnotatedToken> {
+        self.process_internal(
+            text,
+            merge_rules,
+            &mut |_| {},
+            None,
+            Some(dictionary),
+            None,
+            policy,
+        )
+    }
+
+    /// 从已校验的 IPADIC 形态素底座执行 lexical overlap 双侧比较。
+    ///
+    /// 两侧共享 ruby、构词、候选准备和词典查询结果，只在关系谓词处分叉；
+    /// 下游文节与语法仍分别执行，以保持用户可见 token 与生产管线一致。
+    pub fn process_preanalyzed_dictionary_overlap_pair(
+        &self,
+        prepared_text: &str,
+        annotations: &[ruby::RubyAnnotation],
+        content_segments: &[PreanalyzedContentSegment],
+        merge_rules: &[Vec<String>],
+        dictionary_matches: &HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
+    ) -> Result<(Vec<AnnotatedToken>, Vec<AnnotatedToken>), String> {
+        let chars: Vec<char> = prepared_text.chars().collect();
+        let document_readings = ruby::build_document_reading_map(annotations);
+        let mut supplied = content_segments
+            .iter()
+            .map(|segment| (segment.char_range, segment))
+            .collect::<HashMap<_, _>>();
+        let mut before = Vec::new();
+        let mut after = Vec::new();
+
+        for segment in segment_text(&chars) {
+            if segment.seg_type != SegmentType::Content {
+                let token = literal_token(&chars, segment);
+                before.push(token.clone());
+                after.push(token);
+                continue;
+            }
+            let range = (segment.start_char_idx, segment.end_char_idx);
+            let supplied_segment = supplied
+                .remove(&range)
+                .ok_or_else(|| format!("预分析 segment 缺失：{}..{}", range.0, range.1))?;
+            let formations = self
+                .word_formation_matcher
+                .match_morphemes(&supplied_segment.morphemes)
+                .accepted;
+            let candidates =
+                lexical::prepare_dictionary_lexical_candidates(&supplied_segment.morphemes);
+            let before_lexical = lexical::resolve_dictionary_lexical_candidates_with_policy(
+                &supplied_segment.morphemes,
+                candidates.clone(),
+                dictionary_matches,
+                &formations,
+                lexical::WordFormationOverlapPolicy::RejectNonEqualOverlap,
+            )
+            .accepted;
+            let after_lexical = lexical::resolve_dictionary_lexical_candidates_with_policy(
+                &supplied_segment.morphemes,
+                candidates,
+                dictionary_matches,
+                &formations,
+                lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
+            )
+            .accepted;
+            let annotation_start =
+                annotations.partition_point(|annotation| annotation.char_range.1 <= range.0);
+            let annotation_end =
+                annotations.partition_point(|annotation| annotation.char_range.0 < range.1);
+            let segment_annotations = &annotations[annotation_start..annotation_end];
+            before.extend(self.finish_preanalyzed_segment(
+                &chars,
+                segment_annotations,
+                &document_readings,
+                &supplied_segment.morphemes,
+                &formations,
+                &before_lexical,
+                merge_rules,
+            ));
+            after.extend(self.finish_preanalyzed_segment(
+                &chars,
+                segment_annotations,
+                &document_readings,
+                &supplied_segment.morphemes,
+                &formations,
+                &after_lexical,
+                merge_rules,
+            ));
+        }
+        if !supplied.is_empty() {
+            return Err("预分析 segment 与生产边界不一致".to_string());
+        }
+        for tokens in [&mut before, &mut after] {
+            tokens.sort_by_key(|token| token.bunsetsu.char_range.0);
+            grammar::canonicalize_document_coordinates(tokens);
+            expressions::apply_builtin_expressions(tokens);
+            expressions::apply_correlative_expressions(tokens);
+            expressions::resolve_expression_conflicts(tokens);
+            expressions::stabilize_expression_ids(tokens);
+        }
+        Ok((before, after))
+    }
+
+    fn finish_preanalyzed_segment(
+        &self,
+        prepared_chars: &[char],
+        annotations: &[ruby::RubyAnnotation],
+        document_readings: &HashMap<String, String>,
+        morphemes: &[crate::models::Morpheme],
+        formations: &[word_formation::AcceptedWordFormation],
+        lexical_units: &[lexical::AcceptedDictionaryLexicalUnit],
+        merge_rules: &[Vec<String>],
+    ) -> Vec<AnnotatedToken> {
+        let mut bunsetsus = self.bunsetsu_analyzer.analyze_tokens_with_lexical(
+            morphemes,
+            merge_rules,
+            formations,
+            lexical_units,
+        );
+        bunsetsus = ruby::merge_annotated_bunsetsus(bunsetsus, annotations);
+        ruby::override_bunsetsu_readings_with_document_map(
+            prepared_chars,
+            &mut bunsetsus,
+            annotations,
+            document_readings,
+        );
+        self.grammar_matcher.match_patterns(&mut bunsetsus);
+        bunsetsus
+            .into_iter()
+            .map(|bunsetsu| AnnotatedToken {
+                bunsetsu,
+                novelty_score: 1.0,
+                is_selected: false,
+                is_known: false,
+                inference_reason: None,
+                expressions: Vec::new(),
+                display_class: "content".to_string(),
+            })
+            .collect()
     }
 
     pub fn inspect_dictionary_lexical_units(
@@ -428,7 +628,15 @@ impl Pipeline {
     where
         F: FnMut(AnalysisProgress),
     {
-        self.process_internal(text, merge_rules, report, None, None, None)
+        self.process_internal(
+            text,
+            merge_rules,
+            report,
+            None,
+            None,
+            None,
+            lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
+        )
     }
 
     pub fn process_with_dictionary_and_progress<F>(
@@ -441,7 +649,15 @@ impl Pipeline {
     where
         F: FnMut(AnalysisProgress),
     {
-        self.process_internal(text, merge_rules, report, None, Some(dictionary), None)
+        self.process_internal(
+            text,
+            merge_rules,
+            report,
+            None,
+            Some(dictionary),
+            None,
+            lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
+        )
     }
 
     pub fn process_with_dictionary_and_progress_cancellable<F>(
@@ -462,6 +678,7 @@ impl Pipeline {
             None,
             Some(dictionary),
             Some(is_cancelled),
+            lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
         );
         if is_cancelled() {
             Err(AnalysisCancelled)
@@ -477,7 +694,15 @@ impl Pipeline {
         merge_rules: &[Vec<String>],
         timings: &mut TimingCollector,
     ) -> Vec<AnnotatedToken> {
-        self.process_internal(text, merge_rules, &mut |_| {}, Some(timings), None, None)
+        self.process_internal(
+            text,
+            merge_rules,
+            &mut |_| {},
+            Some(timings),
+            None,
+            None,
+            lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
+        )
     }
 
     pub fn process_profiled_with_dictionary(
@@ -494,6 +719,7 @@ impl Pipeline {
             Some(timings),
             Some(dictionary),
             None,
+            lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
         )
     }
 
@@ -505,6 +731,7 @@ impl Pipeline {
         mut timings: Option<&mut TimingCollector>,
         dictionary: Option<&crate::dictionary::lookup::DictionaryEngine>,
         is_cancelled: Option<&dyn Fn() -> bool>,
+        lexical_overlap_policy: lexical::WordFormationOverlapPolicy,
     ) -> Vec<AnnotatedToken>
     where
         F: FnMut(AnalysisProgress),
@@ -685,11 +912,12 @@ impl Pipeline {
                         &prepared.annotations[stage.annotation_range.0..stage.annotation_range.1];
                     let lexical_units = if let Some(candidates) = stage.lexical_candidates {
                         let started = Instant::now();
-                        let result = lexical::resolve_dictionary_lexical_candidates(
+                        let result = lexical::resolve_dictionary_lexical_candidates_with_policy(
                             &stage.morphemes,
                             candidates,
                             &resolved_dictionary_forms,
                             &stage.formations,
+                            lexical_overlap_policy,
                         );
                         if let Some(timings) = timings.as_deref_mut() {
                             timings.add("词典候选解析", started.elapsed());
@@ -1073,4 +1301,28 @@ mod tests {
             assert_eq!(t.display_class, "content");
         }
     }
+}
+#[test]
+fn public_boundary_protocol_matches_production_segments() {
+    let prepared = ruby::prepare_text("第一《だいいち》段。\r\n第二段！？");
+    let segments = segment_prepared_text(&prepared.text);
+    assert_eq!(
+        TEXT_BOUNDARY_PROTOCOL_VERSION,
+        "kotoclip.production-boundary.v1"
+    );
+    assert_eq!(segments[0].kind, ProductionSegmentKind::Content);
+    assert_eq!(segments[1].kind, ProductionSegmentKind::Punctuation);
+    assert_eq!(segments[2].kind, ProductionSegmentKind::LineBreak);
+    let reconstructed: String = segments
+        .iter()
+        .map(|segment| {
+            prepared
+                .text
+                .chars()
+                .skip(segment.char_range.0)
+                .take(segment.char_range.1 - segment.char_range.0)
+                .collect::<String>()
+        })
+        .collect();
+    assert_eq!(reconstructed, prepared.text);
 }

@@ -255,7 +255,7 @@ impl DocumentSession {
             .iter()
             .map(|token| token.bunsetsu.morphemes.len())
             .sum();
-        offset_tokens(&mut tokens, batch.char_range.0, token_offset);
+        offset_token_ranges(&mut tokens, batch.char_range.0, token_offset);
         if !out_of_order {
             crate::pipeline::grammar::offset_document_coordinates(
                 &mut tokens,
@@ -365,7 +365,7 @@ impl DocumentSession {
             .tokens
             .iter()
             .any(|token| token.bunsetsu.char_range.0 > batch.char_range.0);
-        offset_tokens(&mut tokens, batch.char_range.0, token_offset);
+        offset_token_ranges(&mut tokens, batch.char_range.0, token_offset);
         let morpheme_offset = self
             .tokens
             .iter()
@@ -678,7 +678,7 @@ fn split_document_chunks(source: &str) -> Vec<DocumentChunk> {
     chunks
 }
 
-fn offset_tokens(tokens: &mut [AnnotatedToken], char_offset: usize, token_offset: usize) {
+pub fn offset_token_ranges(tokens: &mut [AnnotatedToken], char_offset: usize, token_offset: usize) {
     let offset_range = |range: &mut (usize, usize)| {
         range.0 += char_offset;
         range.1 += char_offset;

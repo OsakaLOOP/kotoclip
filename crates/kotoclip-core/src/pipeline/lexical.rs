@@ -36,6 +36,7 @@ struct RawCandidate {
 ///
 /// 候选生成只依赖形态素，可以先对整篇文章的所有分段执行，再把查询词汇
 /// 汇总为一次章节级 SQLite 批处理；解析阶段继续保留每个分段原有的冲突语义。
+#[derive(Clone)]
 pub struct DictionaryLexicalCandidates {
     raw: Vec<RawCandidate>,
 }
@@ -44,6 +45,29 @@ impl DictionaryLexicalCandidates {
     pub fn extend_queries(&self, target: &mut HashSet<String>) {
         target.extend(self.raw.iter().map(|candidate| candidate.query.clone()));
     }
+
+    pub fn len(&self) -> usize {
+        self.raw.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.raw.is_empty()
+    }
+
+    /// 返回候选是否落在 lexical/formation guard 本次变化的精确差异域。
+    pub fn has_proper_containment(&self, formations: &[AcceptedWordFormation]) -> bool {
+        self.raw.iter().any(|candidate| {
+            formations.iter().any(|formation| {
+                properly_contains_either((candidate.start, candidate.end), formation.morpheme_range)
+            })
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WordFormationOverlapPolicy {
+    RejectNonEqualOverlap,
+    RejectCrossingOverlap,
 }
 
 #[derive(Debug, Deserialize)]
@@ -151,7 +175,23 @@ pub fn resolve_dictionary_lexical_candidates(
     matches: &HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
     formations: &[AcceptedWordFormation],
 ) -> DictionaryLexicalMatchResult {
-    resolve_candidates(morphemes, candidates.raw, matches, formations)
+    resolve_dictionary_lexical_candidates_with_policy(
+        morphemes,
+        candidates,
+        matches,
+        formations,
+        WordFormationOverlapPolicy::RejectCrossingOverlap,
+    )
+}
+
+pub fn resolve_dictionary_lexical_candidates_with_policy(
+    morphemes: &[Morpheme],
+    candidates: DictionaryLexicalCandidates,
+    matches: &HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
+    formations: &[AcceptedWordFormation],
+    policy: WordFormationOverlapPolicy,
+) -> DictionaryLexicalMatchResult {
+    resolve_candidates(morphemes, candidates.raw, matches, formations, policy)
 }
 
 fn is_lexical_atom(morpheme: &Morpheme) -> bool {
@@ -288,11 +328,16 @@ fn crosses(left: (usize, usize), right: (usize, usize)) -> bool {
     overlaps(left, right) && !contains(left, right) && !contains(right, left)
 }
 
+fn properly_contains_either(left: (usize, usize), right: (usize, usize)) -> bool {
+    left != right && (contains(left, right) || contains(right, left))
+}
+
 fn resolve_candidates(
     morphemes: &[Morpheme],
     raw: Vec<RawCandidate>,
     matches: &HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
     formations: &[AcceptedWordFormation],
+    policy: WordFormationOverlapPolicy,
 ) -> DictionaryLexicalMatchResult {
     let mut candidates = Vec::new();
     for item in raw {
@@ -300,14 +345,26 @@ fn resolve_candidates(
             continue;
         };
         let range = (item.start, item.end);
-        let crossing_formation = formations
-            .iter()
-            .find(|formation| crosses(range, formation.morpheme_range));
-        let (status, reason, counter) = if crossing_formation.is_some() {
+        let rejected_by_formation = formations.iter().any(|formation| match policy {
+            WordFormationOverlapPolicy::RejectNonEqualOverlap => {
+                overlaps(range, formation.morpheme_range) && range != formation.morpheme_range
+            }
+            WordFormationOverlapPolicy::RejectCrossingOverlap => {
+                crosses(range, formation.morpheme_range)
+            }
+        });
+        let (status, reason, counter) = if rejected_by_formation {
             (
                 LexicalCandidateStatus::Rejected,
                 Some("word_formation_overlap".to_string()),
-                vec!["crossing_overlap_with_word_formation".to_string()],
+                vec![match policy {
+                    WordFormationOverlapPolicy::RejectNonEqualOverlap => {
+                        "partial_overlap_with_word_formation".to_string()
+                    }
+                    WordFormationOverlapPolicy::RejectCrossingOverlap => {
+                        "crossing_overlap_with_word_formation".to_string()
+                    }
+                }],
             )
         } else if item.auto_accept {
             (LexicalCandidateStatus::Accepted, None, Vec::new())
@@ -424,6 +481,8 @@ fn resolve_candidates(
 mod tests {
     use super::*;
     use crate::dictionary::bundle::BASE_SCHEMA;
+    use crate::models::{DictionaryEntryRef, WordFormationAnnotation};
+    use crate::pipeline::word_formation::AcceptedWordFormation;
     use flate2::{write::ZlibEncoder, Compression};
     use rusqlite::{params, Connection};
     use std::io::Write;
@@ -444,6 +503,79 @@ mod tests {
             conjugation_form: "*".to_string(),
             char_range: (start, start + surface.chars().count()),
         }
+    }
+
+    #[test]
+    fn overlap_policies_differ_only_for_proper_containment() {
+        let morphemes = vec![
+            morpheme("不", 0, "接頭詞", "名詞接続"),
+            morpheme("登校", 1, "名詞", "サ変接続"),
+            morpheme("気味", 3, "名詞", "接尾"),
+        ];
+        let candidates = prepare_dictionary_lexical_candidates(&morphemes);
+        assert!(candidates.has_proper_containment(&[AcceptedWordFormation {
+            morpheme_range: (0, 3),
+            annotation: WordFormationAnnotation {
+                rule_id: "fixture".to_string(),
+                category: "fixture".to_string(),
+                surface: "不登校気味".to_string(),
+                base_form: "不登校気味".to_string(),
+                reading: String::new(),
+                output_pos: morphemes[2].pos.clone(),
+                morpheme_range: (0, 3),
+                char_range: (0, 5),
+                head_morpheme: 2,
+                captures: Vec::new(),
+                confidence: 90,
+            },
+            output_pos: morphemes[2].pos.clone(),
+        }]));
+        let formation = AcceptedWordFormation {
+            morpheme_range: (0, 3),
+            annotation: WordFormationAnnotation {
+                rule_id: "fixture".to_string(),
+                category: "fixture".to_string(),
+                surface: "不登校気味".to_string(),
+                base_form: "不登校気味".to_string(),
+                reading: String::new(),
+                output_pos: morphemes[2].pos.clone(),
+                morpheme_range: (0, 3),
+                char_range: (0, 5),
+                head_morpheme: 2,
+                captures: Vec::new(),
+                confidence: 90,
+            },
+            output_pos: morphemes[2].pos.clone(),
+        };
+        let mut matches = HashMap::new();
+        matches.insert(
+            "不登校".to_string(),
+            vec![DictionaryEntryRef {
+                entry_key: "fixture:不登校".to_string(),
+                dict_name: "fixture".to_string(),
+                headword: "不登校".to_string(),
+                matched_form: "不登校".to_string(),
+                match_type: "exact_form".to_string(),
+                readings: vec!["ふとうこう".to_string()],
+            }],
+        );
+        let old = resolve_dictionary_lexical_candidates_with_policy(
+            &morphemes,
+            candidates.clone(),
+            &matches,
+            std::slice::from_ref(&formation),
+            WordFormationOverlapPolicy::RejectNonEqualOverlap,
+        );
+        let new = resolve_dictionary_lexical_candidates_with_policy(
+            &morphemes,
+            candidates,
+            &matches,
+            std::slice::from_ref(&formation),
+            WordFormationOverlapPolicy::RejectCrossingOverlap,
+        );
+        assert!(old.accepted.is_empty());
+        assert_eq!(new.accepted.len(), 1);
+        assert_eq!(new.accepted[0].annotation.surface, "不登校");
     }
 
     #[test]

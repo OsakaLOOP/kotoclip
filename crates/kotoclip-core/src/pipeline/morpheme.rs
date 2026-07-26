@@ -4,6 +4,9 @@ use std::io::BufReader;
 use std::path::Path;
 use vibrato::{Dictionary, Tokenizer};
 
+/// IPADIC 输出兼容修正规则版本。该值变化时，审计形态素底座必须失效。
+pub const MORPHEME_COMPATIBILITY_VERSION: &str = "kotoclip.morpheme-compatibility.v1";
+
 /// 形态素分析器，基于 vibrato 库
 pub struct MorphemeAnalyzer {
     tokenizer: Tokenizer,
