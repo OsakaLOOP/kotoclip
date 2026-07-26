@@ -73,7 +73,7 @@ python scripts/language_quality.py compare HEAD^ HEAD
 
 因此，界面能够呈现完整句子上下文，但不会加载或渲染整本书。聚合条目数、原始主变化数和证据变化数必须分别显示，不能用几万个底层实体数代替用户实际需要检查的条目数。
 
-`reading-diff.json.gz` 的每个条目至少包含：
+`reading-units.bin` 的每个条目至少包含：
 
 ```json
 {
@@ -85,14 +85,12 @@ python scripts/language_quality.py compare HEAD^ HEAD
   "evidence_change_count": 5,
   "domains": { "grammar": 2 },
   "stages": ["grammar_occurrence", "grammar_projection"],
-  "change_ids": ["..."],
-  "evidence_change_ids": ["..."],
   "before": { "char_range": [320, 358], "text": "...", "tokens": [] },
   "after": { "char_range": [320, 358], "text": "...", "tokens": [] }
 }
 ```
 
-token 必须保留阅读器原生分析渲染和查询所需的 `morphemes`、`morphology`、`word_formations`、`lexical_units`、`grammar_tags`、`function`、`expressions`、`display_class` 与字符坐标。画像展示字段不进入该文件。
+token 只保留阅读器原生分析渲染所需的 `morphemes`、`morphology`、`word_formations`、`lexical_units`、`grammar_tags`、`function`、`expressions`、`display_class` 与字符坐标。画像、候选、临时查询请求和变化 ID 不在阅读 bundle 中重复保存；完整变化与 ID 以 `diff.jsonl.gz` 为准。
 
 ## 6. 开发版原生界面
 
@@ -134,7 +132,7 @@ token 必须保留阅读器原生分析渲染和查询所需的 `morphemes`、`m
 - manifest、完整 diff、阅读条目、根变化、阶段统计和生命周期文件路径；
 - 各产物大小与 SHA-256。
 
-历史扫描以比较 manifest 为权威，不依赖 HTML 文件是否存在。失败轮次只有在 manifest 足以识别输入时才进入历史，并明确显示失败阶段；不把半成品伪装为成功比较。
+历史扫描以比较 manifest 为权威，不依赖 HTML 文件是否存在。失败任务不会发布正式目录，也不会进入 history；已有同名成功轮次在替换完成前保持可读。
 
 ## 8. Agent 产物
 
@@ -144,7 +142,6 @@ token 必须保留阅读器原生分析渲染和查询所需的 `morphemes`、`m
 manifest.json
 summary.json
 diff.jsonl.gz
-reading-diff.json.gz
 reading-index.json.gz
 reading-units.bin
 stage-summary.json.gz
@@ -153,11 +150,11 @@ gate.json
 lifecycle.json
 ```
 
-`summary.json` 提供总体和分层数量；`diff.jsonl.gz` 是完整逐变化事实；`reading-diff.json.gz` 是人类阅读条目的权威文件；`stage-summary.json.gz` 提供阶段统计；`root-causes.json.gz` 提供根变化和传播关系；`gate.json` 给出机械门禁结论；`lifecycle.json` 记录执行阶段、耗时、命令、退出码和失败位置。
+`summary.json` 提供总体和分层数量；`diff.jsonl.gz` 是完整逐变化事实；`reading-index.json.gz` 与 `reading-units.bin` 是人类阅读条目的唯一持久表示；`stage-summary.json.gz` 提供阶段统计；`root-causes.json.gz` 提供根变化和传播关系；`gate.json` 给出机械门禁结论；`lifecycle.json` 只记录已发布成功轮次。
 
 `changed_range` 是条目的导航包络；`changed_ranges` 保存包络内实际变化的精确范围。相邻变化之间仅有标点或空白时归入同一条目，界面仍只标红 `changed_ranges`，避免同一句因稳定分隔符被重复展示。
 
-`reading-index.json.gz` 与 `reading-units.bin` 是从同一批 reading unit 派生的原生界面读取层。索引只保存筛选字段、句子文本及 bundle 偏移；bundle 将每个完整 unit 保存为独立 gzip 成员。Tauri 首次只向 WebView 返回索引，翻页时按偏移读取最多 20 条，禁止把完整 `reading-diff.json.gz` 解压后经 IPC 传输。旧轮次缺少这两个派生产物时必须明确要求重新生成，不能回落为整文件加载。Agent 判断仍以 `reading-diff.json.gz` 为准。
+索引只保存筛选字段、句子文本及 bundle 偏移；bundle 每 20 条保存为一个确定性 gzip member。Tauri 首次只向 WebView 返回索引，翻页时对同一 member 只解压一次。Agent 可用 `language_quality.py export-reading` 流式导出兼容阅读 JSON；变化 ID、字段 diff 和因果判断仍以 `diff.jsonl.gz` 为准。
 
 静态嵌入 HTML 不属于模块输出。开发者界面由 Tauri 后端直接读取外部 gzip JSON，新增轮次后刷新历史即可在开发中的应用里查看；Agent 不需要启动面板即可查询完整产物。
 
@@ -168,13 +165,13 @@ lifecycle.json
 - CLI stdout 直接写入临时文件；
 - token JSON 增量解析并计算重建文本 hash 和字符数；
 - JSONL 逐条写入，gzip 以固定参数流式压缩；
-- 大型最终 gzip 使用 level 1，优先控制生成时间；确定性由固定 `mtime=0` 和规范 JSON 保证；
-- 大型不可变产物按内容 hash 存入共享 artifact store；
+- 临时查询捕获使用 gzip level 1，最终持久产物使用 level 6；确定性由固定 `mtime=0` 和规范 JSON 保证；
+- 只有最终产物按内容 hash 存入共享 artifact store；运行快照不进入全局存储；
 - 比较目录优先使用硬链接引用相同内容；不支持硬链接时才复制；
 - 临时 worktree 在对应侧构建和捕获结束后立即释放；
-- 失败运行保留生命周期和必要日志，不保留可重建的大型临时产物。
+- 整轮在同级隐藏 staging 中生成；失败删除全部 staging，成功才替换正式目录。
 
-快照优先调用 `kotoclip-cli quality-snapshot`，在单进程内生成八份产物并复用 Pipeline／Dictionary；旧提交不支持该命令时回落原有八命令协议。提交比较先串行构建两侧 CLI，再并行捕获两侧快照；快照按 commit、语料、CLI 和资源指纹缓存。Rust diff 在一次两侧 token 遍历中提取变化候选、实体计数和句子 header，Python 只处理候选字段差分、因果摘要、受影响句物化及机器产物协议；稳定 artifact 计数按 SHA-256 持久缓存。
+快照优先调用 `kotoclip-cli quality-snapshot`，在单进程内生成八份产物并复用 Pipeline／Dictionary；旧提交不支持该命令时回落原有八命令协议。提交比较先串行构建两侧 CLI，再并行捕获两侧临时快照。统一入口另有最多 6 GiB 的全库端点 LRU 缓存，只接收完成快照，用于连续 `A→B、B→C` 复用 B；它不属于轮次、history 或失败恢复状态。Rust diff 在一次两侧 token 遍历中提取变化候选、实体计数和句子 header，Python 只处理候选字段差分、因果摘要、受影响句物化及机器产物协议。候选和 artifact-count 缓存默认关闭，只能通过独立的 `KOTOCLIP_QUALITY_CACHE_ROOT` 显式启用并各受 256 MiB 预算约束。
 
 2026-07-24 使用既有全书库快照测得优化后 compare 为 `458.15s`，低于本轮可用上限 500 秒；该数据包含当时约 237 秒 Rust 候选、146 秒 reading 投影及约 66 秒尾部写出。句子 header 复用、两侧 reading 并行、计数缓存和 level 1 gzip 已在其后接入，最终耗时以首次完整外部复核的 lifecycle／memory profile 为准。
 
@@ -186,9 +183,9 @@ lifecycle.json
 
 - 两 commit 统一入口、detached worktree 构建、全用户书库语料和生命周期；
 - 全量分层 diff、主变化／证据变化、根变化／传播候选、门禁和历史索引；
-- 按连续变化范围聚合的完整句子 `reading-diff.json.gz`；
+- 按连续变化范围聚合的分块 `reading-units.bin` 与轻量索引；
 - snapshot stdout 落盘、token 增量解析、流式 gzip 和内容寻址存储；
-- Rust 候选提取、句子 header 复用、稳定计数缓存、合并快照命令、两侧快照并行和快照缓存；
+- Rust 候选提取、句子 header 复用、合并快照命令和两侧临时快照并行；
 - Tauri debug-only 历史、轻量 reading index 和按页 unit 读取命令；
 - 开发版历史／统计／筛选／分页视图及阅读器入口；
 - 共享原生分析条目、审计侧 `BunsetsuCapsule`、词典／语法气泡、双侧字符同步和会话收束；

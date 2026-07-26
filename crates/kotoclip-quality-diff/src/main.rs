@@ -116,6 +116,9 @@ fn compare(args: &Args) -> Result<()> {
         .arg("--output-dir")
         .arg(args.required_path("output-dir")?)
         .env("KOTOCLIP_QUALITY_DIFF_ACCELERATOR", executable);
+    if args.flags.contains("keep-reading-spool") {
+        command.arg("--keep-reading-spool");
+    }
     let status = command.status().context("无法启动 Python 兼容层")?;
     if !status.success() {
         bail!("Python 兼容层退出码：{}", status.code().unwrap_or(-1));

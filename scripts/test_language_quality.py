@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import language_quality
 import language_quality_snapshot
@@ -105,6 +108,20 @@ class LanguageQualityEntryPointTest(unittest.TestCase):
                 language_quality.gate_outcome(Path(temporary), 1),
                 (False, None),
             )
+
+    def test_publish_directory_replaces_existing_round(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "round"
+            staging = root / ".round.run"
+            target.mkdir()
+            staging.mkdir()
+            (target / "value.txt").write_text("old", encoding="utf-8")
+            (staging / "value.txt").write_text("new", encoding="utf-8")
+            backup = language_quality.publish_directory(staging, target)
+            self.assertEqual((target / "value.txt").read_text(encoding="utf-8"), "new")
+            self.assertIsNotNone(backup)
+            self.assertEqual((backup / "value.txt").read_text(encoding="utf-8"), "old")
 
 
 if __name__ == "__main__":

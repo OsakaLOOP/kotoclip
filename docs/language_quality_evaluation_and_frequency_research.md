@@ -475,8 +475,7 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 - `diff.jsonl.gz`：完整逐变化记录的 gzip 流，不因 HTML 限制而截断；
 - `stage-summary.json.gz`：十九层统计的 gzip JSON；
 - `root-causes.json.gz`：根变化及其下游影响聚合的 gzip JSON；
-- `reading-diff.json.gz`：按连续变化文节聚合的 before／after 整句、token 查询数据、主结果 ID 和证据 ID；
-- `reading-index.json.gz`／`reading-units.bin`：开发版原生界面的轻量筛选索引和按偏移随机读取 bundle；二者是可重建派生物，不替代权威 reading diff；
+- `reading-index.json.gz`／`reading-units.bin`：按连续变化文节聚合的 before／after 整句与 UI token，也是阅读条目的唯一持久表示；
 - `dictionary-lookups-before.json.gz`／`dictionary-lookups-after.json.gz`：从阅读 token 查询请求捕获的桌面端同源 `DictionaryLookup` 矩阵；
 - `dictionary-lookup-capture.json`：两侧查询捕获状态与请求数；旧 CLI 不支持批量命令时记录 `unsupported_cli`，不伪造结果；
 - 门禁另写 `gate.json`，包含策略 hash、summary hash 和所有 violation。
@@ -498,7 +497,7 @@ artifact descriptor 保存 adapter 与 capture 参数，例如是否包含 pendi
 
 `language_quality_history.py` 递归扫描具有 `manifest.json`、`summary.json` 和 `diff.jsonl(.gz)` 的对比目录，不依赖 HTML。它以 diff manifest 的 `run_id + snapshot manifest SHA-256` 关联 before/after 快照，不能唯一关联时将 Git、语料和资源字段保留为 `null`；在本地仓库可用时补充 Git subject、作者和时间。
 
-`history.json` 为 Agent 和开发版提供每轮的 comparison ID、创建时间、适配器、summary、各阶段 churn、gate 状态，以及 manifest/summary/diff/reading-diff/reading-index/reading-units/stage-summary/root-causes/gate/lifecycle/构建日志的相对 URL、字节数和 SHA-256。两侧元数据包含 snapshot URL/hash、Git commit、subject、作者、时间、dirty 状态、status hash、CLI hash、运行平台、语料选择/hash/字符计数和全部资源路径、字节数及 hash。
+`history.json` 为 Agent 和开发版提供每轮的 comparison ID、创建时间、适配器、summary、各阶段 churn、gate 状态，以及 manifest/summary/diff/reading-index/reading-units/stage-summary/root-causes/gate/lifecycle/构建日志的相对 URL、字节数和 SHA-256。两侧 Git、语料与资源元数据内嵌在 diff manifest；完整运行快照不会长期保留。
 
 当前历史索引是可审计的轮次目录，不是跨轮次质量推断系统。后续趋势仓库仍需保存 release、genre、rule family、金标指标、性能、基线晋升和回滚事件，并提供对应切片；原始 summary 仍是权威数据。
 
@@ -512,7 +511,6 @@ experiments/quality-audit-series/
     manifest.json
     summary.json
     diff.jsonl.gz
-    reading-diff.json.gz
     reading-index.json.gz
     reading-units.bin
     stage-summary.json.gz
@@ -621,7 +619,7 @@ python scripts/language_quality_diff.py `
   --output-dir "experiments\quality-run\baseline-to-candidate"
 ```
 
-完整变化始终写入 `diff.jsonl.gz`，权威阅读条目始终写入 `reading-diff.json.gz`。原生界面只读取派生索引与当前页 unit，不改变或缩减机器产物输入集合。
+完整变化始终写入 `diff.jsonl.gz`；权威阅读上下文写入 `reading-index.json.gz` 与分块 `reading-units.bin`。需要兼容 JSON 时使用 `language_quality.py export-reading` 按需流式导出，不在轮次内保存重复副本。
 
 单产物兼容模式仅用于已有文节／表达 JSON 的迁移诊断：
 
@@ -668,12 +666,12 @@ python scripts/language_quality.py compare HEAD^ HEAD
 1. 校验两个 commit；
 2. 从 `Documents/Kotoclip Library/library.sqlite` 按数据库顺序读取全部 `content.md`，按内容哈希缓存合并语料；
 3. 在临时目录逐侧创建 detached worktree，共用仓库 `target` 构建 `kotoclip-cli`，复制已构建二进制后立即释放该 worktree；
-4. 用固定的 IPADIC、词典源／缓存和 `data/research-profile.sqlite` 捕获 before/after snapshot；大型 artifact 使用确定性 gzip 并写入共享内容寻址存储；
+4. 用固定的 IPADIC、词典源／缓存和 `data/research-profile.sqlite` 捕获本轮临时 before/after snapshot；快照不进入全局内容寻址存储；
 5. 运行十九阶段 diff，输出 gzip diff、阅读条目、阶段统计和根影响；
 6. 若两侧 CLI 支持 `dictionary-lookup-batch`，分别捕获并压缩完整 `DictionaryLookup` 结果；
-7. 使用仓库内固定门禁配置写入 `gate.json`，删除临时 worktree，随后刷新 `history.json`。
+7. 使用仓库内固定门禁配置写入 `gate.json`，校验单轮 300 MiB 与全局 20 GiB 预算；成功后原子替换正式轮次并刷新 `history.json`。
 
-比较目录还会写入 `lifecycle.json`。它记录统一入口的 `run_id`、启动时 Git HEAD／分支／dirty 状态、请求参数 hash、`compare_commits` 和 `refresh_history` 阶段的开始／结束时间、退出码、失败阶段以及 summary、reading-diff、history 的路径。任务失败时生命周期文件保留在部分输出目录中，可用下面的命令读取：
+成功比较目录还会写入 `lifecycle.json`。它记录统一入口的 `run_id`、启动时 Git HEAD／分支／dirty 状态、请求参数 hash、执行时间、门禁状态、空间占用以及 summary、reading index、history 的路径。任务失败时整个 staging 主动清理，不提供断点续跑状态。
 
 ```powershell
 python scripts/language_quality.py status `

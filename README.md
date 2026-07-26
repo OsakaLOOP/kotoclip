@@ -145,6 +145,11 @@ python scripts/language_quality_snapshot.py --help
 python scripts/language_quality.py --help
 python scripts/language_quality.py compare BEFORE_COMMIT AFTER_COMMIT
 
+# 按需从唯一分页 bundle 导出兼容 reading-diff，不在轮次内保留重复副本
+python scripts/language_quality.py export-reading `
+  --comparison experiments/quality-audit-series/BEFORE-to-AFTER `
+  --output experiments/export/reading-diff.json.gz
+
 # 比较完整管线快照，生成机器差分、阅读条目和原生界面分页索引
 python scripts/language_quality_diff.py --help
 

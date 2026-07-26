@@ -139,7 +139,7 @@ def snapshot(
         "--dict-dir",
         str(dict_dir),
         "--artifact-store",
-        str(args.artifact_store),
+        str(args.snapshot_artifact_store),
     ]
     if args.chapter:
         command.extend(["--chapter", args.chapter])
@@ -149,7 +149,6 @@ def snapshot(
 
 
 def update_file_digest(digest: Any, path: Path) -> None:
-    digest.update(str(path.resolve()).encode("utf-8"))
     with path.open("rb") as source:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
@@ -191,6 +190,23 @@ def copy_snapshot_tree(source: Path, target: Path) -> None:
             return shutil.copy2(source_file, target_file)
 
     shutil.copytree(source, target, copy_function=link_or_copy)
+
+
+def store_snapshot_cache(source: Path, target: Path) -> None:
+    """完整复制后再发布缓存条目，半成品永远不会以正式 key 出现。"""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".snapshot-cache-", dir=target.parent))
+    try:
+        shutil.rmtree(staging)
+        copy_snapshot_tree(source, staging)
+        try:
+            os.replace(staging, target)
+        except OSError:
+            if not target.exists():
+                raise
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
 
 
 def iter_json_object_array(path: Path, field: str) -> Iterable[object]:
@@ -381,27 +397,29 @@ def compress_file(source: Path, target: Path) -> None:
     source.unlink()
 
 
-def install_artifact_file(path: Path, artifact_store: Path) -> None:
-    """将现有不可变产物放入内容寻址存储，并尽量以硬链接保留轮次路径。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    checksum = digest.hexdigest()
-    stored = artifact_store / checksum[:2] / f"{checksum}.blob"
-    stored.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        os.link(path, stored)
-    except FileExistsError:
-        pass
-    except OSError:
-        if not stored.exists():
-            shutil.copyfile(path, stored)
-    path.unlink()
-    try:
-        os.link(stored, path)
-    except OSError:
-        shutil.copyfile(stored, path)
+def embed_snapshot_metadata(diff_manifest_path: Path, before: Path, after: Path) -> None:
+    """将历史索引所需元数据内嵌到 diff manifest，随后可删除完整快照。"""
+    manifest = json.loads(diff_manifest_path.read_text(encoding="utf-8"))
+    for side, path in (("before", before), ("after", after)):
+        snapshot_manifest = json.loads(path.read_text(encoding="utf-8"))
+        descriptor = manifest.get(side)
+        if not isinstance(descriptor, dict):
+            raise ValueError(f"diff manifest 缺少 {side} 描述")
+        descriptor["snapshot_metadata"] = {
+            key: snapshot_manifest.get(key)
+            for key in (
+                "created_at",
+                "implementation",
+                "corpus",
+                "resources",
+            )
+        }
+        descriptor.pop("path", None)
+    diff_manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -417,7 +435,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--system-dict", required=True, type=Path)
     parser.add_argument("--dict-source-dir", required=True, type=Path)
     parser.add_argument("--dict-dir", required=True, type=Path)
-    parser.add_argument("--artifact-store", type=Path)
     parser.add_argument(
         "--before-system-dict",
         type=Path,
@@ -453,6 +470,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--build-profile", default="release", choices=("dev", "release"))
     parser.add_argument("--ui-projection", type=Path)
     parser.add_argument("--gate-config", type=Path)
+    parser.add_argument(
+        "--snapshot-cache-root",
+        type=Path,
+        help="独立、可重建且由统一入口限额的完成快照缓存",
+    )
     return parser.parse_args(argv)
 
 
@@ -480,7 +502,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     source = args.source.resolve()
     profile = args.profile.resolve()
     output = args.output_dir.resolve()
-    args.artifact_store = (args.artifact_store or output.parent / "artifact-store").resolve()
     for path in (source, profile):
         if not path.exists():
             raise FileNotFoundError(f"缺少提交比较输入：{path}")
@@ -532,9 +553,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         str(tool_root / "language_quality_diff.py"),
         "--python",
         sys.executable,
+        "--keep-reading-spool",
     ]
 
-    args.artifact_store = args.artifact_store.resolve()
+    args.snapshot_artifact_store = output / ".snapshot-artifact-store"
     with tempfile.TemporaryDirectory(prefix="kotoclip-quality-commits-") as temporary:
         temporary_root = Path(temporary)
         try:
@@ -558,25 +580,24 @@ def main(argv: Sequence[str] | None = None) -> int:
 
             def snapshot_side(name: str, commit: str) -> None:
                 side_output = before_output if name == "before" else after_output
-                if (side_output / "manifest.json").is_file():
-                    print(f"{name} 复用已完成快照：{side_output}")
-                    return
                 side_system = before_system_dict if name == "before" else after_system_dict
                 side_source = before_dict_source_dir if name == "before" else after_dict_source_dir
                 side_cache = before_dict_dir if name == "before" else after_dict_dir
-                cache_root = args.output_dir.resolve().parent / ".cache" / "snapshots"
-                cache_path = cache_root / snapshot_cache_key(
-                    commit,
-                    stable_clis[name],
-                    args,
-                    side_system,
-                    side_source,
-                    side_cache,
-                )
-                if (cache_path / "manifest.json").is_file():
-                    copy_snapshot_tree(cache_path, side_output)
-                    print(f"{name} 快照缓存命中：{cache_path.name}")
-                    return
+                cache_path: Path | None = None
+                if args.snapshot_cache_root is not None:
+                    cache_path = args.snapshot_cache_root.resolve() / snapshot_cache_key(
+                        commit,
+                        stable_clis[name],
+                        args,
+                        side_system,
+                        side_source,
+                        side_cache,
+                    )
+                    if (cache_path / "manifest.json").is_file():
+                        copy_snapshot_tree(cache_path, side_output)
+                        os.utime(cache_path, None)
+                        print(f"{name} 全库端点缓存命中：{cache_path.name}")
+                        return
                 snapshot(
                     tool_root,
                     worktrees[name],
@@ -588,9 +609,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                     side_source,
                     side_cache,
                 )
-                cache_root.mkdir(parents=True, exist_ok=True)
-                if not cache_path.exists():
-                    copy_snapshot_tree(side_output, cache_path)
+                if cache_path is not None:
+                    if not cache_path.exists():
+                        store_snapshot_cache(side_output, cache_path)
 
             try:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
@@ -636,7 +657,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raw_lookup_path = temporary_root / f"dictionary-lookups-{side}.json"
                 request_count = capture_dictionary_lookups(
                     cli,
-                    diff_output / "reading-diff.json.gz",
+                    diff_output / ".reading-diff-spool.json.gz",
                     side,
                     temporary_root / f"dictionary-requests-{side}.json",
                     raw_lookup_path,
@@ -658,13 +679,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 encoding="utf-8",
                 newline="\n",
             )
-            for artifact in sorted(
-                [*diff_output.glob("*.gz"), *diff_output.glob("*.bin")]
-            ):
-                install_artifact_file(artifact, args.artifact_store)
+            embed_snapshot_metadata(
+                diff_output / "manifest.json",
+                before_output / "manifest.json",
+                after_output / "manifest.json",
+            )
+            (diff_output / ".reading-diff-spool.json.gz").unlink(missing_ok=True)
         finally:
             git(repo, "worktree", "prune")
 
+    gate_returncode = 0
     if args.gate_config:
         gate_output = diff_output / "gate.json"
         gate = subprocess.run(
@@ -684,10 +708,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             errors="backslashreplace",
         )
         print(f"提交比较门禁退出码：{gate.returncode}")
-        if gate.returncode:
-            return gate.returncode
+        gate_returncode = gate.returncode
+    for transient in (before_output, after_output, args.snapshot_artifact_store):
+        if transient.exists():
+            shutil.rmtree(transient)
     print(f"提交比较完成：{diff_output}")
-    return 0
+    return gate_returncode
 
 
 if __name__ == "__main__":

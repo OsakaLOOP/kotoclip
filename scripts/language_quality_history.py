@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -82,6 +84,41 @@ def _snapshot_side(
     expected_sha256 = source.get("sha256")
     exact = [candidate for candidate in candidates if candidate[2] == expected_sha256]
     selected = exact[0] if exact else (candidates[0] if len(candidates) == 1 else None)
+    embedded = source.get("snapshot_metadata")
+    if selected is None and isinstance(embedded, dict):
+        snapshot = embedded
+        implementation = snapshot.get("implementation")
+        implementation = implementation if isinstance(implementation, dict) else {}
+        corpus = snapshot.get("corpus")
+        corpus = corpus if isinstance(corpus, dict) else {}
+        return {
+            "run_id": run_id,
+            "label": source.get("label"),
+            "created_at": snapshot.get("created_at"),
+            "descriptor_sha256": expected_sha256,
+            "snapshot": None,
+            "implementation": {
+                "git_commit": implementation.get("git_commit"),
+                "git_dirty": implementation.get("git_dirty"),
+                "git_status_sha256": implementation.get("git_status_sha256"),
+                "cli_sha256": implementation.get("cli_sha256"),
+                "platform": implementation.get("platform"),
+                "python": implementation.get("python"),
+                "legacy_import": implementation.get("legacy_import", False),
+            },
+            "corpus": {
+                "id": corpus.get("id"),
+                "source_path": corpus.get("source_path"),
+                "source_sha256": corpus.get("source_sha256"),
+                "selection": corpus.get("selection"),
+                "selected_sha256": corpus.get("selected_sha256"),
+                "selected_bytes": corpus.get("selected_bytes"),
+                "selected_characters": corpus.get("selected_characters"),
+                "analysis_text_sha256": corpus.get("analysis_text_sha256"),
+                "analysis_characters": corpus.get("analysis_characters"),
+            },
+            "resources": _resource_summary(snapshot.get("resources")),
+        }
     if selected is None:
         return {
             "run_id": run_id,
@@ -317,11 +354,24 @@ def main(argv: list[str] | None = None) -> int:
     output = (args.output or root / "history.json").resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     history = build_history(root)
-    output.write_text(
-        json.dumps(history, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="\n",
+            dir=output.parent,
+            prefix=f".{output.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as stream:
+            temporary = Path(stream.name)
+            json.dump(history, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+        os.replace(temporary, output)
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
     print(f"历史索引：{output}（{len(history['comparisons'])} 轮）")
     return 0
 

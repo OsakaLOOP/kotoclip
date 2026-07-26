@@ -34,7 +34,9 @@ SNAPSHOT_SCHEMA_VERSION = "kotoclip.quality.snapshot.v1"
 PRODUCER_VERSION = "4"
 MAX_INLINE_VALUE_BYTES = 480
 EXTERNAL_SORT_CHUNK_ENTITIES = 10_000
-OUTPUT_GZIP_LEVEL = 1
+OUTPUT_GZIP_LEVEL = 6
+TRANSIENT_GZIP_LEVEL = 1
+READING_BUNDLE_CHUNK_UNITS = 20
 CANDIDATE_CACHE_SCHEMA_VERSION = "kotoclip.quality.candidates-cache.v1"
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "info": 3}
 
@@ -2611,7 +2613,8 @@ def _candidate_cache_directory(
     before_path: Path,
     after_path: Path,
 ) -> Path | None:
-    if spool_parent is None:
+    cache_root_value = os.environ.get("KOTOCLIP_QUALITY_CACHE_ROOT")
+    if spool_parent is None or not cache_root_value:
         return None
     key = content_hash(
         {
@@ -2622,7 +2625,7 @@ def _candidate_cache_directory(
             "after_manifest_sha256": file_hash(after_path),
         }
     )
-    return spool_parent.parent / ".cache" / "candidates-v1" / key
+    return Path(cache_root_value).resolve() / "candidates-v1" / key
 
 
 def _restore_candidate_cache(
@@ -3166,6 +3169,86 @@ def _reading_unit_payload(
     }
 
 
+PERSISTENT_READING_TOKEN_FIELDS = frozenset(
+    {
+        "surface",
+        "char_range",
+        "head_word",
+        "morphemes",
+        "morphology",
+        "word_formations",
+        "lexical_units",
+        "grammar_tags",
+        "function",
+        "expressions",
+        "display_class",
+    }
+)
+
+
+def _persistent_reading_unit(unit: dict[str, Any]) -> dict[str, Any]:
+    """裁剪为原生审计界面协议；查询请求仍保留在临时 reading-diff。"""
+    result = {
+        key: value
+        for key, value in unit.items()
+        if key not in {"change_ids", "evidence_change_ids"}
+    }
+    for side in ("before", "after"):
+        source = unit.get(side) if isinstance(unit.get(side), dict) else {}
+        result[side] = {
+            "char_range": source.get("char_range"),
+            "text": source.get("text", ""),
+            "tokens": [
+                {
+                    key: value
+                    for key, value in token.items()
+                    if key in PERSISTENT_READING_TOKEN_FIELDS
+                }
+                for token in source.get("tokens", [])
+                if isinstance(token, dict)
+            ],
+        }
+    return result
+
+
+def _reading_index_entry(unit: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "unit_id": unit["unit_id"],
+        "sentence_index": unit["sentence_index"],
+        "changed_range": unit["changed_range"],
+        "changed_ranges": unit["changed_ranges"],
+        "primary_change_count": unit["primary_change_count"],
+        "evidence_change_count": unit["evidence_change_count"],
+        "domains": unit["domains"],
+        "stages": unit["stages"],
+        "before": {
+            "char_range": unit["before"]["char_range"],
+            "text": unit["before"]["text"],
+        },
+        "after": {
+            "char_range": unit["after"]["char_range"],
+            "text": unit["after"]["text"],
+        },
+    }
+
+
+def iter_reading_units(index_path: Path, bundle_path: Path) -> Iterable[dict[str, Any]]:
+    """按索引顺序遍历唯一阅读 bundle，供下游审计替代 reading-diff。"""
+    index = read_json(index_path)
+    entries = index.get("units", [])
+    with bundle_path.open("rb") as source:
+        current_key: tuple[int, int] | None = None
+        current_units: list[dict[str, Any]] = []
+        for entry in entries:
+            key = (int(entry["offset"]), int(entry["bytes"]))
+            if key != current_key:
+                source.seek(key[0])
+                decoded = json.loads(gzip.decompress(source.read(key[1])))
+                current_units = decoded if isinstance(decoded, list) else [decoded]
+                current_key = key
+            yield current_units[int(entry.get("member_index", 0))]
+
+
 def _write_reading_unit_payload(
     before_manifest_path: Path,
     after_manifest_path: Path,
@@ -3188,7 +3271,7 @@ def _write_reading_unit_payload(
     ]
     | None = None,
 ) -> dict[str, Any]:
-    """单侧单次扫描并将阅读条目直接写入 gzip，避免完整 token 列表常驻内存。"""
+    """单侧单次扫描并流式写入阅读产物，避免完整 token 列表常驻内存。"""
     primary = [change for change in changes if change.get("counted_in_primary")]
     primary_ranges = [
         raw
@@ -3296,6 +3379,10 @@ def _write_reading_unit_payload(
                 output_path,
                 {"schema_version": "kotoclip.quality.reading-diff.v1", "units": []},
             )
+            write_reading_artifacts(
+                output_path.parent,
+                {"schema_version": "kotoclip.quality.reading-diff.v1", "units": []},
+            )
             return {
                 "schema_version": "kotoclip.quality.reading-diff.v1",
                 "unit_count": 0,
@@ -3354,12 +3441,38 @@ def _write_reading_unit_payload(
             with gzip.GzipFile(
                 fileobj=output_stream,
                 mode="wb",
-                compresslevel=OUTPUT_GZIP_LEVEL,
+                compresslevel=TRANSIENT_GZIP_LEVEL,
                 mtime=0,
             ) as compressed:
                 with io.TextIOWrapper(compressed, encoding="utf-8", newline="\n") as target:
                     target.write('{"schema_version":"kotoclip.quality.reading-diff.v1","units":[')
                     first_unit = True
+                    pending_units: list[dict[str, Any]] = []
+                    pending_indexes: list[dict[str, Any]] = []
+
+                    def flush_units() -> None:
+                        if not pending_units:
+                            return
+                        encoded = canonical_json(pending_units).encode("utf-8")
+                        member = gzip.compress(
+                            encoded,
+                            compresslevel=OUTPUT_GZIP_LEVEL,
+                            mtime=0,
+                        )
+                        offset = unit_output.tell()
+                        unit_output.write(member)
+                        for member_index, entry in enumerate(pending_indexes):
+                            entry.update(
+                                {
+                                    "offset": offset,
+                                    "bytes": len(member),
+                                    "member_index": member_index,
+                                }
+                            )
+                            index_units.append(entry)
+                        pending_units.clear()
+                        pending_indexes.clear()
+
                     before_source = before_source_path.open("rb")
                     after_source = after_source_path.open("rb")
                     try:
@@ -3474,40 +3587,10 @@ def _write_reading_unit_payload(
                                     sort_keys=True,
                                     separators=(",", ":"),
                                 )
-                                encoded = canonical_json(unit).encode("utf-8")
-                                member = gzip.compress(
-                                    encoded,
-                                    compresslevel=OUTPUT_GZIP_LEVEL,
-                                    mtime=0,
-                                )
-                                offset = unit_output.tell()
-                                unit_output.write(member)
-                                index_units.append(
-                                    {
-                                        "unit_id": unit["unit_id"],
-                                        "sentence_index": unit["sentence_index"],
-                                        "changed_range": unit["changed_range"],
-                                        "changed_ranges": unit["changed_ranges"],
-                                        "primary_change_count": unit[
-                                            "primary_change_count"
-                                        ],
-                                        "evidence_change_count": unit[
-                                            "evidence_change_count"
-                                        ],
-                                        "domains": unit["domains"],
-                                        "stages": unit["stages"],
-                                        "before": {
-                                            "char_range": unit["before"]["char_range"],
-                                            "text": unit["before"]["text"],
-                                        },
-                                        "after": {
-                                            "char_range": unit["after"]["char_range"],
-                                            "text": unit["after"]["text"],
-                                        },
-                                        "offset": offset,
-                                        "bytes": len(member),
-                                    }
-                                )
+                                pending_units.append(_persistent_reading_unit(unit))
+                                pending_indexes.append(_reading_index_entry(unit))
+                                if len(pending_units) >= READING_BUNDLE_CHUNK_UNITS:
+                                    flush_units()
                                 first_unit = False
                                 wrote_sentence = True
                                 unit_count += 1
@@ -3517,14 +3600,17 @@ def _write_reading_unit_payload(
                     finally:
                         before_source.close()
                         after_source.close()
+                    flush_units()
                     target.write(
                         f'],"unit_count":{unit_count}}}\n'
                     )
         write_gzip_json(
             output_path.parent / "reading-index.json.gz",
             {
-                "schema_version": "kotoclip.quality.reading-index.v1",
+                "schema_version": "kotoclip.quality.reading-index.v2",
                 "reading_schema_version": "kotoclip.quality.reading-diff.v1",
+                "bundle_schema_version": "kotoclip.quality.reading-bundle.v2",
+                "chunk_units": READING_BUNDLE_CHUNK_UNITS,
                 "unit_count": unit_count,
                 "units": index_units,
             },
@@ -3906,11 +3992,12 @@ def _compare_snapshot_manifests_accelerated(
             "--after-reading-output",
             str(after_reading_path),
         ]
-        if spool_parent is not None:
+        cache_root_value = os.environ.get("KOTOCLIP_QUALITY_CACHE_ROOT")
+        if cache_root_value:
             candidate_command.extend(
                 [
                     "--count-cache",
-                    str(spool_parent.parent / ".cache" / "artifact-counts-v1"),
+                    str(Path(cache_root_value).resolve() / "artifact-counts-v1"),
                 ]
             )
         candidate_cache_hit = _restore_candidate_cache(
@@ -4268,78 +4355,45 @@ def write_bundle(bundle: ComparisonBundle, output_dir: Path) -> None:
 
 
 def write_reading_artifacts(output_dir: Path, payload: dict[str, Any]) -> None:
-    """同时写权威 reading-diff 和原生 UI 的随机读取 bundle。"""
+    """写入唯一的分块阅读 bundle；完整机器变化由 diff.jsonl.gz 保留。"""
     units = payload.get("units", [])
     if not isinstance(units, list):
         raise ValueError("reading-diff.units 必须是数组")
     schema_version = str(
         payload.get("schema_version", "kotoclip.quality.reading-diff.v1")
     )
-    reading_path = output_dir / "reading-diff.json.gz"
     bundle_path = output_dir / "reading-units.bin"
     index_units: list[dict[str, Any]] = []
-    with reading_path.open("wb") as reading_output, bundle_path.open("wb") as unit_output:
-        with gzip.GzipFile(
-            fileobj=reading_output,
-            mode="wb",
-            compresslevel=OUTPUT_GZIP_LEVEL,
-            mtime=0,
-        ) as compressed:
-            compressed.write(
-                (
-                    '{"schema_version":'
-                    + canonical_json(schema_version)
-                    + ',"unit_count":'
-                    + str(len(units))
-                    + ',"units":['
-                ).encode("utf-8")
+    with bundle_path.open("wb") as unit_output:
+        for start in range(0, len(units), READING_BUNDLE_CHUNK_UNITS):
+            chunk = units[start : start + READING_BUNDLE_CHUNK_UNITS]
+            if not all(isinstance(unit, dict) for unit in chunk):
+                raise ValueError("reading unit 必须是对象")
+            persistent = [_persistent_reading_unit(unit) for unit in chunk]
+            member = gzip.compress(
+                canonical_json(persistent).encode("utf-8"),
+                compresslevel=OUTPUT_GZIP_LEVEL,
+                mtime=0,
             )
-            for index, unit in enumerate(units):
-                if not isinstance(unit, dict):
-                    raise ValueError("reading-diff unit 必须是对象")
-                encoded = canonical_json(unit).encode("utf-8")
-                if index:
-                    compressed.write(b",")
-                compressed.write(encoded)
-                member = gzip.compress(
-                    encoded,
-                    compresslevel=OUTPUT_GZIP_LEVEL,
-                    mtime=0,
-                )
-                offset = unit_output.tell()
-                unit_output.write(member)
-                before = unit.get("before") if isinstance(unit.get("before"), dict) else {}
-                after = unit.get("after") if isinstance(unit.get("after"), dict) else {}
-                index_units.append(
+            offset = unit_output.tell()
+            unit_output.write(member)
+            for member_index, unit in enumerate(chunk):
+                entry = _reading_index_entry(unit)
+                entry.update(
                     {
-                        "unit_id": unit.get("unit_id"),
-                        "sentence_index": unit.get("sentence_index"),
-                        "changed_range": unit.get("changed_range"),
-                        "changed_ranges": unit.get(
-                            "changed_ranges", [unit.get("changed_range")]
-                        ),
-                        "primary_change_count": unit.get("primary_change_count", 0),
-                        "evidence_change_count": unit.get("evidence_change_count", 0),
-                        "domains": unit.get("domains", {}),
-                        "stages": unit.get("stages", []),
-                        "before": {
-                            "char_range": before.get("char_range"),
-                            "text": before.get("text", ""),
-                        },
-                        "after": {
-                            "char_range": after.get("char_range"),
-                            "text": after.get("text", ""),
-                        },
                         "offset": offset,
                         "bytes": len(member),
+                        "member_index": member_index,
                     }
                 )
-            compressed.write(b"]}\n")
+                index_units.append(entry)
     write_gzip_json(
         output_dir / "reading-index.json.gz",
         {
-            "schema_version": "kotoclip.quality.reading-index.v1",
+            "schema_version": "kotoclip.quality.reading-index.v2",
             "reading_schema_version": schema_version,
+            "bundle_schema_version": "kotoclip.quality.reading-bundle.v2",
+            "chunk_units": READING_BUNDLE_CHUNK_UNITS,
             "unit_count": len(index_units),
             "units": index_units,
         },
@@ -4373,6 +4427,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--adapter", choices=("bunsetsu", "expression"), help="单产物输入适配器"
     )
     parser.add_argument("--output-dir", required=True, type=Path, help="机器产物目录")
+    parser.add_argument(
+        "--keep-reading-spool",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     return parser.parse_args(argv)
 
 
@@ -4395,13 +4454,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output_dir.parent,
             args.output_dir / "diff.jsonl.gz",
             args.output_dir / "memory-profile.json",
-            args.output_dir / "reading-diff.json.gz",
+            args.output_dir / ".reading-diff-spool.json.gz",
         )
     else:
         if args.before is None or args.after is None or args.adapter is None:
             raise SystemExit("单产物模式必须提供 --before、--after 与 --adapter")
         bundle = compare_files(args.before, args.after, args.adapter)
     write_bundle(bundle, args.output_dir)
+    if run_mode and not args.keep_reading_spool:
+        (args.output_dir / ".reading-diff-spool.json.gz").unlink(missing_ok=True)
     print(
         f"语言质量差分完成：adapter={bundle.manifest['adapter']} "
         f"status={bundle.summary['status']} "

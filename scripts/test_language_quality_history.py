@@ -195,6 +195,33 @@ class LanguageQualityHistoryTest(unittest.TestCase):
         self.assertIsNone(record["before"]["corpus"])
         self.assertIsNone(record["before"]["resources"])
 
+    def test_embedded_snapshot_metadata_survives_snapshot_cleanup(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            before = self.write_snapshot(root, "before", "before-id")
+            after = self.write_snapshot(root, "after", "after-id")
+            self.write_comparison(root, "round", before, after)
+            manifest_path = root / "round" / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            for side, snapshot_path in (("before", before), ("after", after)):
+                snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+                manifest[side]["snapshot_metadata"] = {
+                    key: snapshot.get(key)
+                    for key in ("created_at", "implementation", "corpus", "resources")
+                }
+            self.write_json(manifest_path, manifest)
+            before.unlink()
+            after.unlink()
+            record = build_history(root)["comparisons"][0]
+
+        self.assertIsNone(record["before"]["snapshot"])
+        self.assertEqual(record["before"]["implementation"]["git_commit"], "commit-before")
+        self.assertEqual(record["after"]["corpus"]["analysis_characters"], 72)
+        self.assertEqual(
+            record["before"]["resources"]["system_dictionary"]["sha256"],
+            "system-dict",
+        )
+
     def test_history_does_not_require_a_static_page(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

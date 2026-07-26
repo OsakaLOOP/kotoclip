@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import json
 import gzip
+import os
 import sys
 import tempfile
 import unittest
 from collections import Counter
 from pathlib import Path
+from unittest.mock import patch
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -23,6 +25,8 @@ from language_quality_diff import (  # noqa: E402
     compare_files,
     compare_snapshot_manifests,
     file_descriptor,
+    iter_reading_units,
+    write_reading_artifacts,
     write_bundle,
 )
 from language_quality_gate import (  # noqa: E402
@@ -65,9 +69,13 @@ class LanguageQualityDiffTest(unittest.TestCase):
             accelerator.write_bytes(b"accelerator-v1")
             before.write_text('{"run":"before"}', encoding="utf-8")
             after.write_text('{"run":"after"}', encoding="utf-8")
-            cache = _candidate_cache_directory(
-                spool_parent, accelerator, before, after
+            self.assertIsNone(
+                _candidate_cache_directory(spool_parent, accelerator, before, after)
             )
+            with patch.dict(os.environ, {"KOTOCLIP_QUALITY_CACHE_ROOT": str(root / "cache")}):
+                cache = _candidate_cache_directory(
+                    spool_parent, accelerator, before, after
+                )
             self.assertIsNotNone(cache)
             candidates = root / "candidates.jsonl"
             metadata = root / "metadata.json"
@@ -85,10 +93,59 @@ class LanguageQualityDiffTest(unittest.TestCase):
                 candidates.read_text(encoding="utf-8"),
             )
             accelerator.write_bytes(b"accelerator-v2")
-            self.assertNotEqual(
-                cache,
-                _candidate_cache_directory(spool_parent, accelerator, before, after),
+            with patch.dict(os.environ, {"KOTOCLIP_QUALITY_CACHE_ROOT": str(root / "cache")}):
+                self.assertNotEqual(
+                    cache,
+                    _candidate_cache_directory(spool_parent, accelerator, before, after),
+                )
+
+    def test_reading_bundle_is_chunked_trimmed_and_fully_iterable(self) -> None:
+        units = []
+        for index in range(25):
+            token = {
+                "surface": "読む",
+                "char_range": [index, index + 2],
+                "head_word": {"surface": "読む"},
+                "morphemes": [],
+                "grammar_tags": [],
+                "lookup_request_id": f"request-{index}",
+                "lookup_request": {"word": "読む"},
+                "grammar_occurrences": [{"id": index}],
+                "functional_residuals": [{"id": index}],
+            }
+            side = {"char_range": [index, index + 2], "text": "読む", "tokens": [token]}
+            units.append(
+                {
+                    "unit_id": f"unit-{index}",
+                    "sentence_index": index,
+                    "changed_range": [index, index + 2],
+                    "changed_ranges": [[index, index + 2]],
+                    "primary_change_count": 1,
+                    "evidence_change_count": 1,
+                    "domains": {"structure": 1},
+                    "stages": ["morpheme"],
+                    "change_ids": [f"change-{index}"],
+                    "evidence_change_ids": [f"evidence-{index}"],
+                    "before": side,
+                    "after": side,
+                }
             )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_reading_artifacts(root, {"units": units})
+            index = self.read_gzip_text(root / "reading-index.json.gz")
+            index_value = json.loads(index)
+            restored = list(
+                iter_reading_units(
+                    root / "reading-index.json.gz", root / "reading-units.bin"
+                )
+            )
+
+        self.assertEqual(index_value["schema_version"], "kotoclip.quality.reading-index.v2")
+        self.assertEqual(len({item["offset"] for item in index_value["units"]}), 2)
+        self.assertEqual([item["unit_id"] for item in restored], [f"unit-{i}" for i in range(25)])
+        self.assertNotIn("change_ids", restored[0])
+        self.assertNotIn("lookup_request", restored[0]["before"]["tokens"][0])
 
     def test_bunsetsu_detects_segmentation_boundary_and_nested_field_changes(self) -> None:
         before = [

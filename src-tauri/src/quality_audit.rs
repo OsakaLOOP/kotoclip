@@ -30,6 +30,8 @@ struct ReadingIndexUnit {
     unit_id: String,
     offset: u64,
     bytes: u64,
+    #[serde(default)]
+    member_index: Option<usize>,
 }
 
 fn repository_root() -> Result<PathBuf, String> {
@@ -145,6 +147,7 @@ pub fn quality_audit_reading_units(
     let mut bundle = File::open(&bundle_path)
         .map_err(|error| format!("无法读取 {}：{error}", bundle_path.display()))?;
     let mut result = Vec::with_capacity(unit_ids.len());
+    let mut decoded_members: HashMap<(u64, u64), Value> = HashMap::new();
     for unit_id in unit_ids {
         let entry = entries
             .remove(&unit_id)
@@ -152,15 +155,31 @@ pub fn quality_audit_reading_units(
         if entry.bytes > 16 * 1024 * 1024 {
             return Err(format!("审计条目压缩体积异常：{unit_id}"));
         }
-        bundle
-            .seek(SeekFrom::Start(entry.offset))
-            .map_err(|error| format!("无法定位审计条目 {unit_id}：{error}"))?;
-        let mut member = vec![0_u8; entry.bytes as usize];
-        bundle
-            .read_exact(&mut member)
-            .map_err(|error| format!("无法读取审计条目 {unit_id}：{error}"))?;
-        let value = serde_json::from_reader(GzDecoder::new(member.as_slice()))
-            .map_err(|error| format!("无法解析审计条目 {unit_id}：{error}"))?;
+        let key = (entry.offset, entry.bytes);
+        if !decoded_members.contains_key(&key) {
+            bundle
+                .seek(SeekFrom::Start(entry.offset))
+                .map_err(|error| format!("无法定位审计条目 {unit_id}：{error}"))?;
+            let mut member = vec![0_u8; entry.bytes as usize];
+            bundle
+                .read_exact(&mut member)
+                .map_err(|error| format!("无法读取审计条目 {unit_id}：{error}"))?;
+            let decoded = serde_json::from_reader(GzDecoder::new(member.as_slice()))
+                .map_err(|error| format!("无法解析审计条目 {unit_id}：{error}"))?;
+            decoded_members.insert(key, decoded);
+        }
+        let member = decoded_members
+            .get(&key)
+            .ok_or_else(|| format!("审计条目块不存在：{unit_id}"))?;
+        let value = if let Some(member_index) = entry.member_index {
+            member
+                .as_array()
+                .and_then(|units| units.get(member_index))
+                .cloned()
+                .ok_or_else(|| format!("审计条目块索引无效：{unit_id}"))?
+        } else {
+            member.clone()
+        };
         result.push(value);
     }
     Ok(result)

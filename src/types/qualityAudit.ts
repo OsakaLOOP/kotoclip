@@ -106,11 +106,14 @@ export interface QualityReadingIndexUnit {
   after: QualityReadingIndexSide;
   offset: number;
   bytes: number;
+  member_index?: number;
 }
 
 export interface QualityReadingIndex {
   schema_version: string;
   reading_schema_version: string;
+  bundle_schema_version?: string;
+  chunk_units?: number;
   unit_count: number;
   units: QualityReadingIndexUnit[];
 }

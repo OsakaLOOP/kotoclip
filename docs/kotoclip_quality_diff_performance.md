@@ -12,7 +12,7 @@
 | 峰值 RSS | 不超过 1.5 GiB | Python 协调进程 `MemoryProbe` 的 Windows Working Set 峰值 |
 | 语义 | 与未缓存管线一致 | summary、完整 change 集合、reading unit 集合和排序键一致 |
 
-首次遇到新的快照对或新的 diff 实现时会填充内容寻址缓存；该路径也必须在 150 秒内完整执行候选提取并记录实际耗时。日常比较命中不可变 snapshot cache 后应显著低于该门槛。任何输入或实现变更都会自动回到冷路径。
+首次端点必须走冷路径并在 150 秒内完整执行候选提取。统一入口可使用独立、最多 6 GiB 的完成快照 LRU 缓存加速连续提交对；该缓存不属于轮次或失败恢复协议，也不能用于通过冷路径门槛。
 
 ## 2. 成本归因
 
@@ -45,7 +45,7 @@ candidates.jsonl + metadata                 raw reading sentence spool
                                |
             streaming reading projection and final artifact writers
                                |
-     reading-diff.json.gz + reading-units.bin + reading-index.json.gz
+              reading-units.bin + reading-index.json.gz
 ```
 
 ### 3.1 Rust 单扫描责任
@@ -70,7 +70,7 @@ reading 投影始终顺序写入三个最终产物，不允许收集 `units: lis
 
 ## 4. 缓存与失效
 
-缓存目录位于比较根目录的 `.cache/candidates-v1/<key>`，不属于比较结果目录。键由以下内容构成：
+只有显式设置 `KOTOCLIP_QUALITY_CACHE_ROOT` 时才启用 `<cache-root>/candidates-v1/<key>`。键由以下内容构成：
 
 - cache schema 版本；
 - Rust accelerator 可执行文件 SHA-256；
@@ -88,8 +88,8 @@ reading 投影始终顺序写入三个最终产物，不允许收集 `units: lis
 | entity／unmatched／阶段 change 临时文件 | 普通 UTF-8 JSONL | 下一阶段需要直接读取，禁止压缩后立即解压 |
 | candidates 与 raw reading cache | 普通 JSONL | 支持 offset 随机读取和硬链接复用 |
 | snapshot `tokens.json` | 未压缩 JSON | compare、阅读扫描与回退共用的本地主输入；内容寻址硬链接复用，禁止立即压缩后再解压 |
-| 对外 diff、统计、reading index | 确定性 GZIP level 1 | 保持磁盘/传输契约，优先写入速度 |
-| `reading-units.bin` | 每 unit 一个确定性 GZIP member | Tauri 可按 offset 读取单页，不解压整文件 |
+| 对外 diff、统计、reading index | 确定性 GZIP level 6 | 在流式内存边界内控制长期空间 |
+| `reading-units.bin` | 每 20 unit 一个确定性 GZIP member | 同页共享压缩字典，Tauri 按 offset 读取 |
 
 所有最终 JSON 保持 `ensure_ascii=False`、紧凑分隔符、稳定键排序和 `mtime=0`。临时文件不参与 artifact store，也不进入历史 manifest。
 
@@ -112,7 +112,7 @@ reading 投影始终顺序写入三个最终产物，不允许收集 `units: lis
 1. 定向 Python 和 Rust 测试，包括缓存命中、accelerator 变更失效、空缓存回退和 reading bundle offset。
 2. 未缓存完整比较：候选/句子缓存被填充，`summary` 与已验证基线的 change 数、evidence 数、reading unit 数、change ID 排序一致。
 3. 未缓存完整比较：`TotalSeconds <= 150`、`PeakMiB <= 1536`、`WithinTarget=true`；相同输入的缓存命中比较必须更快且保持同一语义。
-4. 解压比较 `diff.jsonl.gz`，逐行校验稳定排序；解析 `reading-diff.json.gz`，校验 unit ID、范围、主/证据 change ID 与 `reading-index.json.gz` 的 bundle offset。
+4. 解压比较 `diff.jsonl.gz`，逐行校验稳定排序；遍历 `reading-units.bin`，校验 unit ID、范围与 `reading-index.json.gz` 的 member offset/index。
 5. `git diff --check`、目标测试与 release 构建通过后，才允许提交。
 
 冷路径是发布性能门槛，warm 路径用于快速迭代。若冷路径仍未达标，应继续消除重复扫描或将候选归一化迁移到快照阶段；不得通过降低 diff 语义或截断 reading token 达成目标。
