@@ -9,6 +9,7 @@ use kotoclip_core::pipeline::morpheme::MorphemeAnalyzer;
 use kotoclip_core::pipeline::{
     ruby, segment_prepared_text, ProductionSegmentKind, TEXT_BOUNDARY_PROTOCOL_VERSION,
 };
+use kotoclip_core::reader_markdown::{compile_analysis_text, ANALYSIS_TEXT_PROTOCOL_VERSION};
 use rusqlite::{Connection, OpenFlags};
 use std::collections::HashSet;
 use std::fs::{self, File};
@@ -89,6 +90,7 @@ pub fn build_substrate(options: &BuildSubstrateOptions) -> Result<PathBuf> {
     let spec_hash = sha256_bytes(&spec_bytes);
     let fingerprint = SubstrateFingerprint {
         system_dictionary_sha256: sha256_file(&options.system_dictionary)?,
+        analysis_text_protocol: ANALYSIS_TEXT_PROTOCOL_VERSION.to_string(),
         prepare_text_protocol: ruby::PREPARE_TEXT_PROTOCOL_VERSION.to_string(),
         boundary_protocol: TEXT_BOUNDARY_PROTOCOL_VERSION.to_string(),
         morpheme_compatibility_protocol:
@@ -179,7 +181,8 @@ fn build_into(
             .with_context(|| format!("无法读取书籍 {}", source_path.display()))?;
         let source = String::from_utf8(source_bytes.clone())
             .with_context(|| format!("书籍不是有效 UTF-8：{}", source_path.display()))?;
-        let prepared = ruby::prepare_text(&source);
+        let analysis_text = compile_analysis_text(&source);
+        let prepared = ruby::prepare_text(&analysis_text);
         let chars: Vec<char> = prepared.text.chars().collect();
         let paragraph_ranges = paragraph_ranges(&chars);
         let reading_sentence_ranges = reading_sentence_ranges(&chars);
@@ -305,6 +308,7 @@ fn validate_manifest(path: &Path, expected_id: &str) -> Result<()> {
     if manifest.schema_version != SUBSTRATE_SCHEMA_VERSION
         || manifest.substrate_id != expected_id
         || manifest.fingerprint.boundary_protocol != TEXT_BOUNDARY_PROTOCOL_VERSION
+        || manifest.fingerprint.analysis_text_protocol != ANALYSIS_TEXT_PROTOCOL_VERSION
         || manifest.fingerprint.prepare_text_protocol != ruby::PREPARE_TEXT_PROTOCOL_VERSION
         || manifest.fingerprint.morpheme_compatibility_protocol
             != kotoclip_core::pipeline::morpheme::MORPHEME_COMPATIBILITY_VERSION

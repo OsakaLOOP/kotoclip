@@ -18,6 +18,7 @@ use kotoclip_core::pipeline::lexical::{
 use kotoclip_core::pipeline::ruby::{self, RubyAnnotation};
 use kotoclip_core::pipeline::word_formation::{AcceptedWordFormation, WordFormationMatcher};
 use kotoclip_core::pipeline::{Pipeline, PreanalyzedContentSegment};
+use kotoclip_core::reader_markdown::compile_analysis_text;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -437,7 +438,8 @@ fn prepare_selected_paragraphs(
             .context("选择结果 book_index 越界")?;
         let chunk = read_book_chunk(&options.substrate_directory, descriptor)?;
         let source = fs::read_to_string(&descriptor.source_path)?;
-        let prepared = ruby::prepare_text(&source);
+        let analysis_text = compile_analysis_text(&source);
+        let prepared = ruby::prepare_text(&analysis_text);
         if sha256_bytes(prepared.text.as_bytes()) != descriptor.normalized_text_sha256
             || prepared.annotations != chunk.ruby_annotations
         {

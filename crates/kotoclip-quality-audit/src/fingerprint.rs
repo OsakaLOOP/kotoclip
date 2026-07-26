@@ -66,6 +66,7 @@ struct ExecutionFingerprint<'a> {
     dictionary_tree_sha256: String,
     system_dictionary_sha256: String,
     boundary_protocol: &'a str,
+    analysis_text_protocol: &'a str,
     prepare_text_protocol: &'a str,
     morpheme_compatibility_protocol: &'a str,
     enabled_features: &'a str,
@@ -86,6 +87,7 @@ pub fn execution_fingerprint(
         dictionary_tree_sha256: sha256_tree(dictionary_directory)?,
         system_dictionary_sha256: sha256_file(system_dictionary)?,
         boundary_protocol: kotoclip_core::pipeline::TEXT_BOUNDARY_PROTOCOL_VERSION,
+        analysis_text_protocol: kotoclip_core::reader_markdown::ANALYSIS_TEXT_PROTOCOL_VERSION,
         prepare_text_protocol: kotoclip_core::pipeline::ruby::PREPARE_TEXT_PROTOCOL_VERSION,
         morpheme_compatibility_protocol:
             kotoclip_core::pipeline::morpheme::MORPHEME_COMPATIBILITY_VERSION,

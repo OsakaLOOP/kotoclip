@@ -55,7 +55,7 @@ fn real_containment_audit_matches_full_domain_and_writes_ui_bundle() {
     let source_path = temp.path().join("book.md");
     fs::write(
         &source_path,
-        "中学《ちゅうがく》時代は不登校気味で迷惑かけてごめん。\n電子書籍を読む。\n",
+        "---\ntitle: 审计样例\n---\n\n## 目次\n\n- [[#プロローグ]]\n\n## プロローグ\n\n中学《ちゅうがく》時代は不登校気味で迷惑かけてごめん。\n\n![插图](./cover.jpeg)\n\n電子書籍を読む。\n",
     )
     .unwrap();
     let corpus_path = temp.path().join("corpus.json");
@@ -75,6 +75,12 @@ fn real_containment_audit_matches_full_domain_and_writes_ui_bundle() {
         max_bytes: 64 * 1024 * 1024,
     })
     .unwrap();
+    let substrate_manifest: Value =
+        serde_json::from_slice(&fs::read(substrate.join("manifest.json")).unwrap()).unwrap();
+    assert_eq!(
+        substrate_manifest["fingerprint"]["analysis_text_protocol"],
+        kotoclip_core::reader_markdown::ANALYSIS_TEXT_PROTOCOL_VERSION
+    );
     let output = run_containment_audit(&ContainmentAuditOptions {
         repository_root: repository,
         substrate_directory: substrate,
@@ -104,6 +110,12 @@ fn real_containment_audit_matches_full_domain_and_writes_ui_bundle() {
         .read_to_string(&mut change_lines)
         .unwrap();
     let first_change: Value = serde_json::from_str(change_lines.lines().next().unwrap()).unwrap();
+    assert_eq!(
+        first_change["sentence_text"],
+        "中学時代は不登校気味で迷惑かけてごめん。"
+    );
+    assert!(!change_lines.contains("[[#プロローグ]]"));
+    assert!(!change_lines.contains("## プロローグ"));
     let pipeline = Pipeline::new(repository_root().join("ipadic/system.dic")).unwrap();
     let dictionary = DictionaryEngine::new(&repository_root().join("data/dicts")).unwrap();
     let before = pipeline.process_with_dictionary_overlap_policy(
@@ -125,6 +137,11 @@ fn real_containment_audit_matches_full_domain_and_writes_ui_bundle() {
         kotoclip_core::pipeline::expressions::apply_correlative_expressions(tokens);
         kotoclip_core::pipeline::expressions::resolve_expression_conflicts(tokens);
         kotoclip_core::pipeline::expressions::stabilize_expression_ids(tokens);
+        kotoclip_core::document::offset_token_ranges(
+            tokens,
+            first_change["char_range"]["start"].as_u64().unwrap() as usize,
+            0,
+        );
     }
     let reading_index: Value = serde_json::from_reader(GzDecoder::new(
         File::open(output.join("reading-index.json.gz")).unwrap(),

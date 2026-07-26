@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 pub const AUDIT_SCHEMA_VERSION: &str = "kotoclip.quality.selective-audit.v2";
-pub const SUBSTRATE_SCHEMA_VERSION: &str = "kotoclip.quality.morpheme-substrate.v2";
+pub const SUBSTRATE_SCHEMA_VERSION: &str = "kotoclip.quality.morpheme-substrate.v3";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
@@ -103,6 +103,7 @@ pub struct BookChunk {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SubstrateFingerprint {
     pub system_dictionary_sha256: String,
+    pub analysis_text_protocol: String,
     pub prepare_text_protocol: String,
     pub boundary_protocol: String,
     pub morpheme_compatibility_protocol: String,
