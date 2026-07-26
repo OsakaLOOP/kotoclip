@@ -1,0 +1,32 @@
+[
+  {
+    "name": "frontmatter、标题与段落",
+    "source": "\ufeff---\r\ntitle: 测试书\r\nauthor: 著者\r\n---\r\n\r\n## 第一章\r\n\r\n第一段。\r\n第二行。\r\n\r\n## 第二章\r\n\r\n第二段。",
+    "analysis_text": "第一章\n\n第一段。\n第二行。\n\n第二章\n\n第二段。"
+  },
+  {
+    "name": "目次、空锚点与图片",
+    "source": "## 目次\n\n- [[#第一章]]\n- [[#第二章]]\n\n[]{#p-001.xhtml}\n\n![](./cover.jpeg)\n\n## 第一章\n\n正文。",
+    "analysis_text": "第一章\n\n正文。"
+  },
+  {
+    "name": "行内标记、链接、属性与 ruby",
+    "source": "## 序　章　名\n\n[七《なの》日]{.em}与[链接](chapter.xhtml)、**强调**、`代码`。\n\n> 引用。\n- 列表。",
+    "analysis_text": "序章名\n\n七《なの》日与链接、强调、代码。\n\n引用。\n• 列表。"
+  },
+  {
+    "name": "HTML fence、Pandoc div 与 EPUB 提示",
+    "source": "{.fit} この本は縦書きでレイアウトされています。\n\n::: {.page}\n\n```{=html}\n<svg><image href=\"cover.jpeg\" /></svg>\n```\n\n## プロローグ\n\nほんと、もう、ムリ。\n\n:::",
+    "analysis_text": "プロローグ\n\nほんと、もう、ムリ。"
+  },
+  {
+    "name": "实体、HTML 标签、转义与水平线",
+    "source": "## A &amp; B\n\n<span>甲</span>&nbsp;乙\\*。\n\n---\n\n末尾。",
+    "analysis_text": "A&B\n\n甲 乙*。\n\n末尾。"
+  },
+  {
+    "name": "Pandoc HTML ruby",
+    "source": "## 注音\n\n`<ruby>`{=html}東京`<rt>`{=html}とうきょう`</rt>`{=html}`</ruby>`{=html}へ行く。",
+    "analysis_text": "注音\n\n東京《とうきょう》へ行く。"
+  }
+]

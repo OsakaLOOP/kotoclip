@@ -1,6 +1,22 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { compileReaderDocument, prepareMarkdownDocument } from "./markdownDocument.ts";
+
+const sharedAnalysisCases = JSON.parse(readFileSync(
+  new URL("../reader/fixtures/markdown_analysis_cases.json", import.meta.url),
+  "utf8",
+));
+
+test("与 Rust 审计共享 Markdown analysisText 协议样例", () => {
+  for (const fixture of sharedAnalysisCases) {
+    assert.equal(
+      compileReaderDocument(fixture.source).analysisText,
+      fixture.analysis_text,
+      fixture.name,
+    );
+  }
+});
 
 test("提取 frontmatter 元数据并从正文剥离", () => {
   const prepared = prepareMarkdownDocument(`---
