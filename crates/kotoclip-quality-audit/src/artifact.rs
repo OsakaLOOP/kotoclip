@@ -56,7 +56,9 @@ impl ArtifactTransaction {
             serde_json::to_writer(
                 &mut encoder,
                 &json!({
-                    "schema_version": "kotoclip.quality.lexical-change.v1",
+                    "schema_version": "kotoclip.quality.pipeline-change.v1",
+                    "change_id": change.change_id,
+                    "primary_domain": change.primary_domain,
                     "reading_unit_id": reading_unit_id(change),
                     "book_id": change.book_id,
                     "paragraph_id": change.paragraph_id,
@@ -66,6 +68,8 @@ impl ArtifactTransaction {
                     "changed_ranges": change.changed_ranges,
                     "before_units": change.before_units,
                     "after_units": change.after_units,
+                    "before_formations": word_formations(&change.before_tokens),
+                    "after_formations": word_formations(&change.after_tokens),
                 }),
             )?;
             encoder.write_all(b"\n")?;
@@ -188,9 +192,9 @@ fn reading_unit(change: &LexicalObservation, index: usize) -> Value {
         "changed_ranges": change.changed_ranges,
         "primary_change_count": 1,
         "evidence_change_count": 0,
-        "domains": {"lexical_unit": 1, "bunsetsu": 1, "ui_projection": 1},
-        "stages": ["lexical_unit", "bunsetsu", "ui_projection"],
-        "change_ids": ["lexical.word_formation_overlap.proper_containment"],
+        "domains": {change.primary_domain.clone(): 1, "bunsetsu": 1, "ui_projection": 1},
+        "stages": [change.primary_domain.clone(), "bunsetsu", "ui_projection"],
+        "change_ids": [change.change_id],
         "before": {
             "char_range": change.char_range,
             "text": change.sentence_text,
@@ -206,9 +210,18 @@ fn reading_unit(change: &LexicalObservation, index: usize) -> Value {
 
 fn reading_unit_id(change: &LexicalObservation) -> String {
     format!(
-        "{}:{}:{}:lexical-containment",
-        change.book_id, change.char_range.start, change.char_range.end
+        "{}:{}:{}:{}",
+        change.book_id, change.char_range.start, change.char_range.end, change.change_id
     )
+}
+
+fn word_formations(
+    tokens: &[kotoclip_core::models::AnnotatedToken],
+) -> Vec<&kotoclip_core::models::WordFormationAnnotation> {
+    tokens
+        .iter()
+        .flat_map(|token| token.bunsetsu.word_formations.iter())
+        .collect()
 }
 
 fn reading_token(token: &kotoclip_core::models::AnnotatedToken) -> Value {

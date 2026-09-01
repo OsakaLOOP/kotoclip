@@ -410,6 +410,102 @@ impl Pipeline {
         Ok((before, after))
     }
 
+    /// 从同一 IPADIC 底座执行两份构词目录的生产管线比较。
+    ///
+    /// 两侧分别计算 accepted formation 和 crossing lexical，再进入完整下游投影；
+    /// 调用方可在此之前用相同 matcher 完成全域 accepted-set 选择扫描。
+    pub fn process_preanalyzed_word_formation_pair(
+        &self,
+        prepared_text: &str,
+        annotations: &[ruby::RubyAnnotation],
+        content_segments: &[PreanalyzedContentSegment],
+        merge_rules: &[Vec<String>],
+        dictionary_matches: &HashMap<String, Vec<crate::models::DictionaryEntryRef>>,
+        before_matcher: &word_formation::WordFormationMatcher,
+        after_matcher: &word_formation::WordFormationMatcher,
+    ) -> Result<(Vec<AnnotatedToken>, Vec<AnnotatedToken>), String> {
+        let chars: Vec<char> = prepared_text.chars().collect();
+        let document_readings = ruby::build_document_reading_map(annotations);
+        let mut supplied = content_segments
+            .iter()
+            .map(|segment| (segment.char_range, segment))
+            .collect::<HashMap<_, _>>();
+        let mut before = Vec::new();
+        let mut after = Vec::new();
+
+        for segment in segment_text(&chars) {
+            if segment.seg_type != SegmentType::Content {
+                let token = literal_token(&chars, segment);
+                before.push(token.clone());
+                after.push(token);
+                continue;
+            }
+            let range = (segment.start_char_idx, segment.end_char_idx);
+            let supplied_segment = supplied
+                .remove(&range)
+                .ok_or_else(|| format!("预分析 segment 缺失：{}..{}", range.0, range.1))?;
+            let before_formations = before_matcher
+                .match_morphemes(&supplied_segment.morphemes)
+                .accepted;
+            let after_formations = after_matcher
+                .match_morphemes(&supplied_segment.morphemes)
+                .accepted;
+            let candidates =
+                lexical::prepare_dictionary_lexical_candidates(&supplied_segment.morphemes);
+            let before_lexical = lexical::resolve_dictionary_lexical_candidates_with_policy(
+                &supplied_segment.morphemes,
+                candidates.clone(),
+                dictionary_matches,
+                &before_formations,
+                lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
+            )
+            .accepted;
+            let after_lexical = lexical::resolve_dictionary_lexical_candidates_with_policy(
+                &supplied_segment.morphemes,
+                candidates,
+                dictionary_matches,
+                &after_formations,
+                lexical::WordFormationOverlapPolicy::RejectCrossingOverlap,
+            )
+            .accepted;
+            let annotation_start =
+                annotations.partition_point(|annotation| annotation.char_range.1 <= range.0);
+            let annotation_end =
+                annotations.partition_point(|annotation| annotation.char_range.0 < range.1);
+            let segment_annotations = &annotations[annotation_start..annotation_end];
+            before.extend(self.finish_preanalyzed_segment(
+                &chars,
+                segment_annotations,
+                &document_readings,
+                &supplied_segment.morphemes,
+                &before_formations,
+                &before_lexical,
+                merge_rules,
+            ));
+            after.extend(self.finish_preanalyzed_segment(
+                &chars,
+                segment_annotations,
+                &document_readings,
+                &supplied_segment.morphemes,
+                &after_formations,
+                &after_lexical,
+                merge_rules,
+            ));
+        }
+        if !supplied.is_empty() {
+            return Err("预分析 segment 与生产边界不一致".to_string());
+        }
+        for tokens in [&mut before, &mut after] {
+            tokens.sort_by_key(|token| token.bunsetsu.char_range.0);
+            grammar::canonicalize_document_coordinates(tokens);
+            expressions::apply_builtin_expressions(tokens);
+            expressions::apply_correlative_expressions(tokens);
+            expressions::resolve_expression_conflicts(tokens);
+            expressions::stabilize_expression_ids(tokens);
+        }
+        Ok((before, after))
+    }
+
     fn finish_preanalyzed_segment(
         &self,
         prepared_chars: &[char],

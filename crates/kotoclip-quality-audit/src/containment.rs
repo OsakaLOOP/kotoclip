@@ -53,17 +53,17 @@ struct SelectedClause {
     candidates: DictionaryLexicalCandidates,
 }
 
-struct SelectedParagraph {
-    book_id: String,
-    paragraph_id: usize,
-    range: CharRange,
-    text: String,
-    annotations: Vec<RubyAnnotation>,
-    content_segments: Vec<PreanalyzedContentSegment>,
-    reading_sentences: Vec<(usize, CharRange, String)>,
+pub(crate) struct SelectedParagraph {
+    pub book_id: String,
+    pub paragraph_id: usize,
+    pub range: CharRange,
+    pub text: String,
+    pub annotations: Vec<RubyAnnotation>,
+    pub content_segments: Vec<PreanalyzedContentSegment>,
+    pub reading_sentences: Vec<(usize, CharRange, String)>,
 }
 
-struct MemorySampler {
+pub(crate) struct MemorySampler {
     stop: Arc<AtomicBool>,
     peak: Arc<AtomicU64>,
     phase_peak: Arc<AtomicU64>,
@@ -71,7 +71,7 @@ struct MemorySampler {
 }
 
 impl MemorySampler {
-    fn start() -> Self {
+    pub fn start() -> Self {
         let stop = Arc::new(AtomicBool::new(false));
         let peak = Arc::new(AtomicU64::new(current_rss_bytes()));
         let phase_peak = Arc::new(AtomicU64::new(current_rss_bytes()));
@@ -94,17 +94,17 @@ impl MemorySampler {
         }
     }
 
-    fn overall_peak(&self) -> u64 {
+    pub fn overall_peak(&self) -> u64 {
         self.peak.load(Ordering::Relaxed)
     }
 
-    fn take_phase_peak(&self) -> u64 {
+    pub fn take_phase_peak(&self) -> u64 {
         let rss = current_rss_bytes();
         self.peak.fetch_max(rss, Ordering::Relaxed);
         self.phase_peak.swap(rss, Ordering::Relaxed).max(rss)
     }
 
-    fn finish(mut self) -> u64 {
+    pub fn finish(mut self) -> u64 {
         self.stop.store(true, Ordering::Relaxed);
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();
@@ -239,8 +239,11 @@ pub fn run_containment_audit(options: &ContainmentAuditOptions) -> Result<PathBu
     }
 
     let paragraph_reanalysis_started = Instant::now();
-    let paragraphs =
-        prepare_selected_paragraphs(options, &substrate_manifest, &changed_paragraphs)?;
+    let paragraphs = prepare_selected_paragraphs(
+        &options.substrate_directory,
+        &substrate_manifest,
+        &changed_paragraphs,
+    )?;
     counts.executed_paragraph_characters = paragraphs
         .iter()
         .map(|paragraph| paragraph.range.end.saturating_sub(paragraph.range.start))
@@ -282,6 +285,8 @@ pub fn run_containment_audit(options: &ContainmentAuditOptions) -> Result<PathBu
             let before = tokens_in_range(&before_tokens, sentence_range);
             let after = tokens_in_range(&after_tokens, sentence_range);
             changes.push(LexicalObservation {
+                change_id: "lexical.word_formation_overlap.proper_containment".to_string(),
+                primary_domain: "lexical_unit".to_string(),
                 book_id: paragraph.book_id.clone(),
                 paragraph_id: paragraph.paragraph_id,
                 reading_sentence_id,
@@ -423,8 +428,8 @@ pub fn run_containment_audit(options: &ContainmentAuditOptions) -> Result<PathBu
     transaction.commit(&manifest)
 }
 
-fn prepare_selected_paragraphs(
-    options: &ContainmentAuditOptions,
+pub(crate) fn prepare_selected_paragraphs(
+    substrate_directory: &Path,
     manifest: &crate::model::SubstrateManifest,
     selected: &BTreeSet<(usize, usize)>,
 ) -> Result<Vec<SelectedParagraph>> {
@@ -438,7 +443,7 @@ fn prepare_selected_paragraphs(
             .books
             .get(book_index)
             .context("选择结果 book_index 越界")?;
-        let chunk = read_book_chunk(&options.substrate_directory, descriptor)?;
+        let chunk = read_book_chunk(substrate_directory, descriptor)?;
         let source = fs::read_to_string(&descriptor.source_path)?;
         let analysis_text = compile_analysis_text(&source);
         let prepared = ruby::prepare_text(&analysis_text);
@@ -548,7 +553,7 @@ fn verify_known_example(pipeline: &Pipeline, dictionary: &DictionaryEngine) -> R
     Ok(())
 }
 
-fn record_stage(
+pub(crate) fn record_stage(
     stages: &mut BTreeMap<String, StageResourceUsage>,
     sampler: &MemorySampler,
     name: &str,
@@ -630,7 +635,9 @@ fn verify_full_domain(
     Ok(())
 }
 
-fn ensure_source_unchanged(descriptor: &crate::model::SubstrateBookDescriptor) -> Result<()> {
+pub(crate) fn ensure_source_unchanged(
+    descriptor: &crate::model::SubstrateBookDescriptor,
+) -> Result<()> {
     if sha256_file(&descriptor.source_path)? != descriptor.source_sha256 {
         bail!("书库在底座生成后发生变化：{}", descriptor.book_id);
     }
@@ -655,12 +662,12 @@ fn accepted_signature(
     result
 }
 
-struct ClassifiedTokenRanges {
-    visible: Vec<CharRange>,
-    ordinal_only: Vec<CharRange>,
+pub(crate) struct ClassifiedTokenRanges {
+    pub visible: Vec<CharRange>,
+    pub ordinal_only: Vec<CharRange>,
 }
 
-fn classify_token_ranges(
+pub(crate) fn classify_token_ranges(
     before: &[AnnotatedToken],
     after: &[AnnotatedToken],
 ) -> Result<ClassifiedTokenRanges> {
@@ -722,7 +729,7 @@ fn visible_token_observation(mut token: serde_json::Value) -> serde_json::Value 
     token
 }
 
-fn tokens_in_range(tokens: &[AnnotatedToken], range: CharRange) -> Vec<AnnotatedToken> {
+pub(crate) fn tokens_in_range(tokens: &[AnnotatedToken], range: CharRange) -> Vec<AnnotatedToken> {
     tokens
         .iter()
         .filter(|token| {
@@ -733,7 +740,7 @@ fn tokens_in_range(tokens: &[AnnotatedToken], range: CharRange) -> Vec<Annotated
         .collect()
 }
 
-fn lexical_units(tokens: &[AnnotatedToken]) -> Vec<DictionaryLexicalUnitAnnotation> {
+pub(crate) fn lexical_units(tokens: &[AnnotatedToken]) -> Vec<DictionaryLexicalUnitAnnotation> {
     tokens
         .iter()
         .flat_map(|token| token.bunsetsu.lexical_units.iter().cloned())

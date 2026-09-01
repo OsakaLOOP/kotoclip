@@ -90,10 +90,20 @@ fn history_record(
     summary: Value,
     gate: Value,
 ) -> Result<Value> {
+    let adapter = if manifest
+        .plan
+        .deltas
+        .iter()
+        .all(|delta| delta.owner == "pipeline.word_formation")
+    {
+        "rust_selective_word_formation_catalog"
+    } else {
+        "rust_selective_proper_containment"
+    };
     Ok(json!({
         "comparison_id": comparison_id,
         "created_at": manifest.created_at,
-        "adapter": "rust_selective_proper_containment",
+        "adapter": adapter,
         "before": history_side(&manifest.before, manifest),
         "after": history_side(&manifest.after, manifest),
         "summary": summary,

@@ -110,8 +110,12 @@ fn default_confidence() -> u8 {
 
 impl WordFormationMatcher {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let catalog: Catalog =
-            serde_json::from_str(include_str!("../../resources/word_formation_patterns.json"))?;
+        Self::from_json(include_str!("../../resources/word_formation_patterns.json"))
+    }
+
+    /// 从显式目录构建 matcher，供提交级 old/new 目录审计复用生产规则实现。
+    pub fn from_json(source: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let catalog: Catalog = serde_json::from_str(source)?;
         if catalog.schema_version != 2 || catalog.catalog_version == 0 {
             return Err(format!(
                 "不支持的构词规则 schema_version：{}",
@@ -564,9 +568,10 @@ mod tests {
         for text in ["彼程", "友達程", "三日程"] {
             let result = matcher.match_morphemes(&analyzer.analyze(text));
             assert!(
-                result.accepted.iter().all(|item| {
-                    item.annotation.rule_id != "noun_with_misclassified_hodo"
-                }),
+                result
+                    .accepted
+                    .iter()
+                    .all(|item| { item.annotation.rule_id != "noun_with_misclassified_hodo" }),
                 "{text} 不应命中航程的有限兼容规则"
             );
         }

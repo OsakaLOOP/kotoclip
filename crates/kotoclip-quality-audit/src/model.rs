@@ -139,6 +139,8 @@ pub struct SubstrateManifest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LexicalObservation {
+    pub change_id: String,
+    pub primary_domain: String,
     pub book_id: String,
     pub paragraph_id: usize,
     pub reading_sentence_id: usize,
