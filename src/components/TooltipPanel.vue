@@ -101,13 +101,20 @@ const dictionaryGroups = computed(() => {
   return names.map((name) => ({ name, entries: groupedEntries.get(name) ?? [] }));
 });
 
-const activeDictionaryName = ref<string | null>(null);
+const preferredDictionaryName = ref<string | null>(null);
 const selectedOccurrenceByCell = ref<Record<string, string>>({});
 
 const activeForm = computed(() => (
   props.lookup?.forms.find((form) => form.form_id === props.lookup?.selected_form_id)
   ?? props.lookup?.forms[0]
   ?? null
+));
+
+// 偏好值可以跨查询保留，但实际活动词典必须始终落在当前表记的可用单元格。
+const activeDictionaryName = computed(() => dictionaryForForm(
+  props.lookup,
+  activeForm.value?.form_id,
+  preferredDictionaryName.value,
 ));
 
 function meaningfulEntries(entries: DictEntry[]) {
@@ -135,12 +142,7 @@ function cellKey(dictionaryName: string) {
 }
 
 function synchronizeSelection() {
-  const previous = activeDictionaryName.value;
-  activeDictionaryName.value = dictionaryForForm(
-    props.lookup,
-    activeForm.value?.form_id,
-    previous,
-  );
+  preferredDictionaryName.value = activeDictionaryName.value;
   const nextSelection = { ...selectedOccurrenceByCell.value };
   for (const group of dictionaryGroups.value) {
     const key = cellKey(group.name);
@@ -161,13 +163,13 @@ function handleDictionarySelect(dictionaryName: string) {
     activeForm.value?.form_id,
   );
   if (!formId) return;
-  activeDictionaryName.value = dictionaryName;
+  preferredDictionaryName.value = dictionaryName;
   if (formId !== activeForm.value?.form_id) emit("selectForm", formId);
 }
 
 function handleFormSelect(formId: string) {
   if (props.loading || formId === activeForm.value?.form_id) return;
-  activeDictionaryName.value = dictionaryForForm(
+  preferredDictionaryName.value = dictionaryForForm(
     props.lookup,
     formId,
     activeDictionaryName.value,
@@ -177,11 +179,8 @@ function handleFormSelect(formId: string) {
 
 watch(
   () => props.lookup,
-  async () => {
-    await nextTick();
-    synchronizeSelection();
-  },
-  { immediate: true },
+  synchronizeSelection,
+  { immediate: true, flush: "sync" },
 );
 
 const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
