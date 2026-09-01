@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { AnnotatedToken } from "../types";
-import { grammarTagCoversRange, primaryGrammarIndex } from "../explanation/grammarView";
-import { morphologyChainForMorpheme } from "../explanation/morphologyView";
+import {
+  grammarIndexForMorpheme,
+  readerMorphemeSegments,
+} from "../reader/segmentColoring";
 
 const props = defineProps<{
   token: AnnotatedToken;
@@ -89,54 +91,7 @@ const capsuleClasses = computed(() => {
 });
 
 // 没有活用链的名词、复合词仍使用既有词头范围作为回退。
-const fallbackHeadMorphemeIndices = computed(() => {
-  const morphemes = props.token.bunsetsu.morphemes;
-  const head = props.token.bunsetsu.head_word;
-
-  for (let start = 0; start < morphemes.length; start++) {
-    let surface = "";
-    let baseForm = "";
-    for (let end = start; end < morphemes.length; end++) {
-      surface += morphemes[end].surface;
-      baseForm += morphemes[end].base_form;
-      if (surface === head.surface || baseForm === head.base_form) {
-        return new Set(Array.from({ length: end - start + 1 }, (_, i) => start + i));
-      }
-      if (!head.surface.startsWith(surface) && !head.base_form.startsWith(baseForm)) {
-        break;
-      }
-    }
-  }
-
-  return new Set<number>();
-});
-
-function isLexicalMorpheme(index: number) {
-  const morpheme = props.token.bunsetsu.morphemes[index];
-  return morphologyChainForMorpheme(props.token, morpheme, "lexical") !== null
-    || fallbackHeadMorphemeIndices.value.has(index);
-}
-
-function isGrammarMorpheme(index: number) {
-  const m = props.token.bunsetsu.morphemes[index];
-  return props.token.bunsetsu.grammar_tags.some((tag) => grammarTagCoversRange(tag, m.char_range));
-}
-
-function isFunctionalMorphologyMorpheme(index: number) {
-  const morpheme = props.token.bunsetsu.morphemes[index];
-  return morphologyChainForMorpheme(props.token, morpheme, "functional") !== null;
-}
-
-function isHelperMorpheme(index: number) {
-  return !isLexicalMorpheme(index)
-    && !isGrammarMorpheme(index)
-    && !isFunctionalMorphologyMorpheme(index);
-}
-
-function grammarIndexForMorpheme(index: number) {
-  const morpheme = props.token.bunsetsu.morphemes[index];
-  return primaryGrammarIndex(props.token.bunsetsu.grammar_tags, morpheme.char_range);
-}
+const morphemeSegments = computed(() => readerMorphemeSegments(props.token));
 
 function isExpressionMorpheme(index: number) {
   const morpheme = props.token.bunsetsu.morphemes[index];
@@ -165,7 +120,7 @@ function characterChanged(offset: number) {
 
 <template>
   <span
-    :class="[capsuleClasses, { 'has-headword': token.bunsetsu.morphemes.some((_, index) => isLexicalMorpheme(index)) }]"
+    :class="[capsuleClasses, { 'has-headword': morphemeSegments.some((segment) => segment.kind === 'lexical') }]"
     :data-paragraph-id="paragraphId"
     :data-token-index="tokenIndex"
   >
@@ -174,12 +129,15 @@ function characterChanged(offset: number) {
       v-for="(m, idx) in token.bunsetsu.morphemes"
       :key="idx"
       :data-morpheme-index="idx"
-      :data-grammar-index="grammarIndexForMorpheme(idx)"
+      :data-grammar-index="grammarIndexForMorpheme(token, idx)"
       :class="{
-        'head-word-highlight': isLexicalMorpheme(idx),
-        'helper-word': isHelperMorpheme(idx),
-        'grammar-match': !isLexicalMorpheme(idx)
-          && (isGrammarMorpheme(idx) || isFunctionalMorphologyMorpheme(idx)),
+        'head-word-highlight': morphemeSegments[idx].kind === 'lexical',
+        'head-word-tone-a': morphemeSegments[idx].kind === 'lexical' && morphemeSegments[idx].tone === 0,
+        'head-word-tone-b': morphemeSegments[idx].kind === 'lexical' && morphemeSegments[idx].tone === 1,
+        'helper-word': morphemeSegments[idx].kind === 'helper',
+        'grammar-match': morphemeSegments[idx].kind === 'grammar',
+        'grammar-tone-a': morphemeSegments[idx].kind === 'grammar' && morphemeSegments[idx].tone === 0,
+        'grammar-tone-b': morphemeSegments[idx].kind === 'grammar' && morphemeSegments[idx].tone === 1,
         'expression-anchor': isExpressionMorpheme(idx),
       }"
     >
@@ -197,19 +155,6 @@ function characterChanged(offset: number) {
       </template>
       <template v-else>{{ m.surface }}</template>
     </span>
-
-    <!-- 渲染语法 Badge 徽章 -->
-    <template v-for="(tag, grammarIndex) in token.bunsetsu.grammar_tags" :key="tag.occurrence_id || `${tag.pattern_id}-${grammarIndex}`">
-      <span
-        v-if="tag.show_badge"
-        class="grammar-badge"
-        :data-grammar-index="grammarIndex"
-        :data-grammar-occurrence="tag.occurrence_id"
-        :title="tag.description"
-      >
-        {{ tag.name_ja }}
-      </span>
-    </template>
   </span>
 </template>
 
