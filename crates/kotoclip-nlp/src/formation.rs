@@ -27,7 +27,7 @@ pub fn match_rule(rule: &FormationRule, tokens: &[LexemeToken]) -> Vec<SpanNode>
     tokens
         .windows(rule.sequence.len())
         .enumerate()
-        .filter_map(|(start, window)| {
+        .filter_map(|(_start, window)| {
             let mut captures = Vec::new();
             for (atom, token) in rule.sequence.iter().zip(window) {
                 if let Some(literal) = &atom.literal {
