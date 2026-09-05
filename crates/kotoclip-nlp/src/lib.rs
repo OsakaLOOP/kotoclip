@@ -1,4 +1,5 @@
-use std::io::BufReader;
+use std::fs::File;
+use std::io::{BufReader, Read};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -65,9 +66,18 @@ pub struct VibratoProvider {
 impl VibratoProvider {
     pub fn open(provider_id: impl Into<String>, path: impl AsRef<Path>) -> Result<Self, ProviderError> {
         let path = path.as_ref();
-        let bytes = std::fs::read(path)?;
-        let dictionary_sha256 = format!("sha256:{:x}", Sha256::digest(&bytes));
-        let dictionary = Dictionary::read(BufReader::new(bytes.as_slice()))
+        let mut hash_reader = File::open(path)?;
+        let mut hasher = Sha256::new();
+        let mut buffer = [0_u8; 1024 * 1024];
+        loop {
+            let read = hash_reader.read(&mut buffer)?;
+            if read == 0 {
+                break;
+            }
+            hasher.update(&buffer[..read]);
+        }
+        let dictionary_sha256 = format!("sha256:{:x}", hasher.finalize());
+        let dictionary = Dictionary::read(BufReader::new(File::open(path)?))
             .map_err(|error| ProviderError::Dictionary(error.to_string()))?;
         let provider_id = provider_id.into();
         Ok(Self {
