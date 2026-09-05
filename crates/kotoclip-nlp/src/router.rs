@@ -57,8 +57,6 @@ fn looks_spoken(text: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn register_detection_is_conservative() {
         assert_eq!(super::looks_spoken("これは説明文です。"), false);
