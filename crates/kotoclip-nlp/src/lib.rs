@@ -8,8 +8,10 @@ use vibrato::{Dictionary, Tokenizer};
 
 pub mod alignment;
 pub mod entities;
+pub mod router;
 pub use alignment::{compare_tokenizations, project_lexemes, ProviderDisagreement};
 pub use entities::{ArtifactDescriptor, CandidateStatus, LexemeToken, SpanLayer, SpanNode};
+pub use router::{ProviderRouter, RoutedAnalysis, TextRegister};
 
 pub const ARTIFACT_SCHEMA: &str = "kotoclip.provider-token.v1";
 pub const UNIDIC_FEATURE_SCHEMA: &str = "unidic-2025.12-feature.v1";
