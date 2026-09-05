@@ -107,3 +107,17 @@ UniDic `feature.def` 明确规定：
 2. UniDic GPL/LGPL/BSD 许可文件已随资源保留；发布包需要按官方条款分发声明。
 3. neologd 仍是可选候选源，不能覆盖 UniDic 基础结果。
 4. 在新 UniDic parser、字段回归和双 provider 对齐报告完成前，不得删除 IPADIC 旧管线或清空旧架构文件。
+
+## 7. 真实文本 benchmark
+
+输入：仓库既有研究文本 `七日の喰い神`，读取 119,209 个 Unicode scalar 字符，逐非空物理行执行一次形态分析。结果：
+
+| 字典 | token 数 | 未知词 | 耗时 | 吞吐 |
+| --- | ---: | ---: | ---: | ---: |
+| IPADIC | 76,384 | 0 | 301 ms | 396,305 字符/秒 |
+| UniDic-CWJ | 81,358 | 0 | 1,936 ms | 61,574 字符/秒 |
+| UniDic-CSJ | 81,429 | 0 | 1,909 ms | 62,441 字符/秒 |
+
+UniDic 词条数增加约 6.5%，吞吐约为 IPADIC 的 15.5%。这是当前 Vibrato 紧凑连接模型和 380 MB 字典的冷运行基线；迁移后应通过共享 provider、分段缓存、首屏范围分析和不重复加载字典降低用户可感知成本。不能用降低字段或截断语料来掩盖该差异。
+
+原始 JSON 结果保存在 `experiments/unidic-source/fulltext_benchmark.json`，该文件属于本地实验产物，不进入 Git。
