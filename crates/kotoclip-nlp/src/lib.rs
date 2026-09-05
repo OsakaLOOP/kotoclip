@@ -6,6 +6,11 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 use vibrato::{Dictionary, Tokenizer};
 
+pub mod alignment;
+pub mod entities;
+pub use alignment::{compare_tokenizations, project_lexemes, ProviderDisagreement};
+pub use entities::{ArtifactDescriptor, CandidateStatus, LexemeToken, SpanLayer, SpanNode};
+
 pub const ARTIFACT_SCHEMA: &str = "kotoclip.provider-token.v1";
 pub const UNIDIC_FEATURE_SCHEMA: &str = "unidic-2025.12-feature.v1";
 
@@ -105,7 +110,16 @@ fn value_or_surface(value: String, surface: &str) -> String {
 }
 
 pub fn parse_feature(provider_id: &str, surface: &str, raw_feature: &str, char_range: (usize, usize)) -> ProviderToken {
-    let fields = raw_feature.split(',').collect::<Vec<_>>();
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .from_reader(raw_feature.as_bytes());
+    let fields = reader
+        .records()
+        .next()
+        .and_then(Result::ok)
+        .map(|record| record.iter().map(str::to_string).collect::<Vec<_>>())
+        .unwrap_or_else(|| raw_feature.split(',').map(str::to_string).collect());
+    let fields = fields.iter().map(String::as_str).collect::<Vec<_>>();
     ProviderToken {
         provider_id: provider_id.to_string(),
         surface: surface.to_string(),
