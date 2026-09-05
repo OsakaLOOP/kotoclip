@@ -22,6 +22,8 @@ __pycache__/
 /data/*
 !/data/baselines/
 /ipadic/
+/unidic-cwj-202512/
+/unidic-csj-202512/
 *.dic
 *.mdx
 
