@@ -8,10 +8,12 @@ use vibrato::{Dictionary, Tokenizer};
 
 pub mod alignment;
 pub mod entities;
+pub mod formation;
 pub mod router;
 pub mod stage;
 pub use alignment::{compare_tokenizations, project_lexemes, ProviderDisagreement};
 pub use entities::{ArtifactDescriptor, CandidateStatus, LexemeToken, SpanLayer, SpanNode};
+pub use formation::{match_rule, FormationAtom, FormationRule};
 pub use router::{ProviderRouter, RoutedAnalysis, TextRegister};
 pub use stage::{EmptyStageArtifact, StageArtifact, StageFingerprint};
 
