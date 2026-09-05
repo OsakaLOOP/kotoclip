@@ -25,7 +25,7 @@ pub fn segment(tokens: &[LexemeToken], formations: &[SpanNode]) -> Vec<BunsetsuC
     groups
         .into_iter()
         .enumerate()
-        .map(|(index, group)| {
+        .map(|(_index, group)| {
             let start = group.first().expect("non-empty group");
             let end = group.last().expect("non-empty group");
             let char_range = (start.char_range.0, end.char_range.1);
