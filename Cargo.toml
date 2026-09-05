@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/kotoclip-core",
+    "crates/kotoclip-nlp",
     "crates/kotoclip-quality-audit",
     "crates/kotoclip-quality-diff",
     "src-tauri",
