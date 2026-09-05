@@ -198,6 +198,16 @@
 
 ## 词典表记矩阵查询重构（2026-07-22）
 
+## UniDic 平行重写设计（2026-09-06）
+
+- UniDic 官方入口：<https://clrd.ninjal.ac.jp/unidic/>。用于确认 UniDic 的维护主体、资源生态和词典下载边界。
+- 现代书面语 UniDic 2025.12：仓库本地 `unidic-cwj-202512/README.md`。用于确认 BCCWJ 语域、版本和许可证说明。
+- 现代会话语 UniDic 2025.12：仓库本地 `unidic-csj-202512/README.md`。用于确认会话语域、版本和许可证说明。
+- MeCab：<https://taku910.github.io/mecab/>。用于确认本地 UniDic 轻量包的分析器接口边界。
+- mecab-ipadic-NEologd：<https://github.com/neologd/mecab-ipadic-neologd>。仅作为可选专有名、颜文字和网络语补充来源；不作为基础词典。
+- CaboCha：<https://taku910.github.io/cabocha/>。作为后续依存分析实验的公开入口，不纳入本阶段运行时依赖。
+- NINJAL 语言资源开发中心：<https://clrd.ninjal.ac.jp/>。作为后续 NINJAL 生态资源研究入口。
+
 - JMdict DTD：<https://www.edrdg.org/jmdict/jmdict_dtd_h.html>。用于核对 entry、多个 `k_ele`、多个 `r_ele`、`re_restr`、多个 `sense` 以及 `stagk/stagr` 的分层与适用范围；只用于校准表记/读音/义项术语，不作为三本本地词典的统一语义来源。
 - Unicode Standard Annex #15, Unicode Normalization Forms：<https://www.unicode.org/reports/tr15/>。用于限定 NFC/NFKC 的字符规范与兼容等价边界，确认全半角片假名可由 NFKC 折叠，但词汇表记等价不能由 Unicode 规范化推导。
 - 文化厅《送り仮名の付け方》索引：<https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html>。用于核对送假名本则、例外、许可形式与复合词惯用差异。索引项目：前書き・本文の見方及び使い方；単独の語・活用のある語・通則1；通則2；単独の語・活用のない語・通則3；通則4；通則5；複合の語・通則6；通則7；付表の語。
