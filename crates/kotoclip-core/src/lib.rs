@@ -13,6 +13,7 @@ pub mod pipeline;
 pub mod profile;
 pub mod reader_markdown;
 pub mod text_language;
+pub mod unidic;
 pub mod transport;
 
 use analysis_progress::{AnalysisCancelled, AnalysisPhase, AnalysisProgress};

@@ -2125,6 +2125,7 @@ dependencies = [
  "flate2",
  "html5ever 0.39.0",
  "imagesize",
+ "kotoclip-nlp",
  "log",
  "regex",
  "rmp-serde",
