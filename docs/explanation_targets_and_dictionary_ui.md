@@ -28,7 +28,7 @@
   作为观察形式；
 - 普通独立词使用 `base_form`；
 - 助词、助动词和动词接尾保留实际表面，防止功能成分被还原到错误词头；
-- 查询读音使用词形链或形态素提供的 lookup reading；
+- 查询读音只在形态素表面等于查询词时提供；活用后的词干读音不会作为辞书形约束；
 - 词性随请求传入查询器，参与表记准入和排序。
 
 内部面板标签在词形链目标下显示“词形”，其他情况显示“内部”。
@@ -76,9 +76,9 @@ DictionaryLookupRequest
 - `reading = target.lookupReading`；
 - `pos = target.pos`。
 
-整体请求使用词典整体的 `base_form`、`reading` 和 `output_pos`，并设置
-`background = true`。活动表记切换保持原根查询、观察形式、读音和词性，只更新
-`selectedForm`。
+整体请求使用词典整体的 `base_form`、辞书形读音候选和 `output_pos`，并设置
+`background = true`；活用形没有可靠辞书读音时省略读音约束。活动表记切换保持原根查询、
+观察形式、读音和词性，只更新 `selectedForm`。
 
 ## 4. 会话状态
 

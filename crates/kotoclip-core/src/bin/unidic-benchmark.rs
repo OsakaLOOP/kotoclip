@@ -7,9 +7,11 @@ use serde_json::json;
 use vibrato::{dictionary::LexType, Dictionary, Tokenizer};
 
 fn run(path: &str, source: &str) -> serde_json::Value {
+    let load_started = Instant::now();
     let dict = Dictionary::read(BufReader::new(File::open(path).expect("无法打开字典")))
         .expect("无法读取 Vibrato 字典");
     let tokenizer = Tokenizer::new(dict);
+    let load_ms = load_started.elapsed().as_secs_f64() * 1000.0;
     let mut worker = tokenizer.new_worker();
     let started = Instant::now();
     let mut chars = 0usize;
@@ -37,6 +39,7 @@ fn run(path: &str, source: &str) -> serde_json::Value {
         "tokens": tokens,
         "unknown_tokens": unknown,
         "unknown_ratio": if tokens == 0 { 0.0 } else { unknown as f64 / tokens as f64 },
+        "dictionary_load_ms": load_ms,
         "elapsed_ms": elapsed_ms,
         "characters_per_second": if elapsed_ms == 0.0 { 0.0 } else { chars as f64 / (elapsed_ms / 1000.0) }
     })

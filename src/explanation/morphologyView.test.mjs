@@ -7,7 +7,7 @@ import {
   primaryMorphologyChain,
   readingForMorphologyLemma,
 } from "./morphologyView.ts";
-import { morphemeLookupTarget } from "../utils/dictionaryTarget.ts";
+import { dictionaryTargetForToken, morphemeLookupTarget } from "../utils/dictionaryTarget.ts";
 
 const pos = (major, sub1) => ({ major, sub1, sub2: "*", sub3: "*" });
 
@@ -83,6 +83,58 @@ test("サ变词干、する与ます共享显示原型和黄色词汇范围", ()
   }
   assert.equal(morphologyPosLabel(morphology, morphemes[0].pos), "動詞 · サ変");
   assert.equal(readingForMorphologyLemma(morphology, "セツメイ"), "セツメイスル");
+  assert.equal(morphemeLookupTarget(value, morphemes[0]).lookupReading, "セツメイ");
+});
+
+test("活用后的主形态链不把词干读音作为辞书形读音", () => {
+  const morpheme = {
+    surface: "望ん", base_form: "望む", reading: "ノゾン", char_range: [0, 2],
+    pos: pos("動詞", "自立"), conjugation_type: "五段・マ行", conjugation_form: "連用タ接続",
+  };
+  const morphology = chain({
+    id: "morph:0:3", range: [0, 3], surface: "望んだ", dictionary: "望む",
+    lemma: "望む", lookup: "望む", anchor: [0, 2],
+  });
+  const value = token([morpheme, {
+    surface: "た", base_form: "た", reading: "タ", char_range: [2, 3],
+    pos: pos("助動詞", "*"), conjugation_type: "特殊・タ", conjugation_form: "基本形",
+  }], [morphology], {
+    surface: "望んだ", base_form: "望む", reading: "ノゾン", pos: morpheme.pos,
+  });
+
+  assert.equal(morphemeLookupTarget(value, morpheme).query, "望む");
+  assert.equal(morphemeLookupTarget(value, morpheme).lookupReading, "");
+});
+
+test("无形态链的活用形也不发送词干读音", () => {
+  const morpheme = {
+    surface: "挟ん", base_form: "挟む", reading: "ハサン", char_range: [0, 2],
+    pos: pos("動詞", "自立"), conjugation_type: "五段・マ行", conjugation_form: "連用タ接続",
+  };
+  const value = token([morpheme], [], {
+    surface: "挟ん", base_form: "挟む", reading: "ハサン", pos: morpheme.pos,
+  });
+
+  assert.equal(morphemeLookupTarget(value, morpheme).lookupReading, "");
+  assert.equal(dictionaryTargetForToken(value).reading, "");
+});
+
+test("整体词典候选优先使用词典提供的辞书形读音", () => {
+  const value = token([{
+    surface: "望んだ", base_form: "望む", reading: "ノゾン", char_range: [0, 3],
+    pos: pos("動詞", "自立"), conjugation_type: "", conjugation_form: "",
+  }], [], {
+    surface: "望んだ", base_form: "望む", reading: "ノゾン", pos: pos("動詞", "自立"),
+  });
+  value.bunsetsu.lexical_units = [{
+    surface: "望んだ", base_form: "望む", reading: "ノゾン", output_pos: pos("動詞", "自立"),
+    morpheme_range: [0, 1], char_range: [0, 3], head_morpheme: 0, lexical_shape: "",
+    dictionary_refs: [], reading_candidates: ["ノゾム"], confidence: 100, evidence: [],
+  }];
+
+  assert.deepEqual(dictionaryTargetForToken(value), {
+    word: "望む", reading: "ノゾム", pos: value.bunsetsu.head_word.pos,
+  });
 });
 
 test("同一文节的やすく使用自己的原型和查询词，不回退到分かる", () => {

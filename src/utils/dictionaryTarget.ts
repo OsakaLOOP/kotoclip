@@ -18,7 +18,16 @@ export interface MorphemeLookupTarget {
   charRange: [number, number];
 }
 
-/** 合并词形只改变悬浮目标与显示，不改变现有词典查询词策略。 */
+function dictionaryReading(
+  surface: string,
+  word: string,
+  reading: string,
+  candidates: string[] = [],
+) {
+  return candidates[0] || (surface === word ? reading : "");
+}
+
+/** 合并词形只改变悬浮目标与显示；查询读音必须保持辞书形语义。 */
 export function morphemeLookupTarget(token: AnnotatedToken, morpheme: Morpheme) {
   const chain = morphologyChainForMorpheme(token, morpheme);
   if (!chain) {
@@ -29,7 +38,7 @@ export function morphemeLookupTarget(token: AnnotatedToken, morpheme: Morpheme) 
       lemma,
       query: lemma,
       reading: morpheme.reading,
-      lookupReading: morpheme.reading,
+      lookupReading: morpheme.surface === lemma ? morpheme.reading : "",
       pos: morpheme.pos,
       charRange: morpheme.char_range,
     } satisfies MorphemeLookupTarget;
@@ -66,7 +75,16 @@ export function dictionaryLemma(morpheme: Morpheme) {
 export function dictionaryTargetForToken(token: AnnotatedToken) {
   const lexical = token.bunsetsu.lexical_units[0];
   if (lexical) {
-    return { word: lexical.base_form, reading: lexical.reading, pos: lexical.output_pos };
+    return {
+      word: lexical.base_form,
+      reading: dictionaryReading(
+        lexical.surface,
+        lexical.base_form,
+        lexical.reading,
+        lexical.reading_candidates,
+      ),
+      pos: lexical.output_pos,
+    };
   }
   const formation = token.bunsetsu.word_formations[0];
   if (formation) {
@@ -74,7 +92,7 @@ export function dictionaryTargetForToken(token: AnnotatedToken) {
     if (morpheme) {
       return {
         word: dictionaryLemma(morpheme),
-        reading: morpheme.reading,
+        reading: dictionaryReading(morpheme.surface, morpheme.base_form, morpheme.reading),
         pos: morpheme.pos,
       };
     }
@@ -89,7 +107,11 @@ export function dictionaryTargetForToken(token: AnnotatedToken) {
       conjugation_form: "*",
       char_range: token.bunsetsu.char_range,
     }),
-    reading: token.bunsetsu.head_word.reading,
+    reading: dictionaryReading(
+      token.bunsetsu.head_word.surface,
+      token.bunsetsu.head_word.base_form,
+      token.bunsetsu.head_word.reading,
+    ),
     pos: token.bunsetsu.head_word.pos,
   };
 }

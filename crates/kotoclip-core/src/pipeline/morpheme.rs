@@ -25,7 +25,12 @@ fn parse_morpheme(surface: &str, feature: &str, char_range: (usize, usize)) -> M
         sub2: fields.get(2).copied().unwrap_or("*").to_string(),
         sub3: fields.get(3).copied().unwrap_or("*").to_string(),
     };
-    let mut base_form = fields.get(6).copied().unwrap_or("*").to_string();
+    // UniDic 与 IPADIC 的字段顺序不同：UniDic F[7] 是 lemma，F[9] 是 pron；
+    // 通过字段数量和 goshu 位置识别，保留旧 IPADIC 兼容路径。
+    let is_unidic = fields.len() >= 13;
+    let base_index = if is_unidic { 7 } else { 6 };
+    let reading_index = if is_unidic { 9 } else { 7 };
+    let mut base_form = fields.get(base_index).copied().unwrap_or("*").to_string();
     if base_form == "*" || base_form.is_empty() {
         base_form = surface.to_string();
     }
@@ -33,7 +38,7 @@ fn parse_morpheme(surface: &str, feature: &str, char_range: (usize, usize)) -> M
         surface: surface.to_string(),
         pos,
         base_form,
-        reading: fields.get(7).copied().unwrap_or("*").to_string(),
+        reading: fields.get(reading_index).copied().unwrap_or("*").to_string(),
         conjugation_type: fields.get(4).copied().unwrap_or("*").to_string(),
         conjugation_form: fields.get(5).copied().unwrap_or("*").to_string(),
         char_range,
@@ -185,6 +190,25 @@ mod tests {
             conjugation_form: "基本形".to_string(),
             char_range: (start, start + surface.chars().count()),
         }
+    }
+
+    #[test]
+    fn parses_ipadic_and_unidic_feature_layouts() {
+        let ipadic = parse_morpheme(
+            "向かっ",
+            "動詞,自立,*,*,五段・ワ行促音便,連用タ接続,向かう,ムカッ,ムカッ",
+            (0, 3),
+        );
+        assert_eq!(ipadic.base_form, "向かう");
+        assert_eq!(ipadic.reading, "ムカッ");
+
+        let unidic = parse_morpheme(
+            "向かっ",
+            "動詞,一般,*,*,五段-ワア行,連用形-促音便,ムカウ,向かう,向かっ,ムカッ,向かう,ムカウ,和",
+            (0, 3),
+        );
+        assert_eq!(unidic.base_form, "向かう");
+        assert_eq!(unidic.reading, "ムカッ");
     }
 
     #[test]

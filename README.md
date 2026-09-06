@@ -51,8 +51,9 @@ Kotoclip 是一个本地运行的日文词汇、语法分析与摘录工具。�
 
 | 资源 | 当前位置 | 用途与范围 | 调用方法 |
 | --- | --- | --- | --- |
-| Vibrato 0.5.2 fork | `vendor/vibrato` | 形态素 lattice、单路径分析和真实 N-best。它是编译期 Rust 依赖，不是运行时动态库。 | `kotoclip-core` 通过本地 path dependency 编译；运行时由 `MorphemeAnalyzer` 创建 `Tokenizer`。 |
-| IPADIC 二进制词典 | `ipadic/system.dic` | 为 Vibrato 提供词条、词性、活用、读音和连接成本；决定 lattice 中实际存在的节点。 | 桌面端启动时动态读取；CLI 默认由 `--system-dict ipadic/system.dic` 指定。安装版从资源目录读取，`KOTOCLIP_DATA_DIR/ipadic/system.dic` 可显式覆盖。 |
+| Vibrato 0.5.2 fork | `vendor/vibrato` | 形态素 lattice、单路径分析和真实 N-best。它是编译期 Rust 依赖，不是运行时动态库；词典在 `Tokenizer` 内堆分配，支持大 UniDic。 | `kotoclip-core` 通过本地 path dependency 编译；运行时由 `MorphemeAnalyzer` 创建 `Tokenizer`。 |
+| IPADIC 二进制词典 | `ipadic/system.dic` | 迁移期兼容和对照底座。 | 桌面端默认读取；`KOTOCLIP_ANALYZER_DICT` 可指定任意 Vibrato 字典。 |
+| UniDic Vibrato 字典 | `experiments/unidic-source/unidic-cwj-202512.vibrato.dic`、`unidic-csj-202512.vibrato.dic` | UniDic 2025.12 书面语与会话语 provider；字段按 UniDic 契约解析。 | 开发版可设置 `KOTOCLIP_ANALYZER_DICT` 选择其一；Tauri bundle 已包含两个文件。 |
 | 词典源包 | `data/dict-sources/daijirin.kdict`、`shogakukan.kdict`、`crown.kdict` | 分发和重建输入；包含压缩释义块、规范词头、别名关系、表记和读音键，不是 SQLite。 | `DictionaryEngine` 启动时校验 `bundle_id`，必要时原生生成 schema v4 数据库。 |
 | 结构化外部词典 | `data/dicts/daijirin.db`，以及同目录其他 `*.db`／`*.sqlite` | 本机 schema v4 查询缓存；规范词条、别名、查询键和压缩释义块均按实际查询路径存储。 | 开发版使用仓库 `data/dicts`；安装版使用应用数据目录；CLI 可用 `--dict-dir` 和 `--dict-source-dir` 覆盖。 |
 | 原始大辞林 MDX | `三省堂Super大辞林3.1.mdx` | 仅作为源包构建输入，不参与应用运行时查询。 | 使用 `scripts/build_dictionary_bundle.py` 转换；已有等价 TXT 源时可直接转换。 |

@@ -118,6 +118,8 @@ UniDic `feature.def` 明确规定：
 | UniDic-CWJ | 81,358 | 0 | 1,936 ms | 61,574 字符/秒 |
 | UniDic-CSJ | 81,429 | 0 | 1,909 ms | 62,441 字符/秒 |
 
+`unidic-benchmark` 现在同时输出 `dictionary_load_ms`。该指标必须与扫描耗时分开观察：UniDic 的大字典冷启动属于一次性成本，不能用重复全文扫描的耗时替代；运行时应共享已加载 provider，并只对安全范围重算。
+
 UniDic 词条数增加约 6.5%，吞吐约为 IPADIC 的 15.5%。这是当前 Vibrato 紧凑连接模型和 380 MB 字典的冷运行基线；迁移后应通过共享 provider、分段缓存、首屏范围分析和不重复加载字典降低用户可感知成本。不能用降低字段或截断语料来掩盖该差异。
 
 原始 JSON 结果保存在 `experiments/unidic-source/fulltext_benchmark.json`，该文件属于本地实验产物，不进入 Git。

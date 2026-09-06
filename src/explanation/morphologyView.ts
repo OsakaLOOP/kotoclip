@@ -38,12 +38,11 @@ export function morphologyAnchorMorpheme(token: AnnotatedToken, chain: Morpholog
 }
 
 export function morphologyLookupReading(token: AnnotatedToken, chain: MorphologyChain) {
-  if (primaryMorphologyChain(token)?.chain_id === chain.chain_id) {
-    return token.bunsetsu.head_word.reading;
-  }
+  // 形态素读音通常是活用后的词干读音，只有表面形态本身就是查询词时才可约束词典。
+  const lookupForm = chain.lookup_form || chain.dictionary_form;
   const exact = token.bunsetsu.morphemes.find((morpheme) => (
     chain.source_ranges.some((range) => containsRange(range, morpheme.char_range))
-    && morpheme.surface === chain.lookup_form
+    && morpheme.surface === lookupForm
   ));
   return exact?.reading ?? "";
 }

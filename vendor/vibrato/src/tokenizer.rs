@@ -11,7 +11,7 @@ use crate::tokenizer::worker::Worker;
 
 /// Tokenizer.
 pub struct Tokenizer {
-    dict: Dictionary,
+    dict: Box<Dictionary>,
     // For the MeCab compatibility
     space_cateset: Option<u32>,
     max_grouping_len: Option<usize>,
@@ -23,9 +23,9 @@ impl Tokenizer {
     /// # Arguments
     ///
     ///  - `dict`: Dictionary to be used.
-    pub const fn new(dict: Dictionary) -> Self {
+    pub fn new(dict: Dictionary) -> Self {
         Self {
-            dict,
+            dict: Box::new(dict),
             space_cateset: None,
             max_grouping_len: None,
         }

@@ -4,6 +4,8 @@ use tauri::{AppHandle, Manager};
 
 pub struct AppPaths {
     pub system_dictionary: PathBuf,
+    pub unidic_cwj: Option<PathBuf>,
+    pub unidic_csj: Option<PathBuf>,
     pub dictionary_source_dir: PathBuf,
     pub dictionary_dir: PathBuf,
     pub profile_db: PathBuf,
@@ -27,7 +29,47 @@ impl AppPaths {
             });
         let data_dir = env_data_dir.clone().unwrap_or(app.path().app_data_dir()?);
 
-        let system_dictionary = env_data_dir
+        let resolve_unidic = |name: &str| -> Option<PathBuf> {
+            let env_name = match name {
+                "cwj" => "KOTOCLIP_UNIDIC_CWJ",
+                _ => "KOTOCLIP_UNIDIC_CSJ",
+            };
+            std::env::var(env_name)
+                .ok()
+                .map(PathBuf::from)
+                .filter(|path| path.is_file())
+                .or_else(|| {
+                    let filename = format!("unidic-{name}-202512.vibrato.dic");
+                    let candidates = [
+                        repository_root.join("experiments/unidic-source").join(&filename),
+                        repository_root.join(&filename),
+                    ];
+                    candidates
+                        .into_iter()
+                        .find(|path| path.is_file())
+                        .or_else(|| {
+                            [
+                                format!("../experiments/unidic-source/{filename}"),
+                                format!("experiments/unidic-source/{filename}"),
+                                filename,
+                            ]
+                            .into_iter()
+                            .find_map(|candidate| {
+                                app.path()
+                                    .resolve(candidate, BaseDirectory::Resource)
+                                    .ok()
+                                    .filter(|path| path.is_file())
+                            })
+                        })
+                })
+        };
+
+        let analyzer_override = std::env::var("KOTOCLIP_ANALYZER_DICT")
+            .ok()
+            .map(PathBuf::from)
+            .filter(|path| path.is_file());
+        let system_dictionary = analyzer_override
+            .or_else(|| env_data_dir
             .as_ref()
             .map(|path| path.join("ipadic").join("system.dic"))
             .filter(|path| path.is_file())
@@ -51,7 +93,7 @@ impl AppPaths {
                             .ok()
                             .filter(|path| path.is_file())
                     })
-            })
+            }))
             .ok_or("未找到 ipadic/system.dic")?;
 
         let dictionary_source_dir = if let Some(path) = &env_data_dir {
@@ -98,6 +140,8 @@ impl AppPaths {
         let library_dir = app.path().document_dir()?.join("Kotoclip Library");
         Ok(Self {
             system_dictionary,
+            unidic_cwj: resolve_unidic("cwj"),
+            unidic_csj: resolve_unidic("csj"),
             dictionary_source_dir,
             dictionary_dir,
             profile_db,
