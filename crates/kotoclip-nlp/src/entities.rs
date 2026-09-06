@@ -95,7 +95,11 @@ impl LexemeToken {
             char_range: token.char_range,
             surface_forms: vec![token.surface.clone()],
             lemma: token.lemma.clone(),
-            reading_candidates: vec![token.pronunciation_base.clone(), token.pronunciation.clone()],
+            reading_candidates: vec![
+                token.pronunciation.clone(),
+                token.pronunciation_base.clone(),
+                token.lexeme_reading.clone(),
+            ],
             pos_profile: vec![token.pos.clone()],
             inflection: vec![(token.conjugation_type.clone(), token.conjugation_form.clone())],
             source_token_ids: vec![index],

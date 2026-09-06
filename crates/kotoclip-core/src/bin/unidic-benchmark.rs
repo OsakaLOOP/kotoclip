@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader};
 use std::time::Instant;
 
 use serde_json::json;
-use vibrato::{Dictionary, Tokenizer};
+use vibrato::{dictionary::LexType, Dictionary, Tokenizer};
 
 fn run(path: &str, source: &str) -> serde_json::Value {
     let dict = Dictionary::read(BufReader::new(File::open(path).expect("无法打开字典")))
@@ -25,8 +25,7 @@ fn run(path: &str, source: &str) -> serde_json::Value {
         worker.tokenize();
         tokens += worker.num_tokens();
         for index in 0..worker.num_tokens() {
-            let feature = worker.token(index).feature();
-            if feature.starts_with("未知語,") {
+            if worker.token(index).lex_type() == LexType::Unknown {
                 unknown += 1;
             }
         }

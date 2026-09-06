@@ -47,11 +47,11 @@ UniDic `feature.def` 明确规定：
 | `F[0..3]` | 四级词性 |
 | `F[4]` | `cType` 活用型 |
 | `F[5]` | `cForm` 活用形 |
-| `F[6]` | `lForm` 词元读法/词元形式 |
+| `F[6]` | `lForm` 词元读法 |
 | `F[7]` | `lemma` 词元 |
 | `F[8]` | `orth` 表層形 |
-| `F[9]` | `orthBase` 规范表记 |
-| `F[10]` | `pron` 发音形 |
+| `F[9]` | `pron` 发音形 |
+| `F[10]` | `orthBase` 规范表记 |
 | `F[11]` | `pronBase` 规范发音 |
 | `F[12]` | `goshu` 语种 |
 | `F[13..15]` | `aType/aConType/aModType` 韵律/重音字段 |
@@ -63,10 +63,10 @@ UniDic `feature.def` 明确规定：
 书面语 `七日は警察署へ向かった。`：
 
 ```text
-七  名詞/数詞       lemma=七       orthBase=七       pron=ナナ
-日  接尾辞/名詞的/助数詞          lemma=日       orthBase=日       pron=カ
+七  名詞/数詞       lemma=七       lexemeReading=ナナ  orthBase=七       pron=ナノ
+日  接尾辞/名詞的/助数詞          lemma=日       lexemeReading=カ    orthBase=日       pron=カ
 は  助詞/係助詞                    lemma=は       orthBase=は       pron=ワ
-警察 名詞/普通名詞/一般            lemma=警察     orthBase=警察     pron=ケイサツ
+警察 名詞/普通名詞/一般            lemma=警察     lexemeReading=ケイサツ orthBase=警察     pron=ケーサツ
 署  接尾辞/名詞的/一般              lemma=署       orthBase=署       pron=ショ
 へ  助詞/格助詞                    lemma=へ       orthBase=へ       pron=エ
 向かっ 動詞/一般/五段-ワア行/連用形-促音便  lemma=向かう orthBase=向かう pron=ムカッ
