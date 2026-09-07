@@ -124,9 +124,7 @@ fn validate_ruby(
                 source_tokens[first].char_range[0],
                 source_tokens[last].char_range[1],
             ];
-            let covers_group = contiguous
-                && coverage_range[0] <= group.char_range[0]
-                && coverage_range[1] >= group.char_range[1];
+            let covers_group = contiguous && coverage_range == group.char_range;
             let observed_reading = if covers_group {
                 let reading: String = source_tokens[first..=last]
                     .iter()
