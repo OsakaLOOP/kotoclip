@@ -83,6 +83,16 @@ EPUB 解包、OPF/spine 解析、XHTML 前置清理、ruby 注音规范化和图
 
 ## CLI
 
+### UniDic 桌面验收
+
+网页 dev 入口只提供 Vite 调试页面，Rust bridge 由网页进程托管。需要验收完整的 Tauri 窗口和 Rust IPC 时，直接运行：
+
+```powershell
+.\scripts\run_unidic_desktop.ps1
+```
+
+脚本会结束当前仓库遗留的验收进程，启动 Vite 和 Rust 后端，并打开可见的 Kotoclip 窗口。网页入口 `http://127.0.0.1:1420` 仅用于前端调试。
+
 ```powershell
 # 检查已加载词典及 schema
 cargo run -p kotoclip-core --bin kotoclip-cli -- dict-info
