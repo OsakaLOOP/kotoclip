@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.unified-document.v1";
+pub const SCHEMA: &str = "kotoclip.unified-document.v2";
 pub const FIELD_NAMES: [&str; 29] = [
     "pos1", "pos2", "pos3", "pos4", "cType", "cForm", "lForm", "lemma", "orth", "pron", "orthBase",
     "pronBase", "goshu", "iType", "iForm", "fType", "fForm", "iConType", "fConType", "type",
@@ -121,12 +121,32 @@ pub struct SourceAnalysis {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RubyValidation {
+    pub base: String,
+    pub ruby_reading: String,
+    pub expected_reading: String,
+    pub char_range: [usize; 2],
+    pub token_range: Option<[usize; 2]>,
+    pub observed_reading: Option<String>,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisterRouting {
+    pub requested: Register,
+    pub selected: Register,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnifiedDocument {
     pub schema: String,
     pub id: String,
     pub text: String,
     pub characters: usize,
     pub source: SourceAnalysis,
+    pub routing: RegisterRouting,
+    pub ruby_validations: Vec<RubyValidation>,
     pub morphemes: Vec<MorphemeToken>,
     pub gaps: Vec<TextGap>,
     pub elapsed_ms: f64,

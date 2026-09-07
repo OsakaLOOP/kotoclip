@@ -1,7 +1,15 @@
 use crate::model::*;
+use crate::prepare::{
+    expected_reading_for_range, grouped_annotations, normalize_reading, PreparedText,
+};
 use sha2::{Digest, Sha256};
 
-pub fn unify(text: &str, source: SourceAnalysis) -> Result<UnifiedDocument, String> {
+pub fn unify(
+    prepared: &PreparedText,
+    source: SourceAnalysis,
+    routing: RegisterRouting,
+) -> Result<UnifiedDocument, String> {
+    let text = &prepared.text;
     let chars: Vec<char> = text.chars().collect();
     let id = format!(
         "{:x}",
@@ -64,14 +72,97 @@ pub fn unify(text: &str, source: SourceAnalysis) -> Result<UnifiedDocument, Stri
             surface: chars[end..].iter().collect(),
         });
     }
+    let ruby_validations = validate_ruby(&chars, &source.tokens, &prepared.annotations);
     Ok(UnifiedDocument {
         schema: SCHEMA.into(),
         id,
         text: text.into(),
         characters: chars.len(),
         source,
+        routing,
+        ruby_validations,
         morphemes,
         gaps,
         elapsed_ms: 0.0,
     })
+}
+
+fn validate_ruby(
+    text_chars: &[char],
+    source_tokens: &[ProviderToken],
+    annotations: &[crate::prepare::RubyAnnotation],
+) -> Vec<RubyValidation> {
+    grouped_annotations(annotations)
+        .into_iter()
+        .map(|group| {
+            let overlapping: Vec<usize> = source_tokens
+                .iter()
+                .enumerate()
+                .filter(|(_, token)| {
+                    token.char_range[1] > group.char_range[0]
+                        && token.char_range[0] < group.char_range[1]
+                })
+                .map(|(index, _)| index)
+                .collect();
+
+            let Some(&first) = overlapping.first() else {
+                return RubyValidation {
+                    base: group.base,
+                    ruby_reading: group.reading.clone(),
+                    expected_reading: group.reading,
+                    char_range: group.char_range,
+                    token_range: None,
+                    observed_reading: None,
+                    status: "unmatched".into(),
+                };
+            };
+            let last = *overlapping.last().unwrap();
+            let contiguous = (first..last).all(|index| {
+                source_tokens[index].char_range[1] == source_tokens[index + 1].char_range[0]
+            });
+            let coverage_range = [
+                source_tokens[first].char_range[0],
+                source_tokens[last].char_range[1],
+            ];
+            let covers_group = contiguous
+                && coverage_range[0] <= group.char_range[0]
+                && coverage_range[1] >= group.char_range[1];
+            let observed_reading = if covers_group {
+                let reading: String = source_tokens[first..=last]
+                    .iter()
+                    .filter_map(|token| {
+                        token
+                            .fields
+                            .get(20)
+                            .and_then(|field| field.value.as_deref())
+                    })
+                    .map(normalize_reading)
+                    .collect();
+                (!reading.is_empty()).then_some(reading)
+            } else {
+                None
+            };
+            let expected_reading = if covers_group {
+                expected_reading_for_range(text_chars, coverage_range, annotations)
+                    .unwrap_or_else(|| group.reading.clone())
+            } else {
+                group.reading.clone()
+            };
+            let status = match &observed_reading {
+                Some(observed) if observed == &expected_reading => "matched",
+                Some(_) => "mismatch",
+                None if covers_group => "unavailable",
+                None => "unmatched",
+            };
+            RubyValidation {
+                base: group.base,
+                ruby_reading: group.reading,
+                expected_reading,
+                char_range: group.char_range,
+                token_range: Some([first, last + 1]),
+                observed_reading,
+                status: status.into(),
+            }
+        })
+        .collect()
 }

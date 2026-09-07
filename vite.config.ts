@@ -1,12 +1,14 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+// @ts-expect-error 本地 Node 验收桥接由 Vite 加载。
+import { nlpBridge } from "./scripts/nlp_bridge.mjs";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue()],
+  plugins: [vue(), nlpBridge()],
 
   optimizeDeps: {
     include: ["@lucide/vue", "@tanstack/vue-virtual", "vue"]
