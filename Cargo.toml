@@ -2,10 +2,8 @@
 members = [
     "crates/kotoclip-core",
     "crates/kotoclip-nlp",
-    "crates/kotoclip-quality-audit",
-    "crates/kotoclip-quality-diff",
-    "src-tauri",
 ]
+exclude = ["crates/kotoclip-quality-audit", "src-tauri"]
 resolver = "2"
 
 # 开发渠道只保留实时调试所需的增量编译，不生成完整 debug 符号。

@@ -117,9 +117,10 @@ function Create-InsiderPackage {
 
     $packagedExecutable = Join-Path $packageDir "Kotoclip.exe"
     Stop-PackagedExecutable $packagedExecutable
-    New-Item -ItemType Directory -Force -Path (Join-Path $packageDir "ipadic"), (Join-Path $packageDir "dict-sources") | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $packageDir "nlp"), (Join-Path $packageDir "dict-sources") | Out-Null
     Copy-Item -LiteralPath "target\release\tauri-app.exe" -Destination $packagedExecutable -Force
-    Copy-Item -LiteralPath "ipadic\system.dic" -Destination (Join-Path $packageDir "ipadic\system.dic") -Force
+    Copy-Item -LiteralPath "experiments\unidic-source\unidic-cwj-202512.vibrato.dic" -Destination (Join-Path $packageDir "nlp\cwj.dic") -Force
+    Copy-Item -LiteralPath "experiments\unidic-source\unidic-csj-202512.vibrato.dic" -Destination (Join-Path $packageDir "nlp\csj.dic") -Force
     $dictionaryBundles = Get-ChildItem -LiteralPath $bundleDirectory -File -Filter "*.kdict" | Sort-Object Name
     if (-not $dictionaryBundles) {
         throw "no .kdict dictionary bundles found in $bundleDirectory"

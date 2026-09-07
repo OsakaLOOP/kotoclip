@@ -1,4 +1,4 @@
-use crate::models::{
+use crate::dictionary::model::{
     DictEntry, DictionaryFormAvailability, DictionaryFormGroup, DictionaryFormVariant,
     DictionaryLookup, DictionaryLookupTiming,
 };
@@ -307,7 +307,7 @@ pub fn build_lookup(
     query: &str,
     observed_form: Option<&str>,
     reading: Option<&str>,
-    pos: Option<&crate::models::PosTag>,
+    pos: Option<&crate::dictionary::model::PosTag>,
     selected_form_id: Option<String>,
     mode: &str,
     forms: Vec<DictionaryFormGroup>,
@@ -460,7 +460,7 @@ fn push_unique(values: &mut Vec<String>, value: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{DictionaryForm, DictionaryMatchEvidence};
+    use crate::dictionary::model::{DictionaryForm, DictionaryMatchEvidence};
 
     fn entry(
         dictionary: &str,
@@ -484,7 +484,7 @@ mod tests {
             occurrence_id: occurrence.to_string(),
             source_record_index: 0,
             entry_kind: "lexical".to_string(),
-            header: crate::models::DictionaryOccurrenceHeader {
+            header: crate::dictionary::model::DictionaryOccurrenceHeader {
                 display_form: form.to_string(),
                 reading: Some(reading.to_string()),
                 scoped_forms: vec![DictionaryForm {

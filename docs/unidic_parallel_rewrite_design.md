@@ -1,4 +1,6 @@
-# UniDic 平行重写设计
+# UniDic 平行重写设计初稿
+
+2026-09-07：完整方案以 [全流程重写验收稿](unidic_rewrite_acceptance.md) 为准，实验结论见 [开发准备审查](unidic_readiness_review_20260907.md)。本文保留初期研究记录。新架构采用 UniDic 专用实体、分析、缓存和查询协议，IPADIC 对照由独立备份与历史报告承担。
 
 ## 1. 目的与当前结论
 
@@ -9,7 +11,7 @@ Source -> Normalize -> ProviderToken -> LexemeToken -> WordFormation
        -> Bunsetsu -> Clause/Sentence -> Grammar/Expression -> Presentation
 ```
 
-IPADIC 保留为迁移期对照 provider 和历史质量基线，不能继续作为新架构的规范实体或发布底座。
+形态 provider 限定为 UniDic CWJ 与 CSJ；历史版本独立用于结果对照。
 
 ## 2. 历史与问题基线
 
@@ -115,10 +117,10 @@ diff 的基本单位改为 `ArtifactKey = (document_hash, stage, span_id, schema
 
 ### 阶段二：替换运行时并迁移
 
-- 在备份代码库后，将 `DocumentSession` 的稳定状态改为 artifact manifest + projection；旧 `AnnotatedToken` 只保留读取兼容。
-- 先替换形态和构词，随后替换文节/小句，再迁移 grammar/expression；每层保留旧结果对照和回滚开关。
+- 在备份代码库后，将 `DocumentSession` 的稳定状态改为 artifact manifest + projection；保留组件通过展示协议适配。
+- 先替换形态和构词，随后替换文节/小句，再迁移 grammar/expression；每层使用独立历史结果对照。
 - 将词典气泡、规则编辑器和阅读 capsule 改为消费 `SpanNode/LookupTarget` projection，保留既有视觉和管理逻辑。
-- 迁移质量审计为分层 diff；旧 IPADIC 审计作为 provider 对照，不再生成新缓存。
+- 迁移质量审计为 UniDic 分层 diff；历史审计保留只读报告。
 - 每个模块进入主线前必须有 Rust 单元测试、固定 fixture、CLI 实验记录和必要的 UI contract test；无意义的全量测试不作为门槛。
 
 ## 8. 验收与遗留性能项

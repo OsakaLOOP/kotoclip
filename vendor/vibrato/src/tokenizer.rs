@@ -91,19 +91,6 @@ impl Tokenizer {
         }
     }
 
-    pub(crate) fn append_nbest_paths(
-        &self,
-        lattice: &Lattice,
-        n: usize,
-        paths: &mut Vec<(i32, Vec<(usize, crate::tokenizer::lattice::Node)>)>,
-    ) {
-        match self.dict.connector() {
-            ConnectorWrapper::Matrix(c) => lattice.append_nbest_paths(n, paths, c),
-            ConnectorWrapper::Raw(c) => lattice.append_nbest_paths(n, paths, c),
-            ConnectorWrapper::Dual(c) => lattice.append_nbest_paths(n, paths, c),
-        }
-    }
-
     fn build_lattice_inner<C>(&self, sent: &Sentence, lattice: &mut Lattice, connector: &C)
     where
         C: ConnectorCost,

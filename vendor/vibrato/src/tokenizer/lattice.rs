@@ -42,14 +42,6 @@ pub struct Lattice {
     len_char: usize, // needed for avoiding to free ends
 }
 
-#[derive(Clone, Copy)]
-struct PathState {
-    cost: i32,
-    prev_end: usize,
-    prev_node: u16,
-    prev_rank: u16,
-}
-
 impl Lattice {
     pub fn reset(&mut self, len_char: usize) {
         Self::reset_vec(&mut self.ends, len_char + 1);
@@ -164,7 +156,6 @@ impl Lattice {
         self.ends.get(i).map(|d| !d.is_empty()).unwrap_or(false)
     }
 
-    #[allow(dead_code)]
     pub fn append_top_nodes(&self, top_nodes: &mut Vec<(usize, Node)>) {
         let eos = self.eos.as_ref().unwrap();
         let mut end_node = eos.start_node;
@@ -173,102 +164,6 @@ impl Lattice {
             let node = &self.ends[end_node][usize::from(min_idx)];
             top_nodes.push((end_node, node.clone()));
             (end_node, min_idx) = (node.start_node, node.min_idx);
-        }
-    }
-
-    /// Computes the K lowest-cost complete paths without discarding alternative
-    /// predecessors at each lattice node. Nodes in every returned path are kept
-    /// in EOS-to-BOS order, matching `append_top_nodes()`.
-    pub fn append_nbest_paths<C>(
-        &self,
-        n: usize,
-        paths_out: &mut Vec<(i32, Vec<(usize, Node)>)>,
-        connector: &C,
-    ) where
-        C: ConnectorCost,
-    {
-        paths_out.clear();
-        if n == 0 || self.eos.is_none() {
-            return;
-        }
-
-        let mut states: Vec<Vec<Vec<PathState>>> = self
-            .ends
-            .iter()
-            .take(self.len_char + 1)
-            .map(|nodes| vec![Vec::new(); nodes.len()])
-            .collect();
-        states[0][0].push(PathState {
-            cost: 0,
-            prev_end: usize::MAX,
-            prev_node: INVALID_IDX,
-            prev_rank: INVALID_IDX,
-        });
-
-        for end in 1..=self.len_char {
-            for (node_index, node) in self.ends[end].iter().enumerate() {
-                let best_prev = &self.ends[node.start_node][usize::from(node.min_idx)];
-                let word_cost = node.min_cost
-                    - best_prev.min_cost
-                    - connector.cost(best_prev.right_id, node.left_id);
-                let mut candidates = Vec::new();
-                for (prev_index, prev_node) in self.ends[node.start_node].iter().enumerate() {
-                    let connection_cost = connector.cost(prev_node.right_id, node.left_id);
-                    for (rank, previous) in states[node.start_node][prev_index].iter().enumerate() {
-                        candidates.push(PathState {
-                            cost: previous.cost + connection_cost + word_cost,
-                            prev_end: node.start_node,
-                            prev_node: prev_index as u16,
-                            prev_rank: rank as u16,
-                        });
-                    }
-                }
-                candidates.sort_by(|left, right| {
-                    left.cost
-                        .cmp(&right.cost)
-                        .then_with(|| right.prev_node.cmp(&left.prev_node))
-                        .then_with(|| right.prev_rank.cmp(&left.prev_rank))
-                });
-                candidates.truncate(n);
-                states[end][node_index] = candidates;
-            }
-        }
-
-        let eos = self.eos.as_ref().unwrap();
-        let mut eos_states = Vec::new();
-        for (prev_index, prev_node) in self.ends[eos.start_node].iter().enumerate() {
-            let connection_cost = connector.cost(prev_node.right_id, eos.left_id);
-            for (rank, previous) in states[eos.start_node][prev_index].iter().enumerate() {
-                eos_states.push(PathState {
-                    cost: previous.cost + connection_cost,
-                    prev_end: eos.start_node,
-                    prev_node: prev_index as u16,
-                    prev_rank: rank as u16,
-                });
-            }
-        }
-        eos_states.sort_by(|left, right| {
-            left.cost
-                .cmp(&right.cost)
-                .then_with(|| right.prev_node.cmp(&left.prev_node))
-                .then_with(|| right.prev_rank.cmp(&left.prev_rank))
-        });
-        eos_states.truncate(n);
-
-        for eos_state in eos_states {
-            let mut path = Vec::new();
-            let mut end = eos_state.prev_end;
-            let mut node_index = eos_state.prev_node;
-            let mut rank = eos_state.prev_rank;
-            while end != 0 {
-                let node = &self.ends[end][usize::from(node_index)];
-                path.push((end, node.clone()));
-                let state = states[end][usize::from(node_index)][usize::from(rank)];
-                end = state.prev_end;
-                node_index = state.prev_node;
-                rank = state.prev_rank;
-            }
-            paths_out.push((eos_state.cost, path));
         }
     }
 

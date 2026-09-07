@@ -208,6 +208,10 @@
 - CaboCha：<https://taku910.github.io/cabocha/>。作为后续依存分析实验的公开入口，不纳入本阶段运行时依赖。
 - NINJAL 语言资源开发中心：<https://clrd.ninjal.ac.jp/>。作为后续 NINJAL 生态资源研究入口。
 
+2026-09-07 清理核对：[NEologd 固定来源](https://github.com/neologd/mecab-ipadic-neologd/tree/abc61e33d8be3d0ead202e6b1df064c72d5ccf11)；本地主 seed 为 `mecab-user-dict-seed.20200910.csv.xz`。[COPYING](https://github.com/neologd/mecab-ipadic-neologd/blob/abc61e33d8be3d0ead202e6b1df064c72d5ccf11/COPYING) 和日英说明随来源保留。清理依据及文件清单见 [experiments 清单](docs/experiments_cleanup_20260907.md)。
+
+[README 完整标题索引](https://github.com/neologd/mecab-ipadic-neologd/blob/abc61e33d8be3d0ead202e6b1df064c72d5ccf11/README.md)：For Japanese；Documentation；Overview；Pros and Cons（Pros、Cons）；Getting started（Memory requirements、Dependencies / Examples、Preparation of installing、How to install/update mecab-ipadic-NEologd / Step.1 / Step.2、How to use mecab-ipadic-NEologd / Example (on CentOS)）；Example of output of MeCab（When you use mecab-ipadic-NEologd / What's the point of the above result、When you use default system dictionary）；To evaluate or to reproduce a research result；Bibtex；Star please !!；Copyrights。
+
 - JMdict DTD：<https://www.edrdg.org/jmdict/jmdict_dtd_h.html>。用于核对 entry、多个 `k_ele`、多个 `r_ele`、`re_restr`、多个 `sense` 以及 `stagk/stagr` 的分层与适用范围；只用于校准表记/读音/义项术语，不作为三本本地词典的统一语义来源。
 - Unicode Standard Annex #15, Unicode Normalization Forms：<https://www.unicode.org/reports/tr15/>。用于限定 NFC/NFKC 的字符规范与兼容等价边界，确认全半角片假名可由 NFKC 折叠，但词汇表记等价不能由 Unicode 规范化推导。
 - 文化厅《送り仮名の付け方》索引：<https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html>。用于核对送假名本则、例外、许可形式与复合词惯用差异。索引项目：前書き・本文の見方及び使い方；単独の語・活用のある語・通則1；通則2；単独の語・活用のない語・通則3；通則4；通則5；複合の語・通則6；通則7；付表の語。

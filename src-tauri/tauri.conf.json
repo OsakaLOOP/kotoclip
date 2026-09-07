@@ -29,7 +29,6 @@
     "active": true,
     "targets": "all",
     "resources": [
-      "../ipadic/system.dic",
       "../experiments/unidic-source/unidic-cwj-202512.vibrato.dic",
       "../experiments/unidic-source/unidic-csj-202512.vibrato.dic",
       "../data/dict-sources/starter.kdict",

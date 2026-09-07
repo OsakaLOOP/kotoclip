@@ -1,5 +1,5 @@
 use crate::dictionary::{aggregate, bundle, lookup_state, presentation};
-use crate::models::{
+use crate::dictionary::model::{
     DictEntry, DictionaryEntryRef, DictionaryLookup, DictionaryLookupTiming,
     DictionaryMatchEvidence, PosTag,
 };
@@ -1293,8 +1293,8 @@ fn pos_compatibility(requested: Option<&PosTag>, entry: &DictEntry) -> &'static 
 }
 
 fn dictionary_sense_tags(
-    sense: &crate::models::DictionarySense,
-) -> Box<dyn Iterator<Item = &crate::models::DictionaryTag> + '_> {
+    sense: &crate::dictionary::model::DictionarySense,
+) -> Box<dyn Iterator<Item = &crate::dictionary::model::DictionaryTag> + '_> {
     Box::new(
         sense
             .tags

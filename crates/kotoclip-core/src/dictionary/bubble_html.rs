@@ -1,4 +1,4 @@
-use crate::models::{DictEntry, DictionaryLink, DictionaryLookup};
+use crate::dictionary::model::{DictEntry, DictionaryLink, DictionaryLookup};
 
 const GENERIC_CSS: &str = include_str!("../../../../src/styles/dictionaries/generic.css");
 const DAIJIRIN_CSS: &str = include_str!("../../../../src/styles/dictionaries/daijirin.css");
@@ -461,7 +461,7 @@ fn dictionary_groups(lookup: &DictionaryLookup) -> Vec<(String, Vec<&DictEntry>)
         .collect()
 }
 
-fn active_form(lookup: &DictionaryLookup) -> Option<&crate::models::DictionaryFormGroup> {
+fn active_form(lookup: &DictionaryLookup) -> Option<&crate::dictionary::model::DictionaryFormGroup> {
     lookup
         .selected_form_id
         .as_deref()
@@ -828,7 +828,7 @@ const PREVIEW_SCRIPT: &str = r#"
 #[cfg(test)]
 mod tests {
     use super::{header_facts, occurrence_label};
-    use crate::models::{
+    use crate::dictionary::model::{
         DictEntry, DictionaryAdapterDiagnostics, DictionaryForm, DictionaryOccurrenceHeader,
         DictionarySense, DictionaryText,
     };

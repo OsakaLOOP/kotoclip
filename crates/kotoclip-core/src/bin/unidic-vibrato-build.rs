@@ -34,7 +34,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(&work)?;
 
     let lex = required(&input, "lex.csv")?;
-    let matrix = required(&input, "matrix.def")?;
     let char_def = required(&input, "char.def")?;
     let unk = required(&input, "unk.def")?;
     let feature = required(&input, "feature.def")?;
@@ -57,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         File::create(&bigram_cost)?,
     )?;
 
-    eprintln!("编译 Vibrato 字典（跳过 {}）...", matrix.display());
+    eprintln!("使用紧凑连接模型编译 Vibrato 字典...");
     let dictionary = SystemDictionaryBuilder::from_readers_with_bigram_info(
         File::open(lex)?,
         File::open(&bigram_right)?,

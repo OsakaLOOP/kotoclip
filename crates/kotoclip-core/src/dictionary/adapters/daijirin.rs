@@ -1,6 +1,6 @@
 use super::{common, AdaptedOccurrence};
 use crate::dictionary::html::{parse_fragment, HtmlElement, HtmlNode};
-use crate::models::{
+use crate::dictionary::model::{
     DictionaryAdapterDiagnostics, DictionaryExample, DictionaryForm, DictionaryPronunciation,
     DictionarySection, DictionarySectionItem, DictionarySense, DictionaryTag,
 };
@@ -59,7 +59,7 @@ pub fn adapt(
 
     let mut occurrence = AdaptedOccurrence {
         entry_kind: detect_kind(&root, definition).to_string(),
-        header: crate::models::DictionaryOccurrenceHeader {
+        header: crate::dictionary::model::DictionaryOccurrenceHeader {
             display_form: display_form.clone(),
             canonical_form: Some(display_form.clone()),
             reading,
@@ -1052,7 +1052,7 @@ fn is_local_grammar_label(value: &str) -> bool {
     matches!(value, "スル" | "タリ")
 }
 
-fn internal_sense_reference(definition: &str) -> Option<crate::models::DictionaryLink> {
+fn internal_sense_reference(definition: &str) -> Option<crate::dictionary::model::DictionaryLink> {
     let plain =
         common::normalize_visible_text(&definition.replace("<small>", "").replace("</small>", ""));
     let plain = plain
@@ -1063,7 +1063,7 @@ fn internal_sense_reference(definition: &str) -> Option<crate::models::Dictionar
         .captures(&plain)
         .and_then(|captures| captures.get(1))
         .map(|value| value.as_str().to_string())?;
-    Some(crate::models::DictionaryLink {
+    Some(crate::dictionary::model::DictionaryLink {
         target: format!("sense-marker:{label}"),
         label,
         relation: "internal_reference".to_string(),
@@ -1216,7 +1216,7 @@ fn clean_definition(mut definition: String, has_relations: bool) -> (String, Vec
     (definition, tags)
 }
 
-fn extract_trailing_notes(mut definition: String) -> (String, Vec<crate::models::DictionaryText>) {
+fn extract_trailing_notes(mut definition: String) -> (String, Vec<crate::dictionary::model::DictionaryText>) {
     let mut notes = Vec::new();
     loop {
         let Some(captures) = TRAILING_NOTE_RE.captures(&definition) else {
@@ -1261,7 +1261,7 @@ fn promote_parenthetical_heading(sense: &mut DictionarySense) {
     }
 }
 
-fn sense_links(element: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
+fn sense_links(element: &HtmlElement) -> Vec<crate::dictionary::model::DictionaryLink> {
     let text = element.text();
     let relation = if text.contains('⇔') || text.contains("対義") {
         "antonym"
@@ -1273,7 +1273,7 @@ fn sense_links(element: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
     common::extract_links(element, relation)
 }
 
-fn sense_links_scoped(element: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
+fn sense_links_scoped(element: &HtmlElement) -> Vec<crate::dictionary::model::DictionaryLink> {
     let mut text = String::new();
     collect_scoped_text(&element.children, &mut text);
     let relation = if text.contains('⇔') || text.contains("対義") {
@@ -1297,12 +1297,12 @@ fn sense_links_scoped(element: &HtmlElement) -> Vec<crate::models::DictionaryLin
         };
         if links
             .iter()
-            .any(|link: &crate::models::DictionaryLink| link.target == target)
+            .any(|link: &crate::dictionary::model::DictionaryLink| link.target == target)
         {
             continue;
         }
         let label = common::normalize_visible_text(&anchor.text());
-        links.push(crate::models::DictionaryLink {
+        links.push(crate::dictionary::model::DictionaryLink {
             target: target.to_string(),
             label: if label.is_empty() {
                 target.to_string()
@@ -1358,7 +1358,7 @@ fn collect_scoped_anchors<'a>(nodes: &'a [HtmlNode], output: &mut Vec<&'a HtmlEl
     }
 }
 
-fn structural_links(root: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
+fn structural_links(root: &HtmlElement) -> Vec<crate::dictionary::model::DictionaryLink> {
     let mut paragraphs = Vec::new();
     root.all_by_name("p", &mut paragraphs);
     let mut links = Vec::new();
@@ -1368,7 +1368,7 @@ fn structural_links(root: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
             for link in navigation_candidates(paragraph) {
                 if !links
                     .iter()
-                    .any(|item: &crate::models::DictionaryLink| item.target == link.target)
+                    .any(|item: &crate::dictionary::model::DictionaryLink| item.target == link.target)
                 {
                     links.push(link);
                 }
@@ -1393,7 +1393,7 @@ fn structural_links(root: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
             "related"
         };
         for link in common::extract_links(paragraph, relation) {
-            if !links.iter().any(|item: &crate::models::DictionaryLink| {
+            if !links.iter().any(|item: &crate::dictionary::model::DictionaryLink| {
                 item.target == link.target && item.relation == link.relation
             }) {
                 links.push(link);
@@ -1403,7 +1403,7 @@ fn structural_links(root: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
     links
 }
 
-fn navigation_candidates(paragraph: &HtmlElement) -> Vec<crate::models::DictionaryLink> {
+fn navigation_candidates(paragraph: &HtmlElement) -> Vec<crate::dictionary::model::DictionaryLink> {
     let mut links = Vec::new();
     let mut line_has_candidate = false;
     let mut line_is_navigation = false;
@@ -1426,7 +1426,7 @@ fn navigation_candidates(paragraph: &HtmlElement) -> Vec<crate::models::Dictiona
                     .attr("href")
                     .and_then(|href| href.strip_prefix("entry://"))
                 {
-                    links.push(crate::models::DictionaryLink {
+                    links.push(crate::dictionary::model::DictionaryLink {
                         target: target.to_string(),
                         label: common::normalize_visible_text(&element.text()),
                         relation: "candidate".to_string(),
