@@ -1,4 +1,4 @@
-pub const PREPARE_TEXT_PROTOCOL_VERSION: &str = "kotoclip.prepare-text.v2";
+pub const PREPARE_TEXT_PROTOCOL_VERSION: &str = "kotoclip.prepare-text.v3";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RubyAnnotation {
@@ -13,17 +13,17 @@ pub struct PreparedText {
     pub annotations: Vec<RubyAnnotation>,
 }
 
-fn is_kanji(character: char) -> bool {
+pub(crate) fn is_kanji(character: char) -> bool {
     matches!(
         character,
         '\u{3400}'..='\u{4dbf}'
             | '\u{4e00}'..='\u{9fff}'
             | '\u{f900}'..='\u{faff}'
             | '\u{20000}'..='\u{2fa1f}'
-    )
+    ) || matches!(character, '々' | '〇')
 }
 
-fn is_kana(character: char) -> bool {
+pub(crate) fn is_kana(character: char) -> bool {
     matches!(
         character,
         '\u{3041}'..='\u{3096}'
@@ -47,44 +47,61 @@ pub fn normalize_reading(reading: &str) -> String {
         .collect()
 }
 
-fn strip_markdown_images(input: &str) -> String {
-    let chars: Vec<char> = input.chars().collect();
-    let mut output = String::with_capacity(input.len());
-    let mut index = 0;
-    while index < chars.len() {
-        if index + 1 < chars.len() && chars[index] == '!' && chars[index + 1] == '[' {
-            let mut close_bracket = index + 2;
-            while close_bracket < chars.len() && chars[close_bracket] != ']' {
-                close_bracket += 1;
+/// 比较时统一大小假名，保留字符数量以及作者读音和 UniDic 原始字段。
+pub fn normalize_validation_reading(reading: &str) -> String {
+    normalize_reading(reading)
+        .chars()
+        .map(|character| match character {
+            'ァ' => 'ア',
+            'ィ' => 'イ',
+            'ゥ' => 'ウ',
+            'ェ' => 'エ',
+            'ォ' => 'オ',
+            'ャ' => 'ヤ',
+            'ュ' => 'ユ',
+            'ョ' => 'ヨ',
+            'ッ' => 'ツ',
+            'ヮ' => 'ワ',
+            _ => character,
+        })
+        .collect()
+}
+
+fn markdown_image_end(chars: &[char], index: usize) -> Option<usize> {
+    if index + 1 < chars.len() && chars[index] == '!' && chars[index + 1] == '[' {
+        let mut close_bracket = index + 2;
+        while close_bracket < chars.len() && chars[close_bracket] != ']' {
+            close_bracket += 1;
+        }
+        if close_bracket + 1 < chars.len() && chars[close_bracket + 1] == '(' {
+            let mut close_paren = close_bracket + 2;
+            while close_paren < chars.len() && chars[close_paren] != ')' {
+                close_paren += 1;
             }
-            if close_bracket + 1 < chars.len() && chars[close_bracket + 1] == '(' {
-                let mut close_paren = close_bracket + 2;
-                while close_paren < chars.len() && chars[close_paren] != ')' {
-                    close_paren += 1;
-                }
-                if close_paren < chars.len() {
-                    index = close_paren + 1;
-                    continue;
-                }
+            if close_paren < chars.len() {
+                return Some(close_paren + 1);
             }
         }
-        output.push(chars[index]);
-        index += 1;
     }
-    output
+    None
 }
 
 pub fn prepare_text(input: &str) -> PreparedText {
-    let chars: Vec<char> = strip_markdown_images(input).chars().collect();
+    let chars: Vec<char> = input.chars().collect();
     let mut cleaned = Vec::with_capacity(chars.len());
     let mut annotations = Vec::new();
     let mut base_boundary = 0;
     let mut index = 0;
 
     while index < chars.len() {
+        if let Some(next) = markdown_image_end(&chars, index) {
+            base_boundary = cleaned.len();
+            index = next;
+            continue;
+        }
         if chars[index] != '《' {
             cleaned.push(chars[index]);
-            if !is_kanji(chars[index]) {
+            if !is_kanji(chars[index]) && !is_kana(chars[index]) {
                 base_boundary = cleaned.len();
             }
             index += 1;
@@ -103,12 +120,17 @@ pub fn prepare_text(input: &str) -> PreparedText {
         let annotation_end = index + 1 + relative_end;
         let reading_chars = &chars[index + 1..annotation_end];
         let valid_reading = !reading_chars.is_empty() && reading_chars.iter().copied().all(is_kana);
+        let include_kana = cleaned.last().copied().is_some_and(is_kana);
         let mut base_start = cleaned.len();
-        while base_start > base_boundary && is_kanji(cleaned[base_start - 1]) {
+        while base_start > base_boundary
+            && (is_kanji(cleaned[base_start - 1])
+                || (include_kana && is_kana(cleaned[base_start - 1])))
+        {
             base_start -= 1;
         }
+        let has_kanji = cleaned[base_start..].iter().copied().any(is_kanji);
 
-        if valid_reading && base_start < cleaned.len() {
+        if valid_reading && base_start < cleaned.len() && has_kanji {
             annotations.push(RubyAnnotation {
                 base: cleaned[base_start..].iter().collect(),
                 reading: normalize_reading(&reading_chars.iter().collect::<String>()),
@@ -127,43 +149,6 @@ pub fn prepare_text(input: &str) -> PreparedText {
         text: cleaned.into_iter().collect(),
         annotations,
     }
-}
-
-pub fn expected_reading_for_range(
-    text_chars: &[char],
-    char_range: [usize; 2],
-    annotations: &[RubyAnnotation],
-) -> Option<String> {
-    let relevant: Vec<&RubyAnnotation> = annotations
-        .iter()
-        .filter(|annotation| {
-            annotation.char_range[0] >= char_range[0] && annotation.char_range[1] <= char_range[1]
-        })
-        .collect();
-    if relevant.is_empty() || char_range[1] > text_chars.len() {
-        return None;
-    }
-
-    let mut output = String::new();
-    let mut cursor = char_range[0];
-    let mut annotation_index = 0;
-    while cursor < char_range[1] {
-        if let Some(annotation) = relevant.get(annotation_index) {
-            if annotation.char_range[0] == cursor {
-                output.push_str(&annotation.reading);
-                cursor = annotation.char_range[1];
-                annotation_index += 1;
-                continue;
-            }
-        }
-        let character = text_chars[cursor];
-        if !is_kana(character) {
-            return None;
-        }
-        output.push_str(&normalize_reading(&character.to_string()));
-        cursor += 1;
-    }
-    Some(output)
 }
 
 pub fn grouped_annotations(annotations: &[RubyAnnotation]) -> Vec<RubyAnnotation> {
@@ -235,5 +220,38 @@ mod tests {
         assert!(!has_long_dialogue("「1234567890」"));
         assert!(has_long_dialogue("「12345678901」"));
         assert!(has_long_dialogue("本文「これは十一个字以上です」本文"));
+    }
+
+    #[test]
+    fn normalizes_full_size_digraphs_for_validation() {
+        assert_eq!(normalize_validation_reading("キヨウガク"), "キヨウガク");
+        assert_eq!(normalize_validation_reading("きょうがく"), "キヨウガク");
+        assert_eq!(normalize_validation_reading("とっさ"), "トツサ");
+    }
+
+    #[test]
+    fn accepts_ruby_with_a_kana_suffix_and_iteration_mark() {
+        let prepared = prepare_text("可愛らしい《かわいらしい》神々《かみがみ》");
+        assert_eq!(prepared.text, "可愛らしい神々");
+        assert_eq!(prepared.annotations[0].base, "可愛らしい");
+        assert_eq!(prepared.annotations[0].char_range, [0, 5]);
+        assert_eq!(prepared.annotations[1].base, "神々");
+    }
+
+    #[test]
+    fn keeps_a_kanji_marker_after_okurigana_local() {
+        let prepared = prepare_text("喰い神《がみ》");
+        assert_eq!(prepared.text, "喰い神");
+        assert_eq!(prepared.annotations[0].base, "神");
+        assert_eq!(prepared.annotations[0].char_range, [2, 3]);
+    }
+
+    #[test]
+    fn images_and_invalid_markers_keep_ruby_boundaries() {
+        let prepared =
+            prepare_text("少女は腕に![](./00011.jpeg)《とう》の箱。神《かみ》かな《かな》");
+        assert_eq!(prepared.text, "少女は腕に《とう》の箱。神かな《かな》");
+        assert_eq!(prepared.annotations.len(), 1);
+        assert_eq!(prepared.annotations[0].base, "神");
     }
 }

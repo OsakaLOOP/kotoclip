@@ -10,7 +10,10 @@ export interface ProviderToken {
 export interface QueryForm { kind: string; form: string; reading: string | null; reading_field: string | null; }
 export interface RubyValidation {
   base: string; ruby_reading: string; expected_reading: string; char_range: [number, number];
-  token_range: [number, number] | null; observed_reading: string | null; status: string;
+  original_char_range: [number, number];
+  token_range: [number, number] | null; observed_reading: string | null;
+  status: 'matched' | 'variant' | 'unavailable' | 'unmatched';
+  reason: 'exact' | 'small_kana' | 'reading_difference' | 'missing_reading' | 'ambiguous_alignment' | 'source_gap';
 }
 export interface MorphemeToken {
   id: string; source_index: number; surface: string; char_range: [number, number];

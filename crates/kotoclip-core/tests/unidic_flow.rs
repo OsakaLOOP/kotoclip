@@ -109,3 +109,71 @@ fn ruby_validation_uses_the_complete_token_span_and_long_dialogue_routes_to_csj(
     assert_eq!(document.routing.reason.as_deref(), Some("long_dialogue"));
     assert!(document.source.provider.id.contains("csj"));
 }
+
+#[test]
+fn ruby_validation_accepts_full_size_digraphs_and_okurigana() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut service = AnalysisService::new(ResourcePaths::development(&root));
+    for text in ["驚愕《キヨウガク》", "可愛《カワイ》らしい"] {
+        let response = service.dispatch(Request::Analyze {
+            register: Register::Cwj,
+            text: text.into(),
+        });
+        assert!(response.error.is_none(), "{:?}", response.error);
+        let document: UnifiedDocument = serde_json::from_value(response.result.unwrap()).unwrap();
+        assert_eq!(document.ruby_validations.len(), 1, "{text}");
+        let validation = &document.ruby_validations[0];
+        assert_eq!(validation.status, "matched", "{text}: {validation:?}");
+        assert_eq!(
+            validation.observed_reading.as_deref(),
+            Some(if text.starts_with("驚") {
+                "キョウガク"
+            } else {
+                "カワイ"
+            })
+        );
+    }
+}
+
+#[test]
+fn ruby_validation_resolves_partial_compounds_and_reports_reading_variants() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut service = AnalysisService::new(ResourcePaths::development(&root));
+    let response = service.dispatch(Request::Analyze {
+        register: Register::Cwj,
+        text: "産業廃《はい》棄《き》物《ぶつ》・死体喰《く》う・覗《のぞ》き見る・喰い神《がみ》"
+            .into(),
+    });
+    assert!(response.error.is_none(), "{:?}", response.error);
+    let document: UnifiedDocument = serde_json::from_value(response.result.unwrap()).unwrap();
+
+    let waste = document
+        .ruby_validations
+        .iter()
+        .find(|validation| validation.base == "廃棄物")
+        .unwrap();
+    assert_eq!(waste.status, "matched");
+    assert_eq!(waste.observed_reading.as_deref(), Some("ハイキブツ"));
+
+    let corpse = document
+        .ruby_validations
+        .iter()
+        .find(|validation| validation.base == "喰")
+        .unwrap();
+    assert_eq!(corpse.status, "matched");
+
+    let peek = document
+        .ruby_validations
+        .iter()
+        .find(|validation| validation.base == "覗")
+        .unwrap();
+    assert_eq!(peek.status, "matched");
+
+    let god = document
+        .ruby_validations
+        .iter()
+        .find(|validation| validation.base == "神")
+        .unwrap();
+    assert_eq!(god.status, "variant");
+    assert_eq!(god.observed_reading.as_deref(), Some("カミ"));
+}

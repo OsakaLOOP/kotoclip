@@ -134,7 +134,9 @@ function isKanji(character: string): boolean {
   return (codePoint >= 0x3400 && codePoint <= 0x4dbf)
     || (codePoint >= 0x4e00 && codePoint <= 0x9fff)
     || (codePoint >= 0xf900 && codePoint <= 0xfaff)
-    || (codePoint >= 0x20000 && codePoint <= 0x2fa1f);
+    || (codePoint >= 0x20000 && codePoint <= 0x2fa1f)
+    || character === "々"
+    || character === "〇";
 }
 
 function isKana(character: string): boolean {
@@ -146,7 +148,7 @@ function isKana(character: string): boolean {
     || character === "ー";
 }
 
-// 必须与 Rust ruby::prepare_text 的坐标规则一致，同时保留原始标记供后端提取读音。
+// 与 kotoclip-nlp/src/prepare.rs 的注音有效性和字符坐标保持一致。
 function preparedCharacterLength(value: string): number {
   const characters = Array.from(value);
   const prepared: string[] = [];
@@ -156,7 +158,7 @@ function preparedCharacterLength(value: string): number {
   while (index < characters.length) {
     if (characters[index] !== "《") {
       prepared.push(characters[index]);
-      if (!isKanji(characters[index])) baseBoundary = prepared.length;
+      if (!isKanji(characters[index]) && !isKana(characters[index])) baseBoundary = prepared.length;
       index++;
       continue;
     }
@@ -171,10 +173,14 @@ function preparedCharacterLength(value: string): number {
 
     const reading = characters.slice(index + 1, annotationEnd);
     const validReading = reading.length > 0 && reading.every(isKana);
+    const includeKana = prepared.length > 0 && isKana(prepared[prepared.length - 1]);
     let baseStart = prepared.length;
-    while (baseStart > baseBoundary && isKanji(prepared[baseStart - 1])) baseStart--;
+    while (
+      baseStart > baseBoundary
+      && (isKanji(prepared[baseStart - 1]) || (includeKana && isKana(prepared[baseStart - 1])))
+    ) baseStart--;
 
-    if (validReading && baseStart < prepared.length) {
+    if (validReading && baseStart < prepared.length && prepared.slice(baseStart).some(isKanji)) {
       baseBoundary = prepared.length;
       index = annotationEnd + 1;
       continue;

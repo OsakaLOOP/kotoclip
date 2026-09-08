@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.unified-document.v2";
+pub const SCHEMA: &str = "kotoclip.unified-document.v3";
 pub const FIELD_NAMES: [&str; 29] = [
     "pos1", "pos2", "pos3", "pos4", "cType", "cForm", "lForm", "lemma", "orth", "pron", "orthBase",
     "pronBase", "goshu", "iType", "iForm", "fType", "fForm", "iConType", "fConType", "type",
@@ -126,9 +126,11 @@ pub struct RubyValidation {
     pub ruby_reading: String,
     pub expected_reading: String,
     pub char_range: [usize; 2],
+    pub original_char_range: [usize; 2],
     pub token_range: Option<[usize; 2]>,
     pub observed_reading: Option<String>,
     pub status: String,
+    pub reason: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

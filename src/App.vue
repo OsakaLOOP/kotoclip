@@ -26,13 +26,18 @@ let queryGeneration = 0;
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 const characters = computed(() => Array.from(input.value).length);
 const sourceToken = computed(() => selected.value && document.value?.source.tokens[selected.value.source_index]);
-const selectedRuby = computed(() => {
-  if (!selected.value || !document.value) return null;
-  return document.value.ruby_validations.find((item) => item.token_range && selected.value!.source_index >= item.token_range[0] && selected.value!.source_index < item.token_range[1]) || null;
+const selectedRubies = computed(() => {
+  if (!selected.value || !document.value) return [];
+  return document.value.ruby_validations.filter((item) => item.token_range && selected.value!.source_index >= item.token_range[0] && selected.value!.source_index < item.token_range[1]);
 });
 const rubySummary = computed(() => {
   const validations = document.value?.ruby_validations || [];
-  return { total: validations.length, matched: validations.filter((item) => item.status === 'matched').length };
+  return {
+    total: validations.length,
+    matched: validations.filter((item) => item.status === 'matched').length,
+    variant: validations.filter((item) => item.status === 'variant').length,
+    pending: validations.filter((item) => item.status === 'unavailable' || item.status === 'unmatched').length,
+  };
 });
 const group = computed(() => result.value?.groups[formIndex.value]);
 const dictionaries = computed(() => [...new Set(group.value?.entries.map(e => e.dict_name) || [])]);
@@ -132,7 +137,7 @@ onMounted(async () => {
         <textarea v-model="input" class="source-input" lang="ja" aria-label="日文正文" placeholder="日文正文" :disabled="busy" @input="invalidate" />
         <div class="input-footer"><span :class="{ invalid: characters > 20000 }">{{ characters.toLocaleString() }} / 20,000 字符</span><span v-if="!available[register]" class="invalid">词典资源未找到</span></div>
         <p v-if="error" class="error-message" role="alert">{{ error }}</p>
-        <div class="result-toolbar"><h1>分词结果</h1><span v-if="document">{{ document.morphemes.length }} 词 · {{ Math.round(document.elapsed_ms) }} ms · {{ document.source.provider.id }}<template v-if="document.routing.reason === 'long_dialogue'"> · 长对话自动使用 CSJ</template><template v-if="rubySummary.total"> · 注音 {{ rubySummary.matched }}/{{ rubySummary.total }}</template></span></div>
+        <div class="result-toolbar"><h1>分词结果</h1><span v-if="document">{{ document.morphemes.length }} 词 · {{ Math.round(document.elapsed_ms) }} ms · {{ document.source.provider.id }}<template v-if="document.routing.reason === 'long_dialogue'"> · 长对话自动使用 CSJ</template><template v-if="rubySummary.total"> · 注音 {{ rubySummary.matched }}/{{ rubySummary.total }} 匹配<template v-if="rubySummary.variant"> · 读音差异 {{ rubySummary.variant }}</template><template v-if="rubySummary.pending"> · 待核验 {{ rubySummary.pending }}</template></template></span></div>
         <div v-if="busy" class="empty-state" role="status"><LoaderCircle class="spin" :size="22" />正在分析</div>
         <div v-else-if="!document" class="empty-state">暂无分析结果</div>
         <article v-else class="token-text" lang="ja" aria-label="分词结果"><template v-for="segment in segments" :key="segment.start"><button v-if="segment.token" class="word" :class="{ selected: selected?.id === segment.token.id, unknown: document.source.tokens[segment.token.source_index].lexicon_type === 'unknown' }" :aria-label="segment.surface" :aria-pressed="selected?.id === segment.token.id" @click="select(segment.token)" @mouseenter="preview(segment.token)" @mouseleave="cancelPreview" @focus="select(segment.token)">{{ segment.surface }}</button><span v-else>{{ segment.surface }}</span></template></article>
@@ -157,10 +162,10 @@ onMounted(async () => {
         <div v-show="tab === 'metadata'" class="metadata-panel">
           <template v-if="sourceToken">
             <dl class="metadata-summary"><dt>来源</dt><dd>{{ document?.source.provider.id }}</dd><dt>词典类别</dt><dd>{{ sourceToken.lexicon_type }}</dd><dt>连接 ID</dt><dd>{{ sourceToken.left_id }} / {{ sourceToken.right_id }}</dd><dt>词成本 / 累计成本</dt><dd>{{ sourceToken.word_cost }} / {{ sourceToken.total_cost }}</dd><dt>UTF-8 范围</dt><dd>[{{ sourceToken.byte_range.join(', ') }})</dd></dl>
-            <div v-if="selectedRuby" class="ruby-validation" :class="`is-${selectedRuby.status}`">
-              <div class="ruby-validation-heading"><strong>书名号注音验证</strong><span>{{ selectedRuby.status === 'matched' ? '匹配' : selectedRuby.status === 'mismatch' ? '不匹配' : selectedRuby.status === 'unavailable' ? '缺少出现读音' : '未覆盖' }}</span></div>
-              <p><span lang="ja">{{ selectedRuby.base }}</span> · 书名号 {{ selectedRuby.ruby_reading }} · 期望 {{ selectedRuby.expected_reading }}</p>
-              <p>UniDic 出现假名：{{ selectedRuby.observed_reading || '未提供' }} · 整体覆盖 {{ selectedRuby.token_range ? `${selectedRuby.token_range[1] - selectedRuby.token_range[0]} 词` : '无' }}</p>
+            <div v-for="ruby in selectedRubies" :key="ruby.char_range.join(':')" class="ruby-validation" :class="`is-${ruby.status}`">
+              <div class="ruby-validation-heading"><strong>书名号注音验证</strong><span>{{ ruby.status === 'matched' ? (ruby.reason === 'small_kana' ? '匹配（大小假名）' : '匹配') : ruby.status === 'variant' ? '读音差异' : '待核验' }}</span></div>
+              <p><span lang="ja">{{ ruby.base }}</span> · 作者注音 {{ ruby.ruby_reading }}</p>
+              <p>UniDic 出现假名：{{ ruby.observed_reading || (ruby.reason === 'missing_reading' ? '未提供' : '局部范围待确定') }} · 涉及 {{ ruby.token_range ? `${ruby.token_range[1] - ruby.token_range[0]} 词` : '无' }}</p>
             </div>
             <table class="metadata-table"><thead><tr><th>字段</th><th>原始值</th></tr></thead><tbody><tr v-for="field in sourceToken.fields" :key="field.index"><th><code>{{ field.index }} · {{ field.name }}</code><small>{{ field.label }}</small></th><td lang="ja">{{ field.raw === null ? '未提供' : field.raw === '' ? '(空值)' : field.raw }}</td></tr></tbody></table>
             <div class="raw-heading"><h3>原始 CSV</h3><button class="icon-button" title="复制原始 CSV" aria-label="复制原始 CSV" @click="copy"><Check v-if="copied" :size="17" /><Copy v-else :size="17" /></button></div><pre>{{ sourceToken.raw_feature }}</pre>

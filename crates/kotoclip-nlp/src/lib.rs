@@ -2,5 +2,6 @@
 pub mod model;
 pub mod prepare;
 pub mod routing;
+mod ruby;
 pub mod sources;
 pub mod unify;
