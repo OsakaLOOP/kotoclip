@@ -38,16 +38,22 @@
 
 ## 日语依存、文节与篇章分析
 
+### 2026-09-10 本地依赖探测
+
+- `scripts/probe_syntax_providers.py`：在 Windows 开发环境探测 CaboCha、Juman++、KWJA、spaCy、GiNZA、ja-ginza 和 rhoknp；结果保存在 `experiments/syntax-provider-probe.json`。GiNZA 与 KWJA 已在 Python 3.11 隔离环境完成安装并生成验证 artifact，外部结果通过 `AnalyzeWithArtifacts` 注入结构候选。
+
 ### GiNZA
 
 - **GiNZA 官方仓库**: [GitHub - megagonlabs/ginza](https://github.com/megagonlabs/ginza) — 基于 spaCy 与 Sudachi 的日语 NLP 管线，提供依存分析、文节识别、文节主辞、读音和实验性小句识别；标准模型与高精度 Transformer 模型分开发布。
 - **GiNZA 文节 API**: [文節APIの解説](https://megagonlabs.github.io/ginza/bunsetu_api.html) — 列出 `bunsetu_spans`、`bunsetu_head_tokens`、`sub_phrases`、`clauses`、`clause_head` 等接口，并说明其文节位置类型与主辞信息。
 - **GiNZA 训练数据说明**: [GiNZA README - Training Datasets](https://github.com/megagonlabs/ginza#training-datasets) — 说明依存模型使用 UD Japanese BCCWJ，并展示 Universal Dependencies、文节标签、主辞和 ClauseHead 输出。
 - **GiNZA PyPI**: [ginza](https://pypi.org/project/ginza/) / [ja-ginza](https://pypi.org/project/ja-ginza/) / [ja-ginza-electra](https://pypi.org/project/ja-ginza-electra/) — 用于核对 Python 版本、模型包和当前发布版本。
+- **本轮运行版本**：GiNZA 5.2.1、ja-ginza 5.2.0、spaCy 3.8.16、SudachiPy 0.6.11；结果来自 `experiments/ginza-provider-validation.json`，未将模型文件纳入仓库。
 
 ### KWJA、KNP 与 rhoknp
 
 - **KWJA 官方仓库**: [GitHub - ku-nlp/kwja](https://github.com/ku-nlp/kwja) — 基于预训练模型的综合日语分析器，覆盖分词、形态、依存、述语项结构、桥接照应、共指和篇章关系；支持 `tiny`、`base`、`large` 模型及 CPU/CUDA/MPS。
+- **KWJA 模型仓库**: [ku-nlp Hugging Face models](https://huggingface.co/ku-nlp) — 本轮从官方 checkpoint 地址下载 `char_deberta-v2-tiny-wwm.ckpt` 与 `word_deberta-v2-tiny.ckpt` 的基础编码器配置；缓存仅保存在本地 `experiments/hf-cache`。
 - **KWJA 论文**: [ACL 2023 - KWJA: A Unified Japanese Analyzer Based on Foundation Models](https://aclanthology.org/2023.acl-demo.55/) — 系统设计与各任务评测来源；官方仓库表格显示依存分析明显成熟于篇章关系分析。
 - **rhoknp 官方仓库**: [GitHub - ku-nlp/rhoknp](https://github.com/ku-nlp/rhoknp) — Juman++、KNP 与 KWJA 的现行 Python 接口，支持句子和文档级 KNP 格式、凝聚性分析与篇章关系结果。
 - **pyknp 官方仓库**: [GitHub - ku-nlp/pyknp](https://github.com/ku-nlp/pyknp) — 旧版 Juman++/KNP Python 绑定；仓库已声明停止维护并建议迁移到 rhoknp。
@@ -207,6 +213,14 @@
 - mecab-ipadic-NEologd：<https://github.com/neologd/mecab-ipadic-neologd>。仅作为可选专有名、颜文字和网络语补充来源；不作为基础词典。
 - CaboCha：<https://taku910.github.io/cabocha/>。作为后续依存分析实验的公开入口，不纳入本阶段运行时依赖。
 - NINJAL 语言资源开发中心：<https://clrd.ninjal.ac.jp/>。作为后续 NINJAL 生态资源研究入口。
+
+## 原生 NLP 发布路线（2026-09-11）
+
+- GiNZA 仓库：<https://github.com/megagonlabs/ginza>。用于核对 GiNZA 5.2 的 spaCy、SudachiPy 与 SudachiDict 依赖边界，以及 MIT 代码许可；实际模型 metadata 中的数据来源和再分发条件另行记录。
+- GiNZA `ja_ginza` 模型：<https://github.com/megagonlabs/ginza/releases>。用于核对标准模型组件、模型包与依存标签；本地 `meta.json` 显示其训练来源含 BCCWJ、GSK2014-A、SudachiDict_core 和 chiVe。
+- KWJA 仓库：<https://github.com/ku-nlp/kwja>。用于核对 KWJA 2.1 的任务范围、PyTorch/Transformers 依赖和 MIT 代码许可；模型权重、训练数据和衍生权重的再分发条件须按具体版本单独审查。
+- Candle 仓库：<https://github.com/huggingface/candle>。作为 Rust 原生张量与 safetensors 推理后端候选；正式采用前需完成 Windows CPU、二进制体积和 UniDic 结构模型基准。
+- tract 仓库：<https://github.com/sonos/tract>。作为 Rust 原生 ONNX 推理后端候选；与 Candle 在同一模型、同一硬件条件下比较后决定发布运行时。
 
 2026-09-07 清理核对：[NEologd 固定来源](https://github.com/neologd/mecab-ipadic-neologd/tree/abc61e33d8be3d0ead202e6b1df064c72d5ccf11)；本地主 seed 为 `mecab-user-dict-seed.20200910.csv.xz`。[COPYING](https://github.com/neologd/mecab-ipadic-neologd/blob/abc61e33d8be3d0ead202e6b1df064c72d5ccf11/COPYING) 和日英说明随来源保留。清理依据及文件清单见 [experiments 清单](docs/experiments_cleanup_20260907.md)。
 
