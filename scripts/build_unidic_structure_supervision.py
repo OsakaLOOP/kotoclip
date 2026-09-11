@@ -27,6 +27,8 @@ def build(artifact_path: Path, unidic_path: Path) -> dict[str, Any]:
     unidic = {segment["id"]: segment for segment in unidic_bundle["segments"]}
     samples: list[dict[str, Any]] = []
     conflicts: list[dict[str, Any]] = []
+    totals: dict[str, int] = {kind: 0 for kind in ("sentence", "compound", "bunsetsu")}
+    accepted: dict[str, int] = {kind: 0 for kind in totals}
     for artifact in artifact_bundle["artifacts"]:
         segment_id = artifact["segment_id"]
         segment = unidic.get(segment_id)
@@ -39,15 +41,18 @@ def build(artifact_path: Path, unidic_path: Path) -> dict[str, Any]:
             kind = span.get("kind")
             if kind not in {"sentence", "compound", "bunsetsu"}:
                 continue
+            totals[kind] += 1
             indices = covered_indices(span, tokens)
             if indices is None:
                 conflicts.append({"segment_id": segment_id, "provider": artifact["provider"]["id"], "span_id": span["id"], "kind": kind, "char_range": span["char_range"], "reason": "incomplete_unidic_coverage"})
                 continue
+            accepted[kind] += 1
             prefix = f"{kind}_"
             labels[indices[0]][prefix + "start"] = True
             labels[indices[-1]][prefix + "end"] = True
         samples.append({"segment_id": segment_id, "provider": artifact["provider"], "tokens": labels})
-    return {"schema": "kotoclip.unidic-structure-supervision.v1", "input": {"artifact": str(artifact_path), "unidic": str(unidic_path)}, "samples": samples, "conflicts": conflicts}
+    rates = {kind: (accepted[kind] / totals[kind] if totals[kind] else None) for kind in totals}
+    return {"schema": "kotoclip.unidic-structure-supervision.v1", "input": {"artifact": str(artifact_path), "unidic": str(unidic_path)}, "statistics": {"total_spans": totals, "accepted_spans": accepted, "coverage_rate": rates}, "samples": samples, "conflicts": conflicts}
 
 
 def main() -> None:
@@ -59,7 +64,7 @@ def main() -> None:
     result = build(args.artifact, args.unidic)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"output": str(args.output), "samples": len(result["samples"]), "conflicts": len(result["conflicts"])}, ensure_ascii=False))
+    print(json.dumps({"output": str(args.output), "samples": len(result["samples"]), "conflicts": len(result["conflicts"]), "statistics": result["statistics"]}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
