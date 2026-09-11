@@ -85,10 +85,12 @@ pub fn unify_with_external(
     let ruby_validations = validate_ruby(&chars, &source.tokens, &prepared.annotations);
     let mut structure = crate::structure::LocalBoundaryProvider.analyze(text);
     let mut structure_diagnostics = Vec::new();
+    let mut provider_token_alignments = Vec::new();
     for artifact in external {
         let (merged, diagnostics) = crate::structure::merge_external(structure, artifact, text)?;
         structure = merged;
         structure_diagnostics.extend(diagnostics);
+        provider_token_alignments.push(crate::alignment::align_artifact(artifact, &morphemes));
     }
     let formation = crate::formation::collect_formations(text, &morphemes, &structure)?;
     let bunsetsu = crate::bunsetsu::collect_bunsetsu(text, &morphemes, &structure, &formation)?;
@@ -118,6 +120,7 @@ pub fn unify_with_external(
         projection,
         morphology,
         structure_diagnostics,
+        provider_token_alignments,
         elapsed_ms: 0.0,
     })
 }

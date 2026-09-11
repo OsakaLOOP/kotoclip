@@ -9,6 +9,7 @@ pub mod structure;
 pub mod syntax;
 pub mod formation;
 pub mod bunsetsu;
+pub mod alignment;
 pub mod clause;
 pub mod lexical;
 pub mod grammar;

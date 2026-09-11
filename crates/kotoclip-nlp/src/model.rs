@@ -162,5 +162,7 @@ pub struct UnifiedDocument {
     pub morphology: crate::morphology::MorphologyArtifact,
     #[serde(default)]
     pub structure_diagnostics: Vec<crate::syntax::AlignmentDiagnostic>,
+    #[serde(default)]
+    pub provider_token_alignments: Vec<crate::alignment::TokenAlignmentArtifact>,
     pub elapsed_ms: f64,
 }
