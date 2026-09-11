@@ -12,6 +12,29 @@ pub fn unify(
     unify_with_external(prepared, source, routing, &[])
 }
 
+/// 使用原生 UniDic token provider 生成结构 artifact，再沿用统一的结构合并路径。
+pub fn unify_with_native<P: crate::native::NativeStructureProvider>(
+    prepared: &PreparedText,
+    source: SourceAnalysis,
+    routing: RegisterRouting,
+    provider: &P,
+) -> Result<UnifiedDocument, String> {
+    let mut document = unify(prepared, source, routing)?;
+    let input = crate::native::NativeProviderInput::from_document(&document);
+    let artifact = provider.analyze(input).map_err(|diagnostic| {
+        serde_json::to_string(&diagnostic).unwrap_or_else(|_| "native provider failed".into())
+    })?;
+    let (structure, diagnostics) = crate::structure::merge_external(document.structure, &artifact, &document.text)?;
+    document.structure = structure;
+    document.structure_diagnostics.extend(diagnostics);
+    document.provider_token_alignments.push(crate::alignment::align_artifact(&artifact, &document.morphemes));
+    document.formation = crate::formation::collect_formations(&document.text, &document.morphemes, &document.structure)?;
+    document.bunsetsu = crate::bunsetsu::collect_bunsetsu(&document.text, &document.morphemes, &document.structure, &document.formation)?;
+    document.clause = crate::clause::collect_clauses(&document.text, &document.morphemes, &document.structure)?;
+    document.dictionary_candidates = crate::lexical::collect_dictionary_candidates(&document.text, &document.morphemes, &document.formation)?;
+    Ok(document)
+}
+
 /// 在统一词元结果上追加外部结构证据；每个 provider 的范围和对齐诊断保持可追溯。
 pub fn unify_with_external(
     prepared: &PreparedText,
