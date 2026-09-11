@@ -8,6 +8,19 @@ use tauri::{Manager, State};
 struct AppState(Arc<Mutex<AnalysisService>>);
 
 #[tauri::command]
+fn search_grammar_catalog(
+    query: Option<String>, family: Option<String>, jlpt_level: Option<u8>,
+    audit_status: Option<String>, source_ref: Option<String>,
+) -> Result<Vec<kotoclip_core::grammar_catalog::GrammarConcept>, String> {
+    kotoclip_core::grammar_catalog::search(query.as_deref(), family.as_deref(), jlpt_level, audit_status.as_deref(), source_ref.as_deref())
+}
+
+#[tauri::command]
+fn get_grammar_concept(concept_id: String) -> Result<kotoclip_core::grammar_catalog::GrammarConceptBundle, String> {
+    kotoclip_core::grammar_catalog::get(&concept_id)
+}
+
+#[tauri::command]
 async fn nlp_request(state: State<'_, AppState>, request: Request) -> Result<Response, String> {
     let service = state.0.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -68,7 +81,7 @@ pub fn run() {
             app.manage(AppState(Arc::new(Mutex::new(AnalysisService::new(paths)))));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![nlp_request])
+        .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept])
         .run(tauri::generate_context!())
         .expect("桌面应用启动失败");
 }

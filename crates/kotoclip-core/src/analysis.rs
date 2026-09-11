@@ -4,7 +4,7 @@ use kotoclip_nlp::{
     prepare::prepare_text,
     routing::select_register,
     sources::UniDicProvider,
-    unify::unify,
+    syntax::SyntaxArtifact,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -52,9 +52,22 @@ pub enum Request {
         text: String,
         register: Register,
     },
+    AnalyzeWithArtifacts {
+        text: String,
+        register: Register,
+        artifacts: Vec<SyntaxArtifact>,
+        #[serde(default)]
+        grammar: Option<kotoclip_nlp::grammar::GrammarArtifact>,
+        #[serde(default)]
+        expression: Option<kotoclip_nlp::expression::ExpressionArtifact>,
+    },
     Query {
         analysis_id: String,
         token_id: String,
+    },
+    QueryCandidate {
+        analysis_id: String,
+        candidate_id: String,
     },
     Search {
         word: String,
@@ -103,39 +116,8 @@ impl AnalysisService {
                     {"register": "csj", "available": self.paths.csj.is_file(), "loaded": self.providers.contains_key(&Register::Csj)}
                 ]}),
             ),
-            Request::Analyze { text, register } => {
-                if text.chars().count() > 20000 {
-                    return Err("首版单次支持 20,000 字符，请选择较短的正文范围".into());
-                }
-                if text.trim().is_empty() {
-                    return Err("请输入日文正文".into());
-                }
-                let started = Instant::now();
-                let prepared = prepare_text(&text);
-                let routing = select_register(&prepared.text, register);
-                let selected_register = routing.selected;
-                if !self.providers.contains_key(&selected_register) {
-                    let path = if selected_register == Register::Cwj {
-                        &self.paths.cwj
-                    } else {
-                        &self.paths.csj
-                    };
-                    self.providers.insert(
-                        selected_register,
-                        UniDicProvider::open(selected_register, path)?,
-                    );
-                }
-                let source = self.providers[&selected_register].analyze(&prepared.text)?;
-                let mut document = unify(&prepared, source, routing)?;
-                document.elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
-                let value = serde_json::to_value(&document).map_err(|e| e.to_string())?;
-                self.documents.retain(|d| d.id != document.id);
-                self.documents.push_back(document);
-                while self.documents.len() > 4 {
-                    self.documents.pop_front();
-                }
-                Ok(value)
-            }
+            Request::Analyze { text, register } => self.analyze_document(text, register, &[], None, None),
+            Request::AnalyzeWithArtifacts { text, register, artifacts, grammar, expression } => self.analyze_document(text, register, &artifacts, grammar, expression),
             Request::Query {
                 analysis_id,
                 token_id,
@@ -160,6 +142,22 @@ impl AnalysisService {
                 ))
                 .map_err(|e| e.to_string())
             }
+            Request::QueryCandidate { analysis_id, candidate_id } => {
+                let candidate = self.documents.iter()
+                    .find(|document| document.id == analysis_id)
+                    .ok_or("分析结果已释放，请重新分析")?
+                    .dictionary_candidates.candidates.iter()
+                    .find(|candidate| candidate.id == candidate_id)
+                    .cloned()
+                    .ok_or("词典候选引用无效")?;
+                self.prepare_dictionary()?;
+                serde_json::to_value(output::query(
+                    self.dictionary.as_ref().unwrap(),
+                    Some(analysis_id),
+                    None,
+                    &candidate.query_forms,
+                )).map_err(|e| e.to_string())
+            }
             Request::Search { word } => {
                 let word = word.trim();
                 if word.is_empty() || word.chars().count() > 100 {
@@ -181,6 +179,57 @@ impl AnalysisService {
                 .map_err(|e| e.to_string())
             }
         }
+    }
+
+    fn analyze_document(
+        &mut self,
+        text: String,
+        register: Register,
+        artifacts: &[SyntaxArtifact],
+        grammar: Option<kotoclip_nlp::grammar::GrammarArtifact>,
+        expression: Option<kotoclip_nlp::expression::ExpressionArtifact>,
+    ) -> Result<Value, String> {
+                if text.chars().count() > 20000 {
+                    return Err("首版单次支持 20,000 字符，请选择较短的正文范围".into());
+                }
+                if text.trim().is_empty() {
+                    return Err("请输入日文正文".into());
+                }
+                let started = Instant::now();
+                let prepared = prepare_text(&text);
+                let routing = select_register(&prepared.text, register);
+                let selected_register = routing.selected;
+                if !self.providers.contains_key(&selected_register) {
+                    let path = if selected_register == Register::Cwj {
+                        &self.paths.cwj
+                    } else {
+                        &self.paths.csj
+                    };
+                    self.providers.insert(
+                        selected_register,
+                        UniDicProvider::open(selected_register, path)?,
+                    );
+                }
+                let source = self.providers[&selected_register].analyze(&prepared.text)?;
+                let mut document = kotoclip_nlp::unify::unify_with_external(&prepared, source, routing, artifacts)?;
+                document.expression = crate::expression_catalog::collect(&document.text, &document.morphemes)?;
+                if let Some(value) = grammar {
+                    kotoclip_nlp::grammar::validate(&value, &document.text, &document.morphemes)?;
+                    document.grammar = kotoclip_nlp::grammar::merge(document.grammar, value);
+                }
+                if let Some(value) = expression {
+                    kotoclip_nlp::expression::validate(&value, &document.text, &document.morphemes)?;
+                    document.expression = kotoclip_nlp::expression::merge(document.expression, value);
+                }
+                document.projection = kotoclip_nlp::projection::from_layers(&document.grammar, &document.expression);
+                document.elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
+                let value = serde_json::to_value(&document).map_err(|e| e.to_string())?;
+                self.documents.retain(|d| d.id != document.id);
+                self.documents.push_back(document);
+                while self.documents.len() > 4 {
+                    self.documents.pop_front();
+                }
+                Ok(value)
     }
     fn prepare_dictionary(&mut self) -> Result<(), String> {
         if self.dictionary.is_none() {

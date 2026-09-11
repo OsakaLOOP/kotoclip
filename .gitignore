@@ -21,11 +21,16 @@ __pycache__/
 # Local NLP dictionaries and generated runtime databases
 /data/*
 !/data/baselines/
+!/data/validation/
+!/data/validation/*.json
 /ipadic/
 /unidic-cwj-202512/
 /unidic-csj-202512/
 *.dic
 *.mdx
+
+# 可复现的结构依赖探测摘要；wheel 和模型缓存继续忽略
+!/experiments/syntax-provider-probe.json
 
 # Editor directories and files
 .vscode/*

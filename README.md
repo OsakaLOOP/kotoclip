@@ -26,6 +26,7 @@ Kotoclip 是一个本地运行的日文词汇、语法分析与摘录工具。�
 - `docs/llm_dictionary_disambiguation.md`：LLM 词典消歧候选框架、网络边界、证据 schema 与待开发路线。
 - `docs/language_quality_evaluation_and_frequency_research.md`：日语频率资源选型、反馈数据治理、十九层快照差分、统计门禁与人／Agent 报告协议。
 - `docs/unidic_parallel_rewrite_design.md`：UniDic 双语体制、Rust 原生分析器适配、统一分层实体、分层 diff 与两阶段迁移方案。
+- `docs/unidic_native_nlp_release_roadmap.md`：以 UniDic 作为唯一底层词典的原生结构模型、发布资源、性能门禁与完整实施路线。
 - `docs/language_quality_audit.md`：提交级全量语言质量审计的计数实体、按条阅读差异、开发版原生界面、机器产物、生命周期与空间协议。
 - `docs/language_quality_selective_audit.md`：新一代 Rust 选择式语言质量审计的权威架构；以全库 IPADIC 形态素流定位受影响范围，仅对可疑窗口执行两侧真实管线。
 - `docs/kotoclip_quality_diff_performance.md`：quality-diff 的单扫描、内容寻址缓存、空间预算与 180 秒性能验收架构。

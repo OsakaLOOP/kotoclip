@@ -1,12 +1,23 @@
 use crate::model::*;
 use crate::prepare::PreparedText;
 use crate::ruby::validate_ruby;
+use crate::structure::StructureProvider;
 use sha2::{Digest, Sha256};
 
 pub fn unify(
     prepared: &PreparedText,
     source: SourceAnalysis,
     routing: RegisterRouting,
+) -> Result<UnifiedDocument, String> {
+    unify_with_external(prepared, source, routing, &[])
+}
+
+/// 在统一词元结果上追加外部结构证据；每个 provider 的范围和对齐诊断保持可追溯。
+pub fn unify_with_external(
+    prepared: &PreparedText,
+    source: SourceAnalysis,
+    routing: RegisterRouting,
+    external: &[crate::syntax::SyntaxArtifact],
 ) -> Result<UnifiedDocument, String> {
     let text = &prepared.text;
     let chars: Vec<char> = text.chars().collect();
@@ -72,6 +83,21 @@ pub fn unify(
         });
     }
     let ruby_validations = validate_ruby(&chars, &source.tokens, &prepared.annotations);
+    let mut structure = crate::structure::LocalBoundaryProvider.analyze(text);
+    let mut structure_diagnostics = Vec::new();
+    for artifact in external {
+        let (merged, diagnostics) = crate::structure::merge_external(structure, artifact, text)?;
+        structure = merged;
+        structure_diagnostics.extend(diagnostics);
+    }
+    let formation = crate::formation::collect_formations(text, &morphemes, &structure)?;
+    let bunsetsu = crate::bunsetsu::collect_bunsetsu(text, &morphemes, &structure, &formation)?;
+    let clause = crate::clause::collect_clauses(text, &morphemes, &structure)?;
+    let dictionary_candidates = crate::lexical::collect_dictionary_candidates(text, &morphemes, &formation)?;
+    let grammar = crate::grammar::collect_functional_candidates(&source.tokens, &morphemes)?;
+    let expression = crate::expression::empty();
+    let projection = crate::projection::from_layers(&grammar, &expression);
+    let morphology = crate::morphology::collect(&source.tokens, &morphemes)?;
     Ok(UnifiedDocument {
         schema: SCHEMA.into(),
         id,
@@ -82,6 +108,16 @@ pub fn unify(
         ruby_validations,
         morphemes,
         gaps,
+        structure,
+        formation,
+        bunsetsu,
+        clause,
+        dictionary_candidates,
+        grammar,
+        expression,
+        projection,
+        morphology,
+        structure_diagnostics,
         elapsed_ms: 0.0,
     })
 }

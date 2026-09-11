@@ -1,5 +1,6 @@
 use kotoclip_core::analysis::{AnalysisService, Request, ResourcePaths};
 use kotoclip_nlp::model::{Register, UnifiedDocument};
+use kotoclip_nlp::syntax::{SyntaxArtifact, SyntaxProviderDescriptor, SyntaxSpan};
 use std::path::PathBuf;
 
 #[test]
@@ -13,6 +14,10 @@ fn real_resources_preserve_ranges_fields_and_query_targets() {
         });
         assert!(response.error.is_none(), "{:?}", response.error);
         let doc: UnifiedDocument = serde_json::from_value(response.result.unwrap()).unwrap();
+        assert_eq!(doc.morphology.schema, "kotoclip.morphology-artifact.v1");
+        assert!(!doc.morphology.chains.is_empty());
+        assert!(doc.grammar.occurrences.iter().all(|item| item.status == kotoclip_nlp::grammar::GrammarStatus::Candidate));
+        assert!(doc.projection.targets.iter().all(|item| item.layer == "grammar"));
         let chars: Vec<char> = doc.text.chars().collect();
         let mut coverage = vec![0; chars.len()];
         for source in &doc.source.tokens {
@@ -176,4 +181,47 @@ fn ruby_validation_resolves_partial_compounds_and_reports_reading_variants() {
         .unwrap();
     assert_eq!(god.status, "variant");
     assert_eq!(god.observed_reading.as_deref(), Some("カミ"));
+}
+
+#[test]
+fn analyze_with_artifacts_preserves_bunsetsu_head_mapping() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut service = AnalysisService::new(ResourcePaths::development(&root));
+    let artifact = SyntaxArtifact {
+        schema: kotoclip_nlp::syntax::SCHEMA.into(),
+        segment_id: Some("fixture".into()),
+        provider: SyntaxProviderDescriptor {
+            id: "ginza".into(), version: Some("5.2.1".into()),
+            capabilities: vec!["bunsetsu".into()], license: Some("MIT".into()),
+        },
+        text_characters: 8,
+        spans: vec![
+            SyntaxSpan {
+                id: "b0".into(), kind: "bunsetsu".into(), char_range: [0, 3],
+                head_char_range: Some([0, 2]), source_id: "fixture".into(),
+                surface: Some("警察へ".into()), labels: vec!["nominal".into()],
+            },
+            SyntaxSpan {
+                id: "c0".into(), kind: "compound".into(), char_range: [0, 2],
+                head_char_range: None, source_id: "fixture".into(),
+                surface: Some("警察".into()), labels: Vec::new(),
+            },
+        ],
+    };
+    let response = service.dispatch(Request::AnalyzeWithArtifacts {
+        register: Register::Cwj, text: "警察へ向かった。".into(), artifacts: vec![artifact], grammar: None, expression: None,
+    });
+    assert!(response.error.is_none(), "{:?}", response.error);
+    let document: UnifiedDocument = serde_json::from_value(response.result.unwrap()).unwrap();
+    assert_eq!(document.bunsetsu.nodes.len(), 1);
+    assert_eq!(document.bunsetsu.nodes[0].head_morpheme_index, Some(0));
+    assert_eq!(document.bunsetsu.nodes[0].labels, vec!["nominal"]);
+    assert!(!document.clause.sentences.is_empty());
+    assert!(!document.clause.clauses.is_empty());
+    assert!(document.structure_diagnostics.iter().all(|item| item.status == "aligned"));
+    let candidate = document.dictionary_candidates.candidates.iter().find(|item| item.kind == "compound").unwrap();
+    assert_eq!(candidate.query_forms[0].reading.as_deref(), Some("ケイサツ"));
+    let lookup = service.dispatch(Request::QueryCandidate { analysis_id: document.id, candidate_id: candidate.id.clone() });
+    assert!(lookup.error.is_none(), "{:?}", lookup.error);
+    assert!(lookup.result.unwrap()["groups"].as_array().unwrap().iter().any(|group| !group["entries"].as_array().unwrap().is_empty()));
 }

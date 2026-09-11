@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.unified-document.v3";
+pub const SCHEMA: &str = "kotoclip.unified-document.v4";
 pub const FIELD_NAMES: [&str; 29] = [
     "pos1", "pos2", "pos3", "pos4", "cType", "cForm", "lForm", "lemma", "orth", "pron", "orthBase",
     "pronBase", "goshu", "iType", "iForm", "fType", "fForm", "iConType", "fConType", "type",
@@ -151,5 +151,16 @@ pub struct UnifiedDocument {
     pub ruby_validations: Vec<RubyValidation>,
     pub morphemes: Vec<MorphemeToken>,
     pub gaps: Vec<TextGap>,
+    pub structure: crate::structure::StructureArtifact,
+    pub formation: crate::formation::FormationArtifact,
+    pub bunsetsu: crate::bunsetsu::BunsetsuArtifact,
+    pub clause: crate::clause::ClauseArtifact,
+    pub dictionary_candidates: crate::lexical::DictionaryCandidateArtifact,
+    pub grammar: crate::grammar::GrammarArtifact,
+    pub expression: crate::expression::ExpressionArtifact,
+    pub projection: crate::projection::ProjectionArtifact,
+    pub morphology: crate::morphology::MorphologyArtifact,
+    #[serde(default)]
+    pub structure_diagnostics: Vec<crate::syntax::AlignmentDiagnostic>,
     pub elapsed_ms: f64,
 }
