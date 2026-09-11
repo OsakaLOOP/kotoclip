@@ -49,6 +49,8 @@
 - **GiNZA 训练数据说明**: [GiNZA README - Training Datasets](https://github.com/megagonlabs/ginza#training-datasets) — 说明依存模型使用 UD Japanese BCCWJ，并展示 Universal Dependencies、文节标签、主辞和 ClauseHead 输出。
 - **GiNZA PyPI**: [ginza](https://pypi.org/project/ginza/) / [ja-ginza](https://pypi.org/project/ja-ginza/) / [ja-ginza-electra](https://pypi.org/project/ja-ginza-electra/) — 用于核对 Python 版本、模型包和当前发布版本。
 - **本轮运行版本**：GiNZA 5.2.1、ja-ginza 5.2.0、spaCy 3.8.16、SudachiPy 0.6.11；结果来自 `experiments/ginza-provider-validation.json`，未将模型文件纳入仓库。
+- **本机资源拆分**：`experiments/ginza311` 安装目录约 1,627.5 MiB；其中 SudachiDict full/core 为约 359.7/217.5 MB，Torch CPU DLL 约 306 MB，`ja-ginza` 模型包约 75.3 MB。数据用于初期运行时体积估算。
+- **GiNZA 5.2 模型 metadata**：本机 `ja_ginza-5.2.0/meta.json` 记录 `Japanese multi-task CNN`、`tok2vec/parser/morphologizer/ner/compound_splitter/bunsetu_recognizer` pipeline、UD Japanese BCCWJ r2.8 + GSK2014-A(2019) 训练来源、依存 UAS 0.9094703175、LAS 0.8906500624、句界 F1 0.8302567804、NER F1 0.554029304，以及 300 维、20,000 vectors、480,443 keys。
 
 ### KWJA、KNP 与 rhoknp
 
@@ -57,6 +59,8 @@
 - **KWJA 论文**: [ACL 2023 - KWJA: A Unified Japanese Analyzer Based on Foundation Models](https://aclanthology.org/2023.acl-demo.55/) — 系统设计与各任务评测来源；官方仓库表格显示依存分析明显成熟于篇章关系分析。
 - **rhoknp 官方仓库**: [GitHub - ku-nlp/rhoknp](https://github.com/ku-nlp/rhoknp) — Juman++、KNP 与 KWJA 的现行 Python 接口，支持句子和文档级 KNP 格式、凝聚性分析与篇章关系结果。
 - **pyknp 官方仓库**: [GitHub - ku-nlp/pyknp](https://github.com/ku-nlp/pyknp) — 旧版 Juman++/KNP Python 绑定；仓库已声明停止维护并建议迁移到 rhoknp。
+- **本机资源拆分**：`experiments/kwja311` 安装目录约 1,407.5 MiB；JumanDic `jumandic.db` 约 46.7 MB、规范化资源约 20.9 MB、`grammar.json` 约 15.2 MB，tiny char/word checkpoint 解压后约 22.4/43.5 MB，Torch dnnl 与 CPU 库占用约 532.6/239.9 MB。
+- **KWJA 官方 README 与论文**：<https://github.com/ku-nlp/kwja>、<https://aclanthology.org/2023.acl-demo.52/> — 任务拆为 typo、char、seq2seq、word；word 模块覆盖形态、NER、word feature、dependency、PAS、bridging reference、coreference，seq2seq 覆盖 reading、lemmatization、canonicalization；官方表格提供 base/large 的 sentence、word、POS、reading、lemma、NER、dependency、PAS、照应和 discourse relation 指标。
 - **KNP 项目页**: [KNP - Kyoto University](https://nlp.ist.i.kyoto-u.ac.jp/?KNP) — 京都大学日语构文与格、照应分析工具的项目入口。
 
 ### 其他依存分析器
