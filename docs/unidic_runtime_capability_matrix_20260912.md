@@ -20,7 +20,7 @@ GiNZA 目录中同时存在 Sudachi core 与 full，说明安装环境的体积�
 
 ## 3. 能力拆分
 
-## 3A. 模型本体、开源程度与复刻成本
+## 3. 模型本体、开源程度与复刻成本
 
 ### GiNZA
 
@@ -74,7 +74,7 @@ UniDic 的核心分析对象是短单位（short unit word, SUW）。短单位�
 | 连接与语种 | `iConType`、`fConType`、`goshu` | 构词和形态解释 | 稳定基础层 |
 | 语形与音调 | `form`、`formBase`、`aType` 等 | 朗读和后续音调模块 | 字段可用，产品功能待开发 |
 
-UniDic 不直接给出长单位边界、文节、依存弧、基本句、述语项结构、实体共指或篇章关系。标点生成的 sentence/clause 只能作为本地候选，不能等同于句法模型输出。应用中的 `dictionary_form`、`lemma_form` 和 `lookup_form` 应由形态层和词汇候选层分别定义，不能把 SUW 的 `lemma` 单独当作最终词典形。
+UniDic 不直接给出长单位边界、文节、依存弧、基本句、述语项结构、实体共指或篇章关系。标点生成的 sentence/clause 只能作为本地候选，不能等同于句法模型输出。应用中的 `dictionary_form`、`lemma_form` 和 `lookup_form` 需要分层定义：形态层解释 SUW 的 `lemma`、`lForm`、`orthBase` 等字段，formation 层组合连续 SUW 形成长单位或复合词，lexical 层再将整体表记、读法和活用候选绑定到词典条目。SUW 的 `lemma` 仅代表短单位记录，不能单独承担最终词典形。
 
 ### 3.2 GiNZA：边界和依存主导
 
@@ -109,6 +109,14 @@ KWJA 使用 JumanDic 与 KNP 风格标注，tiny 模型由 char/word DeBERTa 编
 | 篇章关系 | `<談話関係:...>` | 当前未作为主门禁 | 仅作研究证据 |
 
 KWJA 的优点是 KNP 标签直接表达谓词和基本句身份，适合语法功能、格关系和篇章研究。局限是 token F1 约 0.748，词典形和边界与 UniDic 差异较大；JumanDic、KNP 标签和模型资源不能直接承担应用词法基础。
+
+### 3.4 参数规模的可复现实测
+
+GiNZA 的 spaCy 二进制模型没有公开统一的参数计数接口；本机 `ja_ginza-5.2.0` 的可训练权重文件合计约 29.9 MB（tok2vec、parser、morphologizer、NER），另有 24.0 MB 的 300 维词向量和 17.8 MB 字符串表。该规模对应约 7.5 M 个 float32 权重的数量级，词向量约 6.0 M 个 float32 数值；精确参数量应以 spaCy `model.get_param_count()` 在固定版本中导出并写入 manifest。
+
+KWJA 使用的 DeBERTa-v2 tiny 配置可直接计算：`hidden_size=192`、`intermediate_size=768`、`num_hidden_layers=3`、`num_attention_heads=3`。char checkpoint 23.4 MB、word checkpoint 45.6 MB，分别包含编码器和任务头；公开配置本身不含 KWJA 任务头的完整维度，因此参数总量以 checkpoint state dict 统计为准。按 float32 权重估算，两个 checkpoint 分别约 5.9 M 和 11.4 M 参数，实际计数应由 `torch.load(...).state_dict()` 排除 optimizer 状态后记录。
+
+模型大小、参数量和推理内存分别记录。权重压缩格式会改变磁盘大小，量化会改变运行时内存与精度，三者不能相互替代。复刻实验至少保存 `parameter_count`、`weight_bytes`、`uncompressed_bytes`、`peak_working_set` 和 `inference_ms_per_1000_tokens`。
 
 ## 4. GiNZA 与 KWJA 的组合判断
 
