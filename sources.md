@@ -225,6 +225,8 @@
 - KWJA 仓库：<https://github.com/ku-nlp/kwja>。用于核对 KWJA 2.1 的任务范围、PyTorch/Transformers 依赖和 MIT 代码许可；模型权重、训练数据和衍生权重的再分发条件须按具体版本单独审查。
 - Candle 仓库：<https://github.com/huggingface/candle>。作为 Rust 原生张量与 safetensors 推理后端候选；正式采用前需完成 Windows CPU、二进制体积和 UniDic 结构模型基准。
 - tract 仓库：<https://github.com/sonos/tract>。作为 Rust 原生 ONNX 推理后端候选；与 Candle 在同一模型、同一硬件条件下比较后决定发布运行时。
+- KWJA 论文（ACL Demo 2023）：<https://aclanthology.org/2023.acl-demo.52/>。用于核对 KWJA 的 char/word 双路 DeBERTa 架构、任务分层、训练设置和官方评测范围。
+- GiNZA `ja_ginza` 本机 metadata：`experiments/ginza311/Lib/site-packages/ja_ginza/ja_ginza-5.2.0/meta.json`。用于核对标准管线组件、300 维词向量规模、训练语料说明和官方 metadata 指标。
 
 2026-09-07 清理核对：[NEologd 固定来源](https://github.com/neologd/mecab-ipadic-neologd/tree/abc61e33d8be3d0ead202e6b1df064c72d5ccf11)；本地主 seed 为 `mecab-user-dict-seed.20200910.csv.xz`。[COPYING](https://github.com/neologd/mecab-ipadic-neologd/blob/abc61e33d8be3d0ead202e6b1df064c72d5ccf11/COPYING) 和日英说明随来源保留。清理依据及文件清单见 [experiments 清单](docs/experiments_cleanup_20260907.md)。
 
