@@ -60,7 +60,7 @@ P2-small 采用 4--6 层、hidden 256--320、8 个 attention heads 的 encoder�
 
 ### 5.1 Rust 平行匹配运行时
 
-Rust 版本同时运行 UniDic 基础层、GiNZA/Sudachi 对齐层、KWJA/Juman/KNP 对齐层以及统一 artifact 层。每层保存自己的 token、标签和坐标，再通过字符范围、token 映射和标签规范化生成匹配报告。模型权重若继续使用 GiNZA/KWJA 权重，仍需对应推理实现；纯规则和有限状态层则直接重写。
+Rust 版本同时运行 UniDic 基础层、GiNZA/Sudachi 链路、KWJA/Juman/KNP 链路以及统一 artifact 层。由于该路线尚未采用 UniDic token 作为共同输入，SudachiDict 与 JumanDic 仍是各自 tokenizer 的规范词典，必须随 Rust 重写版本保留。每层保存自己的 token、标签和坐标，再通过字符范围、token 映射和标签规范化生成匹配报告。模型权重若继续使用 GiNZA/KWJA 权重，仍需对应推理实现；纯规则和有限状态层则直接重写。
 
 推荐运行时构成：
 
@@ -75,9 +75,23 @@ Rust 版本同时运行 UniDic 基础层、GiNZA/Sudachi 对齐层、KWJA/Juman/
 
 Rust 平行匹配方案优先采用 tract 执行已有 ONNX 图，或直接以 Rust 实现 GiNZA 的 CNN/线性 head 与 KWJA 的 DeBERTa 推理算子。关闭 GPU/CUDA、动态下载和 Python 解释器；模型按层按需加载，文档结束后释放权重映射。两个 provider 同时运行时，采用共享输入 buffer、分段窗口和结果流式写入，峰值控制在 500 MiB 内。
 
+### 5.2 Rust 平行重写的硬盘占用
+
+该路线必须同时计算两套外部词法资源。当前实测资源为 SudachiDict core 约 217.5 MB、SudachiDict full 约 359.7 MB；KWJA 的 `jumandic.db` 约 46.7 MB、`jumandic_canon.db` 约 20.9 MB、`grammar.json` 约 15.2 MB，Juman 资源合计约 82.8 MB。Rust 重写只移除 Python 和动态库，不会移除这些词典数据。
+
+| 发布组合 | 词典数据 | Rust 程序与 tokenizer | GiNZA/KWJA 权重 | 索引与 manifest | 安装后合计 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| GiNZA 路线，Sudachi core | 217.5 MB | 50--80 MB | 30--55 MB | 10--20 MB | 308--373 MB |
+| GiNZA 路线，Sudachi full | 359.7 MB | 50--80 MB | 30--55 MB | 10--20 MB | 450--515 MB |
+| KWJA 路线 | 82.8 MB | 50--90 MB | 69 MB | 10--20 MB | 212--262 MB |
+| 两条路线并行，core | 300.3 MB | 60--100 MB | 99--124 MB | 15--25 MB | 474--549 MB |
+| 两条路线并行，full | 442.5 MB | 60--100 MB | 99--124 MB | 15--25 MB | 617--692 MB |
+
+表中未重复计算同一份 Rust/Tauri 主程序；GiNZA 词向量是否随发布包保留需由功能门禁决定，若保留再增加约 24 MB。安装包下载量可以通过压缩和按需下载降低，安装后磁盘占用仍按上表验收。第二条路线要同时提供 GiNZA 与 KWJA 的并行匹配时，硬盘低于 500 MiB 只有在使用 Sudachi core、裁剪非必要索引并将部分权重按需下载时成立；使用 Sudachi full 时合理目标是 620--700 MB。
+
 ## 6. 两条路线的实际交付方案
 
-平行匹配路线首版加载 UniDic 当前 register、Rust tokenizer、Rust 结构层和按需静态模型权重。GiNZA/KWJA 的 Python、SudachiPy、JumanDic、Torch 和 Transformers 不进入发布进程；其输出由离线实验固化为回归基线。Rust 实现逐层与基线比较，达到指标后替换对应 provider。
+平行匹配路线首版加载 UniDic 当前 register、Rust tokenizer、Rust 结构层、SudachiDict、JumanDic 和按需静态模型权重。GiNZA/KWJA 的 Python、SudachiPy、Torch 和 Transformers 不进入发布进程；SudachiDict 与 JumanDic 作为 Rust tokenizer 的数据资源继续保留。其输出由离线实验固化为回归基线，Rust 实现逐层与基线比较，达到指标后替换对应 provider。
 
 原生训练路线在平行匹配路线稳定后实施，输入改为 UniDic token，训练 P2/P3/P4/P5 模型。该路线的模型参数、训练时间和权重体积独立核算，不能用它证明平行重写运行时已经完成。
 
@@ -89,4 +103,4 @@ Rust 平行匹配方案优先采用 tract 执行已有 ONNX 图，或直接以 R
 
 原生训练路线保留为后续优化：P2-small 15M 参数以内、FP16 权重 35 MB 以内；P3-base 25--45M 参数、50--90 MB FP16 权重。两条路线共享 `SyntaxArtifact`、监督转换器、评估集和 manifest，但交付门禁分别计算。
 
-Rust 重写 tokenizer、artifact 管线和推理协调层可以将 Python/Torch 级 GB 运行时降到 500 MiB 以下；UniDic 字典的安装磁盘占用仍约 722 MB，不能将词典文件体积与进程峰值工作集合并为同一指标。该方案同时满足统一 UniDic 输入、原生离线执行、按需加载和紧凑进程内存四项要求。
+Rust 重写 tokenizer、artifact 管线和推理协调层可以将 Python/Torch 级 GB 运行时降到 500 MiB 以下；平行重写路线的安装磁盘占用由 SudachiDict、JumanDic 和模型权重共同决定，双 provider 约 474--692 MB。UniDic 词典体积属于另一条统一 token 路线的资源，不应替代第二条路线的外部词典预算。
