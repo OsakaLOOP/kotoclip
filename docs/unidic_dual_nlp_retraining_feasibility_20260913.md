@@ -27,7 +27,59 @@ KWJA 2.1.3 的代码拓扑为 `TypoModule -> CharModule/SenterModule -> WordModu
 
 两库均没有可直接迁移到 UniDic token 输入的统一训练入口。GiNZA 的训练配置依赖 spaCy/Thinc 管线和 Sudachi 输入；KWJA 的训练代码依赖 Lightning、Transformers、OmegaConf 与其数据类。新分支必须拥有自己的数据转换器、任务 head、解码器、checkpoint manifest 和训练命令，外部库只承担架构参照和 teacher 生成。
 
-### 2.0.1 Teacher 模型与新模型的对应关系
+### 2.0.1 从 tokenizer 到 artifact 的直接架构比较
+
+GiNZA、KWJA 和 UniDic 新模型的差异发生在计算链的第一层。GiNZA 以 Sudachi 的词典切分作为神经网络输入单位；KWJA 先以原始字符完成边界恢复，再以 Juman 形态素作为词级任务单位；新模型以本仓库固定版本的 UniDic 2025.12 token 作为唯一神经网络输入单位。下表以同一层级直接比较三套模型，架构选择、参数规模和输出可追溯性均由此确定。
+
+| 计算层 | GiNZA 5.2.0 teacher | KWJA 2.1.3 teacher | UniDic 结构库 A | UniDic 语义库 B |
+| --- | --- | --- | --- | --- |
+| 原文准备 | spaCy `JapaneseTokenizer` 接收原文；GiNZA CLI 可配置 Sudachi A/B/C split mode | CLI 对 RAW 文本先执行 NFKC 与符号转换；后续模块接收 Juman++ 或 KNP 文本 | 应用层生成 `PreparedText`，保留 Unicode scalar 范围 | 与 A 共用同一 `PreparedText`，不读取 A 的内部张量 |
+| 词法 tokenizer | SudachiPy + SudachiDict-core 生成 spaCy `Doc`；标准模型配置固定 C split，tokenizer 同时保留 A/B 子 token | Char 模块的 checkpoint `AutoTokenizer` 编码原始文本；Char head 生成 Juman 形态素边界。Word 模块对 Juman 形态素调用 `AutoTokenizer(..., is_split_into_words=True)`，产生 DeBERTa subword | `UniDicProvider` 使用 Vibrato 加载 CWJ/CSJ 2025.12 字典，验证字典 SHA-256；`max_grouping_len=10`、`ignore_space=true`；每个 token 保存 29 列 UniDic 字段 | 与 A 使用同一 UniDic token 序列、词典版本和范围协议 |
+| 神经输入单位 | Sudachi C token 的 ORTH、SHAPE 哈希特征和静态词向量 | Char：模型 tokenizer 的字符导向 subword。Word：Juman 形态素映射到一个或多个 subword；词级任务取得每个形态素的第一个 subword 表示 | 每个 UniDic token 生成 lemma、surface、POS、活用组合、register 五个 id；padding 以 token 计 | 同 A；reading 可保留 token 内子词映射扩展，当前基线先以 UniDic token head 预测 |
+| embedding 与 encoder | `MultiHashEmbed(ORTH, SHAPE)` + 300 维静态向量，进入 `MaxoutWindowEncoder(width=256, depth=8, window=1, pieces=3)` | Char 与 Word 采用互相独立的 DeBERTa V2 encoder。论文版均为 large；本机 tiny 为 hidden 192、3 层、3 heads、FFN 768 | 五组 embedding 相加，进入 6 层 Transformer，hidden 256、8 heads、FFN 1,024、dropout 0.15 | 五组 embedding 相加，进入独立的 8 层 Transformer，hidden 384、8 heads、FFN 1,536、dropout 0.15 |
+| 层内共享关系 | parser、NER、morphologizer 通过 `Tok2VecListener` 共享同一 tok2vec 输出 | Char 的三个序列 head 共享 Char DeBERTa；Word 的全部 head 共享 Word DeBERTa；Char 与 Word 不共享 backbone | sentence、compound、bunsetsu、dependency head 共享 A encoder | POS、活用、reading、NER、feature、predicate、clause、argument head 共享 B encoder；A/B 的 encoder 和权重独立 |
+| 任务 head | transition-based parser（动作分类）、transition-based NER、tagger morphologizer | Char：sentence/word segmentation/normalization 三个 sequence labeling head。Word：reading 与形态 sequence head、NER emissions + CRF、多标签 feature head、word-selection dependency/cohesion/discourse head | token 分类 head：sentence、compound、bunsetsu；pairwise bilinear dependency head 与依存类型 head | token 分类 head：POS、subPOS、conjtype、conjform、reading、NER、word/base phrase feature、predicate、clause；pairwise bilinear argument head |
+| 解码与后处理 | parser 先产生 C token 依存和 `_bunsetu` 标签；`compound_splitter` 依模式将 C token 改写为 A/B token 并修复 head；`bunsetu_recognizer` 从 ROOT、`_bunsetu` 与依存树恢复文节、位置类型和 clause | Char writer 将标签改写为 Juman 形态素；可选 Seq2Seq 模块生成表记、reading、lemma、代表表记；Word writer 将 dependency top-k、类型、cohesion、discourse 写回 KNP 结构 | 需要连续 span 解码、句界解码和单根文节树解码；当前模型骨架输出 logits，约束解码器属于 W6 前必须完成的模块 | 需要 BIO/CRF 或等价 span 解码、谓语-论元候选筛选、角色约束和跨句策略；当前模型骨架输出 logits，KWJA 的 CRF、cohesion、discourse 解码尚未迁入 |
+| artifact 与坐标 | spaCy token 索引、字符范围、CoNLL-U/CaboCha/JSON 输出；转换阶段再与 UniDic 映射 | Juman++/KNP 文档对象和其形态素/基本句索引；转换阶段再与 UniDic 映射 | `StructureArtifact` 仅保存 UniDic `token_ids`、Unicode scalar `char_range`、标签、分数和来源 | `SemanticArtifact` 仅保存 UniDic `token_ids`、Unicode scalar `char_range`、关系引用、标签、分数和来源 |
+| 已测规模 | 模型目录 78,971,273 bytes；tok2vec 宽度 256；metadata 未提供可直接比对的参数总数 | 本机 tiny：Char 5,847,304、Word 11,377,515 参数；论文 large 未给出可直接比对的总参数 | 21,683,241 参数 | 47,195,206 参数 |
+
+新模型并不复制 GiNZA 的 Sudachi C-to-A/B retokenization，也不复制 KWJA 的字符分词后 Juman/KNP 级联。UniDic tokenizer 先确定不可变 token 身份，后续神经模型只预测 token 上的标签、连续 span 与 token-pair 关系。该边界使模型输出可以直接被 Rust artifact 校验，并使 teacher 输出拥有明确的转换位置。
+
+### 2.0.2 当前实现与目标计算图
+
+`crates/kotoclip-nlp/src/sources.rs` 已实现 UniDic 词典加载和 token 产生；`nlp_retraining/features.py` 的 `FeatureTokenizer` 从 `UnifiedDocument.tokens` 拟合 lemma、surface、POS、活用组合和 register 五组词表，输出稳定 id 与词表 hash；`nlp_retraining/models.py` 已实现两套 Transformer、分类 head、pairwise bilinear head、learned position embeddings 与 checkpoint 写入。训练骨架接收 `lemma_id`、`surface_id`、`pos_id`、`conj_id`、`register_id` 五组张量，词表 hash 写入 checkpoint manifest。
+
+结构库 A 的模型图为：
+
+```text
+PreparedText
+  -> UniDic CWJ/CSJ Vibrato tokenizer
+  -> UniDicToken[lemma, surface, POS, cType/cForm, register]
+  -> FeatureTokenizer 五组 id
+  -> embedding sum + positional encoding
+  -> 6 x Transformer encoder block
+  -> sentence / compound / bunsetsu token logits
+  -> dependency pairwise bilinear logits + dependency-label logits
+  -> span decoder + single-root dependency decoder
+  -> StructureArtifact
+```
+
+语义库 B 的模型图为：
+
+```text
+PreparedText + frozen UniDicToken sequence
+  -> FeatureTokenizer 五组 id
+  -> embedding sum + positional encoding
+  -> 8 x Transformer encoder block
+  -> morphology / reading / NER / feature / predicate / clause token logits
+  -> argument pairwise bilinear logits
+  -> task-specific decoder and relation selector
+  -> SemanticArtifact
+```
+
+受版本控制的 `FeatureTokenizer` 和 learned position embeddings 已写入训练代码；结构约束解码器、NER CRF、语义库的 dependency/cohesion/discourse 专用 head 尚未迁入，报告将其列为基础设施待完成项，不将它们视作现有能力。模型规模 21.75M/47.29M 指当前已实现 encoder 与 head 参数，加入字符子词路径、CRF 或篇章关系 head 后会重新测量并更新 manifest。
+
+### 2.0.3 Teacher 模型与新模型的对应关系
 
 teacher 的职责是生成有来源记录的候选标注、暴露 UniDic 坐标下的边界冲突、缩短人工标注准备时间。teacher 不参与桌面端推理，也不向新模型提供隐藏层、词向量或 tokenizer 状态。训练样本始终以原文和 UniDic token 为主记录，teacher 输出仅作为可加权的标注层。
 
@@ -98,7 +150,7 @@ DocumentInput {
 | bunsetsu | BIO 或切点序列 | 连续覆盖、非空、句内闭合 | 文节边界 |
 | dependency | 文节 head + 标签 | 单根有向树；候选允许省略弧 | 文节依存与基础句法 |
 
-当前可执行基线：6 层 Transformer、隐藏宽度 256、8 个 attention heads、FFN 宽度 1,024、dropout 0.15、最大句长 256 token，输入包含 lemma/surface/pos/conjugation/register 五组类别 embedding，实测参数量 21,683,241。先以多任务共享 encoder 训练，再比较独立 encoder 和轻量 BiLSTM 的消融结果。模型只输出候选结构，词典查询仍由 UniDic token 和应用层候选生成器负责。
+当前可执行基线：6 层 Transformer、隐藏宽度 256、8 个 attention heads、FFN 宽度 1,024、dropout 0.15、256 个 learned position embeddings，最大句长 256 token，输入包含 lemma/surface/pos/conjugation/register 五组类别 embedding，实测参数量 21,748,777。先以多任务共享 encoder 训练，再比较独立 encoder 和轻量 BiLSTM 的消融结果。模型只输出候选结构，词典查询仍由 UniDic token 和应用层候选生成器负责。
 
 结构库 A 的接口：
 
@@ -127,7 +179,7 @@ StructureArtifact {
 | argument | 论元 span、角色、谓语引用 | 角色 span 不得越过句界；支持零论元候选 |
 | named-entity | 实体 span 与类型 | 仅在训练集有对应类型时开放 |
 
-当前可执行基线：UniDic token encoder、8 层、隐藏宽度 384、8 个 attention heads、FFN 宽度 1,536、dropout 0.15、最大句长 256 token，输入包含 lemma/surface/pos/conjugation/register 五组类别 embedding，实测参数量 47,195,206。此规模保留 KWJA 的共享 encoder 与多任务 head 思路，同时从词法输入起完全采用 UniDic。论元 head 先采用局部谓语窗口，文档级共指和篇章关系延后到独立实验。模型输出不直接生成解释文本，解释由应用规则和知识库根据稳定引用生成。
+当前可执行基线：UniDic token encoder、8 层、隐藏宽度 384、8 个 attention heads、FFN 宽度 1,536、dropout 0.15、256 个 learned position embeddings，最大句长 256 token，输入包含 lemma/surface/pos/conjugation/register 五组类别 embedding，实测参数量 47,293,510。此规模保留 KWJA 的共享 encoder 与多任务 head 思路，同时从词法输入起完全采用 UniDic。论元 head 先采用局部谓语窗口，文档级共指和篇章关系延后到独立实验。模型输出不直接生成解释文本，解释由应用规则和知识库根据稳定引用生成。
 
 深层句法库 B 的接口：
 

@@ -23,6 +23,7 @@ def main() -> int:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--data", type=Path, required=True, help="通过张量化的 .pt batch 列表")
     parser.add_argument("--contract", type=Path, required=True, help="用于记录来源 hash 的 JSONL")
+    parser.add_argument("--feature-vocabulary", type=Path, required=True, help="FeatureTokenizer 词表 manifest")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--model", choices=("structure", "semantic"), required=True)
     parser.add_argument("--device", default="cpu")
@@ -32,16 +33,22 @@ def main() -> int:
     except ImportError as error:
         raise SystemExit("训练入口需要 PyTorch；数据校验可使用标准库脚本完成") from error
     config = json.loads(args.config.read_text(encoding="utf-8"))
+    feature_vocabulary = json.loads(args.feature_vocabulary.read_text(encoding="utf-8"))
+    if feature_vocabulary.get("schema") != "kotoclip.unidic-feature-vocabulary.v1":
+        raise SystemExit("feature vocabulary schema is unsupported")
     count, errors = validate_jsonl(args.contract)
     if errors:
         raise SystemExit("contract validation failed: " + errors[0])
     architecture = config["architecture"]
     cls = StructureModel if args.model == "structure" else SemanticModel
-    model = cls(vocab_size=int(architecture["vocab_size"]), hidden_size=int(architecture["hidden_size"]), layers=int(architecture["layers"]), heads=int(architecture["attention_heads"]), dropout=float(architecture["dropout"]))
+    vocab_size = int(architecture["vocab_size"])
+    if any(int(feature_vocabulary["sizes"][key]) > vocab_size for key in ("lemma", "surface")):
+        raise SystemExit("feature vocabulary exceeds architecture.vocab_size")
+    model = cls(vocab_size=vocab_size, hidden_size=int(architecture["hidden_size"]), layers=int(architecture["layers"]), heads=int(architecture["attention_heads"]), dropout=float(architecture["dropout"]), max_positions=int(architecture["max_tokens"]))
     batches = torch.load(args.data, map_location="cpu", weights_only=True)
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(config["training"]["learning_rate"]), weight_decay=float(config["training"].get("weight_decay", 0.01)))
     loss = train_one_epoch(model, batches, optimizer, loss_weights=config.get("loss_weights"), device=args.device)
-    manifest = {"schema": "kotoclip.unidic-checkpoint.v1", "model_id": config["model_id"], "model_kind": args.model, "config_sha256": hashlib.sha256(args.config.read_bytes()).hexdigest(), "contract_sha256": sha256_file(args.contract), "contract_documents": count, "parameters": sum(parameter.numel() for parameter in model.parameters()), "loss": loss}
+    manifest = {"schema": "kotoclip.unidic-checkpoint.v1", "model_id": config["model_id"], "model_kind": args.model, "config_sha256": hashlib.sha256(args.config.read_bytes()).hexdigest(), "feature_vocabulary_sha256": feature_vocabulary["sha256"], "contract_sha256": sha256_file(args.contract), "contract_documents": count, "parameters": sum(parameter.numel() for parameter in model.parameters()), "loss": loss}
     save_checkpoint(args.output, model, manifest=manifest)
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
     return 0

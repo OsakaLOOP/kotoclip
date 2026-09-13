@@ -26,13 +26,14 @@ if torch is not None:
     class TokenFeatureEncoder(nn.Module):
         """以 UniDic 类别特征组成的轻量 Transformer encoder。"""
 
-        def __init__(self, *, vocab_size: int, hidden_size: int, layers: int, heads: int, dropout: float) -> None:
+        def __init__(self, *, vocab_size: int, hidden_size: int, layers: int, heads: int, dropout: float, max_positions: int = 256) -> None:
             super().__init__()
             self.lemma = nn.Embedding(vocab_size, hidden_size)
             self.surface = nn.Embedding(vocab_size, hidden_size)
             self.pos = nn.Embedding(64, hidden_size)
             self.conj = nn.Embedding(256, hidden_size)
             self.register = nn.Embedding(4, hidden_size)
+            self.position = nn.Embedding(max_positions, hidden_size)
             layer = nn.TransformerEncoderLayer(
                 d_model=hidden_size,
                 nhead=heads,
@@ -46,12 +47,14 @@ if torch is not None:
             self.norm = nn.LayerNorm(hidden_size)
 
         def forward(self, features: Mapping[str, Tensor], padding_mask: Tensor | None = None) -> Tensor:
+            positions = torch.arange(features["lemma_id"].size(1), device=features["lemma_id"].device).unsqueeze(0)
             hidden = (
                 self.lemma(features["lemma_id"])
                 + self.surface(features["surface_id"])
                 + self.pos(features["pos_id"])
                 + self.conj(features["conj_id"])
                 + self.register(features["register_id"])
+                + self.position(positions)
             )
             return self.norm(self.encoder(hidden, src_key_padding_mask=padding_mask))
 
@@ -59,9 +62,9 @@ if torch is not None:
     class StructureModel(nn.Module):
         """GiNZA 能力域：共享 encoder、边界 head、依存 head。"""
 
-        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 256, layers: int = 6, heads: int = 8, dropout: float = 0.15) -> None:
+        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 256, layers: int = 6, heads: int = 8, dropout: float = 0.15, max_positions: int = 256) -> None:
             super().__init__()
-            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=dropout)
+            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=dropout, max_positions=max_positions)
             self.sentence = nn.Linear(hidden_size, 2)
             self.compound = nn.Linear(hidden_size, 3)
             self.bunsetsu = nn.Linear(hidden_size, 3)
@@ -85,9 +88,9 @@ if torch is not None:
     class SemanticModel(nn.Module):
         """KWJA 能力域：UniDic 词元级共享 encoder 与可独立关闭的任务 head。"""
 
-        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 384, layers: int = 8, heads: int = 8, dropout: float = 0.15) -> None:
+        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 384, layers: int = 8, heads: int = 8, dropout: float = 0.15, max_positions: int = 256) -> None:
             super().__init__()
-            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=dropout)
+            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=dropout, max_positions=max_positions)
             self.heads = nn.ModuleDict(
                 {
                     "pos": nn.Linear(hidden_size, 32),

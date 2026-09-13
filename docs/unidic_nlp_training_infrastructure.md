@@ -10,6 +10,7 @@ configs/unidic-nlp/semantic-b.json     # 语义库参数基线
 nlp_retraining/contracts.py            # JSONL 契约与 hash
 nlp_retraining/workflow.py             # 切分、对齐、合成、manifest
 nlp_retraining/models.py               # UniDic token 模型骨架
+nlp_retraining/features.py             # UniDic FeatureTokenizer 与词表 manifest
 nlp_retraining/trainer.py              # 多任务 loss、训练循环、checkpoint
 scripts/validate_unidic_training_contract.py
 scripts/align_unidic_teacher.py
@@ -59,6 +60,7 @@ token 的范围必须按文本顺序排列并覆盖自身 surface；span 的 `to
 ```powershell
 python scripts/validate_unidic_training_contract.py data/train/unidic.jsonl --report experiments/train-contract.json
 python scripts/prepare_unidic_training.py data/train/unidic.jsonl data/splits/unidic
+python scripts/build_unidic_feature_vocabulary.py data/splits/unidic/train.jsonl data/vocab/unidic-features.json
 python scripts/align_unidic_teacher.py data/train/unidic.jsonl data/teacher/ginza.jsonl data/aligned/ginza.jsonl --layer bunsetsu
 python scripts/measure_external_nlp_architecture.py `
   --ginza-model experiments/ginza311/Lib/site-packages/ja_ginza/ja_ginza-5.2.0 `
@@ -69,7 +71,7 @@ python scripts/measure_external_nlp_architecture.py `
 训练入口读取张量化 batch（每个 batch 含 `features` 和 `targets` 字典），示例：
 
 ```powershell
-python scripts/train_unidic_model.py --model structure --config configs/unidic-nlp/structure-p2.json --contract data/splits/unidic/train.jsonl --data data/tensors/structure.train.pt --output checkpoints/structure-p2.pt
+python scripts/train_unidic_model.py --model structure --config configs/unidic-nlp/structure-p2.json --contract data/splits/unidic/train.jsonl --feature-vocabulary data/vocab/unidic-features.json --data data/tensors/structure.train.pt --output checkpoints/structure-p2.pt
 ```
 
 checkpoint 内含模型状态和配置、数据契约、参数量、损失的摘要；训练前会再次校验 JSONL 契约。
@@ -117,7 +119,7 @@ GiNZA teacher 提供 sentence、compound、bunsetsu、dependency、POS 和 NER �
 
 ## 模型和参数
 
-结构库 A 使用共享 token encoder、句界/复合词/文节序列 head 和文节依存 relation head，默认 6 层、256 hidden、8 heads、FFN 1,024、dropout 0.15、最大 256 token，实测 21,683,241 参数，配置见 `structure-p2.json`。语义库 B 使用共享 token encoder 与可独立关闭的 POS、活用、reading、NER、谓语、基本句和论元 head，默认 8 层、384 hidden、8 heads、FFN 1,536、dropout 0.15，实测 47,195,206 参数，配置见 `semantic-b.json`。两个 encoder 都组合 lemma、surface、POS、conjugation、register 五组 embedding；head 输出以 token index 为坐标，解码器负责连续 span、单根树和句界约束。
+结构库 A 使用共享 token encoder、句界/复合词/文节序列 head 和文节依存 relation head，默认 6 层、256 hidden、8 heads、FFN 1,024、dropout 0.15、256 个 learned position embeddings，实测 21,748,777 参数，配置见 `structure-p2.json`。语义库 B 使用共享 token encoder 与可独立关闭的 POS、活用、reading、NER、谓语、基本句和论元 head，默认 8 层、384 hidden、8 heads、FFN 1,536、dropout 0.15、256 个 learned position embeddings，实测 47,293,510 参数，配置见 `semantic-b.json`。两个 encoder 都组合 lemma、surface、POS、conjugation、register 五组 embedding；head 输出以 token index 为坐标，解码器负责连续 span、单根树和句界约束。
 
 训练入口由后续编排器实现，命令行和 checkpoint manifest 必须接受配置文件、数据 manifest、seed、输出目录四项参数。每份 checkpoint 至少包含 `model_id`、配置 hash、训练数据 hash、词表 hash、代码 commit、随机种子、最佳开发集指标和标签表版本。语义库保存单任务旁路 checkpoint，PAS 或 discourse 的负迁移不会阻塞其他 head 的发布。
 

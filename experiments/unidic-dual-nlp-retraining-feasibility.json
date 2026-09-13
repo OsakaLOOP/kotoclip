@@ -23,7 +23,7 @@
         "hidden_size": 256,
         "attention_heads": 8,
         "max_tokens": 256,
-        "parameter_count": 21683241
+        "parameter_count": 21748777
       },
       "quality_gates": {
         "sentence_f1": 0.9,
@@ -42,7 +42,7 @@
         "hidden_size": 384,
         "attention_heads": 8,
         "max_tokens": 256,
-        "parameter_count": 47195206
+        "parameter_count": 47293510
       },
       "quality_gates": {
         "basic_clause_f1": 0.85,
