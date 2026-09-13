@@ -1,0 +1,87 @@
+{
+  "schema": "kotoclip.unidic-dual-nlp-feasibility.v1",
+  "stage": "analysis-and-design",
+  "branch_scope": "independent-model-research",
+  "coordinate_system": "unicode_scalar_half_open",
+  "base": {
+    "lexical_provider": "unidic",
+    "registers": ["cwj", "csj", "mixed"],
+    "token_fields": [
+      "surface", "lemma", "orth_base", "pron", "pron_base",
+      "pos", "c_type", "c_form", "f_type", "f_form",
+      "kana", "kana_base", "goshu", "lid", "lemma_id"
+    ]
+  },
+  "libraries": {
+    "structure_a": {
+      "capabilities": ["sentence", "compound", "bunsetsu", "dependency"],
+      "input": "DocumentInput",
+      "output": "StructureArtifact",
+      "baseline": {
+        "reference": "GiNZA 5.2.0 spaCy/Thinc pipeline; new model uses UniDic token encoder",
+        "layers": 6,
+        "hidden_size": 256,
+        "attention_heads": 8,
+        "max_tokens": 256,
+        "parameter_count": 21683241
+      },
+      "quality_gates": {
+        "sentence_f1": 0.9,
+        "compound_f1": 0.9,
+        "bunsetsu_f1": 0.9,
+        "dependency_las": 0.8
+      }
+    },
+    "semantic_b": {
+      "capabilities": ["basic_clause", "predicate", "representative_form", "argument", "named_entity"],
+      "input": "DocumentInput + optional StructureArtifact",
+      "output": "SemanticArtifact",
+      "baseline": {
+        "reference": "KWJA 2.1.3 cascade with CharModule and WordModule; new model owns its encoder and heads",
+        "layers": 8,
+        "hidden_size": 384,
+        "attention_heads": 8,
+        "max_tokens": 256,
+        "parameter_count": 47195206
+      },
+      "quality_gates": {
+        "basic_clause_f1": 0.85,
+        "predicate_f1": 0.85,
+        "representative_form_f1": 0.85,
+        "argument_macro_f1": 0.75
+      }
+    }
+  },
+  "data": {
+    "source_tiers": ["gold", "licensed_public", "weak_teacher", "research_only", "synthetic"],
+    "minimum_pilot": {
+      "train_sentences": 5000,
+      "dev_sentences": 500,
+      "test_sentences": 1000,
+      "deep_syntax_sentences": 300
+    },
+    "split_unit": "document",
+    "minimum_independent_test_fraction": 0.4,
+    "synthetic_max_train_fraction": 0.3,
+    "weak_label_loss_weight_default": 0.35
+  },
+  "workflow": [
+    "define_contract",
+    "collect_sources",
+    "normalize_and_unidic_analyze",
+    "align_teacher_outputs",
+    "annotate_gold",
+    "generate_synthetic",
+    "train_baseline",
+    "evaluate_independent_test",
+    "export_model_contract"
+  ],
+  "external_architecture_measurement": "experiments/unidic-nlp-architecture.json",
+  "training_entrypoint": "scripts/train_unidic_model.py",
+  "external_training_entrypoints": "not adopted; GiNZA and KWJA dependencies remain reference-only",
+  "statuses": ["observed", "candidate", "pending", "unsupported"],
+  "provenance_required": [
+    "source_id", "license_status", "document_hash", "unidic_manifest_hash",
+    "teacher_manifest_hash", "generator_id", "random_seed", "annotation_status"
+  ]
+}

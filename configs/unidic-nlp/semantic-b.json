@@ -1,0 +1,28 @@
+{
+  "schema": "kotoclip.unidic-semantic-training.v1",
+  "model_id": "unidic-semantic-b",
+  "architecture": {
+    "encoder": "token_feature_transformer",
+    "layers": 8,
+    "hidden_size": 384,
+    "attention_heads": 8,
+    "dropout": 0.15,
+    "max_tokens": 256,
+    "vocab_size": 32768
+  },
+  "heads": ["pos", "subpos", "conjtype", "conjform", "reading", "ner", "word_feature", "base_phrase_feature", "predicate", "clause", "argument"],
+  "loss_weights": {"basic_clause": 1.0, "predicate": 1.0, "representative_form": 0.8, "argument": 1.0},
+  "training": {
+    "optimizer": "adamw",
+    "learning_rate": 0.0001,
+    "warmup_steps": 2000,
+    "effective_batch_tokens": 512,
+    "weight_decay": 0.01,
+    "gradient_clip": 0.5,
+    "early_stopping_patience": 3,
+    "seeds": [13, 37, 71],
+    "single_task_checkpoints": true
+  },
+  "weak_label_loss_weight": 0.35,
+  "coordinate_system": "unicode_scalar_half_open"
+}

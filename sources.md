@@ -220,6 +220,8 @@
 
 ## 原生 NLP 发布路线（2026-09-11）
 
+- **双 NLP 库重训练可行性报告**：`docs/unidic_dual_nlp_retraining_feasibility_20260913.md`。定义独立分支的结构库 A 与深层句法库 B、UniDic 输入契约、模型 head、接口、人工／公开语料／teacher／合成数据分层、训练参数基线、工作流和质量门禁；机器可读参数基线为 `experiments/unidic-dual-nlp-retraining-feasibility.json`。
+
 - GiNZA 仓库：<https://github.com/megagonlabs/ginza>。用于核对 GiNZA 5.2 的 spaCy、SudachiPy 与 SudachiDict 依赖边界，以及 MIT 代码许可；实际模型 metadata 中的数据来源和再分发条件另行记录。
 - GiNZA `ja_ginza` 模型：<https://github.com/megagonlabs/ginza/releases>。用于核对标准模型组件、模型包与依存标签；本地 `meta.json` 显示其训练来源含 BCCWJ、GSK2014-A、SudachiDict_core 和 chiVe。
 - KWJA 仓库：<https://github.com/ku-nlp/kwja>。用于核对 KWJA 2.1 的任务范围、PyTorch/Transformers 依赖和 MIT 代码许可；模型权重、训练数据和衍生权重的再分发条件须按具体版本单独审查。
@@ -227,6 +229,13 @@
 - tract 仓库：<https://github.com/sonos/tract>。作为 Rust 原生 ONNX 推理后端候选；与 Candle 在同一模型、同一硬件条件下比较后决定发布运行时。
 - KWJA 论文（ACL Demo 2023）：<https://aclanthology.org/2023.acl-demo.52/>。用于核对 KWJA 的 char/word 双路 DeBERTa 架构、任务分层、训练设置和官方评测范围。
 - GiNZA `ja_ginza` 本机 metadata：`experiments/ginza311/Lib/site-packages/ja_ginza/ja_ginza-5.2.0/meta.json`。用于核对标准管线组件、300 维词向量规模、训练语料说明和官方 metadata 指标。
+- GiNZA 本地 fork 工作副本：`.agents/nlp-forks/ginza`，上游 `https://github.com/megagonlabs/ginza.git`，固定提交 `d3261278e2947936dd87606319062940db7f489a`，分支 `codex/unidic-retraining`；`.agents/nlp-forks/ginza-fork.git` 为本地 bare remote。当前环境没有可验证的个人 GitHub fork。
+- KWJA 本地 fork 工作副本：`.agents/nlp-forks/kwja`，上游 `https://github.com/ku-nlp/kwja.git`，固定提交 `821df300630b4d05c38406945536eaac848619da`，分支 `codex/unidic-retraining`；`.agents/nlp-forks/kwja-fork.git` 为本地 bare remote。当前环境没有可验证的个人 GitHub fork。
+- 外部架构实测报告：`experiments/unidic-nlp-architecture.json`，由 `scripts/measure_external_nlp_architecture.py` 生成。GiNZA 5.2.0 模型目录 78,971,273 bytes；KWJA 2.1 tiny checkpoint 参数量为 char 5,847,304、word 11,377,515，分别由本地 `experiments/kwja311` PyTorch 2.1.2 环境读取。
+- KWJA 论文本地副本：`docs/2023.acl-demo.52.pdf`、`docs/kyoto-waseda-japanese-analyzer.pdf`。前者用于 ACL Demo 2023 的任务、数据和训练参数，后者用于 Kyoto-Waseda analyzer 的架构和任务说明。
+- UniDic 训练基础设施：`docs/unidic_nlp_training_infrastructure.md`、`nlp_retraining/contracts.py`、`nlp_retraining/workflow.py`、`nlp_retraining/models.py`、`nlp_retraining/trainer.py`、`scripts/validate_unidic_training_contract.py`、`scripts/prepare_unidic_training.py`、`scripts/align_unidic_teacher.py`、`scripts/train_unidic_model.py`。用于固定 JSONL、Unicode scalar 范围、teacher 对齐、文档切分、训练循环和 provenance manifest 契约。
+- SudachiClone crate：<https://crates.io/crates/sudachiclone>；API 文档：<https://docs.rs/sudachiclone/0.2.1/sudachiclone/>；源码：<https://github.com/Yasu-umi/sudachiclone-rs>。用于评估 Rust 端 Sudachi tokenizer 的可用性；当前版本缺少将本机 SudachiPy `system.dic` 直接接入项目并复现 GiNZA 5.2 管线所需的模型与解码器，因此未作为运行时依赖保留。
+- suiko-sudachi crate：<https://crates.io/crates/suiko-sudachi>；上游项目：<https://github.com/WorksApplications/sudachi.rs>。用于核对另一个 Rust Sudachi 实现的发布状态和 Apache-2.0 许可；该包同样没有提供 GiNZA Thinc 模型或 GiNZA 结构解码器。
 
 2026-09-07 清理核对：[NEologd 固定来源](https://github.com/neologd/mecab-ipadic-neologd/tree/abc61e33d8be3d0ead202e6b1df064c72d5ccf11)；本地主 seed 为 `mecab-user-dict-seed.20200910.csv.xz`。[COPYING](https://github.com/neologd/mecab-ipadic-neologd/blob/abc61e33d8be3d0ead202e6b1df064c72d5ccf11/COPYING) 和日英说明随来源保留。清理依据及文件清单见 [experiments 清单](docs/experiments_cleanup_20260907.md)。
 
