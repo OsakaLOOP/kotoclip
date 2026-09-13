@@ -74,6 +74,41 @@ python scripts/train_unidic_model.py --model structure --config configs/unidic-n
 
 checkpoint 内含模型状态和配置、数据契约、参数量、损失的摘要；训练前会再次校验 JSONL 契约。
 
+## Teacher 数据包
+
+Teacher 数据包采用“原始 artifact、对齐 JSONL、manifest”三件套。原始 artifact 保留 GiNZA 的 Sudachi token 或 KWJA 的字符/词元输出，供错误分析和重新对齐；对齐 JSONL 只引用 UniDic `token_id`，供人工复核和训练；manifest 记录 teacher、运行环境、模型文件和输入文件的摘要。推荐结构如下：
+
+```json
+{
+  "document_id": "cwj-000001",
+  "layer": "bunsetsu",
+  "teacher": {
+    "teacher_id": "ginza-5.2.0",
+    "teacher_version": "5.2.0",
+    "checkpoint_sha256": "...",
+    "runner_version": "ginza-runner-v1",
+    "command_hash": "...",
+    "raw_artifact_sha256": "...",
+    "license_status": "research_only"
+  },
+  "spans": [
+    {
+      "char_range": [0, 2],
+      "surface": "研究",
+      "token_ids": ["cwj-000001:t0"],
+      "label": "bunsetsu",
+      "status": "exact",
+      "confidence": 0.91
+    }
+  ],
+  "counts": {"exact": 1}
+}
+```
+
+GiNZA teacher 提供 sentence、compound、bunsetsu、dependency、POS 和 NER 候选；KWJA Char/Senter 提供字符边界、规范化和句界候选，KWJA Word 提供 reading、POS、活用、NER、basic-clause、predicate、argument、PAS 和 discourse 候选。`align_unidic_teacher.py` 对每个 span 执行范围、surface 和连续 token 检查，输出 `exact`、`compound`、`partial`、`surface_mismatch`、`unmatched` 五类状态。
+
+训练张量化阶段读取对齐 JSONL 的 `status` 与 `confidence`：`exact`/`compound` 进入 weak 候选，默认 loss weight 为 0.35；其余状态仅进入冲突统计。人工确认后将样本复制到 gold JSONL 并将权重提升到 1.0。多个 teacher 对同一 span 一致时记录 `agreement_count`，分歧保留为待审样本。Teacher 的 checkpoint、原始输出和运行时依赖不随新模型发布。
+
 校验命令返回非零状态时，训练编排器应阻止后续阶段。对齐结果逐 span 保存 `exact`、`compound`、`partial`、`surface_mismatch` 或 `unmatched`；只有前两类可进入人工抽样队列，后面三类进入冲突报告。
 
 ## 数据切分和合成
@@ -82,7 +117,7 @@ checkpoint 内含模型状态和配置、数据契约、参数量、损失的摘
 
 ## 模型和参数
 
-结构库 A 使用共享 token encoder、句界/复合词/文节序列 head 和文节依存 relation head，默认 6 层、256 hidden、8 heads、最大 256 token，实测 21,683,241 参数，配置见 `structure-p2.json`。语义库 B 使用共享 token encoder 与可独立关闭的 POS、活用、reading、NER、谓语、基本句和论元 head，默认 8 层、384 hidden、8 heads，实测 47,195,206 参数，配置见 `semantic-b.json`。结构库和语义库的 head 输出都以 token index 为坐标，解码器负责连续 span、单根树和句界约束。
+结构库 A 使用共享 token encoder、句界/复合词/文节序列 head 和文节依存 relation head，默认 6 层、256 hidden、8 heads、FFN 1,024、dropout 0.15、最大 256 token，实测 21,683,241 参数，配置见 `structure-p2.json`。语义库 B 使用共享 token encoder 与可独立关闭的 POS、活用、reading、NER、谓语、基本句和论元 head，默认 8 层、384 hidden、8 heads、FFN 1,536、dropout 0.15，实测 47,195,206 参数，配置见 `semantic-b.json`。两个 encoder 都组合 lemma、surface、POS、conjugation、register 五组 embedding；head 输出以 token index 为坐标，解码器负责连续 span、单根树和句界约束。
 
 训练入口由后续编排器实现，命令行和 checkpoint manifest 必须接受配置文件、数据 manifest、seed、输出目录四项参数。每份 checkpoint 至少包含 `model_id`、配置 hash、训练数据 hash、词表 hash、代码 commit、随机种子、最佳开发集指标和标签表版本。语义库保存单任务旁路 checkpoint，PAS 或 discourse 的负迁移不会阻塞其他 head 的发布。
 

@@ -37,7 +37,7 @@ def main() -> int:
         raise SystemExit("contract validation failed: " + errors[0])
     architecture = config["architecture"]
     cls = StructureModel if args.model == "structure" else SemanticModel
-    model = cls(vocab_size=int(architecture["vocab_size"]), hidden_size=int(architecture["hidden_size"]), layers=int(architecture["layers"]), heads=int(architecture["attention_heads"]))
+    model = cls(vocab_size=int(architecture["vocab_size"]), hidden_size=int(architecture["hidden_size"]), layers=int(architecture["layers"]), heads=int(architecture["attention_heads"]), dropout=float(architecture["dropout"]))
     batches = torch.load(args.data, map_location="cpu", weights_only=True)
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(config["training"]["learning_rate"]), weight_decay=float(config["training"].get("weight_decay", 0.01)))
     loss = train_one_epoch(model, batches, optimizer, loss_weights=config.get("loss_weights"), device=args.device)

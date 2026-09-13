@@ -60,7 +60,17 @@ def align_teacher_document(document: Mapping[str, Any], teacher: Mapping[str, An
     counts: dict[str, int] = {}
     for item in aligned:
         counts[item["status"]] = counts.get(item["status"], 0) + 1
-    return {"document_id": document["document_id"], "layer": layer, "spans": aligned, "counts": counts}
+    provenance_keys = (
+        "teacher_id",
+        "teacher_version",
+        "checkpoint_sha256",
+        "runner_version",
+        "command_hash",
+        "raw_artifact_sha256",
+        "license_status",
+    )
+    provenance = {key: teacher[key] for key in provenance_keys if key in teacher}
+    return {"document_id": document["document_id"], "layer": layer, "teacher": provenance, "spans": aligned, "counts": counts}
 
 
 def generate_boundary_negatives(document: Mapping[str, Any], *, count: int, seed: int) -> list[dict[str, Any]]:

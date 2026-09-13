@@ -59,9 +59,9 @@ if torch is not None:
     class StructureModel(nn.Module):
         """GiNZA 能力域：共享 encoder、边界 head、依存 head。"""
 
-        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 256, layers: int = 6, heads: int = 8) -> None:
+        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 256, layers: int = 6, heads: int = 8, dropout: float = 0.15) -> None:
             super().__init__()
-            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=0.1)
+            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=dropout)
             self.sentence = nn.Linear(hidden_size, 2)
             self.compound = nn.Linear(hidden_size, 3)
             self.bunsetsu = nn.Linear(hidden_size, 3)
@@ -85,9 +85,9 @@ if torch is not None:
     class SemanticModel(nn.Module):
         """KWJA 能力域：UniDic 词元级共享 encoder 与可独立关闭的任务 head。"""
 
-        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 384, layers: int = 8, heads: int = 8) -> None:
+        def __init__(self, *, vocab_size: int = 32768, hidden_size: int = 384, layers: int = 8, heads: int = 8, dropout: float = 0.15) -> None:
             super().__init__()
-            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=0.1)
+            self.encoder = TokenFeatureEncoder(vocab_size=vocab_size, hidden_size=hidden_size, layers=layers, heads=heads, dropout=dropout)
             self.heads = nn.ModuleDict(
                 {
                     "pos": nn.Linear(hidden_size, 32),

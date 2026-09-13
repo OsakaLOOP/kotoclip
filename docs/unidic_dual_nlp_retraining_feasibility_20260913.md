@@ -27,6 +27,20 @@ KWJA 2.1.3 的代码拓扑为 `TypoModule -> CharModule/SenterModule -> WordModu
 
 两库均没有可直接迁移到 UniDic token 输入的统一训练入口。GiNZA 的训练配置依赖 spaCy/Thinc 管线和 Sudachi 输入；KWJA 的训练代码依赖 Lightning、Transformers、OmegaConf 与其数据类。新分支必须拥有自己的数据转换器、任务 head、解码器、checkpoint manifest 和训练命令，外部库只承担架构参照和 teacher 生成。
 
+### 2.0.1 Teacher 模型与新模型的对应关系
+
+teacher 的职责是生成有来源记录的候选标注、暴露 UniDic 坐标下的边界冲突、缩短人工标注准备时间。teacher 不参与桌面端推理，也不向新模型提供隐藏层、词向量或 tokenizer 状态。训练样本始终以原文和 UniDic token 为主记录，teacher 输出仅作为可加权的标注层。
+
+| 模型 | 实际计算图与规模 | 可提供的训练信号 | 新库中的承接模块 | 不进入新库的内容 |
+| --- | --- | --- | --- | --- |
+| GiNZA 5.2.0 | Sudachi 分词后进入 spaCy/Thinc；`MultiHashEmbed(ORTH/SHAPE)`、8 层 `MaxoutWindowEncoder(width=256)`、共享 tok2vec listener 的 parser/NER；300 维静态词向量；模型目录 78,971,273 bytes | token/句界、UD dependency、`_bunsetu` dependency、compound、bunsetsu、UD POS、NER | 结构库 A 的 sentence、compound、bunsetsu、dependency；实体边界可作为语义库 B 的 NER 候选 | Sudachi token 身份、Thinc 参数、chiVe 向量、spaCy 序列化格式 |
+| KWJA 2.1.3 论文模型 | Typo、Char、Senter、Word 分阶段；Char 与 Word 各使用独立 DeBERTa V2 large；模块内共享 backbone，各任务接两层 FFN；NER 使用 CRF | word segmentation、normalization、reading、POS、活用、NER、基本句、base phrase、依存、谓语论元结构、照应和 discourse 候选 | 语义库 B 的 reading、形态、NER、predicate、basic-clause、argument；结构库 A 的边界分歧对照 | Juman++/KNP 单位、DeBERTa 参数、原始 subword vocabulary、Lightning checkpoint |
+| KWJA 2.1 tiny 本机 checkpoint | Char 5,847,304 参数，Word 11,377,515 参数；hidden size 192、3 层、3 heads、intermediate size 768；文件 23,435,100 与 45,587,287 bytes | 用于验证 provider 调用、输出 schema、对齐率和资源占用 | teacher 接口测试、数据转换回归测试 | 论文 large 模型的规模推断、最终质量基线 |
+| UniDic 结构库 A | 共享 token-feature Transformer，6 层、hidden 256、8 heads；sentence/compound/bunsetsu 序列 head 与 dependency relation head；21,683,241 参数 | 自有可发布的结构预测 | `StructureArtifact` | 外部 teacher 运行时 |
+| UniDic 语义库 B | 共享 token-feature Transformer，8 层、hidden 384、8 heads；形态、reading、NER、谓语、基本句、论元 head；47,195,206 参数 | 自有可发布的语义预测 | `SemanticArtifact` | 外部 teacher 运行时 |
+
+KWJA 论文的训练设置可作为初始搜索锚点：Typo/Char/Word 的最大长度分别为 256/512/256，dropout 0.1，batch 352/32/16，学习率 2e-5/2e-5/1e-4，warmup 1,000/2,000/100 steps，cosine scheduler，AdamW epsilon 1e-6、beta 0.9/0.99、weight decay 0.01、gradient clip 0.5。论文同时报告 PAS 和 discourse 存在多任务负迁移；语义库 B 因而保存单任务 checkpoint 和按 head 的独立开发集指标。
+
 ### 2.1 目标
 
 - 输入固定为经 Unicode scalar 坐标规范化的 `UnifiedDocument` 和 UniDic token 序列。
@@ -84,7 +98,7 @@ DocumentInput {
 | bunsetsu | BIO 或切点序列 | 连续覆盖、非空、句内闭合 | 文节边界 |
 | dependency | 文节 head + 标签 | 单根有向树；候选允许省略弧 | 文节依存与基础句法 |
 
-当前可执行基线：6 层 Transformer、隐藏宽度 256、8 个 attention heads、最大句长 256 token，实测参数量 21,683,241。先以多任务共享 encoder 训练，再比较独立 encoder 和轻量 BiLSTM 的消融结果。模型只输出候选结构，词典查询仍由 UniDic token 和应用层候选生成器负责。
+当前可执行基线：6 层 Transformer、隐藏宽度 256、8 个 attention heads、FFN 宽度 1,024、dropout 0.15、最大句长 256 token，输入包含 lemma/surface/pos/conjugation/register 五组类别 embedding，实测参数量 21,683,241。先以多任务共享 encoder 训练，再比较独立 encoder 和轻量 BiLSTM 的消融结果。模型只输出候选结构，词典查询仍由 UniDic token 和应用层候选生成器负责。
 
 结构库 A 的接口：
 
@@ -113,7 +127,7 @@ StructureArtifact {
 | argument | 论元 span、角色、谓语引用 | 角色 span 不得越过句界；支持零论元候选 |
 | named-entity | 实体 span 与类型 | 仅在训练集有对应类型时开放 |
 
-当前可执行基线：UniDic token encoder、8 层、隐藏宽度 384、8 个 attention heads、最大句长 256 token，实测参数量 47,195,206。此规模保留 KWJA 的共享 encoder 与多任务 head 思路，同时从词法输入起完全采用 UniDic。论元 head 先采用局部谓语窗口，文档级共指和篇章关系延后到独立实验。模型输出不直接生成解释文本，解释由应用规则和知识库根据稳定引用生成。
+当前可执行基线：UniDic token encoder、8 层、隐藏宽度 384、8 个 attention heads、FFN 宽度 1,536、dropout 0.15、最大句长 256 token，输入包含 lemma/surface/pos/conjugation/register 五组类别 embedding，实测参数量 47,195,206。此规模保留 KWJA 的共享 encoder 与多任务 head 思路，同时从词法输入起完全采用 UniDic。论元 head 先采用局部谓语窗口，文档级共指和篇章关系延后到独立实验。模型输出不直接生成解释文本，解释由应用规则和知识库根据稳定引用生成。
 
 深层句法库 B 的接口：
 
@@ -155,21 +169,38 @@ SemanticArtifact {
 
 每句保存原文、UniDic token、人工边界、标签、争议记录、审阅者和最终裁决。句法库 B 的论元标注需要先标谓语，再标显式论元和零论元候选；“无法判断”使用 `unknown`，不强制指定角色。
 
-### 4.3 外部 teacher 的使用方式
+### 4.3 Teacher 数据的产生、转换与使用
 
-GiNZA 输出优先用于结构库 A 的 compound、bunsetsu 和 dependency 候选；KWJA 输出优先用于库 B 的 basic-clause、predicate 和 representative-form 候选。处理流程固定为：
+GiNZA 和 KWJA 对同一份原文分别运行，保留各自的原始 token 和内部坐标。生成阶段不要求两个 teacher 彼此一致；分歧本身用于定位 UniDic token 边界、语域和任务定义的差异。GiNZA 输出优先承担结构库 A 的候选层，KWJA 输出优先承担语义库 B 的候选层，映射后的每一层仍可由另一 teacher 的结果作为交叉核验信息。
+
+| teacher | 原始输出 | 转换到 UniDic 后的字段 | 样本状态 | 主要人工复核对象 |
+| --- | --- | --- | --- | --- |
+| GiNZA | Sudachi token、sentence、compound、bunsetsu、dependency、POS、NER | `sentences`、`compounds`、`bunsetsu`、`dependencies`、`entities`，每项包含 `char_range`、连续 `token_ids`、标签、来源分数 | `weak` | 复合词合并、文节边界、文节依存、引号和省略句 |
+| KWJA Char/Senter | 字符边界、分词、规范化、句界 | `normalization_candidates`、`sentences`、可选 `word_boundary` | `weak` | UniDic 与 Juman++ 的词边界、规范化前后范围 |
+| KWJA Word | reading、POS、活用、NE、base phrase、dependency、predicate、PAS、discourse | `morphology`、`entities`、`basic_clauses`、`predicates`、`arguments`、`relations` | `weak` 或 `candidate` | 谓语范围、格角色、零论元、篇章关系和跨句引用 |
+
+数据流固定如下：
 
 ```text
-external output
-  -> Unicode scalar span 校验
-  -> surface 校验
+原始文档 + 固定 UniDic 分析
+  -> 记录 teacher 运行环境、模型版本、checkpoint hash 和命令参数
+  -> GiNZA/KWJA 原始 artifact（研究目录，保持原始 token）
+  -> Unicode scalar 范围与 surface 校验
   -> 连续 UniDic token 映射
-  -> 冲突分组与置信度标注
-  -> 人工抽样确认
-  -> weak-label manifest
+  -> exact / compound / partial / surface_mismatch / unmatched 分类
+  -> 按 teacher、任务、语域和分歧类型聚合
+  -> 人工抽样复核与裁决
+  -> weak-label JSONL + teacher manifest + 对齐统计
+  -> 张量化 batch（gold、weak、synthetic 三类样本独立权重）
 ```
 
-teacher 只产生 `weak` 标签。训练时对 weak 标签降低损失权重，并按 provider、语域和结构层分别统计覆盖率。没有可发布许可的 teacher 输出只保存在研究环境，不进入可分发数据集或权重。
+`exact` 表示 teacher span 与一个 UniDic token 完全重合，`compound` 表示 span 由连续多个 UniDic token 完整组成；两类结果允许进入弱监督候选。`partial` 表示边界落在 UniDic token 内部，`surface_mismatch` 表示 teacher 提供的 surface 与原文不一致，`unmatched` 表示坐标非法或超出原文。后三类写入冲突报告，不写入正例标签。
+
+每条弱监督样本除任务标签外还保存下列元数据：`teacher_id`、`teacher_version`、`checkpoint_sha256`、`runner_version`、`command_hash`、`source_document_sha256`、`unidic_manifest_sha256`、`raw_artifact_sha256`、`alignment_status`、`alignment_reason`、`confidence`、`license_status`。`teacher_id` 取 `ginza-5.2.0`、`kwja-2.1.3` 或由固定 commit 和 checkpoint hash 组成的版本化名称。
+
+训练采样将 gold、weak、synthetic 分层。gold 标签权重为 1.0；通过 `exact` 或 `compound` 映射的 weak 标签初始权重为 0.35；人工抽样确认后可升至 0.7；synthetic 标签沿用各任务的生成器权重并单独报告。一个 token 或 span 同时拥有 gold 与 weak 标签时，gold 覆盖 weak。GiNZA 与 KWJA 在同一任务给出一致标签时写入 `agreement_count=2`，分歧样本进入人工队列，不以多数表决形成 gold。
+
+没有完成发布许可审查的 teacher 输出保存在研究环境，并随来源 manifest 标记 `research_only`；发布训练集仅接收许可状态为 `redistributable` 的原文、标注和派生数据。
 
 ### 4.4 合成样本
 

@@ -6,9 +6,11 @@
     "layers": 8,
     "hidden_size": 384,
     "attention_heads": 8,
+    "feedforward_size": 1536,
     "dropout": 0.15,
     "max_tokens": 256,
-    "vocab_size": 32768
+    "vocab_size": 32768,
+    "feature_embeddings": ["lemma_id", "surface_id", "pos_id", "conj_id", "register_id"]
   },
   "heads": ["pos", "subpos", "conjtype", "conjform", "reading", "ner", "word_feature", "base_phrase_feature", "predicate", "clause", "argument"],
   "loss_weights": {"basic_clause": 1.0, "predicate": 1.0, "representative_form": 0.8, "argument": 1.0},
