@@ -62,11 +62,11 @@ P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构�
 
 依赖 P0；使用 P1 的真实结果验收。
 
-- [ ] 为准备正文和 provider 内部规范化建立来源映射。结果校验正文摘要、字符数及表面串；采集器按完整正文计算长度，包含末尾空白。
-- [ ] 实现 `1:1`、`1:n`、`n:1`、`n:m` 对齐组，保留部分重叠和原始边界。现有 compound 判断只核对首尾范围，需增加成员连续性与 gap 检查。
-- [ ] 统一结构映射校验。`formation.rs`、`bunsetsu.rs`、`clause.rs` 目前按范围收集内部 token，需验证完整覆盖，并使错误或部分对齐状态传播到消费方。
-- [ ] 分离主辞与依存目标，增加有类型的关系端点；分别保存基本句和小句。保留模型原始标签、来源节点、多个候选和选择理由。
-- [ ] 定义多来源选择策略及稳定 ID，检查同范围证据合并、交叉边界、组合主辞、跨句关系和重复句定位。
+- [x] 为准备正文和 provider 内部规范化建立来源映射。结果校验正文摘要、字符数及表面串；采集器按完整正文计算长度，包含末尾空白。注音校验独立保存正文候选与输入原文范围。
+- [x] 实现 `1:1`、`1:n`、`n:1`、`n:m` 对齐组，保留部分重叠、原始边界、两侧 gap 和未匹配成员。
+- [x] 统一结构映射校验。`formation.rs`、`bunsetsu.rs`、`clause.rs` 共用覆盖检查，完整、部分及候选状态传播到消费方。
+- [x] 分离主辞与依存目标，增加有类型的关系端点；分别保存基本句和小句。保留模型原始标签、来源节点、多个候选和选择理由。
+- [x] 定义多来源选择策略及稳定 ID，检查同范围证据合并、交叉边界、组合主辞、跨句关系和重复句定位。三组真实集成见 `alignment.json`；离线导入见 `offline-alignment.json`；桌面分组与选择显示见 `desktop.json`。
 
 入口：[prepare.rs](../crates/kotoclip-nlp/src/prepare.rs)、[syntax.rs](../crates/kotoclip-nlp/src/syntax.rs)、[alignment.rs](../crates/kotoclip-nlp/src/alignment.rs)、[structure.rs](../crates/kotoclip-nlp/src/structure.rs)、[unify.rs](../crates/kotoclip-nlp/src/unify.rs)。
 

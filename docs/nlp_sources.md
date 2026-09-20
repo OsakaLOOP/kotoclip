@@ -18,6 +18,8 @@ GiNZA 优先提供复合词、文节和依存候选；KWJA 提供基本句与谓
 
 准备阶段保留字形、空白、标点和换行，提取 `漢字《かな》` 形式的作者注音，形成正文基底及原文映射。作者特殊读法以跨度保存，注音校验记录匹配、读音差异和待核验状态。
 
+`kotoclip.prepare-text.v4` 保存输入原文、输入与正文摘要、逐字符原文位置，以及 ruby／图片标记的删除范围和正文锚点。注音校验的 `candidate_char_range` 表示修正前正文候选，`source_char_ranges` 表示输入原文位置。相同正文但作者注音不同的输入具有独立文档身份。
+
 CWJ／CSJ 在分析单元上选择，保存请求语域、实际语域及选择原因。书面叙述与对话单元可采用不同资源。路由版本进入缓存键，界面允许用户明确选择并查看自动路由结果。
 
 外部模型内部若执行规范化，适配器保存其文本到共同正文的映射。长度变化、组合字符、空白和标点转换均通过映射还原，结构范围在共同正文上核验。
@@ -63,6 +65,10 @@ KWJA 的基本句（base phrase）与小句（clause）保持独立类型。依�
 
 来源实体、统一词元和阅读单位拥有独立身份。应用分组生成派生阅读单位，原始 token 序列和来源结果继续作为复核依据。
 
+`kotoclip.provider-token-alignment.v2` 按字符交集建立两侧 token 的连通分量，保存完整、部分及单侧未匹配分组。`kotoclip.structure-graph.v1` 保存来源实体、组合主辞、类型化关系和选择候选；所有引用在 `document_id` 内解析。默认选择版本为 `source-preference.v1`：基本句、小句和谓语优先 KWJA，其他结构优先 GiNZA。同范围同类型合并证据，同类交叉边界保留竞争候选，小句与实体允许嵌套。部分覆盖、主辞越界、构词内部 gap 及跨句依存形成明确诊断，消费层继承待定状态。
+
+连续结构导入采用 `kotoclip.syntax-artifact.v2`，校验完整正文字符数、SHA-256 和表面串。两套离线采集器共用应用适配器，输出 `kotoclip.provider-validation.v2`；导出器保留内部主辞与规范化后的原文映射，字符数包含末尾空白。完整关系和非连续跨度保存在来源结果中。
+
 ## 本机执行
 
 Rust 启动配置指定的解释器与适配器，复用模型进程，通过版本化消息提交正文和接收结果。消息包含请求 ID、分析单元、文本版本和任务选项；标准输出用于协议，诊断写入标准错误。Windows 下统一使用 UTF-8。
@@ -74,3 +80,5 @@ Rust 启动配置指定的解释器与适配器，复用模型进程，通过版
 本机适配器位于 [nlp_adapters.py](../scripts/nlp_adapters.py)，常驻入口位于 [nlp_provider.py](../scripts/nlp_provider.py)。[providers.rs](../crates/kotoclip-core/src/providers.rs) 管理进程与配置；[external.rs](../crates/kotoclip-nlp/src/external.rs) 定义完整来源实体、规范化映射及关系，并校验正文身份。
 
 [sources.rs](../crates/kotoclip-nlp/src/sources.rs)、[prepare.rs](../crates/kotoclip-nlp/src/prepare.rs)、[routing.rs](../crates/kotoclip-nlp/src/routing.rs)负责基础输入；[syntax.rs](../crates/kotoclip-nlp/src/syntax.rs)、[alignment.rs](../crates/kotoclip-nlp/src/alignment.rs)负责外部结果和对齐。现有离线转换器为 [GiNZA](../scripts/emit_ginza_syntax_artifact.py) 与 [KWJA](../scripts/emit_kwja_syntax_artifact.py)。
+
+[alignment_group.rs](../crates/kotoclip-nlp/src/alignment_group.rs) 生成多对多分组；[structure_graph.rs](../crates/kotoclip-nlp/src/structure_graph.rs) 负责实体映射、关系校验和多来源选择。`unify_with_sources` 接收完整来源，在应用层生成前完成选择；统一结果版本为 `kotoclip.unified-document.v5`。

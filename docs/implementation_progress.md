@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | P0 接口与验收集 | 进行中 | 七组短样本的三来源输出、环境版本及行为结论；32 项验收场景；来源协议的 Rust／TypeScript 类型 | 文档／单元／任务版本及查询目标协议 |
 | P1 本机模型 | 进行中 | 常驻 GiNZA／KWJA、离线执行、Rust 校验、桌面配置与结构查看；七组集成、进程复用及生命周期恢复 | 完整资源身份与配置检查、最终桌面恢复验收 |
-| P2 对齐与结构 | 进行中 | KWJA 规范化映射、原始关系、基本句与小句分离；部分覆盖与 gap 传播 | 多对多分组、正文准备映射、结构完整协议、多来源选择和稳定身份 |
+| P2 对齐与结构 | 已完成 | 正文准备映射、多对多分组、结构图与类型化关系、多来源选择和稳定身份；真实短例、离线导入及桌面查看通过 | 后续会话与阅读模块消费这些协议 |
 | P3 文档会话 | 待实施 | 两阶段基础正文／结构追加入口 | 单元调度、任务版本、范围优先、分层缓存及查询并发 |
 | P4 语言与规则 | 待实施 | 既有形态、候选与知识目录 | 完整活用链、构词绑定、语法规则、非连续表达与规则编辑 |
 | P5 词典解释 | 待实施 | 既有词典引擎与组件 | 查询矩阵、整体／内部双面板、设置及会话接入 |
@@ -34,6 +34,9 @@
 | `crates/kotoclip-core/src/providers.rs` | 本机配置、隐藏进程、请求 ID、超时、取消、退出与重启 |
 | `analysis.rs` 的 `enrich` | 在基础正文上追加真实来源及应用结构 |
 | `src/components/ProviderPanel.vue` | 模型配置、运行状态、实体／关系查看及重试 |
+| `crates/kotoclip-nlp/src/alignment_group.rs` | 以字符交集形成多对多分组，保存两侧 gap 和未匹配成员 |
+| `crates/kotoclip-nlp/src/structure_graph.rs` | 实体与组合主辞映射、关系诊断、同范围证据合并和默认选择 |
+| `scripts/emit_provider_syntax.py` | 两来源共用的连续结构导出入口 |
 
 `analyze` 返回基础结果，桌面随后请求 `enrich`。完整文档会话、产物版本和前台查询并发由 P3 继续实现。`external_sources` 保留完整模型空间；现有连续跨度消费层读取可表达的投影，非连续来源仍完整保存在来源实体中。
 
@@ -42,20 +45,24 @@
 | 验证 | 结果与产物 |
 | --- | --- |
 | 三来源行为观察 | 七组输入；两套 UniDic 请求；GiNZA／KWJA 各加载一次并完成七次推理 |
-| Python 映射与关系检查 | 4 项通过，覆盖展开、组合、控制字符删除、外指与跨句照应 |
-| Rust NLP 检查 | 40 项通过；覆盖词元内部切点、gap、消费层待定状态、实际来源序列化、正文摘要及失效引用 |
+| Python 映射与关系检查 | 5 项通过，覆盖展开、组合、控制字符删除、外指、跨句照应及完整正文导出 |
+| Rust NLP 检查 | 51 项通过；包含正文映射、四种对齐组、内部切点、gap、组合主辞、来源选择及消费层状态 |
 | Rust 服务集成 | 七组均通过两来源执行；各 provider PID 保持一致；解释器错误和修复通过；见 `integration.json` |
 | 来源生命周期 | 单个短例通过排队取消、取消后重试、超时后重试、来源进程异常退出后重试；见 `lifecycle.json` |
 | TypeScript | `npx vue-tsc --noEmit` 通过 |
 | 前端生产构建 | `npm run build` 通过 |
 | 桌面构建 | `cargo build -p tauri-app` 通过，`target/debug/tauri-app.exe` 已启动 |
-| 真实 Tauri 窗口 | 指定语料第九段得到 21 个 UniDic 词元；GiNZA／KWJA 均完成，KWJA 文节可切换查看；取消后重试成功；见 `desktop.json` |
+| 真实 Tauri 窗口 | 指定语料第九段得到 21 个 UniDic 词元；GiNZA／KWJA 均完成，KWJA 文节与 20 个对齐组可查看；交集、gap 和候选选择显示通过；取消后重试成功；见 `desktop.json` |
 | 窄窗口 | WebView2 390×844 视口检查通过；截图 `experiments/provider-desktop.png` |
+| P2 完整来源集成 | 新闻、Unicode／空白、重复 ruby 三组通过基础与追加身份一致、原文映射、引用解析和错误摘要拒绝；见 `alignment.json` |
+| 离线采集与导入 | 两套采集器和导出器实际处理含 `㍿`、末尾空白的短例，经 Rust 导入成功；重复注音原文位置通过；见 `offline-alignment.json` |
 
 既有工作区变更已分别提交：`b5497f9` 保存文档基线与验收清单，`ef7a4cb` 保存 provider 状态及实验检查，`57fd098` 保存结构覆盖修复。各提交前执行 `git diff` 检查。采集器另以 `煙草《たばこ》を読む。` 加末尾空白验证准备正文与 gap；既有评估函数及资源测量入口通过定向检查。
 
 重复验证使用 `scripts/validate_nlp_integration.py`；可用 `--cases` 限定短例、`--output` 保存专项结果。桌面验证使用 `scripts/validate_provider_desktop.mjs`，连接开启本机调试端口 9222 的 WebView2 窗口。
 
+P2 协议提交为 `28ecdb2`，离线采集与导入提交为 `baeb927`。`kotoclip.unified-document.v5` 包含准备映射、作者注音、对齐组和统一结构图；连续导入为 `kotoclip.syntax-artifact.v2`。详细选择策略与坐标契约见 [分析来源与对齐](nlp_sources.md)。CLI 与桌面需分别执行 `cargo build -p kotoclip-core --bin kotoclip-nlp`、`cargo build -p tauri-app`，保证两个入口均采用当前协议。
+
 ## 接续顺序
 
-完成阶段提交后继续 P0／P2 的身份、来源映射与多对多对齐协议。进入 P3 后解除分析服务对前台查询的全程互斥，将现有正文与结构追加入口接入版本化文档会话。后续阶段保持 TODO 的完整范围。
+继续完成 P1 的资源身份与独立资源配置，再进入 P3 的分析单元、版本化文档会话、范围调度与查询并发。P0 的任务版本和查询目标随 P3、P5 完成；后续阶段保持 TODO 的完整范围。
