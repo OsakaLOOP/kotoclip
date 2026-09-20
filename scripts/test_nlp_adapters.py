@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import unittest
 
-from nlp_adapters import KwjaAdapter, normalization_map
+from nlp_adapters import KwjaAdapter, normalization_map, syntax_artifact
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -57,6 +57,14 @@ class AdapterTests(unittest.TestCase):
                 for endpoint in (relation["source"], relation["target"]):
                     if endpoint["kind"] == "node":
                         self.assertIn(endpoint["id"], ids)
+
+    def test_syntax_projection_preserves_full_input_length_and_digest(self):
+        artifact = json.loads((ROOT / "data/validation/behavior/kwja-adapted-1.json").read_text(encoding="utf-8"))["result"]
+        syntax = syntax_artifact(artifact, "boundaries")
+        self.assertEqual(syntax["text_characters"], 31)
+        self.assertEqual(syntax["text_sha256"], artifact["text_sha256"])
+        self.assertLess(max(span["char_range"][1] for span in syntax["spans"]), 31)
+        self.assertTrue(all(span["head_char_range"] is None for span in syntax["spans"] if span["kind"] == "token"))
 
 
 if __name__ == "__main__":

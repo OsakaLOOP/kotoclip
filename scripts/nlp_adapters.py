@@ -3,9 +3,37 @@ from __future__ import annotations
 
 import hashlib
 import importlib.metadata
+import json
 import time
 
 SCHEMA = "kotoclip.source-analysis.v1"
+
+
+def syntax_artifact(artifact, segment_id):
+    """生成连续跨度投影，完整结构继续由来源 artifact 保存。"""
+    nodes = {node["id"]: node for node in artifact["nodes"]}
+    spans = []
+    for node in artifact["nodes"]:
+        if node["kind"] not in {"token", "compound", "bunsetsu", "sentence", "clause"} or len(node["text_ranges"]) != 1:
+            continue
+        head = nodes[node["head"]] if node["head"] is not None else None
+        spans.append({"id": node["id"], "kind": node["kind"], "char_range": node["text_ranges"][0],
+            "head_char_range": head["text_ranges"][0] if head is not None and len(head["text_ranges"]) == 1 else None,
+            "source_id": artifact["text_sha256"], "surface": node["surface"],
+            "labels": [f"{key}:{json.dumps(value, ensure_ascii=False, separators=(',', ':'))}" for key, value in sorted(node["features"].items())]})
+    provider = artifact["provider"]
+    return {"schema": "kotoclip.syntax-artifact.v2", "segment_id": segment_id,
+        "provider": {"id": provider["id"], "version": provider["version"], "capabilities": provider["capabilities"], "license": None},
+        "text_sha256": artifact["text_sha256"], "text_characters": artifact["text_characters"], "spans": spans}
+
+
+def validation_segment(segment, artifact):
+    spans = syntax_artifact(artifact, segment["id"])["spans"]
+    return {"id": segment["id"], "text": segment["text"], "characters": len(segment["text"]), "artifact": artifact,
+        "tokens": [node for node in spans if node["kind"] == "token"],
+        "compounds": [node for node in spans if node["kind"] == "compound"],
+        "bunsetsu": [node for node in spans if node["kind"] == "bunsetsu"],
+        "sentences": [node["char_range"] for node in spans if node["kind"] == "sentence"]}
 
 
 def merge_ranges(ranges):
