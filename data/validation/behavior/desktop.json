@@ -1,0 +1,12 @@
+{
+  "desktop": true,
+  "words": 21,
+  "ginza": true,
+  "kwja": true,
+  "cancellation_recovery": true,
+  "kwja_structure": "ラティメリアは b0 · [0, 7){}きょろきょろと b1 · [7, 14){}部屋を b2 · [14, 17){}見渡すが、 b3 · [17, 22){}鏡の b4 · [22, 24){}裏から b5 · [24, 27){}覗かれてるとは b6 · [27, 34){}気づかない。 b7 · [34, 40){}",
+  "viewport": {
+    "width": 390,
+    "body": 375
+  }
+}

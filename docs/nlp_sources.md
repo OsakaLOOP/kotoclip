@@ -71,4 +71,6 @@ Rust 启动配置指定的解释器与适配器，复用模型进程，通过版
 
 ## 代码入口
 
+本机适配器位于 [nlp_adapters.py](../scripts/nlp_adapters.py)，常驻入口位于 [nlp_provider.py](../scripts/nlp_provider.py)。[providers.rs](../crates/kotoclip-core/src/providers.rs) 管理进程与配置；[external.rs](../crates/kotoclip-nlp/src/external.rs) 定义完整来源实体、规范化映射及关系，并校验正文身份。
+
 [sources.rs](../crates/kotoclip-nlp/src/sources.rs)、[prepare.rs](../crates/kotoclip-nlp/src/prepare.rs)、[routing.rs](../crates/kotoclip-nlp/src/routing.rs)负责基础输入；[syntax.rs](../crates/kotoclip-nlp/src/syntax.rs)、[alignment.rs](../crates/kotoclip-nlp/src/alignment.rs)负责外部结果和对齐。现有离线转换器为 [GiNZA](../scripts/emit_ginza_syntax_artifact.py) 与 [KWJA](../scripts/emit_kwja_syntax_artifact.py)。

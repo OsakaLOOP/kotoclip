@@ -12,7 +12,7 @@ pub fn unify(
     unify_with_external(prepared, source, routing, &[])
 }
 
-/// 使用原生 UniDic token provider 生成结构 artifact，再沿用统一的结构合并路径。
+/// 原生 provider 接收预处理后的原文；UniDic 只在结构合并后映射范围和查询字段。
 pub fn unify_with_native<P: crate::native::NativeStructureProvider>(
     prepared: &PreparedText,
     source: SourceAnalysis,
@@ -144,6 +144,7 @@ pub fn unify_with_external(
         morphology,
         structure_diagnostics,
         provider_token_alignments,
+        external_sources: Vec::new(),
         elapsed_ms: 0.0,
     })
 }

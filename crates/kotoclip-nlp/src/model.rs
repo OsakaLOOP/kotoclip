@@ -164,5 +164,7 @@ pub struct UnifiedDocument {
     pub structure_diagnostics: Vec<crate::syntax::AlignmentDiagnostic>,
     #[serde(default)]
     pub provider_token_alignments: Vec<crate::alignment::TokenAlignmentArtifact>,
+    #[serde(default)]
+    pub external_sources: Vec<crate::external::SourceArtifact>,
     pub elapsed_ms: f64,
 }

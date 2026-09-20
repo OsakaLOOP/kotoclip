@@ -20,6 +20,9 @@ pub struct ResourcePaths {
     pub csj: PathBuf,
     pub dictionary_sources: PathBuf,
     pub dictionaries: PathBuf,
+    pub provider_config: PathBuf,
+    pub provider_script: PathBuf,
+    pub provider_defaults: crate::providers::ProviderSettings,
 }
 
 impl ResourcePaths {
@@ -40,6 +43,9 @@ impl ResourcePaths {
                 }),
             dictionary_sources: data.join("dict-sources"),
             dictionaries: data.join("dicts"),
+            provider_config: data.join("providers.local.json"),
+            provider_script: root.join("scripts/nlp_provider.py"),
+            provider_defaults: crate::providers::ProviderSettings::development(root),
         }
     }
 }
@@ -48,6 +54,10 @@ impl ResourcePaths {
 #[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
     Status,
+    ProviderStatus,
+    ConfigureProviders { settings: crate::providers::ProviderSettings },
+    Enrich { analysis_id: String },
+    CancelExternal,
     Analyze {
         text: String,
         register: Register,
@@ -85,19 +95,29 @@ pub struct AnalysisService {
     providers: HashMap<Register, UniDicProvider>,
     dictionary: Option<DictionaryEngine>,
     documents: VecDeque<UnifiedDocument>,
+    external: crate::providers::ProviderManager,
 }
 
 impl AnalysisService {
     pub fn new(paths: ResourcePaths) -> Self {
+        let external = crate::providers::ProviderManager::new(paths.provider_config.clone(), paths.provider_script.clone(), paths.provider_defaults.clone());
         Self {
             paths,
             providers: HashMap::new(),
             dictionary: None,
             documents: VecDeque::new(),
+            external,
         }
     }
+    pub fn cancellation(&self) -> std::sync::Arc<std::sync::atomic::AtomicU64> {
+        self.external.cancellation.clone()
+    }
     pub fn dispatch(&mut self, request: Request) -> Response {
-        match self.execute(request) {
+        let generation = self.external.cancellation.load(std::sync::atomic::Ordering::Relaxed);
+        self.dispatch_at(request, generation)
+    }
+    pub fn dispatch_at(&mut self, request: Request, generation: u64) -> Response {
+        match self.execute(request, generation) {
             Ok(value) => Response {
                 result: Some(value),
                 error: None,
@@ -108,8 +128,14 @@ impl AnalysisService {
             },
         }
     }
-    fn execute(&mut self, request: Request) -> Result<Value, String> {
+    fn execute(&mut self, request: Request, generation: u64) -> Result<Value, String> {
         match request {
+            Request::CancelExternal => {
+                Ok(json!({"cancelled": true}))
+            },
+            Request::ProviderStatus => self.external.status(),
+            Request::ConfigureProviders { settings } => self.external.configure(settings),
+            Request::Enrich { analysis_id } => self.enrich(&analysis_id, generation),
             Request::Status => Ok(
                 json!({ "schema": kotoclip_nlp::model::SCHEMA, "providers": [
                     {"register": "cwj", "available": self.paths.cwj.is_file(), "loaded": self.providers.contains_key(&Register::Cwj)},
@@ -179,6 +205,24 @@ impl AnalysisService {
                 .map_err(|e| e.to_string())
             }
         }
+    }
+
+    fn enrich(&mut self, analysis_id: &str, generation: u64) -> Result<Value, String> {
+        let document = self.documents.iter().find(|d| d.id == analysis_id).cloned().ok_or("分析结果已释放，请重新分析")?;
+        let (sources, diagnostics) = self.external.analyze(&document.text, generation);
+        let artifacts: Vec<_> = sources.iter().map(|source| source.syntax()).collect();
+        let prepared = kotoclip_nlp::prepare::PreparedText { text: document.text.clone(), annotations: Vec::new() };
+        let mut updated = kotoclip_nlp::unify::unify_with_external(&prepared, document.source, document.routing, &artifacts)?;
+        updated.ruby_validations = document.ruby_validations;
+        updated.grammar = document.grammar;
+        updated.expression = document.expression;
+        updated.projection = kotoclip_nlp::projection::from_layers(&updated.grammar, &updated.expression);
+        updated.external_sources = sources;
+        updated.elapsed_ms = document.elapsed_ms;
+        let value = json!({"document": updated, "providers": diagnostics});
+        self.documents.retain(|d| d.id != analysis_id);
+        self.documents.push_back(updated);
+        Ok(value)
     }
 
     fn analyze_document(

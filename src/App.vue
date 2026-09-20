@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { ArrowLeft, ArrowRight, Check, Copy, FileText, LoaderCircle, Play, Search, X } from '@lucide/vue';
 import DictionaryContent from './components/dictionary/DictionaryContent.vue';
+import ProviderPanel from './components/ProviderPanel.vue';
 import { nlpRequest } from './services/nlp';
 import type { MorphemeToken, QueryOutput, Register, UnifiedDocument } from './types/nlp';
 import './styles/inspection.css';
@@ -12,6 +13,8 @@ const document = ref<UnifiedDocument | null>(null);
 const selected = ref<MorphemeToken | null>(null);
 const result = ref<QueryOutput | null>(null);
 const busy = ref(false);
+const structureBusy = ref(false);
+const providerDiagnostics = ref<{ id: string; status: string; error?: string }[]>([]);
 const queryBusy = ref(false);
 const error = ref('');
 const queryError = ref('');
@@ -51,8 +54,25 @@ const segments = computed(() => {
 });
 
 function invalidate() {
+  if (structureBusy.value) void cancelStructure();
   analysisGeneration++; queryGeneration++; clearTimeout(hoverTimer);
   document.value = null; selected.value = null; result.value = null; queryBusy.value = false;
+  structureBusy.value = false; providerDiagnostics.value = [];
+}
+async function cancelStructure() {
+  try { await nlpRequest({ command: 'cancel_external' }); }
+  catch (e) { error.value = String(e); }
+}
+async function enrich() {
+  if (!document.value || structureBusy.value) return;
+  const generation = analysisGeneration;
+  structureBusy.value = true; providerDiagnostics.value = [];
+  try {
+    const value = await nlpRequest<{ document: UnifiedDocument; providers: typeof providerDiagnostics.value }>({ command: 'enrich', analysis_id: document.value.id });
+    if (generation !== analysisGeneration) return;
+    document.value = value.document; providerDiagnostics.value = value.providers;
+  } catch (e) { if (generation === analysisGeneration) providerDiagnostics.value = [{ id: 'structure', status: 'failed', error: String(e) }]; }
+  finally { if (generation === analysisGeneration) structureBusy.value = false; }
 }
 async function analyze() {
   invalidate(); const generation = analysisGeneration;
@@ -61,6 +81,7 @@ async function analyze() {
     const value = await nlpRequest<UnifiedDocument>({ command: 'analyze', text: input.value, register: register.value });
     if (generation !== analysisGeneration) return;
     document.value = value;
+    void enrich();
   } catch (e) { if (generation === analysisGeneration) error.value = String(e); }
   finally { if (generation === analysisGeneration) busy.value = false; }
 }
@@ -141,6 +162,7 @@ onMounted(async () => {
         <div v-if="busy" class="empty-state" role="status"><LoaderCircle class="spin" :size="22" />正在分析</div>
         <div v-else-if="!document" class="empty-state">暂无分析结果</div>
         <article v-else class="token-text" lang="ja" aria-label="分词结果"><template v-for="segment in segments" :key="segment.start"><button v-if="segment.token" class="word" :class="{ selected: selected?.id === segment.token.id, unknown: document.source.tokens[segment.token.source_index].lexicon_type === 'unknown' }" :aria-label="segment.surface" :aria-pressed="selected?.id === segment.token.id" @click="select(segment.token)" @mouseenter="preview(segment.token)" @mouseleave="cancelPreview" @focus="select(segment.token)">{{ segment.surface }}</button><span v-else>{{ segment.surface }}</span></template></article>
+        <ProviderPanel :sources="document?.external_sources || []" :can-analyze="!!document" :pending="structureBusy" :diagnostics="providerDiagnostics" @retry="enrich" @cancel="cancelStructure" />
       </section>
       <aside class="inspector">
         <div class="inspector-heading"><div><h2 lang="ja">{{ selected?.surface || '词语详情' }}</h2><p v-if="selected">{{ selected.pos.filter(Boolean).join(' / ') }} · [{{ selected.char_range.join(', ') }})</p></div><div class="inspector-navigation"><button class="icon-button" title="前一词" aria-label="前一词" :disabled="!selected || selected.source_index === 0" @click="move(-1)"><ArrowLeft :size="17" /></button><button class="icon-button" title="后一词" aria-label="后一词" :disabled="!selected || selected.source_index === (document?.morphemes.length || 0) - 1" @click="move(1)"><ArrowRight :size="17" /></button></div></div>

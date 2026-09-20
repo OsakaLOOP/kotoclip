@@ -24,6 +24,10 @@ cargo run -p kotoclip-core --bin kotoclip-nlp -- stdio
 
 `stdio` 接收逐行 JSON 请求，使用与桌面端相同的 `AnalysisService`。网页开发由 Vite 提供，通过开发 bridge 调用 Rust；Tauri 窗口承担桌面 IPC 与资源定位验收。
 
+本机模型入口为 `scripts/nlp_provider.py`，由 Rust 使用 `-X utf8 -u` 启动。桌面先显示 UniDic 结果，再以 `enrich` 请求追加 GiNZA／KWJA 结构。设置位于“结构分析 → 本机模型设置”，可指定两个解释器、模型、KWJA 权重目录及 Hugging Face 缓存目录。配置写入数据目录的 `providers.local.json`，日志位于同目录 `provider-logs`。
+
+GiNZA 模型支持已安装模型名或 spaCy 模型目录；KWJA 使用 `tiny`、`base` 或 `large` 及其本机缓存。启动检查缺失 checkpoint，模型服务使用离线模式。开发默认路径对应下表已准备的环境；实际任务清单由加载的模型返回。完整资源身份检查和最终交付验收状态见实施记录。
+
 `npm run dev` 进入仓库 dev 渠道；`npm run insider` 构建并组织便携包。渠道脚本管理构建目录和遗留进程，具体行为见 [run_channel.ps1](../scripts/run_channel.ps1)。
 
 ## 当前资源定位

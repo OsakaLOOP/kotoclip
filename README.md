@@ -28,4 +28,4 @@ npx tauri dev
 cargo run -p kotoclip-core --bin kotoclip-nlp -- inspect cwj "七日は警察署へ向かった。"
 ```
 
-当前桌面入口提供 UniDic 分词、字段检查和基础查词。完整模块接入按 TODO 实施。资源路径、开发渠道和桌面交付要求见[开发与交付](docs/development.md)。
+当前桌面入口提供 UniDic 分词、字段检查、基础查词，以及本机 GiNZA／KWJA 的结构分析、模型配置和来源查看。来源实测与阶段证据见[实施记录](docs/implementation_progress.md)，完整模块接入按 TODO 继续实施。资源路径、开发渠道和桌面交付要求见[开发与交付](docs/development.md)。

@@ -94,6 +94,7 @@ pub fn merge_external(mut base: StructureArtifact, external: &crate::syntax::Syn
         if diagnostic.status != "aligned" { continue; }
         let observed = StructureSpan { id: format!("{}:{}", external.provider.id, span.id), kind: span.kind.clone(), char_range: span.char_range, status: StructureStatus::Observed, provider: external.provider.id.clone(), source_id: Some(span.source_id.clone()), head_char_range: span.head_char_range, labels: span.labels.clone() };
         match span.kind.as_str() {
+            "token" => {},
             "paragraph" => base.paragraphs.push(observed),
             "sentence" => base.sentences.push(observed),
             "clause" => base.clauses.push(observed),

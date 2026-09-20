@@ -47,9 +47,12 @@
 | Rust 服务集成 | 七组均通过两来源执行；各 provider PID 保持一致；解释器错误和修复通过；见 `integration.json` |
 | 来源生命周期 | 单个短例通过排队取消、取消后重试、超时后重试、来源进程异常退出后重试；见 `lifecycle.json` |
 | TypeScript | `npx vue-tsc --noEmit` 通过 |
+| 前端生产构建 | `npm run build` 通过 |
 | 桌面构建 | `cargo build -p tauri-app` 通过，`target/debug/tauri-app.exe` 已启动 |
-| 真实 Tauri 窗口 | 指定语料第九段得到 21 个 UniDic 词元；GiNZA／KWJA 均完成，KWJA 文节可切换查看；见 `desktop.json` |
+| 真实 Tauri 窗口 | 指定语料第九段得到 21 个 UniDic 词元；GiNZA／KWJA 均完成，KWJA 文节可切换查看；取消后重试成功；见 `desktop.json` |
 | 窄窗口 | WebView2 390×844 视口检查通过；截图 `experiments/provider-desktop.png` |
+
+既有工作区变更已分别提交：`b5497f9` 保存文档基线与验收清单，`ef7a4cb` 保存 provider 状态及实验检查，`57fd098` 保存结构覆盖修复。各提交前执行 `git diff` 检查。采集器另以 `煙草《たばこ》を読む。` 加末尾空白验证准备正文与 gap；既有评估函数及资源测量入口通过定向检查。
 
 重复验证使用 `scripts/validate_nlp_integration.py`；可用 `--cases` 限定短例、`--output` 保存专项结果。桌面验证使用 `scripts/validate_provider_desktop.mjs`，连接开启本机调试端口 9222 的 WebView2 窗口。
 

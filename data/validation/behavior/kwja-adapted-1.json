@@ -1,0 +1,2316 @@
+{
+  "protocol": "kotoclip.provider-process.v1",
+  "event": "result",
+  "request_id": "1",
+  "result": {
+    "schema": "kotoclip.source-analysis.v1",
+    "provider": {
+      "id": "kwja",
+      "version": "2.1.3",
+      "model": "tiny",
+      "model_version": "v2.1",
+      "device": "cpu",
+      "versions": {
+        "torch": "2.1.2",
+        "rhoknp": "1.3.2",
+        "transformers": "4.29.2"
+      },
+      "tasks": [
+        "reading_prediction",
+        "morphological_analysis",
+        "word_feature_tagging",
+        "ner",
+        "base_phrase_feature_tagging",
+        "dependency_parsing",
+        "cohesion_analysis",
+        "discourse_parsing"
+      ],
+      "capabilities": [
+        "token",
+        "bunsetsu",
+        "basic_phrase",
+        "sentence",
+        "clause",
+        "predicate",
+        "dependency",
+        "entity",
+        "cohesion",
+        "discourse"
+      ],
+      "coordinate_system": "unicode_scalar"
+    },
+    "text_sha256": "16c81c8e1b9635f6648ae7717fef64b2d018c700a868e8f4452c0da22282082b",
+    "text_characters": 31,
+    "normalized_text": "␣警察署へ行った。彼は28歳。␣ガ、が、株式会社、𠮷。␣␣",
+    "normalization_map": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        6,
+        7
+      ],
+      [
+        7,
+        8
+      ],
+      [
+        8,
+        9
+      ],
+      [
+        9,
+        10
+      ],
+      [
+        11,
+        12
+      ],
+      [
+        12,
+        13
+      ],
+      [
+        13,
+        14
+      ],
+      [
+        14,
+        15
+      ],
+      [
+        15,
+        16
+      ],
+      [
+        16,
+        17
+      ],
+      [
+        17,
+        18
+      ],
+      [
+        18,
+        20
+      ],
+      [
+        20,
+        21
+      ],
+      [
+        21,
+        23
+      ],
+      [
+        23,
+        24
+      ],
+      [
+        24,
+        25
+      ],
+      [
+        24,
+        25
+      ],
+      [
+        24,
+        25
+      ],
+      [
+        24,
+        25
+      ],
+      [
+        25,
+        26
+      ],
+      [
+        26,
+        27
+      ],
+      [
+        27,
+        28
+      ],
+      [
+        28,
+        29
+      ],
+      [
+        29,
+        30
+      ]
+    ],
+    "deleted_ranges": [
+      [
+        5,
+        6
+      ],
+      [
+        10,
+        11
+      ],
+      [
+        30,
+        31
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "t0",
+        "kind": "token",
+        "source_ranges": [
+          [
+            0,
+            1
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            0,
+            1
+          ]
+        ],
+        "surface": "　",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "[UNK]",
+          "lemma": "␣",
+          "pos": "名詞",
+          "subpos": "人名",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "␣ [UNK] ␣ 名詞 6 人名 5 * 0 * 0 <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t1",
+        "kind": "token",
+        "source_ranges": [
+          [
+            1,
+            3
+          ]
+        ],
+        "source_surface": "警察",
+        "text_ranges": [
+          [
+            1,
+            3
+          ]
+        ],
+        "surface": "警察",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "けいさつ",
+          "lemma": "警察",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "警察 けいさつ 警察 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:警察/けいさつ 組織名末尾 カテゴリ:組織・団体;場所-施設 ドメイン:政治\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t2",
+        "kind": "token",
+        "source_ranges": [
+          [
+            3,
+            4
+          ]
+        ],
+        "source_surface": "署",
+        "text_ranges": [
+          [
+            3,
+            4
+          ]
+        ],
+        "surface": "署",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "しょ",
+          "lemma": "署",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "署 しょ 署 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:署/しょ 漢字読み:音 組織名末尾 カテゴリ:場所-施設 ドメイン:政治\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t3",
+        "kind": "token",
+        "source_ranges": [
+          [
+            4,
+            5
+          ]
+        ],
+        "source_surface": "へ",
+        "text_ranges": [
+          [
+            4,
+            5
+          ]
+        ],
+        "surface": "へ",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "へ",
+          "lemma": "へ",
+          "pos": "助詞",
+          "subpos": "格助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "へ へ へ 助詞 9 格助詞 1 * 0 * 0 \"代表表記:へ/へ\"\n"
+        }
+      },
+      {
+        "id": "t4",
+        "kind": "token",
+        "source_ranges": [
+          [
+            5,
+            8
+          ]
+        ],
+        "source_surface": "行った",
+        "text_ranges": [
+          [
+            6,
+            9
+          ]
+        ],
+        "surface": "行った",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "おこなった",
+          "lemma": "行う",
+          "pos": "動詞",
+          "subpos": "*",
+          "conjtype": "子音動詞ワ行",
+          "conjform": "タ形",
+          "features": {
+            "基本句-主辞": true,
+            "用言表記先頭": true,
+            "用言表記末尾": true
+          },
+          "raw": "行った おこなった 行う 動詞 2 * 0 子音動詞ワ行 12 タ形 10 \"代表表記:行う/おこなう\" <基本句-主辞><用言表記先頭><用言表記末尾>\n"
+        }
+      },
+      {
+        "id": "t5",
+        "kind": "token",
+        "source_ranges": [
+          [
+            8,
+            9
+          ]
+        ],
+        "source_surface": "。",
+        "text_ranges": [
+          [
+            9,
+            10
+          ]
+        ],
+        "surface": "。",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "。",
+          "lemma": "。",
+          "pos": "特殊",
+          "subpos": "句点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\n"
+        }
+      },
+      {
+        "id": "t6",
+        "kind": "token",
+        "source_ranges": [
+          [
+            9,
+            10
+          ]
+        ],
+        "source_surface": "彼",
+        "text_ranges": [
+          [
+            11,
+            12
+          ]
+        ],
+        "surface": "彼",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "かれ",
+          "lemma": "彼",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "彼 かれ 彼 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:彼/かれ 漢字読み:訓 カテゴリ:人\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t7",
+        "kind": "token",
+        "source_ranges": [
+          [
+            10,
+            11
+          ]
+        ],
+        "source_surface": "は",
+        "text_ranges": [
+          [
+            12,
+            13
+          ]
+        ],
+        "surface": "は",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "は",
+          "lemma": "は",
+          "pos": "助詞",
+          "subpos": "副助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "は は は 助詞 9 副助詞 2 * 0 * 0 \"代表表記:は/は\"\n"
+        }
+      },
+      {
+        "id": "t8",
+        "kind": "token",
+        "source_ranges": [
+          [
+            11,
+            13
+          ]
+        ],
+        "source_surface": "28",
+        "text_ranges": [
+          [
+            13,
+            15
+          ]
+        ],
+        "surface": "２８",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "にじゅうはち",
+          "lemma": "28",
+          "pos": "名詞",
+          "subpos": "数詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "28 にじゅうはち 28 名詞 6 数詞 7 * 0 * 0\n"
+        }
+      },
+      {
+        "id": "t9",
+        "kind": "token",
+        "source_ranges": [
+          [
+            13,
+            14
+          ]
+        ],
+        "source_surface": "歳",
+        "text_ranges": [
+          [
+            15,
+            16
+          ]
+        ],
+        "surface": "歳",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "さい",
+          "lemma": "歳",
+          "pos": "接尾辞",
+          "subpos": "名詞性名詞助数辞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true,
+            "用言表記先頭": true,
+            "用言表記末尾": true
+          },
+          "raw": "歳 さい 歳 接尾辞 14 名詞性名詞助数辞 3 * 0 * 0 \"代表表記:歳/さい 準内容語\" <基本句-主辞><用言表記先頭><用言表記末尾>\n"
+        }
+      },
+      {
+        "id": "t10",
+        "kind": "token",
+        "source_ranges": [
+          [
+            14,
+            15
+          ]
+        ],
+        "source_surface": "。",
+        "text_ranges": [
+          [
+            16,
+            17
+          ]
+        ],
+        "surface": "。",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "。",
+          "lemma": "。",
+          "pos": "特殊",
+          "subpos": "句点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\n"
+        }
+      },
+      {
+        "id": "t11",
+        "kind": "token",
+        "source_ranges": [
+          [
+            15,
+            16
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            17,
+            18
+          ]
+        ],
+        "surface": " ",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "[UNK]",
+          "lemma": "␣",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "␣ [UNK] ␣ 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t12",
+        "kind": "token",
+        "source_ranges": [
+          [
+            16,
+            17
+          ]
+        ],
+        "source_surface": "ガ",
+        "text_ranges": [
+          [
+            18,
+            20
+          ]
+        ],
+        "surface": "ｶﾞ",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "や",
+          "lemma": "ガ",
+          "pos": "名詞",
+          "subpos": "人名",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "ガ や ガ 名詞 6 人名 5 * 0 * 0 <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t13",
+        "kind": "token",
+        "source_ranges": [
+          [
+            17,
+            18
+          ]
+        ],
+        "source_surface": "、",
+        "text_ranges": [
+          [
+            20,
+            21
+          ]
+        ],
+        "surface": "、",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "、",
+          "lemma": "、",
+          "pos": "特殊",
+          "subpos": "読点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "、 、 、 特殊 1 読点 2 * 0 * 0 \"代表表記:、/、\"\n"
+        }
+      },
+      {
+        "id": "t14",
+        "kind": "token",
+        "source_ranges": [
+          [
+            18,
+            19
+          ]
+        ],
+        "source_surface": "が",
+        "text_ranges": [
+          [
+            21,
+            23
+          ]
+        ],
+        "surface": "が",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "が",
+          "lemma": "が",
+          "pos": "助詞",
+          "subpos": "格助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "が が が 助詞 9 格助詞 1 * 0 * 0 \"代表表記:が/が\"\n"
+        }
+      },
+      {
+        "id": "t15",
+        "kind": "token",
+        "source_ranges": [
+          [
+            19,
+            20
+          ]
+        ],
+        "source_surface": "、",
+        "text_ranges": [
+          [
+            23,
+            24
+          ]
+        ],
+        "surface": "、",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "、",
+          "lemma": "、",
+          "pos": "特殊",
+          "subpos": "読点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "、 、 、 特殊 1 読点 2 * 0 * 0 \"代表表記:、/、\"\n"
+        }
+      },
+      {
+        "id": "t16",
+        "kind": "token",
+        "source_ranges": [
+          [
+            20,
+            22
+          ]
+        ],
+        "source_surface": "株式",
+        "text_ranges": [
+          [
+            24,
+            25
+          ]
+        ],
+        "surface": "㍿",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "かぶしき",
+          "lemma": "株式",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "株式 かぶしき 株式 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:株式/かぶしき カテゴリ:抽象物 ドメイン:ビジネス\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t17",
+        "kind": "token",
+        "source_ranges": [
+          [
+            22,
+            24
+          ]
+        ],
+        "source_surface": "会社",
+        "text_ranges": [
+          [
+            24,
+            25
+          ]
+        ],
+        "surface": "㍿",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "がいしゃ",
+          "lemma": "会社",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "会社 がいしゃ 会社 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t18",
+        "kind": "token",
+        "source_ranges": [
+          [
+            24,
+            25
+          ]
+        ],
+        "source_surface": "、",
+        "text_ranges": [
+          [
+            25,
+            26
+          ]
+        ],
+        "surface": "、",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "、",
+          "lemma": "、",
+          "pos": "特殊",
+          "subpos": "読点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "、 、 、 特殊 1 読点 2 * 0 * 0 \"代表表記:、/、\"\n"
+        }
+      },
+      {
+        "id": "t19",
+        "kind": "token",
+        "source_ranges": [
+          [
+            25,
+            26
+          ]
+        ],
+        "source_surface": "𠮷",
+        "text_ranges": [
+          [
+            26,
+            27
+          ]
+        ],
+        "surface": "𠮷",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "[UNK]",
+          "lemma": "𠮷",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true,
+            "用言表記先頭": true,
+            "用言表記末尾": true
+          },
+          "raw": "𠮷 [UNK] 𠮷 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞><用言表記先頭><用言表記末尾>\n"
+        }
+      },
+      {
+        "id": "t20",
+        "kind": "token",
+        "source_ranges": [
+          [
+            26,
+            27
+          ]
+        ],
+        "source_surface": "。",
+        "text_ranges": [
+          [
+            27,
+            28
+          ]
+        ],
+        "surface": "。",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "。",
+          "lemma": "。",
+          "pos": "特殊",
+          "subpos": "句点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\n"
+        }
+      },
+      {
+        "id": "t21",
+        "kind": "token",
+        "source_ranges": [
+          [
+            27,
+            28
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            28,
+            29
+          ]
+        ],
+        "surface": " ",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "[UNK]",
+          "lemma": "␣",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "␣ [UNK] ␣ 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t22",
+        "kind": "token",
+        "source_ranges": [
+          [
+            28,
+            29
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            29,
+            30
+          ]
+        ],
+        "surface": " ",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "[UNK]",
+          "lemma": "␣",
+          "pos": "名詞",
+          "subpos": "人名",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true,
+            "用言表記先頭": true,
+            "用言表記末尾": true
+          },
+          "raw": "␣ [UNK] ␣ 名詞 6 人名 5 * 0 * 0 <基本句-主辞><用言表記先頭><用言表記末尾>\n"
+        }
+      },
+      {
+        "id": "s0",
+        "kind": "sentence",
+        "source_ranges": [
+          [
+            0,
+            9
+          ]
+        ],
+        "source_surface": "␣警察署へ行った。",
+        "text_ranges": [
+          [
+            0,
+            5
+          ],
+          [
+            6,
+            10
+          ]
+        ],
+        "surface": "　警察署へ行った。",
+        "head": null,
+        "members": [
+          "t0",
+          "t1",
+          "t2",
+          "t3",
+          "t4",
+          "t5"
+        ],
+        "features": {
+          "source_sid": "202609210128-1-0"
+        }
+      },
+      {
+        "id": "s1",
+        "kind": "sentence",
+        "source_ranges": [
+          [
+            9,
+            15
+          ]
+        ],
+        "source_surface": "彼は28歳。",
+        "text_ranges": [
+          [
+            11,
+            17
+          ]
+        ],
+        "surface": "彼は２８歳。",
+        "head": null,
+        "members": [
+          "t6",
+          "t7",
+          "t8",
+          "t9",
+          "t10"
+        ],
+        "features": {
+          "source_sid": "202609210128-1-1"
+        }
+      },
+      {
+        "id": "s2",
+        "kind": "sentence",
+        "source_ranges": [
+          [
+            15,
+            27
+          ]
+        ],
+        "source_surface": "␣ガ、が、株式会社、𠮷。",
+        "text_ranges": [
+          [
+            17,
+            28
+          ]
+        ],
+        "surface": " ｶﾞ、が、㍿、𠮷。",
+        "head": null,
+        "members": [
+          "t11",
+          "t12",
+          "t13",
+          "t14",
+          "t15",
+          "t16",
+          "t17",
+          "t18",
+          "t19",
+          "t20"
+        ],
+        "features": {
+          "source_sid": "202609210128-1-2"
+        }
+      },
+      {
+        "id": "s3",
+        "kind": "sentence",
+        "source_ranges": [
+          [
+            27,
+            29
+          ]
+        ],
+        "source_surface": "␣␣",
+        "text_ranges": [
+          [
+            28,
+            30
+          ]
+        ],
+        "surface": "  ",
+        "head": null,
+        "members": [
+          "t21",
+          "t22"
+        ],
+        "features": {
+          "source_sid": "202609210128-1-3"
+        }
+      },
+      {
+        "id": "b0",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            0,
+            5
+          ]
+        ],
+        "source_surface": "␣警察署へ",
+        "text_ranges": [
+          [
+            0,
+            5
+          ]
+        ],
+        "surface": "　警察署へ",
+        "head": null,
+        "members": [
+          "bp0",
+          "bp1",
+          "bp2"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b1",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "source_surface": "行った。",
+        "text_ranges": [
+          [
+            6,
+            10
+          ]
+        ],
+        "surface": "行った。",
+        "head": null,
+        "members": [
+          "bp3"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b2",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            9,
+            11
+          ]
+        ],
+        "source_surface": "彼は",
+        "text_ranges": [
+          [
+            11,
+            13
+          ]
+        ],
+        "surface": "彼は",
+        "head": null,
+        "members": [
+          "bp4"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b3",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            11,
+            15
+          ]
+        ],
+        "source_surface": "28歳。",
+        "text_ranges": [
+          [
+            13,
+            17
+          ]
+        ],
+        "surface": "２８歳。",
+        "head": null,
+        "members": [
+          "bp5"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b4",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            15,
+            20
+          ]
+        ],
+        "source_surface": "␣ガ、が、",
+        "text_ranges": [
+          [
+            17,
+            24
+          ]
+        ],
+        "surface": " ｶﾞ、が、",
+        "head": null,
+        "members": [
+          "bp6",
+          "bp7"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b5",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            20,
+            25
+          ]
+        ],
+        "source_surface": "株式会社、",
+        "text_ranges": [
+          [
+            24,
+            26
+          ]
+        ],
+        "surface": "㍿、",
+        "head": null,
+        "members": [
+          "bp8",
+          "bp9"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b6",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            25,
+            27
+          ]
+        ],
+        "source_surface": "𠮷。",
+        "text_ranges": [
+          [
+            26,
+            28
+          ]
+        ],
+        "surface": "𠮷。",
+        "head": null,
+        "members": [
+          "bp10"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b7",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            27,
+            28
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            28,
+            29
+          ]
+        ],
+        "surface": " ",
+        "head": null,
+        "members": [
+          "bp11"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b8",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            28,
+            29
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            29,
+            30
+          ]
+        ],
+        "surface": " ",
+        "head": null,
+        "members": [
+          "bp12"
+        ],
+        "features": {}
+      },
+      {
+        "id": "bp0",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            0,
+            1
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            0,
+            1
+          ]
+        ],
+        "surface": "　",
+        "head": "t0",
+        "members": [
+          "t0"
+        ],
+        "features": {
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp1",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            1,
+            3
+          ]
+        ],
+        "source_surface": "警察",
+        "text_ranges": [
+          [
+            1,
+            3
+          ]
+        ],
+        "surface": "警察",
+        "head": "t1",
+        "members": [
+          "t1"
+        ],
+        "features": {
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp2",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            3,
+            5
+          ]
+        ],
+        "source_surface": "署へ",
+        "text_ranges": [
+          [
+            3,
+            5
+          ]
+        ],
+        "surface": "署へ",
+        "head": "t2",
+        "members": [
+          "t2",
+          "t3"
+        ],
+        "features": {
+          "NE": "ORGANIZATION:␣警察署",
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp3",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "source_surface": "行った。",
+        "text_ranges": [
+          [
+            6,
+            10
+          ]
+        ],
+        "surface": "行った。",
+        "head": "t4",
+        "members": [
+          "t4",
+          "t5"
+        ],
+        "features": {
+          "用言": "動",
+          "時制": "過去",
+          "レベル": "C",
+          "動態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "p3",
+        "kind": "predicate",
+        "source_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "source_surface": "行った。",
+        "text_ranges": [
+          [
+            6,
+            10
+          ]
+        ],
+        "surface": "行った。",
+        "head": "t4",
+        "members": [
+          "bp3"
+        ],
+        "features": {
+          "用言": "動",
+          "時制": "過去",
+          "レベル": "C",
+          "動態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "bp4",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            9,
+            11
+          ]
+        ],
+        "source_surface": "彼は",
+        "text_ranges": [
+          [
+            11,
+            13
+          ]
+        ],
+        "surface": "彼は",
+        "head": "t6",
+        "members": [
+          "t6",
+          "t7"
+        ],
+        "features": {
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp5",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            11,
+            15
+          ]
+        ],
+        "source_surface": "28歳。",
+        "text_ranges": [
+          [
+            13,
+            17
+          ]
+        ],
+        "surface": "２８歳。",
+        "head": "t9",
+        "members": [
+          "t8",
+          "t9",
+          "t10"
+        ],
+        "features": {
+          "用言": "判",
+          "体言": true,
+          "時制": "非過去",
+          "レベル": "C",
+          "状態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "p5",
+        "kind": "predicate",
+        "source_ranges": [
+          [
+            11,
+            15
+          ]
+        ],
+        "source_surface": "28歳。",
+        "text_ranges": [
+          [
+            13,
+            17
+          ]
+        ],
+        "surface": "２８歳。",
+        "head": "t9",
+        "members": [
+          "bp5"
+        ],
+        "features": {
+          "用言": "判",
+          "体言": true,
+          "時制": "非過去",
+          "レベル": "C",
+          "状態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "bp6",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            15,
+            16
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            17,
+            18
+          ]
+        ],
+        "surface": " ",
+        "head": "t11",
+        "members": [
+          "t11"
+        ],
+        "features": {
+          "体言": true
+        }
+      },
+      {
+        "id": "bp7",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            16,
+            20
+          ]
+        ],
+        "source_surface": "ガ、が、",
+        "text_ranges": [
+          [
+            18,
+            24
+          ]
+        ],
+        "surface": "ｶﾞ、が、",
+        "head": "t12",
+        "members": [
+          "t12",
+          "t13",
+          "t14",
+          "t15"
+        ],
+        "features": {
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp8",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            20,
+            22
+          ]
+        ],
+        "source_surface": "株式",
+        "text_ranges": [
+          [
+            24,
+            25
+          ]
+        ],
+        "surface": "㍿",
+        "head": "t16",
+        "members": [
+          "t16"
+        ],
+        "features": {
+          "体言": true
+        }
+      },
+      {
+        "id": "bp9",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            22,
+            25
+          ]
+        ],
+        "source_surface": "会社、",
+        "text_ranges": [
+          [
+            24,
+            26
+          ]
+        ],
+        "surface": "㍿、",
+        "head": "t17",
+        "members": [
+          "t17",
+          "t18"
+        ],
+        "features": {
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp10",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            25,
+            27
+          ]
+        ],
+        "source_surface": "𠮷。",
+        "text_ranges": [
+          [
+            26,
+            28
+          ]
+        ],
+        "surface": "𠮷。",
+        "head": "t19",
+        "members": [
+          "t19",
+          "t20"
+        ],
+        "features": {
+          "用言": "判",
+          "体言": true,
+          "時制": "非過去",
+          "レベル": "C",
+          "状態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "p10",
+        "kind": "predicate",
+        "source_ranges": [
+          [
+            25,
+            27
+          ]
+        ],
+        "source_surface": "𠮷。",
+        "text_ranges": [
+          [
+            26,
+            28
+          ]
+        ],
+        "surface": "𠮷。",
+        "head": "t19",
+        "members": [
+          "bp10"
+        ],
+        "features": {
+          "用言": "判",
+          "体言": true,
+          "時制": "非過去",
+          "レベル": "C",
+          "状態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "bp11",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            27,
+            28
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            28,
+            29
+          ]
+        ],
+        "surface": " ",
+        "head": "t21",
+        "members": [
+          "t21"
+        ],
+        "features": {
+          "体言": true
+        }
+      },
+      {
+        "id": "bp12",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            28,
+            29
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            29,
+            30
+          ]
+        ],
+        "surface": " ",
+        "head": "t22",
+        "members": [
+          "t22"
+        ],
+        "features": {
+          "用言": "判",
+          "体言": true,
+          "時制": "非過去",
+          "レベル": "C",
+          "状態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "p12",
+        "kind": "predicate",
+        "source_ranges": [
+          [
+            28,
+            29
+          ]
+        ],
+        "source_surface": "␣",
+        "text_ranges": [
+          [
+            29,
+            30
+          ]
+        ],
+        "surface": " ",
+        "head": "t22",
+        "members": [
+          "bp12"
+        ],
+        "features": {
+          "用言": "判",
+          "体言": true,
+          "時制": "非過去",
+          "レベル": "C",
+          "状態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "e0",
+        "kind": "entity",
+        "source_ranges": [
+          [
+            0,
+            4
+          ]
+        ],
+        "source_surface": "␣警察署",
+        "text_ranges": [
+          [
+            0,
+            4
+          ]
+        ],
+        "surface": "　警察署",
+        "head": null,
+        "members": [
+          "t0",
+          "t1",
+          "t2"
+        ],
+        "features": {
+          "label": "ORGANIZATION"
+        }
+      },
+      {
+        "id": "clause0",
+        "kind": "clause",
+        "source_ranges": [
+          [
+            0,
+            9
+          ]
+        ],
+        "source_surface": "␣警察署へ行った。",
+        "text_ranges": [
+          [
+            0,
+            5
+          ],
+          [
+            6,
+            10
+          ]
+        ],
+        "surface": "　警察署へ行った。",
+        "head": "bp3",
+        "members": [
+          "bp0",
+          "bp1",
+          "bp2",
+          "bp3"
+        ],
+        "features": {}
+      },
+      {
+        "id": "clause1",
+        "kind": "clause",
+        "source_ranges": [
+          [
+            9,
+            15
+          ]
+        ],
+        "source_surface": "彼は28歳。",
+        "text_ranges": [
+          [
+            11,
+            17
+          ]
+        ],
+        "surface": "彼は２８歳。",
+        "head": "bp5",
+        "members": [
+          "bp4",
+          "bp5"
+        ],
+        "features": {}
+      },
+      {
+        "id": "clause2",
+        "kind": "clause",
+        "source_ranges": [
+          [
+            15,
+            27
+          ]
+        ],
+        "source_surface": "␣ガ、が、株式会社、𠮷。",
+        "text_ranges": [
+          [
+            17,
+            28
+          ]
+        ],
+        "surface": " ｶﾞ、が、㍿、𠮷。",
+        "head": "bp10",
+        "members": [
+          "bp6",
+          "bp7",
+          "bp8",
+          "bp9",
+          "bp10"
+        ],
+        "features": {}
+      },
+      {
+        "id": "clause3",
+        "kind": "clause",
+        "source_ranges": [
+          [
+            27,
+            29
+          ]
+        ],
+        "source_surface": "␣␣",
+        "text_ranges": [
+          [
+            28,
+            30
+          ]
+        ],
+        "surface": "  ",
+        "head": "bp12",
+        "members": [
+          "bp11",
+          "bp12"
+        ],
+        "features": {}
+      }
+    ],
+    "relations": [
+      {
+        "id": "r0",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b0"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b1"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r1",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b1"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r2",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b2"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b3"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r3",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b3"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r4",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b4"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b6"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r5",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b5"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b6"
+        },
+        "label": "P",
+        "features": {}
+      },
+      {
+        "id": "r6",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b6"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r7",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b7"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b8"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r8",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b8"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r9",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp0"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp1"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r10",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp1"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r11",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp3"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r12",
+        "kind": "bridging",
+        "source": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp1"
+        },
+        "label": "ノ",
+        "features": {
+          "raw": "<rel type=\"ノ\" target=\"警察\" sid=\"202609210128-1-0\" id=\"1\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r13",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp3"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r14",
+        "kind": "predicate_argument",
+        "source": {
+          "kind": "node",
+          "id": "bp3"
+        },
+        "target": {
+          "kind": "exophora",
+          "label": "不特定:人"
+        },
+        "label": "ガ",
+        "features": {
+          "raw": "<rel type=\"ガ\" target=\"不特定:人\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r15",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp4"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp5"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r16",
+        "kind": "coreference",
+        "source": {
+          "kind": "node",
+          "id": "bp4"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp0"
+        },
+        "label": "=",
+        "features": {
+          "raw": "<rel type=\"=\" target=\"␣\" sid=\"202609210128-1-0\" id=\"0\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r17",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp5"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r18",
+        "kind": "predicate_argument",
+        "source": {
+          "kind": "node",
+          "id": "bp5"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp4"
+        },
+        "label": "ガ",
+        "features": {
+          "raw": "<rel type=\"ガ\" target=\"彼\" sid=\"202609210128-1-1\" id=\"0\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r19",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp6"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp7"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r20",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp7"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp10"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r21",
+        "kind": "coreference",
+        "source": {
+          "kind": "node",
+          "id": "bp7"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp4"
+        },
+        "label": "=",
+        "features": {
+          "raw": "<rel type=\"=\" target=\"彼\" sid=\"202609210128-1-1\" id=\"0\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r22",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp8"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp9"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r23",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp9"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp10"
+        },
+        "label": "P",
+        "features": {}
+      },
+      {
+        "id": "r24",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp10"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r25",
+        "kind": "predicate_argument",
+        "source": {
+          "kind": "node",
+          "id": "bp10"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp7"
+        },
+        "label": "ガ",
+        "features": {
+          "raw": "<rel type=\"ガ\" target=\"ガ\" sid=\"202609210128-1-2\" id=\"1\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r26",
+        "kind": "coreference",
+        "source": {
+          "kind": "node",
+          "id": "bp10"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp7"
+        },
+        "label": "=",
+        "features": {
+          "raw": "<rel type=\"=\" target=\"ガ\" sid=\"202609210128-1-2\" id=\"1\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r27",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp11"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp12"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r28",
+        "kind": "coreference",
+        "source": {
+          "kind": "node",
+          "id": "bp11"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp10"
+        },
+        "label": "=",
+        "features": {
+          "raw": "<rel type=\"=\" target=\"𠮷\" sid=\"202609210128-1-2\" id=\"4\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r29",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp12"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r30",
+        "kind": "coreference",
+        "source": {
+          "kind": "node",
+          "id": "bp12"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp10"
+        },
+        "label": "=",
+        "features": {
+          "raw": "<rel type=\"=\" target=\"𠮷\" sid=\"202609210128-1-2\" id=\"4\"/>",
+          "mode": null
+        }
+      }
+    ],
+    "diagnostics": [],
+    "raw": "# S-ID:202609210128-1-0 kwja:2.1.3\n* 1D\n+ 1D <体言><SM-主体>\n␣ [UNK] ␣ 名詞 6 人名 5 * 0 * 0 <基本句-主辞>\n+ 2D <体言><SM-主体>\n警察 けいさつ 警察 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:警察/けいさつ 組織名末尾 カテゴリ:組織・団体;場所-施設 ドメイン:政治\" <基本句-主辞>\n+ 3D <rel type=\"ノ\" target=\"警察\" sid=\"202609210128-1-0\" id=\"1\"/><NE:ORGANIZATION:␣警察署><体言><SM-主体>\n署 しょ 署 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:署/しょ 漢字読み:音 組織名末尾 カテゴリ:場所-施設 ドメイン:政治\" <基本句-主辞>\nへ へ へ 助詞 9 格助詞 1 * 0 * 0 \"代表表記:へ/へ\"\n* -1D\n+ -1D <rel type=\"ガ\" target=\"不特定:人\"/><用言:動><時制:過去><レベル:C><動態述語><節-区切><節-主辞>\n行った おこなった 行う 動詞 2 * 0 子音動詞ワ行 12 タ形 10 \"代表表記:行う/おこなう\" <基本句-主辞><用言表記先頭><用言表記末尾>\n。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\nEOS\n# S-ID:202609210128-1-1 kwja:2.1.3\n* 1D\n+ 1D <rel type=\"=\" target=\"␣\" sid=\"202609210128-1-0\" id=\"0\"/><体言><SM-主体>\n彼 かれ 彼 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:彼/かれ 漢字読み:訓 カテゴリ:人\" <基本句-主辞>\nは は は 助詞 9 副助詞 2 * 0 * 0 \"代表表記:は/は\"\n* -1D\n+ -1D <rel type=\"ガ\" target=\"彼\" sid=\"202609210128-1-1\" id=\"0\"/><用言:判><体言><時制:非過去><レベル:C><状態述語><節-区切><節-主辞>\n28 にじゅうはち 28 名詞 6 数詞 7 * 0 * 0\n歳 さい 歳 接尾辞 14 名詞性名詞助数辞 3 * 0 * 0 \"代表表記:歳/さい 準内容語\" <基本句-主辞><用言表記先頭><用言表記末尾>\n。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\nEOS\n# S-ID:202609210128-1-2 kwja:2.1.3\n* 2D\n+ 1D <体言>\n␣ [UNK] ␣ 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞>\n+ 4D <rel type=\"=\" target=\"彼\" sid=\"202609210128-1-1\" id=\"0\"/><体言><SM-主体>\nガ や ガ 名詞 6 人名 5 * 0 * 0 <基本句-主辞>\n、 、 、 特殊 1 読点 2 * 0 * 0 \"代表表記:、/、\"\nが が が 助詞 9 格助詞 1 * 0 * 0 \"代表表記:が/が\"\n、 、 、 特殊 1 読点 2 * 0 * 0 \"代表表記:、/、\"\n* 2P\n+ 3D <体言>\n株式 かぶしき 株式 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:株式/かぶしき カテゴリ:抽象物 ドメイン:ビジネス\" <基本句-主辞>\n+ 4P <体言><SM-主体>\n会社 がいしゃ 会社 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞>\n、 、 、 特殊 1 読点 2 * 0 * 0 \"代表表記:、/、\"\n* -1D\n+ -1D <rel type=\"ガ\" target=\"ガ\" sid=\"202609210128-1-2\" id=\"1\"/><rel type=\"=\" target=\"ガ\" sid=\"202609210128-1-2\" id=\"1\"/><用言:判><体言><時制:非過去><レベル:C><状態述語><節-区切><節-主辞>\n𠮷 [UNK] 𠮷 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞><用言表記先頭><用言表記末尾>\n。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\nEOS\n# S-ID:202609210128-1-3 kwja:2.1.3\n* 1D\n+ 1D <rel type=\"=\" target=\"𠮷\" sid=\"202609210128-1-2\" id=\"4\"/><体言>\n␣ [UNK] ␣ 名詞 6 普通名詞 1 * 0 * 0 <基本句-主辞>\n* -1D\n+ -1D <rel type=\"=\" target=\"𠮷\" sid=\"202609210128-1-2\" id=\"4\"/><用言:判><体言><時制:非過去><レベル:C><状態述語><節-区切><節-主辞>\n␣ [UNK] ␣ 名詞 6 人名 5 * 0 * 0 <基本句-主辞><用言表記先頭><用言表記末尾>\nEOS\n",
+    "elapsed_ms": 495.3624000190757
+  }
+}

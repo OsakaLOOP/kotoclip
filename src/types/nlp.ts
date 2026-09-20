@@ -65,6 +65,26 @@ export interface UnifiedDocument {
   expression: { schema: string; occurrences: ExpressionOccurrence[] };
   projection: { schema: string; targets: ProjectionTarget[] };
   morphology: MorphologyArtifact;
+  external_sources: SourceArtifact[];
+}
+
+export interface ProviderConfig { python: string; model: string; enabled: boolean; timeout_seconds: number; }
+export interface ProviderSettings { ginza: ProviderConfig; kwja: ProviderConfig; kwja_cache: string; hf_cache: string; }
+export interface SourceNode {
+  id: string; kind: 'token' | 'compound' | 'bunsetsu' | 'basic_phrase' | 'sentence' | 'clause' | 'predicate' | 'entity';
+  source_ranges: [number, number][]; source_surface: string; text_ranges: [number, number][]; surface: string;
+  head: string | null; members: string[]; features: Record<string, unknown>;
+}
+export type SourceEndpoint = { kind: 'node'; id: string } | { kind: 'root' } | { kind: 'exophora'; label: string };
+export interface SourceRelation {
+  id: string; kind: 'dependency' | 'predicate_argument' | 'coreference' | 'bridging' | 'discourse';
+  source: SourceEndpoint; target: SourceEndpoint; label: string; features: Record<string, unknown>;
+}
+export interface SourceArtifact {
+  schema: string; provider: { id: string; version: string; model: string; model_version: string; versions: Record<string, string>; tasks: string[]; capabilities: string[]; coordinate_system: string };
+  text_sha256: string; text_characters: number; normalized_text: string; normalization_map: [number, number][];
+  deleted_ranges: [number, number][]; nodes: SourceNode[]; relations: SourceRelation[]; diagnostics: string[];
+  raw: string | null; elapsed_ms: number;
 }
 export interface GrammarOccurrence {
   id: string; concept_id: string | null; char_range: [number, number]; morpheme_indices: number[];

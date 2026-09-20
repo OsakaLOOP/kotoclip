@@ -5,7 +5,15 @@ use std::{
 };
 use tauri::{Manager, State};
 
-struct AppState(Arc<Mutex<AnalysisService>>);
+struct AppState {
+    service: Arc<Mutex<AnalysisService>>,
+    cancellation: Arc<std::sync::atomic::AtomicU64>,
+}
+
+#[tauri::command]
+fn cancel_external(state: State<'_, AppState>) {
+    state.cancellation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+}
 
 #[tauri::command]
 fn search_grammar_catalog(
@@ -22,10 +30,15 @@ fn get_grammar_concept(concept_id: String) -> Result<kotoclip_core::grammar_cata
 
 #[tauri::command]
 async fn nlp_request(state: State<'_, AppState>, request: Request) -> Result<Response, String> {
-    let service = state.0.clone();
+    if matches!(request, Request::CancelExternal) {
+        cancel_external(state);
+        return Ok(Response { result: Some(serde_json::json!({"cancelled": true})), error: None });
+    }
+    let service = state.service.clone();
+    let generation = state.cancellation.load(std::sync::atomic::Ordering::Relaxed);
     tauri::async_runtime::spawn_blocking(move || {
         let mut service = service.lock().map_err(|_| "分析服务状态异常，请重启应用")?;
-        Ok(service.dispatch(request))
+        Ok(service.dispatch_at(request, generation))
     })
     .await
     .map_err(|e| e.to_string())?
@@ -76,12 +89,17 @@ pub fn run() {
                     csj: dictionary("csj"),
                     dictionary_sources: sources,
                     dictionaries: data.join("dicts"),
+                    provider_config: data.join("providers.local.json"),
+                    provider_script: resources.join("_up_/scripts/nlp_provider.py"),
+                    provider_defaults: kotoclip_core::providers::ProviderSettings::development(&portable),
                 }
             };
-            app.manage(AppState(Arc::new(Mutex::new(AnalysisService::new(paths)))));
+            let service = AnalysisService::new(paths);
+            let cancellation = service.cancellation();
+            app.manage(AppState { service: Arc::new(Mutex::new(service)), cancellation });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept])
+        .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept, cancel_external])
         .run(tauri::generate_context!())
         .expect("桌面应用启动失败");
 }

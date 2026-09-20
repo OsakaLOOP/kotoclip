@@ -37,6 +37,8 @@
       "../data/dict-sources/daijirin.kdict",
       "../data/dict-sources/shogakukan.kdict",
       "../data/dict-sources/crown.kdict",
+      "../scripts/nlp_provider.py",
+      "../scripts/nlp_adapters.py",
       "../src/version/changelog.json"
     ],
     "icon": [

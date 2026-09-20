@@ -1,0 +1,681 @@
+{
+  "schema": "kotoclip.provider-integration-check.v1",
+  "cases": [
+    {
+      "id": "news",
+      "characters": 79,
+      "elapsed_ms": 24700.90739999432,
+      "providers": [
+        {
+          "elapsed_ms": 8295,
+          "id": "ginza",
+          "request_id": "ginza-1",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 10192,
+          "id": "kwja",
+          "request_id": "kwja-2",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 81,
+          "relations": 50,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 111,
+          "relations": 59,
+          "deleted_ranges": []
+        }
+      ]
+    },
+    {
+      "id": "contraction",
+      "characters": 40,
+      "elapsed_ms": 6435.278400022071,
+      "providers": [
+        {
+          "elapsed_ms": 81,
+          "id": "ginza",
+          "request_id": "ginza-3",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 464,
+          "id": "kwja",
+          "request_id": "kwja-4",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 34,
+          "relations": 21,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 45,
+          "relations": 23,
+          "deleted_ranges": []
+        }
+      ]
+    },
+    {
+      "id": "literary",
+      "characters": 11,
+      "elapsed_ms": 542.7168000023812,
+      "providers": [
+        {
+          "elapsed_ms": 43,
+          "id": "ginza",
+          "request_id": "ginza-5",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 484,
+          "id": "kwja",
+          "request_id": "kwja-6",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 13,
+          "relations": 7,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 19,
+          "relations": 9,
+          "deleted_ranges": []
+        }
+      ]
+    },
+    {
+      "id": "legal",
+      "characters": 235,
+      "elapsed_ms": 1683.2675999612547,
+      "providers": [
+        {
+          "elapsed_ms": 388,
+          "id": "ginza",
+          "request_id": "ginza-7",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 1039,
+          "id": "kwja",
+          "request_id": "kwja-8",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 217,
+          "relations": 145,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 325,
+          "relations": 184,
+          "deleted_ranges": []
+        }
+      ]
+    },
+    {
+      "id": "boundaries",
+      "characters": 31,
+      "elapsed_ms": 661.2073000287637,
+      "providers": [
+        {
+          "elapsed_ms": 82,
+          "id": "ginza",
+          "request_id": "ginza-9",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 525,
+          "id": "kwja",
+          "request_id": "kwja-10",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 46,
+          "relations": 22,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 58,
+          "relations": 31,
+          "deleted_ranges": [
+            [
+              5,
+              6
+            ],
+            [
+              10,
+              11
+            ],
+            [
+              30,
+              31
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "relations",
+      "characters": 20,
+      "elapsed_ms": 589.5926999510266,
+      "providers": [
+        {
+          "elapsed_ms": 69,
+          "id": "ginza",
+          "request_id": "ginza-11",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 488,
+          "id": "kwja",
+          "request_id": "kwja-12",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 28,
+          "relations": 16,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 35,
+          "relations": 21,
+          "deleted_ranges": []
+        }
+      ]
+    },
+    {
+      "id": "inflection",
+      "characters": 35,
+      "elapsed_ms": 664.3319999566302,
+      "providers": [
+        {
+          "elapsed_ms": 96,
+          "id": "ginza",
+          "request_id": "ginza-13",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 513,
+          "id": "kwja",
+          "request_id": "kwja-14",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 39,
+          "relations": 24,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 47,
+          "relations": 23,
+          "deleted_ranges": []
+        }
+      ]
+    }
+  ],
+  "pids": {
+    "ginza": 14604,
+    "kwja": 39556
+  },
+  "missing_interpreter_recovery": true
+}
