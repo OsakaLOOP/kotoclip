@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { nlpRequest } from '../services/nlp';
-import type { ProviderSettings, SourceArtifact, SourceEndpoint, StructureGraph, UnifiedDocument } from '../types/nlp';
+import type { ProviderCheck, ProviderSettings, SourceArtifact, SourceEndpoint, StructureGraph, UnifiedDocument } from '../types/nlp';
 
 const props = defineProps<{ sources: SourceArtifact[]; graph: StructureGraph | null; alignments: UnifiedDocument['provider_token_alignments']; pending: boolean; canAnalyze: boolean; diagnostics: { id: string; status: string; error?: string }[] }>();
 const emit = defineEmits<{ retry: []; cancel: [] }>();
@@ -9,6 +9,8 @@ const settings = ref<ProviderSettings | null>(null);
 const error = ref('');
 const saved = ref(false);
 const saving = ref(false);
+const checking = ref(false);
+const checks = ref<ProviderCheck[]>([]);
 const providerId = ref('ginza');
 const kind = ref('bunsetsu');
 const source = computed(() => props.sources.find(item => item.provider.id === providerId.value));
@@ -35,6 +37,16 @@ async function save() {
   catch (e) { error.value = String(e); }
   finally { saving.value = false; }
 }
+async function checkResources() {
+  if (!settings.value) return;
+  checking.value = true; error.value = ''; checks.value = [];
+  try {
+    await nlpRequest({ command: 'configure_providers', settings: settings.value });
+    checks.value = (await nlpRequest<{ providers: ProviderCheck[] }>({ command: 'check_providers' })).providers;
+    saved.value = true;
+  } catch (e) { error.value = String(e); }
+  finally { checking.value = false; }
+}
 onMounted(async () => {
   try { settings.value = (await nlpRequest<{ settings: ProviderSettings }>({ command: 'provider_status' })).settings; }
   catch (e) { error.value = String(e); }
@@ -49,17 +61,24 @@ onMounted(async () => {
     <details>
       <summary>本机模型设置</summary>
       <form v-if="settings" @submit.prevent="save">
-        <fieldset v-for="id in (['ginza', 'kwja'] as const)" :key="id" :disabled="pending || saving">
+        <fieldset v-for="id in (['ginza', 'kwja'] as const)" :key="id" :disabled="pending || saving || checking">
           <legend>{{ id === 'ginza' ? 'GiNZA' : 'KWJA' }}</legend>
           <label class="provider-toggle"><input v-model="settings[id].enabled" type="checkbox" />启用</label>
           <label>Python 解释器<input v-model="settings[id].python" required /></label>
           <label>模型<input v-model="settings[id].model" required /></label>
+          <label>{{ id === 'ginza' ? 'Sudachi 词典文件' : 'JumanDic 词典目录' }}<input v-model="settings[id].dictionary" placeholder="留空使用随包词典" /></label>
           <label>超时（秒）<input v-model.number="settings[id].timeout_seconds" type="number" min="1" required /></label>
         </fieldset>
-        <label>KWJA 模型目录<input v-model="settings.kwja_cache" :disabled="pending || saving" /></label>
-        <label>Hugging Face 缓存目录<input v-model="settings.hf_cache" :disabled="pending || saving" /></label>
-        <button type="submit" :disabled="pending || saving">{{ saving ? '保存中' : '保存设置' }}</button><span v-if="saved" role="status">已保存，下次分析使用新设置</span>
+        <label>KWJA 模型目录<input v-model="settings.kwja_cache" :disabled="pending || saving || checking" /></label>
+        <label>Hugging Face 缓存目录<input v-model="settings.hf_cache" :disabled="pending || saving || checking" /></label>
+        <button type="submit" :disabled="pending || saving || checking">{{ saving ? '保存中' : '保存设置' }}</button>
+        <button type="button" :disabled="pending || saving || checking" @click="checkResources">{{ checking ? '检查中' : '保存并检查' }}</button>
+        <button v-if="checking" type="button" @click="emit('cancel')">取消检查</button><span v-if="saved" role="status">设置已保存</span>
       </form>
+      <div v-for="item in checks" :key="item.id" class="provider-check">
+        <p :role="item.error ? 'alert' : 'status'">{{ item.id }}：{{ states[item.status] || item.status }}<span v-if="item.error"> · {{ item.error }}</span></p>
+        <details v-if="item.manifest"><summary>{{ item.manifest.model }} · {{ item.manifest.resources.length }} 项资源</summary><pre>{{ JSON.stringify(item.manifest, null, 2) }}</pre></details>
+      </div>
     </details>
     <p v-if="error" role="alert">{{ error }}</p>
     <div class="provider-filters"><label>来源<select v-model="providerId"><option value="ginza">GiNZA</option><option value="kwja">KWJA</option></select></label><label>结构<select v-model="kind"><option v-for="(label, id) in kinds" :key="id" :value="id">{{ label }}</option></select></label></div>

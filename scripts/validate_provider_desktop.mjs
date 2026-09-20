@@ -42,6 +42,30 @@ try {
       await new Promise(resolve => setTimeout(resolve, 250));
     }
   })()`);
+  let resourceCheck = null;
+  if (process.argv.includes('--resources')) {
+    await evaluate(`(async () => {
+      const deadline = Date.now() + 15000;
+      while (!document.querySelector('.provider-panel fieldset')) {
+        if (Date.now() >= deadline) throw new Error('资源设置加载超时');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      document.querySelector('.provider-panel details').open = true;
+      [...document.querySelectorAll('.provider-panel button')].find(button => button.textContent === '保存并检查').click();
+    })()`);
+    resourceCheck = await evaluate(`(async () => {
+      const deadline = Date.now() + 90000;
+      while (Date.now() < deadline) {
+        const checks = [...document.querySelectorAll('.provider-check')];
+        if (checks.length === 2) {
+          if (checks.some(check => !check.textContent.includes('完成'))) throw new Error(checks.map(check => check.textContent).join('\\n'));
+          return checks.map(check => ({ status: check.querySelector('p').textContent, resources: check.querySelector('summary').textContent }));
+        }
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      throw new Error('资源检查超时');
+    })()`);
+  }
   await evaluate(`(() => {
     const input = document.querySelector('textarea');
     input.value = 'ラティメリアはきょろきょろと部屋を見渡すが、鏡の裏から覗かれてるとは気づかない。';
@@ -52,9 +76,10 @@ try {
     const deadline = Date.now() + 90000;
     while (Date.now() < deadline) {
       const panel = document.querySelector('.provider-panel');
-      if (panel.textContent.includes('ginza：完成') && panel.textContent.includes('kwja：完成'))
+      const status = [...panel.querySelectorAll(':scope > p')].map(item => item.textContent).join(' ');
+      if (status.includes('ginza：完成') && status.includes('kwja：完成'))
         return { text: panel.textContent, words: document.querySelectorAll('.word').length };
-      if (panel.textContent.includes('失败')) throw new Error(panel.textContent);
+      if (status.includes('失败')) throw new Error(status);
       await new Promise(resolve => setTimeout(resolve, 250));
     }
     throw new Error('桌面结构分析超时');
@@ -74,7 +99,7 @@ try {
   await evaluate(`(async () => {
     const deadline = Date.now() + 60000;
     while (Date.now() < deadline) {
-      const text = document.querySelector('.provider-panel').textContent;
+      const text = [...document.querySelectorAll('.provider-panel > p')].map(item => item.textContent).join(' ');
       if (text.includes('ginza：完成') && text.includes('kwja：完成')) return;
       await new Promise(resolve => setTimeout(resolve, 250));
     }
@@ -101,7 +126,7 @@ try {
   if (overflow.body > overflow.width) throw new Error('窄窗口内容溢出');
   const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   await writeFile('experiments/provider-desktop.png', Buffer.from(screenshot.data, 'base64'));
-  const report = { desktop, words: state.words, ginza: true, kwja: true, cancellation_recovery: cancellation, kwja_structure: kwja, alignment, viewport: overflow };
+  const report = { desktop, words: state.words, ginza: true, kwja: true, cancellation_recovery: cancellation, kwja_structure: kwja, alignment, resourceCheck, viewport: overflow };
   await writeFile('data/validation/behavior/desktop.json', JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(report));
 } finally {
