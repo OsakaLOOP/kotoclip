@@ -4,7 +4,10 @@ from __future__ import annotations
 import hashlib
 import importlib.metadata
 import json
+from pathlib import Path
 import time
+
+from nlp_resources import file_resources, identify, tokenizer_resource
 
 SCHEMA = "kotoclip.source-analysis.v1"
 
@@ -103,15 +106,23 @@ def node_ref(node_id):
 
 
 class GinzaAdapter:
-    def __init__(self, model="ja_ginza"):
+    def __init__(self, model="ja_ginza", dictionary_path=None):
         import spacy
+        import sudachipy
+        import sudachidict_core
         self.nlp = spacy.load(model)
+        dictionary_path = Path(dictionary_path).resolve() if dictionary_path else Path(sudachidict_core.__file__).parent / "resources/system.dic"
+        resources = file_resources("sudachi_dictionary", dictionary_path)
+        self.nlp.tokenizer.tokenizer = sudachipy.Dictionary(dict=str(dictionary_path)).create(mode=self.nlp.tokenizer.split_mode or "A")
         self.manifest = {"id": "ginza", "version": importlib.metadata.version("ginza"),
             "model": model, "model_version": self.nlp.meta["version"],
             "versions": {key: importlib.metadata.version(key) for key in ("spacy", "sudachipy", "sudachidict-core")},
             "tasks": self.nlp.pipe_names,
             "capabilities": ["token", "compound", "bunsetsu", "sentence", "clause", "dependency", "entity"],
             "coordinate_system": "unicode_scalar"}
+        resources += file_resources("ginza_model", self.nlp.path)
+        resources += file_resources("sudachi_config", Path(sudachipy.__file__).parent / "resources")
+        identify(self.manifest, resources, {"split_mode": self.nlp.tokenizer.split_mode, "device": "cpu"})
 
     def analyze(self, text):
         import ginza
@@ -146,27 +157,48 @@ class GinzaAdapter:
 
 
 class KwjaAdapter:
-    def __init__(self, model="tiny", device="cpu", threads=4):
+    def __init__(self, model="tiny", device="cpu", threads=4, dictionary_path=None):
         import torch
+        import hydra
+        import jinf
         from kwja.cli.cli import CLIProcessor
         from kwja.cli.config import CLIConfig, Device, ModelSize
+        from kwja.cli.utils import _CHECKPOINT_FILE_NAMES, _get_kwja_cache_dir, _get_model_version
+        from kwja.callbacks.word_module_writer import WordModuleWriter
+        from kwja.utils.constants import RESOURCE_PATH
+        from kwja.utils.jumandic import JumanDic
         from pytorch_lightning.callbacks.progress.rich_progress import RichProgressBar
+        modules = ["senter", "char", "word"] if model != "tiny" else ["char", "word"]
+        resources = []
+        for module in modules:
+            resources += file_resources(f"kwja_{module}", _get_kwja_cache_dir() / _get_model_version() / _CHECKPOINT_FILE_NAMES[ModelSize(model)][module])
+        dictionary_path = Path(dictionary_path).resolve() if dictionary_path else RESOURCE_PATH / "jumandic"
+        resources += file_resources("juman_dictionary", dictionary_path)
+        resources += file_resources("reading_vocabulary", RESOURCE_PATH / "reading_prediction/vocab.txt")
+        resources += file_resources("inflection_dictionary", Path(jinf.__file__).parent / "data")
         torch.set_num_threads(threads)
         self.processor = CLIProcessor(CLIConfig(model_size=ModelSize(model), device=Device(device)), ["senter", "char", "word"])
         self.processor.load_all_modules()
         for item in self.processor.processors:
             if item.trainer is not None:
                 item.trainer.callbacks = [cb for cb in item.trainer.callbacks if not isinstance(cb, RichProgressBar)]
+                if dictionary_path != RESOURCE_PATH / "jumandic":
+                    for callback in item.trainer.callbacks:
+                        if isinstance(callback, WordModuleWriter):
+                            callback.jumandic = JumanDic(dictionary_path)
+                tokenizer = hydra.utils.instantiate(item.module.hparams.datamodule.predict.tokenizer)
+                resources.append(tokenizer_resource(type(item).__name__, tokenizer))
         word = self.processor.processors[-1].module
         self.manifest = {"id": "kwja", "version": importlib.metadata.version("kwja"),
-            "model": model, "model_version": "v2.1", "device": device,
-            "versions": {key: importlib.metadata.version(key) for key in ("torch", "rhoknp", "transformers")},
+            "model": model, "model_version": _get_model_version(), "device": device,
+            "versions": {key: importlib.metadata.version(key) for key in ("torch", "rhoknp", "transformers", "jinf", "tokenizers")},
             "tasks": [task.value for task in word.training_tasks],
             "capabilities": ["token", "bunsetsu", "basic_phrase", "sentence", "clause", "predicate", "dependency"],
             "coordinate_system": "unicode_scalar"}
         for task, capability in [("ner", "entity"), ("cohesion_analysis", "cohesion"), ("discourse_parsing", "discourse")]:
             if task in self.manifest["tasks"]:
                 self.manifest["capabilities"].append(capability)
+        identify(self.manifest, resources, {"device": device, "threads": threads, "modules": ["senter", "char", "word"], "offline": True})
 
     def analyze(self, text):
         from kwja.cli.cli import _normalize_text

@@ -55,6 +55,7 @@ impl ResourcePaths {
 pub enum Request {
     Status,
     ProviderStatus,
+    CheckProviders,
     ConfigureProviders { settings: crate::providers::ProviderSettings },
     Enrich { analysis_id: String },
     CancelExternal,
@@ -134,6 +135,7 @@ impl AnalysisService {
                 Ok(json!({"cancelled": true}))
             },
             Request::ProviderStatus => self.external.status(),
+            Request::CheckProviders => self.external.check(generation),
             Request::ConfigureProviders { settings } => self.external.configure(settings),
             Request::Enrich { analysis_id } => self.enrich(&analysis_id, generation),
             Request::Status => Ok(

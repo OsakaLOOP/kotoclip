@@ -20,6 +20,8 @@ pub struct ProviderConfig {
     pub model: String,
     pub enabled: bool,
     pub timeout_seconds: u64,
+    #[serde(default)]
+    pub dictionary: PathBuf,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,8 +35,8 @@ pub struct ProviderSettings {
 impl ProviderSettings {
     pub fn development(root: &Path) -> Self {
         Self {
-            ginza: ProviderConfig { python: root.join("experiments/ginza311/Scripts/python.exe"), model: "ja_ginza".into(), enabled: true, timeout_seconds: 120 },
-            kwja: ProviderConfig { python: root.join("experiments/kwja311/Scripts/python.exe"), model: "tiny".into(), enabled: true, timeout_seconds: 120 },
+            ginza: ProviderConfig { python: root.join("experiments/ginza311/Scripts/python.exe"), model: "ja_ginza".into(), enabled: true, timeout_seconds: 120, dictionary: PathBuf::new() },
+            kwja: ProviderConfig { python: root.join("experiments/kwja311/Scripts/python.exe"), model: "tiny".into(), enabled: true, timeout_seconds: 120, dictionary: PathBuf::new() },
             kwja_cache: root.join("experiments/kwja-cache"), hf_cache: root.join("experiments/hf-cache"),
         }
     }
@@ -56,6 +58,7 @@ impl Worker {
             .arg("--hf-cache").arg(&settings.hf_cache)
             .stdin(Stdio::piped()).stdout(Stdio::piped())
             .stderr(Stdio::from(File::create(log).map_err(|e| format!("无法创建来源日志：{e}"))?));
+        if !config.dictionary.as_os_str().is_empty() { command.arg("--dictionary").arg(&config.dictionary); }
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
@@ -151,10 +154,36 @@ impl ProviderManager {
         let settings = self.settings()?;
         let providers: Vec<Value> = [("ginza", &settings.ginza), ("kwja", &settings.kwja)].into_iter().map(|(id, config)| {
             let worker = self.workers.get(id);
-            json!({"id": id, "available": config.python.is_file() && self.script.is_file(), "enabled": config.enabled,
+            json!({"id": id, "configured": config.python.is_file() && self.script.is_file(), "available": worker.is_some(), "enabled": config.enabled,
                 "loaded": worker.is_some(), "pid": worker.map(|w| w.child.id()), "manifest": worker.map(|w| &w.manifest)})
         }).collect();
         Ok(json!({"settings": settings, "providers": providers, "config_path": self.config_path, "script": self.script}))
+    }
+
+    fn initialize(&mut self, id: &str, config: &ProviderConfig, settings: &ProviderSettings, generation: u64) -> Result<(), String> {
+        if self.cancellation.load(Ordering::Relaxed) != generation { return Err("来源初始化已取消".into()); }
+        if !self.workers.contains_key(id) {
+            let log_dir = self.config_path.parent().unwrap().join("provider-logs");
+            fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;
+            let worker = Worker::start(id, config, settings, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)?;
+            self.workers.insert(id.into(), worker);
+        }
+        Ok(())
+    }
+
+    pub fn check(&mut self, generation: u64) -> Result<Value, String> {
+        let settings = self.settings()?;
+        self.workers.clear();
+        let mut diagnostics = Vec::new();
+        for (id, config) in [("ginza", &settings.ginza), ("kwja", &settings.kwja)] {
+            if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
+            let result = self.initialize(id, config, &settings, generation);
+            diagnostics.push(match result {
+                Ok(()) => json!({"id": id, "status": "ready", "manifest": self.workers[id].manifest, "pid": self.workers[id].child.id()}),
+                Err(error) => json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error}),
+            });
+        }
+        Ok(json!({"providers": diagnostics}))
     }
 
     pub fn analyze(&mut self, text: &str, generation: u64) -> (Vec<SourceArtifact>, Vec<Value>) {
@@ -168,12 +197,7 @@ impl ProviderManager {
             let request_id = format!("{id}-{}", self.sequence);
             let started = Instant::now();
             let result = (|| {
-                if !self.workers.contains_key(id) {
-                    let log_dir = self.config_path.parent().unwrap().join("provider-logs");
-                    fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;
-                    let worker = Worker::start(id, config, &settings, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)?;
-                    self.workers.insert(id.into(), worker);
-                }
+                self.initialize(id, config, &settings, generation)?;
                 self.workers.get_mut(id).unwrap().analyze(text, &request_id, config.timeout_seconds, &self.cancellation, generation)
             })();
             match result {

@@ -96,8 +96,14 @@ export interface StructureGraph {
   candidates: { id: string; kind: SourceNode['kind']; text_ranges: [number, number][]; evidence: string[]; preferred_entity: string | null; selected: boolean; reason: string; competing_ids: string[] }[];
 }
 
-export interface ProviderConfig { python: string; model: string; enabled: boolean; timeout_seconds: number; }
+export interface ProviderConfig { python: string; model: string; enabled: boolean; timeout_seconds: number; dictionary: string; }
 export interface ProviderSettings { ginza: ProviderConfig; kwja: ProviderConfig; kwja_cache: string; hf_cache: string; }
+export interface ProviderManifest {
+  id: string; version: string; model: string; model_version: string; versions: Record<string, string>; tasks: string[]; capabilities: string[]; coordinate_system: string;
+  resources: { role: string; name: string; path: string | null; sha256: string; bytes: number }[];
+  resource_digest: string; execution: Record<string, unknown>;
+}
+export interface ProviderCheck { id: string; status: string; error?: string; manifest?: ProviderManifest; pid?: number; }
 export interface SourceNode {
   id: string; kind: 'token' | 'compound' | 'bunsetsu' | 'basic_phrase' | 'sentence' | 'clause' | 'predicate' | 'entity';
   source_ranges: [number, number][]; source_surface: string; text_ranges: [number, number][]; surface: string;
@@ -109,7 +115,7 @@ export interface SourceRelation {
   source: SourceEndpoint; target: SourceEndpoint; label: string; features: Record<string, unknown>;
 }
 export interface SourceArtifact {
-  schema: string; provider: { id: string; version: string; model: string; model_version: string; versions: Record<string, string>; tasks: string[]; capabilities: string[]; coordinate_system: string };
+  schema: string; provider: ProviderManifest;
   text_sha256: string; text_characters: number; normalized_text: string; normalization_map: [number, number][];
   deleted_ranges: [number, number][]; nodes: SourceNode[]; relations: SourceRelation[]; diagnostics: string[];
   raw: string | null; elapsed_ms: number;

@@ -39,6 +39,7 @@
       "../data/dict-sources/crown.kdict",
       "../scripts/nlp_provider.py",
       "../scripts/nlp_adapters.py",
+      "../scripts/nlp_resources.py",
       "../src/version/changelog.json"
     ],
     "icon": [

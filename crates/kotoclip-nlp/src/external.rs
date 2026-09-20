@@ -8,6 +8,15 @@ pub const SCHEMA: &str = "kotoclip.source-analysis.v1";
 pub type Range = [usize; 2];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceIdentity {
+    pub role: String,
+    pub name: String,
+    pub path: Option<String>,
+    pub sha256: String,
+    pub bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Manifest {
     pub id: String,
     pub version: String,
@@ -17,6 +26,12 @@ pub struct Manifest {
     pub tasks: Vec<String>,
     pub capabilities: Vec<String>,
     pub coordinate_system: String,
+    #[serde(default)]
+    pub resources: Vec<ResourceIdentity>,
+    #[serde(default)]
+    pub resource_digest: String,
+    #[serde(default)]
+    pub execution: BTreeMap<String, Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]

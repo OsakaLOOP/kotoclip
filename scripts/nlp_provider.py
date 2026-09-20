@@ -20,6 +20,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--provider", choices=["ginza", "kwja"], required=True)
     parser.add_argument("--model", required=True)
+    parser.add_argument("--dictionary", type=Path)
     parser.add_argument("--kwja-cache", type=Path)
     parser.add_argument("--hf-cache", type=Path)
     args = parser.parse_args()
@@ -34,16 +35,9 @@ def main():
         with contextlib.redirect_stdout(sys.stderr):
             from nlp_adapters import GinzaAdapter, KwjaAdapter
             if args.provider == "kwja":
-                from kwja.cli.config import ModelSize
-                from kwja.cli.utils import _CHECKPOINT_FILE_NAMES, _get_kwja_cache_dir, _get_model_version
-                modules = ["char", "word"] + (["senter"] if args.model != "tiny" else [])
-                for module in modules:
-                    path = _get_kwja_cache_dir() / _get_model_version() / _CHECKPOINT_FILE_NAMES[ModelSize(args.model)][module]
-                    if not path.is_file():
-                        raise FileNotFoundError(f"缺少 KWJA 模型：{path}")
-                adapter = KwjaAdapter(args.model)
+                adapter = KwjaAdapter(args.model, dictionary_path=args.dictionary)
             else:
-                adapter = GinzaAdapter(args.model)
+                adapter = GinzaAdapter(args.model, dictionary_path=args.dictionary)
         emit({"event": "ready", "manifest": adapter.manifest, "pid": os.getpid()})
     except Exception as error:
         traceback.print_exc(file=sys.stderr)
