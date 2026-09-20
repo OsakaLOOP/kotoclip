@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.unified-document.v4";
+pub const SCHEMA: &str = "kotoclip.unified-document.v5";
 pub const FIELD_NAMES: [&str; 29] = [
     "pos1", "pos2", "pos3", "pos4", "cType", "cForm", "lForm", "lemma", "orth", "pron", "orthBase",
     "pronBase", "goshu", "iType", "iForm", "fType", "fForm", "iConType", "fConType", "type",
@@ -126,7 +126,8 @@ pub struct RubyValidation {
     pub ruby_reading: String,
     pub expected_reading: String,
     pub char_range: [usize; 2],
-    pub original_char_range: [usize; 2],
+    pub candidate_char_range: [usize; 2],
+    pub source_char_ranges: Vec<[usize; 2]>,
     pub token_range: Option<[usize; 2]>,
     pub observed_reading: Option<String>,
     pub status: String,
@@ -146,6 +147,8 @@ pub struct UnifiedDocument {
     pub id: String,
     pub text: String,
     pub characters: usize,
+    pub preparation: crate::prepare::PreparationMap,
+    pub author_ruby: Vec<crate::prepare::RubyAnnotation>,
     pub source: SourceAnalysis,
     pub routing: RegisterRouting,
     pub ruby_validations: Vec<RubyValidation>,
@@ -166,5 +169,6 @@ pub struct UnifiedDocument {
     pub provider_token_alignments: Vec<crate::alignment::TokenAlignmentArtifact>,
     #[serde(default)]
     pub external_sources: Vec<crate::external::SourceArtifact>,
+    pub structure_graph: crate::structure_graph::StructureGraph,
     pub elapsed_ms: f64,
 }

@@ -129,6 +129,7 @@ mod tests {
             schema: crate::syntax::SCHEMA.into(), segment_id: None,
             provider: crate::syntax::SyntaxProviderDescriptor { id: "ginza".into(), version: Some("5".into()), capabilities: vec![], license: None },
             text_characters: 4,
+            text_sha256: crate::external::text_digest("甲。乙。"),
             spans: vec![crate::syntax::SyntaxSpan { id: "b0".into(), kind: "bunsetsu".into(), char_range: [0, 2], head_char_range: None, source_id: "sample".into(), surface: Some("甲。".into()), labels: vec![] }],
         };
         let (merged, diagnostics) = merge_external(base, &external, "甲。乙。").unwrap();
@@ -144,6 +145,7 @@ mod tests {
             schema: crate::syntax::SCHEMA.into(), segment_id: None,
             provider: crate::syntax::SyntaxProviderDescriptor { id: "kwja".into(), version: Some("2.1.3".into()), capabilities: vec!["bunsetsu_identity".into()], license: None },
             text_characters: 2,
+            text_sha256: crate::external::text_digest("甲。"),
             spans: vec![crate::syntax::SyntaxSpan { id: "b0".into(), kind: "bunsetsu".into(), char_range: [0, 2], head_char_range: Some([0, 1]), source_id: "sample".into(), surface: Some("甲。".into()), labels: vec!["基本句-主辞".into()] }],
         };
         let (merged, _) = merge_external(base, &external, "甲。").unwrap();

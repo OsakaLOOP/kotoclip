@@ -19,7 +19,7 @@ pub struct Manifest {
     pub coordinate_system: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
 pub enum NodeKind { Token, Compound, Bunsetsu, BasicPhrase, Sentence, Clause, Predicate, Entity }
 
@@ -169,7 +169,7 @@ impl SourceArtifact {
         }).collect();
         SyntaxArtifact { schema: crate::syntax::SCHEMA.into(), segment_id: Some(self.text_sha256.clone()),
             provider: SyntaxProviderDescriptor { id: self.provider.id.clone(), version: Some(self.provider.version.clone()),
-                capabilities: self.provider.capabilities.clone(), license: None }, text_characters: self.text_characters, spans }
+                capabilities: self.provider.capabilities.clone(), license: None }, text_characters: self.text_characters, text_sha256: self.text_sha256.clone(), spans }
     }
 }
 

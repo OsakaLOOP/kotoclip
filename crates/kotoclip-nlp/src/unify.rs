@@ -42,13 +42,34 @@ pub fn unify_with_external(
     routing: RegisterRouting,
     external: &[crate::syntax::SyntaxArtifact],
 ) -> Result<UnifiedDocument, String> {
+    assemble(prepared, source, routing, external, &[])
+}
+
+pub fn unify_with_sources(
+    prepared: &PreparedText,
+    source: SourceAnalysis,
+    routing: RegisterRouting,
+    external: &[crate::external::SourceArtifact],
+) -> Result<UnifiedDocument, String> {
+    for artifact in external { artifact.validate(&prepared.text)?; }
+    let syntax: Vec<_> = external.iter().map(|artifact| artifact.syntax()).collect();
+    assemble(prepared, source, routing, &syntax, external)
+}
+
+fn assemble(
+    prepared: &PreparedText,
+    source: SourceAnalysis,
+    routing: RegisterRouting,
+    external: &[crate::syntax::SyntaxArtifact],
+    complete_sources: &[crate::external::SourceArtifact],
+) -> Result<UnifiedDocument, String> {
     let text = &prepared.text;
     let chars: Vec<char> = text.chars().collect();
     let id = format!(
         "{:x}",
         Sha256::digest(format!(
-            "{SCHEMA}\0{}\0{text}",
-            source.provider.dictionary_sha256
+            "{SCHEMA}\0{}\0{}\0{text}",
+            source.provider.dictionary_sha256, prepared.mapping.source_sha256
         ))
     );
     let mut gaps = Vec::new();
@@ -105,16 +126,24 @@ pub fn unify_with_external(
             surface: chars[end..].iter().collect(),
         });
     }
-    let ruby_validations = validate_ruby(&chars, &source.tokens, &prepared.annotations);
+    let ruby_validations = validate_ruby(&chars, &source.tokens, &prepared.annotations, &prepared.mapping);
     let mut structure = crate::structure::LocalBoundaryProvider.analyze(text);
     let mut structure_diagnostics = Vec::new();
     let mut provider_token_alignments = Vec::new();
     for artifact in external {
+        crate::syntax::validate_identity(artifact, text)?;
         let (merged, diagnostics) = crate::structure::merge_external(structure, artifact, text)?;
         structure = merged;
         structure_diagnostics.extend(diagnostics);
         provider_token_alignments.push(crate::alignment::align_artifact(artifact, &morphemes));
     }
+    for alignment in &mut provider_token_alignments {
+        if let Some(source) = complete_sources.iter().find(|source| source.provider.id == alignment.external_provider) {
+            alignment.groups = crate::alignment_group::from_source(source, &morphemes);
+        }
+    }
+    let structure_graph = crate::structure_graph::build(&id, text, &morphemes, complete_sources)?;
+    structure_graph.apply_selection(&mut structure);
     let formation = crate::formation::collect_formations(text, &morphemes, &structure)?;
     let bunsetsu = crate::bunsetsu::collect_bunsetsu(text, &morphemes, &structure, &formation)?;
     let clause = crate::clause::collect_clauses(text, &morphemes, &structure)?;
@@ -128,6 +157,8 @@ pub fn unify_with_external(
         id,
         text: text.into(),
         characters: chars.len(),
+        preparation: prepared.mapping.clone(),
+        author_ruby: prepared.annotations.clone(),
         source,
         routing,
         ruby_validations,
@@ -144,7 +175,8 @@ pub fn unify_with_external(
         morphology,
         structure_diagnostics,
         provider_token_alignments,
-        external_sources: Vec::new(),
+        external_sources: complete_sources.to_vec(),
+        structure_graph,
         elapsed_ms: 0.0,
     })
 }

@@ -10,7 +10,7 @@ export interface ProviderToken {
 export interface QueryForm { kind: string; form: string; reading: string | null; reading_field: string | null; }
 export interface RubyValidation {
   base: string; ruby_reading: string; expected_reading: string; char_range: [number, number];
-  original_char_range: [number, number];
+  candidate_char_range: [number, number]; source_char_ranges: [number, number][];
   token_range: [number, number] | null; observed_reading: string | null;
   status: 'matched' | 'variant' | 'unavailable' | 'unmatched';
   reason: 'exact' | 'small_kana' | 'reading_difference' | 'missing_reading' | 'ambiguous_alignment' | 'source_gap';
@@ -21,6 +21,8 @@ export interface MorphemeToken {
 }
 export interface UnifiedDocument {
   schema: string; id: string; text: string; characters: number; elapsed_ms: number;
+  preparation: { schema: string; source_text: string; source_sha256: string; text_sha256: string; origins: number[]; removed: { source_range: [number, number]; text_offset: number; kind: string }[] };
+  author_ruby: { base: string; reading: string; char_range: [number, number] }[];
   source: { provider: { id: string; version: string; dictionary_sha256: string; field_schema: string }; tokens: ProviderToken[] };
   routing: { requested: Register; selected: Register; reason: string | null };
   ruby_validations: RubyValidation[];
@@ -66,6 +68,32 @@ export interface UnifiedDocument {
   projection: { schema: string; targets: ProjectionTarget[] };
   morphology: MorphologyArtifact;
   external_sources: SourceArtifact[];
+  structure_graph: StructureGraph;
+  provider_token_alignments: { schema: string; source_id: string | null; unidic_provider: string; external_provider: string; groups: AlignmentGroup[]; alignments: TokenAlignment[] }[];
+}
+
+export interface TokenAlignment {
+  provider: string; provider_token_id: string; provider_char_range: [number, number]; provider_surface: string | null;
+  status: 'exact' | 'compound' | 'partial' | 'unmatched'; morpheme_indices: number[]; morpheme_ids: string[]; reason: string;
+}
+export interface AlignmentGroup {
+  id: string; cardinality: '1:1' | '1:n' | 'n:1' | 'n:m' | 'unmatched'; status: 'complete' | 'partial' | 'unmatched';
+  provider_tokens: { id: string; text_ranges: [number, number][]; source_ranges: [number, number][] | null }[];
+  morpheme_ids: string[]; char_range: [number, number];
+  intersections: { provider_token_id: string; morpheme_id: string; char_range: [number, number] }[];
+  provider_gaps: [number, number][]; morpheme_gaps: [number, number][]; reason: string;
+}
+export interface SpanCoverage { morpheme_indices: number[]; intersections: [number, number][]; gaps: [number, number][]; complete: boolean; reason: string; }
+export interface MappedEntity {
+  id: string; provider: string; source_id: string; kind: SourceNode['kind']; text_ranges: [number, number][]; source_ranges: [number, number][];
+  surface: string; coverage: SpanCoverage[]; alignment_group_ids: string[]; morpheme_ids: string[]; members: string[];
+  head: string | null; head_morpheme_ids: string[]; complete: boolean; diagnostics: string[]; features: Record<string, unknown>;
+}
+export type MappedEndpoint = { kind: 'entity'; id: string } | { kind: 'root' } | { kind: 'exophora'; label: string };
+export interface StructureGraph {
+  schema: string; document_id: string; selection_version: string; entities: MappedEntity[];
+  relations: { id: string; provider: string; source_id: string; kind: SourceRelation['kind']; source: MappedEndpoint; target: MappedEndpoint; label: string; complete: boolean; diagnostics: string[]; features: Record<string, unknown> }[];
+  candidates: { id: string; kind: SourceNode['kind']; text_ranges: [number, number][]; evidence: string[]; preferred_entity: string | null; selected: boolean; reason: string; competing_ids: string[] }[];
 }
 
 export interface ProviderConfig { python: string; model: string; enabled: boolean; timeout_seconds: number; }

@@ -1,16 +1,43 @@
-pub const PREPARE_TEXT_PROTOCOL_VERSION: &str = "kotoclip.prepare-text.v3";
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+pub const PREPARE_TEXT_PROTOCOL_VERSION: &str = "kotoclip.prepare-text.v4";
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RubyAnnotation {
     pub base: String,
     pub reading: String,
     pub char_range: [usize; 2],
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RemovedMarkup {
+    pub source_range: [usize; 2],
+    pub text_offset: usize,
+    pub kind: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PreparationMap {
+    pub schema: String,
+    pub source_text: String,
+    pub source_sha256: String,
+    pub text_sha256: String,
+    /// 每个正文 Unicode scalar 在输入中的位置。
+    pub origins: Vec<usize>,
+    pub removed: Vec<RemovedMarkup>,
+}
+
+impl PreparationMap {
+    pub fn source_ranges(&self, range: [usize; 2]) -> Vec<[usize; 2]> {
+        crate::external::merge_ranges(self.origins[range[0]..range[1]].iter().map(|&i| [i, i + 1]).collect())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreparedText {
     pub text: String,
     pub annotations: Vec<RubyAnnotation>,
+    pub mapping: PreparationMap,
 }
 
 pub(crate) fn is_kanji(character: char) -> bool {
@@ -90,17 +117,21 @@ pub fn prepare_text(input: &str) -> PreparedText {
     let chars: Vec<char> = input.chars().collect();
     let mut cleaned = Vec::with_capacity(chars.len());
     let mut annotations = Vec::new();
+    let mut origins = Vec::with_capacity(chars.len());
+    let mut removed = Vec::new();
     let mut base_boundary = 0;
     let mut index = 0;
 
     while index < chars.len() {
         if let Some(next) = markdown_image_end(&chars, index) {
+            removed.push(RemovedMarkup { source_range: [index, next], text_offset: cleaned.len(), kind: "image".into() });
             base_boundary = cleaned.len();
             index = next;
             continue;
         }
         if chars[index] != '《' {
             cleaned.push(chars[index]);
+            origins.push(index);
             if !is_kanji(chars[index]) && !is_kana(chars[index]) {
                 base_boundary = cleaned.len();
             }
@@ -113,6 +144,7 @@ pub fn prepare_text(input: &str) -> PreparedText {
             .position(|&character| character == '》')
         else {
             cleaned.push(chars[index]);
+            origins.push(index);
             base_boundary = cleaned.len();
             index += 1;
             continue;
@@ -137,17 +169,26 @@ pub fn prepare_text(input: &str) -> PreparedText {
                 char_range: [base_start, cleaned.len()],
             });
             base_boundary = cleaned.len();
+            removed.push(RemovedMarkup { source_range: [index, annotation_end + 1], text_offset: cleaned.len(), kind: "ruby".into() });
             index = annotation_end + 1;
         } else {
             cleaned.extend_from_slice(&chars[index..=annotation_end]);
+            origins.extend(index..=annotation_end);
             base_boundary = cleaned.len();
             index = annotation_end + 1;
         }
     }
 
+    let text: String = cleaned.into_iter().collect();
+    let mapping = PreparationMap {
+        schema: PREPARE_TEXT_PROTOCOL_VERSION.into(), source_text: input.into(),
+        source_sha256: crate::external::text_digest(input), text_sha256: crate::external::text_digest(&text),
+        origins, removed,
+    };
     PreparedText {
-        text: cleaned.into_iter().collect(),
+        text,
         annotations,
+        mapping,
     }
 }
 
@@ -207,6 +248,34 @@ mod tests {
         let groups = grouped_annotations(&prepared.annotations);
         assert_eq!(groups[1].base, "古川");
         assert_eq!(groups[1].reading, "フルカワ");
+    }
+
+    #[test]
+    fn maps_repeated_ruby_and_images_to_original_scalars() {
+        let input = "甲《こう》乙![](x.png)\n𠮷。甲《こう》  \n";
+        let prepared = prepare_text(input);
+        assert_eq!(prepared.text, "甲乙\n𠮷。甲  \n");
+        assert_eq!(prepared.mapping.source_ranges([0, 2]), vec![[0, 1], [5, 6]]);
+        let source: Vec<_> = input.chars().collect();
+        let rebuilt: String = prepared.mapping.origins.iter().map(|&i| source[i]).collect();
+        assert_eq!(rebuilt, prepared.text);
+        let mut coverage: Vec<_> = prepared.mapping.origins.iter().map(|&i| [i, i + 1]).collect();
+        coverage.extend(prepared.mapping.removed.iter().map(|item| item.source_range));
+        coverage.sort_unstable();
+        assert_eq!(coverage[0][0], 0);
+        assert_eq!(coverage.last().unwrap()[1], source.len());
+        assert!(coverage.windows(2).all(|pair| pair[0][1] == pair[1][0]));
+        assert_eq!(prepared.mapping.removed.iter().map(|item| item.kind.as_str()).collect::<Vec<_>>(), vec!["ruby", "image", "ruby"]);
+        assert_ne!(prepared.mapping.source_ranges([0, 1]), prepared.mapping.source_ranges([5, 6]));
+    }
+
+    #[test]
+    fn invalid_and_unclosed_ruby_preserve_identity_mapping() {
+        for input in ["甲《abc》  ", "乙《おつ", ""] {
+            let prepared = prepare_text(input);
+            assert_eq!(prepared.mapping.origins, (0..input.chars().count()).collect::<Vec<_>>());
+            assert!(prepared.mapping.removed.is_empty());
+        }
     }
 
     #[test]

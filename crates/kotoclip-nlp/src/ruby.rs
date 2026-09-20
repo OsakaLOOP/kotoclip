@@ -138,6 +138,7 @@ pub(crate) fn validate_ruby(
     text: &[char],
     source: &[ProviderToken],
     annotations: &[RubyAnnotation],
+    mapping: &crate::prepare::PreparationMap,
 ) -> Vec<RubyValidation> {
     if annotations.is_empty() {
         return Vec::new();
@@ -189,7 +190,8 @@ pub(crate) fn validate_ruby(
                 ruby_reading: group.reading.clone(),
                 expected_reading: group.reading,
                 char_range: group.char_range,
-                original_char_range: original_range,
+                candidate_char_range: original_range,
+                source_char_ranges: mapping.source_ranges(group.char_range),
                 token_range: range,
                 observed_reading: observed,
                 status: status.into(),
@@ -234,6 +236,7 @@ mod tests {
             &prepared.text.chars().collect::<Vec<_>>(),
             &tokens,
             &prepared.annotations,
+            &prepared.mapping,
         )
     }
 
@@ -263,6 +266,13 @@ mod tests {
     }
 
     #[test]
+    fn repeated_annotations_keep_separate_source_positions() {
+        let results = validate("甲《こう》甲《こう》", &[("甲甲", Some("コウコウ"))]);
+        assert_eq!(results[0].source_char_ranges, vec![[0, 1], [5, 6]]);
+        assert_eq!(results[0].candidate_char_range, [0, 2]);
+    }
+
+    #[test]
     fn groups_ruby_before_resolving_multi_token_coverage() {
         let results = validate(
             "産業廃《はい》棄《き》物《ぶつ》",
@@ -273,7 +283,7 @@ mod tests {
             ],
         );
         assert_eq!(results[0].base, "廃棄物");
-        assert_eq!(results[0].original_char_range, [0, 5]);
+        assert_eq!(results[0].candidate_char_range, [0, 5]);
         assert_eq!(results[0].char_range, [2, 5]);
         assert_eq!(results[0].token_range, Some([1, 3]));
         assert_eq!(results[0].status, "matched");

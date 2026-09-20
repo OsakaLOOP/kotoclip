@@ -30,6 +30,8 @@ pub struct SyntaxArtifact {
     pub segment_id: Option<String>,
     pub provider: SyntaxProviderDescriptor,
     pub text_characters: usize,
+    #[serde(default)]
+    pub text_sha256: String,
     pub spans: Vec<SyntaxSpan>,
 }
 
@@ -41,7 +43,14 @@ pub struct AlignmentDiagnostic {
     pub matched_range: Option<[usize; 2]>,
 }
 
-pub const SCHEMA: &str = "kotoclip.syntax-artifact.v1";
+pub const SCHEMA: &str = "kotoclip.syntax-artifact.v2";
+
+pub fn validate_identity(artifact: &SyntaxArtifact, text: &str) -> Result<(), String> {
+    if artifact.schema != SCHEMA { return Err("artifact_schema_mismatch".into()); }
+    if artifact.text_characters != text.chars().count() { return Err("artifact_character_count_mismatch".into()); }
+    if artifact.text_sha256 != crate::external::text_digest(text) { return Err("artifact_text_digest_mismatch".into()); }
+    Ok(())
+}
 
 pub fn parse_json(input: &str) -> Result<SyntaxArtifact, serde_json::Error> {
     serde_json::from_str(input)
@@ -83,13 +92,14 @@ pub fn align_to_text(artifact: &SyntaxArtifact, text_characters: usize) -> Vec<A
 /// 在范围检查之外核对 provider 返回的 surface，避免不同文本坐标被误合并。
 pub fn align_to_text_content(artifact: &SyntaxArtifact, text: &str) -> Vec<AlignmentDiagnostic> {
     let chars: Vec<char> = text.chars().collect();
+    let identity = validate_identity(artifact, text);
     align_to_text(artifact, chars.len())
         .into_iter()
         .zip(&artifact.spans)
         .map(|(mut diagnostic, span)| {
-            if artifact.text_characters != chars.len() {
+            if let Err(reason) = &identity {
                 diagnostic.status = "unmatched".into();
-                diagnostic.reason = "artifact_character_count_mismatch".into();
+                diagnostic.reason = reason.clone();
                 diagnostic.matched_range = None;
                 return diagnostic;
             }
@@ -119,6 +129,7 @@ mod tests {
     fn alignment_preserves_valid_ranges_and_rejects_invalid_ranges() {
         let artifact = SyntaxArtifact {
             schema: SCHEMA.into(), segment_id: None, provider: descriptor(), text_characters: 3,
+            text_sha256: crate::external::text_digest("甲乙丙"),
             spans: vec![
                 SyntaxSpan { id: "ok".into(), kind: "bunsetsu".into(), char_range: [0, 2], head_char_range: None, source_id: "x".into(), surface: None, labels: vec![] },
                 SyntaxSpan { id: "bad".into(), kind: "bunsetsu".into(), char_range: [2, 4], head_char_range: None, source_id: "x".into(), surface: None, labels: vec![] },
@@ -133,6 +144,7 @@ mod tests {
     fn content_alignment_rejects_surface_mismatch() {
         let artifact = SyntaxArtifact {
             schema: SCHEMA.into(), segment_id: None, provider: descriptor(), text_characters: 2,
+            text_sha256: crate::external::text_digest("甲乙"),
             spans: vec![SyntaxSpan { id: "x".into(), kind: "token".into(), char_range: [0, 1], head_char_range: None, source_id: "x".into(), surface: Some("乙".into()), labels: vec![] }],
         };
         let result = align_to_text_content(&artifact, "甲乙");
@@ -143,11 +155,20 @@ mod tests {
     fn content_alignment_rejects_declared_character_count_mismatch() {
         let artifact = SyntaxArtifact {
             schema: SCHEMA.into(), segment_id: None, provider: descriptor(), text_characters: 3,
+            text_sha256: crate::external::text_digest("甲乙"),
             spans: vec![SyntaxSpan { id: "x".into(), kind: "token".into(), char_range: [0, 1], head_char_range: None, source_id: "x".into(), surface: Some("甲".into()), labels: vec![] }],
         };
         let result = align_to_text_content(&artifact, "甲乙");
         assert_eq!(result[0].reason, "artifact_character_count_mismatch");
         assert!(result[0].matched_range.is_none());
+    }
+
+    #[test]
+    fn digest_checks_even_empty_artifact_and_equal_length_text() {
+        let artifact = SyntaxArtifact { schema: SCHEMA.into(), segment_id: None, provider: descriptor(), text_characters: 2,
+            text_sha256: crate::external::text_digest("甲乙"), spans: Vec::new() };
+        assert!(validate_identity(&artifact, "甲乙").is_ok());
+        assert_eq!(validate_identity(&artifact, "丙丁").unwrap_err(), "artifact_text_digest_mismatch");
     }
 
     #[test]

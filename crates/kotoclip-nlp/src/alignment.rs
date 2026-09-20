@@ -3,7 +3,7 @@ use crate::model::MorphemeToken;
 use crate::syntax::{SyntaxArtifact, SyntaxSpan};
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.provider-token-alignment.v1";
+pub const SCHEMA: &str = "kotoclip.provider-token-alignment.v2";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -57,6 +57,7 @@ pub struct TokenAlignmentArtifact {
     pub unidic_provider: String,
     pub external_provider: String,
     pub alignments: Vec<TokenAlignment>,
+    pub groups: Vec<crate::alignment_group::AlignmentGroup>,
 }
 
 pub fn align_artifact(artifact: &SyntaxArtifact, morphemes: &[MorphemeToken]) -> TokenAlignmentArtifact {
@@ -67,6 +68,7 @@ pub fn align_artifact(artifact: &SyntaxArtifact, morphemes: &[MorphemeToken]) ->
     TokenAlignmentArtifact {
         schema: SCHEMA.into(), source_id: artifact.segment_id.clone(),
         unidic_provider: "unidic".into(), external_provider: artifact.provider.id.clone(), alignments,
+        groups: crate::alignment_group::from_syntax(artifact, morphemes),
     }
 }
 
@@ -108,7 +110,7 @@ mod tests {
     fn artifact(range: [usize; 2]) -> SyntaxArtifact {
         SyntaxArtifact { schema: crate::syntax::SCHEMA.into(), segment_id: Some("s".into()),
             provider: SyntaxProviderDescriptor { id: "ginza".into(), version: None, capabilities: vec!["token".into()], license: None },
-            text_characters: 4, spans: vec![SyntaxSpan { id: "t0".into(), kind: "token".into(), char_range: range,
+            text_characters: 4, text_sha256: String::new(), spans: vec![SyntaxSpan { id: "t0".into(), kind: "token".into(), char_range: range,
                 head_char_range: None, source_id: "s".into(), surface: None, labels: Vec::new() }] }
     }
     #[test]

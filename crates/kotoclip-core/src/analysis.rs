@@ -210,14 +210,12 @@ impl AnalysisService {
     fn enrich(&mut self, analysis_id: &str, generation: u64) -> Result<Value, String> {
         let document = self.documents.iter().find(|d| d.id == analysis_id).cloned().ok_or("分析结果已释放，请重新分析")?;
         let (sources, diagnostics) = self.external.analyze(&document.text, generation);
-        let artifacts: Vec<_> = sources.iter().map(|source| source.syntax()).collect();
-        let prepared = kotoclip_nlp::prepare::PreparedText { text: document.text.clone(), annotations: Vec::new() };
-        let mut updated = kotoclip_nlp::unify::unify_with_external(&prepared, document.source, document.routing, &artifacts)?;
+        let prepared = kotoclip_nlp::prepare::PreparedText { text: document.text.clone(), annotations: document.author_ruby.clone(), mapping: document.preparation.clone() };
+        let mut updated = kotoclip_nlp::unify::unify_with_sources(&prepared, document.source, document.routing, &sources)?;
         updated.ruby_validations = document.ruby_validations;
         updated.grammar = document.grammar;
         updated.expression = document.expression;
         updated.projection = kotoclip_nlp::projection::from_layers(&updated.grammar, &updated.expression);
-        updated.external_sources = sources;
         updated.elapsed_ms = document.elapsed_ms;
         let value = json!({"document": updated, "providers": diagnostics});
         self.documents.retain(|d| d.id != analysis_id);
