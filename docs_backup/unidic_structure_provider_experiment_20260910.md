@@ -52,7 +52,7 @@ GiNZA 成功加载 `ja_ginza`，输出 token、句子、文节、依存和 compo
 
 以该金标分别评估三方（统一裁掉范围两端空白）：GiNZA 的 token F1 为 0.990、compound F1 为 1.000、bunsetsu F1 为 0.987、sentence F1 为 0.847，四层 macro F1 为 0.956；UniDic 的 token F1 为 0.958、sentence F1 为 0.889，未提供 compound 与 bunsetsu；KWJA 的 token F1 为 0.752、bunsetsu F1 为 0.824、sentence F1 为 0.852。compound 和 bunsetsu 金标依据 GiNZA 候选逐批确认，相关分数表示对当前人工标准的重合度，不能外推为所有语域的准确率。
 
-评估命令为 `python scripts/evaluate_unidic_validation_set.py --all-providers`。后续接入采用 UniDic token 基础层、GiNZA/KWJA 独立结构证据层，并保留 sentence 边界分歧；低一致性结构继续标记为 candidate 或 pending。
+评估命令为 `python scripts/evaluate_unidic_validation_set.py --all-providers`。来源扩展集使用 `scripts/evaluate_source_validation.py`，同时报告完整 sentence span 与句首、句末边界的 precision、recall、F1。后续接入采用 UniDic token 基础层、GiNZA/KWJA 独立结构证据层，并保留 sentence 边界分歧；低一致性结构继续标记为 candidate 或 pending。
 
 ## 用途选择
 

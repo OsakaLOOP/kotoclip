@@ -60,7 +60,7 @@ P2-small 采用 4--6 层、hidden 256--320、8 个 attention heads 的 encoder�
 
 ### 5.1 Rust 平行匹配运行时
 
-Rust 版本同时运行 UniDic 基础层、GiNZA/Sudachi 链路、KWJA/Juman/KNP 链路以及统一 artifact 层。由于该路线尚未采用 UniDic token 作为共同输入，SudachiDict 与 JumanDic 仍是各自 tokenizer 的规范词典，必须随 Rust 重写版本保留。每层保存自己的 token、标签和坐标，再通过字符范围、token 映射和标签规范化生成匹配报告。模型权重若继续使用 GiNZA/KWJA 权重，仍需对应推理实现；纯规则和有限状态层则直接重写。
+目标 Rust 版本同时运行 UniDic 基础层、GiNZA/Sudachi 链路、KWJA/Juman/KNP 链路以及统一 artifact 层。GiNZA、KWJA 接收预处理后的原文，各自完成 tokenization 与结构分析；SudachiDict 与 JumanDic 保持为各自 tokenizer 的规范词典。每层保存自己的 token、标签和坐标，再通过字符范围、token 映射和标签规范化生成匹配报告。模型权重若继续使用 GiNZA/KWJA 权重，仍需对应推理实现；纯规则和有限状态层则直接重写。
 
 推荐运行时构成：
 

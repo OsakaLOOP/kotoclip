@@ -114,7 +114,7 @@ GiNZA 与 KWJA 的作用是研究 teacher 和标注候选。GiNZA 提供 bunsets
 
 ### R1：Rust 结构契约
 
-在 `kotoclip-nlp` 建立 `NativeStructureProvider` trait、provider manifest、模型 manifest 和运行时诊断。该接口以 UniDic token 和预处理文本为输入，以 `SyntaxArtifact` 为输出；模型加载、批量、超时、取消和缓存均在 Rust 内完成。当前 `AnalyzeWithArtifacts` 保留为离线导入入口，普通 `Analyze` 逐步接入原生结构 provider。
+在 `kotoclip-nlp` 建立 `NativeStructureProvider` trait、provider manifest、模型 manifest 和运行时诊断。GiNZA、KWJA 平行重写接口以预处理后的原文为输入，以 `SyntaxArtifact` 为输出；各 provider 保持自己的 tokenizer 和结构解码，统一层负责映射到 UniDic。模型加载、批量、超时、取消和缓存均在 Rust 内完成。`AnalyzeWithArtifacts` 保留为离线导入入口，普通 `Analyze` 在可执行 provider 通过一致性验证后接入。
 
 R1 验收：同一输入在 release 构建中不创建 Python 进程；断网环境不访问任何 URL；返回的全部跨度通过字符数、半开区间、surface 和 UniDic token 引用校验；provider 不可加载时完整返回 `unsupported` 状态。
 
@@ -151,8 +151,8 @@ open_document
   -> prepare_text
   -> select_register
   -> UniDicProvider::analyze
-  -> NativeStructureProvider::analyze_batch
-  -> validate_and_merge_artifacts
+  -> NativeStructureProvider::analyze(原文)
+  -> validate_and_merge_artifacts(映射 UniDic)
   -> grammar / expression / dictionary projection
   -> AnalysisPatch
 ```
