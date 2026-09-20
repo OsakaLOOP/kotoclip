@@ -29,6 +29,11 @@
 | GiNZA 模型 | <https://github.com/megagonlabs/ginza/releases> | 模型包和版本入口 |
 | KWJA | <https://github.com/ku-nlp/kwja> | 现有模型任务、执行流程和资源入口 |
 | KWJA 论文 | <https://aclanthology.org/2023.acl-demo.52/> | 字符、词与关系任务的背景资料 |
+| spaCy 日文 tokenizer | <https://github.com/explosion/spaCy/blob/v3.8.16/spacy/lang/ja/__init__.py> | 依据本机同版源码核对 Sudachi 实例、切分模式与模型加载入口 |
+| SudachiPy Dictionary | <https://github.com/WorksApplications/sudachi.rs/blob/v0.6.11/python/py_src/sudachipy/sudachipy.pyi> | 本机接口声明确认独立 system.dic 参数和默认资源配置 |
+| KWJA 词输出组件 | <https://github.com/ku-nlp/kwja/blob/v2.1.3/src/kwja/callbacks/word_module_writer.py> | 本机源码确认 JumanDic、读音词表与 Jinf 的实际使用位置 |
+| KWJA 模型资源 | <https://github.com/ku-nlp/kwja/blob/v2.1.3/src/kwja/cli/utils.py> | 本机源码确认权重版本、文件名与缓存目录 |
+| KWJA 推理数据集 | <https://github.com/ku-nlp/kwja/blob/v2.1.3/src/kwja/datamodule/datasets/word_inference.py> | 本机源码与初始化实测确认 checkpoint 配置中的 tokenizer |
 | rhoknp | <https://github.com/ku-nlp/rhoknp> | Juman／KNP 文档、基本句和关系对象 |
 | EPUB 3.3 | <https://www.w3.org/TR/epub-33/> | EPUB 导入的容器、导航及正文结构 |
 | Unicode 规范化 | <https://www.unicode.org/reports/tr15/> | 查询键与来源文本规范化的边界 |

@@ -49,7 +49,7 @@ P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构�
 
 依赖 P0。
 
-- [ ] 增加本机配置与检查：分别选择 GiNZA、KWJA 解释器、模型和词典目录，报告版本、缺失资源及具体错误，验证离线初始化。
+- [x] 增加本机配置与检查：分别选择 GiNZA、KWJA 解释器、模型和词典目录，报告版本、缺失资源及具体错误，验证离线初始化。桌面“保存并检查”展示实际清单；默认与指定词典、资源摘要、进程复用和缺失恢复见 `resources.json`。
 - [x] 将现有采集流程提取为应用可调用的分析适配器。支持请求 ID、正文摘要、UTF-8、模型复用、超时、取消、进程退出和重启；进程日志与协议输出分离。七组集成与生命周期证据见 `data/validation/behavior/integration.json`、`lifecycle.json`。
 - [x] 输出完整的实际任务结果。GiNZA 保留 compound、bunsetsu、主辞和依存标签；KWJA 保留基本句、谓语、论元及启用任务的实体、照应和篇章关系。能力清单逐项对应输出。来源实体、原始 KNP、typed relation 与 checkpoint 任务清单进入 `external_sources`。
 - [x] 在 `AnalysisService` 的普通分析路径调用两项服务，先返回基础正文，再追加已校验的结构。增加桌面配置、运行状态和结构查看入口。Tauri 已验证自动结构追加、两来源切换、取消与重试；证据见 `data/validation/behavior/desktop.json`。

@@ -58,6 +58,8 @@ KWJA `rel` 标签实际包含格关系、外指及照应。例如 `買った` �
 
 KWJA word 模块具有独立任务集合，能力登记应读取实际加载 checkpoint 的任务配置。关系集合为空表示该文本未产生相应关系；任务是否启用由能力状态表达。
 
+资源初始化实测确认，GiNZA 的 spaCy 日文 tokenizer 保存独立 Sudachi 实例和切分模式；加载指定词典后继续使用模型的模式。KWJA 的 `WordModuleWriter` 持有 JumanDic 与 Jinf，读音词表另从随包资源读取。tiny 的推理 tokenizer 由各 checkpoint 的数据集配置生成，包含 `BertJapaneseTokenizer`；资源身份采用 Hugging Face 的 `save_pretrained` 序列化词表与配置。模型、结构词典和应用 UniDic 分别保留资源身份。
+
 ### 分析单元与语域
 
 新闻样本以 CWJ 请求，当前路由因为长引语选择 CSJ，导致叙述部分同时切换。单元策略应区分请求语域、实际选择和上下文类型，并保存选择理由。KWJA 跨句照应需要同次输入提供相邻句，单元边界应保留合理的句段上下文。章节跳转与范围调度需要记录这些上下文依赖。
