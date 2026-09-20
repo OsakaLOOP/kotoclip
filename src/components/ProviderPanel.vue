@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { nlpRequest } from '../services/nlp';
-import type { ProviderSettings, SourceArtifact, SourceEndpoint } from '../types/nlp';
+import type { ProviderSettings, SourceArtifact, SourceEndpoint, StructureGraph, UnifiedDocument } from '../types/nlp';
 
-const props = defineProps<{ sources: SourceArtifact[]; pending: boolean; canAnalyze: boolean; diagnostics: { id: string; status: string; error?: string }[] }>();
+const props = defineProps<{ sources: SourceArtifact[]; graph: StructureGraph | null; alignments: UnifiedDocument['provider_token_alignments']; pending: boolean; canAnalyze: boolean; diagnostics: { id: string; status: string; error?: string }[] }>();
 const emit = defineEmits<{ retry: []; cancel: [] }>();
 const settings = ref<ProviderSettings | null>(null);
 const error = ref('');
@@ -13,6 +13,14 @@ const providerId = ref('ginza');
 const kind = ref('bunsetsu');
 const source = computed(() => props.sources.find(item => item.provider.id === providerId.value));
 const nodes = computed(() => source.value?.nodes.filter(node => node.kind === kind.value) || []);
+const mapped = computed(() => new Map(props.graph?.entities.filter(entity => entity.provider === providerId.value).map(entity => [entity.source_id, entity]) || []));
+const alignment = computed(() => props.alignments.find(item => item.external_provider === providerId.value));
+function choice(id: string) {
+  const entity = mapped.value.get(id);
+  if (!entity?.complete) return '对齐待定';
+  const candidate = props.graph?.candidates.find(candidate => candidate.evidence.includes(entity.id));
+  return candidate?.selected && candidate.preferred_entity === entity.id ? '默认结构' : candidate ? '保留候选' : '已对齐';
+}
 const kinds: Record<string, string> = { token: '词元', compound: '复合词', bunsetsu: '文节', basic_phrase: '基本句', sentence: '句子', clause: '小句', predicate: '谓语', entity: '实体' };
 const states: Record<string, string> = { ready: '完成', failed: '失败', disabled: '已停用', cancelled: '已取消' };
 function endpoint(value: SourceEndpoint): string {
@@ -61,12 +69,15 @@ onMounted(async () => {
         <details v-for="node in nodes" :key="node.id">
           <summary><span lang="ja">{{ node.surface }}</span> <small>{{ node.id }} · {{ node.text_ranges.map(range => `[${range.join(', ')})`).join('、') }}</small></summary>
           <p v-if="node.head">主辞：{{ endpoint({ kind: 'node', id: node.head }) }}</p>
+          <p>{{ choice(node.id) }} · 词元：{{ mapped.get(node.id)?.morpheme_ids.join('、') || '无' }}<template v-if="mapped.get(node.id)?.head_morpheme_ids.length"> · 主辞词元：{{ mapped.get(node.id)?.head_morpheme_ids.join('、') }}</template></p>
+          <p v-if="mapped.get(node.id)?.diagnostics.length">{{ mapped.get(node.id)?.diagnostics.join('、') }}</p>
           <p v-if="node.source_surface !== node.surface">模型表记：{{ node.source_surface }}</p>
           <pre>{{ JSON.stringify(node.features, null, 2) }}</pre>
         </details>
         <p v-if="!nodes.length">本次结果没有该类结构</p>
       </div>
       <details><summary>结构关系（{{ source.relations.length }}）</summary><div class="source-nodes"><p v-for="relation in source.relations" :key="relation.id"><span lang="ja">{{ endpoint(relation.source) }} → {{ endpoint(relation.target) }}</span> · {{ relation.kind }} / {{ relation.label }}</p></div></details>
+      <details v-if="alignment"><summary>词元对齐（{{ alignment.groups.length }} 组）</summary><div class="source-nodes"><details v-for="group in alignment.groups" :key="group.id"><summary>{{ group.cardinality }} · [{{ group.char_range.join(', ') }}) · {{ group.status }}</summary><p>{{ group.provider_tokens.map(token => token.id).join('、') }} → {{ group.morpheme_ids.join('、') }}</p><pre>{{ JSON.stringify({ intersections: group.intersections, provider_gaps: group.provider_gaps, morpheme_gaps: group.morpheme_gaps }, null, 2) }}</pre></details></div></details>
       <details><summary>来源信息与正文映射</summary><pre>{{ JSON.stringify({ provider: source.provider, text_sha256: source.text_sha256, normalized_text: source.normalized_text, deleted_ranges: source.deleted_ranges }, null, 2) }}</pre></details>
     </template>
   </section>

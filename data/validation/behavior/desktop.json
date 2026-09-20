@@ -4,7 +4,12 @@
   "ginza": true,
   "kwja": true,
   "cancellation_recovery": true,
-  "kwja_structure": "ラティメリアは b0 · [0, 7){}きょろきょろと b1 · [7, 14){}部屋を b2 · [14, 17){}見渡すが、 b3 · [17, 22){}鏡の b4 · [22, 24){}裏から b5 · [24, 27){}覗かれてるとは b6 · [27, 34){}気づかない。 b7 · [34, 40){}",
+  "kwja_structure": "ラティメリアは b0 · [0, 7)保留候选 · 词元：m0、m1{}きょろきょろと b1 · [7, 14)保留候选 · 词元：m2、m3{}部屋を b2 · [14, 17)保留候选 · 词元：m4、m5{}見渡すが、 b3 · [17, 22)保留候选 · 词元：m6、m7、m8{}鏡の b4 · [22, 24)保留候选 · 词元：m9、m10{}裏から b5 · [24, 27)保留候选 · 词元：m11、m12{}覗かれてるとは b6 · [27, 34)保留候选 · 词元：m13、m14、m15、m16、m17{}気づかない。 b7 · [34, 40)保留候选 · 词元：m18、m19、m20{}",
+  "alignment": {
+    "groups": 20,
+    "first": "1:1 · [0, 6) · completet0 → m0{\n  \"intersections\": [\n    {\n      \"char_range\": [\n        0,\n        6\n      ],\n      \"morpheme_id\": \"m0\",\n      \"provider_token_id\": \"t0\"\n    }\n  ],\n  \"provider_gaps\": [],\n  \"morpheme_gaps\": []\n}",
+    "choice": "ラティメリアは b0 · [0, 7)保留候选 · 词元：m0、m1{}"
+  },
   "viewport": {
     "width": 390,
     "body": 375

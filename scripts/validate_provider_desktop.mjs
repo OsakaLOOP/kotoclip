@@ -1,8 +1,13 @@
 // 通过本机 WebView2 调试端口验证真实 Tauri 窗口。
 import { writeFile } from 'node:fs/promises';
 
-const pages = await fetch('http://127.0.0.1:9222/json/list').then(r => r.json());
-const page = pages.find(p => p.title === 'Kotoclip');
+let page;
+const deadline = Date.now() + 90000;
+while (!page && Date.now() < deadline) {
+  const pages = await fetch('http://127.0.0.1:9222/json/list').then(r => r.json());
+  page = pages.find(p => p.title === 'Kotoclip');
+  if (!page) await new Promise(resolve => setTimeout(resolve, 250));
+}
 if (!page) throw new Error('未找到 Kotoclip 桌面窗口');
 const socket = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
@@ -78,11 +83,25 @@ try {
   await evaluate(`(() => { const select = document.querySelector('.provider-filters select'); select.value = 'kwja'; select.dispatchEvent(new Event('change', {bubbles:true})); })()`);
   const kwja = await evaluate(`document.querySelector('.source-nodes').textContent`);
   if (!kwja.includes('ラティメリア')) throw new Error('KWJA 结构未显示');
+  const alignment = await evaluate(`(() => {
+    const panel = document.querySelector('.provider-panel');
+    const section = [...panel.querySelectorAll('details')].find(item => item.querySelector('summary')?.textContent.startsWith('词元对齐'));
+    if (!section) throw new Error('词元对齐栏目未显示');
+    section.open = true;
+    const groups = section.querySelectorAll('details');
+    if (!groups.length) throw new Error('对齐组为空');
+    groups[0].open = true;
+    const node = panel.querySelector('.source-nodes details');
+    node.open = true;
+    return { groups: groups.length, first: groups[0].textContent, choice: node.textContent };
+  })()`);
+  if (!alignment.first.includes('intersections') || !/默认结构|保留候选|对齐待定/.test(alignment.choice)) throw new Error('对齐交集或结构选择未显示');
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
   const overflow = await evaluate(`({width: innerWidth, body: document.documentElement.scrollWidth})`);
+  if (overflow.body > overflow.width) throw new Error('窄窗口内容溢出');
   const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   await writeFile('experiments/provider-desktop.png', Buffer.from(screenshot.data, 'base64'));
-  const report = { desktop, words: state.words, ginza: true, kwja: true, cancellation_recovery: cancellation, kwja_structure: kwja, viewport: overflow };
+  const report = { desktop, words: state.words, ginza: true, kwja: true, cancellation_recovery: cancellation, kwja_structure: kwja, alignment, viewport: overflow };
   await writeFile('data/validation/behavior/desktop.json', JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(report));
 } finally {
