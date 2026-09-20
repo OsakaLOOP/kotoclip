@@ -38,6 +38,17 @@ def score_scoped(pred, gold):
     return {'precision': precision, 'recall': recall, 'f1': f1, 'predicted': len(p), 'gold': len(g), 'matched': hit}
 
 
+def score_sentence_boundaries(pred, gold):
+    """按句首、句末边界评分，避免拆句/合句被误读为完全无关。"""
+    p = {(sid, edge) for sid, a, b in pred for edge in (("start", a), ("end", b))}
+    g = {(sid, edge) for sid, a, b in gold for edge in (("start", a), ("end", b))}
+    hit = len(p & g)
+    precision = hit / len(p) if p else 0.0
+    recall = hit / len(g) if g else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return {'precision': precision, 'recall': recall, 'f1': f1, 'predicted': len(p), 'gold': len(g), 'matched': hit}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=Path, default=Path('data/validation/sources-validation.json'))
@@ -77,6 +88,8 @@ def main():
                 pred.extend((sid, *norm(item, text_by_id[sid])) for item in actual.get(layer, []))
                 expected.extend((sid, *span) for span in gold_segment.get(layer, []))
             layers[layer] = score_scoped(pred, expected)
+            if layer == 'sentences':
+                layers[layer]['boundary'] = score_sentence_boundaries(pred, expected)
         layers['macro_f1'] = sum(layers[layer]['f1'] for layer in ('tokens', 'compounds', 'bunsetsu', 'sentences')) / 4
         report['providers'][name] = layers
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')

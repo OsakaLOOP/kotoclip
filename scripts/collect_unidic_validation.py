@@ -14,8 +14,20 @@ def collect(segment):
     register = "csj" if segment["id"].startswith("csj") else "cwj"
     proc = subprocess.run([str(BIN), "inspect", register, segment["text"]], capture_output=True, text=True, encoding="utf-8", check=True)
     value = json.loads(proc.stdout)
+    prepared_text = value["text"]
+    expected_characters = len(prepared_text)
+    if value["characters"] != expected_characters:
+        raise SystemExit(f"{segment['id']} 字符数不一致：输入 {expected_characters}，分析器 {value['characters']}")
     tokens = [{"id": t["id"], "kind": "token", "char_range": t["char_range"], "surface": t["surface"], "pos": t.get("pos"), "lemma": t.get("lemma")} for t in value["morphemes"]]
-    return {"id": segment["id"], "tokens": tokens, "paragraphs": value["structure"]["paragraphs"], "sentences": value["structure"]["sentences"], "clauses": value["structure"]["clauses"], "characters": value["characters"], "routing": value["routing"]}
+    cursor = 0
+    for item in sorted(tokens + value["gaps"], key=lambda item: item["char_range"]):
+        start, end = item["char_range"]
+        if start != cursor or prepared_text[start:end] != item["surface"]:
+            raise SystemExit(f"{segment['id']} 正文覆盖不完整：{cursor} → {start}")
+        cursor = end
+    if cursor != expected_characters:
+        raise SystemExit(f"{segment['id']} 正文覆盖不完整：{cursor}/{expected_characters}")
+    return {"id": segment["id"], "input_text": segment["text"], "text": prepared_text, "tokens": tokens, "gaps": value["gaps"], "paragraphs": value["structure"]["paragraphs"], "sentences": value["structure"]["sentences"], "clauses": value["structure"]["clauses"], "characters": value["characters"], "routing": value["routing"]}
 
 def main():
     parser = argparse.ArgumentParser()
