@@ -97,10 +97,10 @@ pub fn collect_clauses(text: &str, morphemes: &[MorphemeToken], structure: &Stru
         if start >= end || end > chars.len() { return Err(format!("小句跨度 {} 超出文本范围", span.id)); }
         let surface: String = chars[start..end].iter().collect();
         if surface.trim().is_empty() { continue; }
-        let morpheme_indices: Vec<usize> = morphemes.iter().enumerate().filter(|(_, token)| token.char_range[0] >= start && token.char_range[1] <= end).map(|(index, _)| index).collect();
-        if morpheme_indices.is_empty() { return Err(format!("小句跨度 {} 未覆盖 UniDic token", span.id)); }
+        let coverage = crate::alignment::cover_range(span.char_range, morphemes, text);
+        let morpheme_indices = coverage.morpheme_indices;
         let sentence_ids = sentences.iter().filter(|sentence| sentence.char_range[0] <= start && end <= sentence.char_range[1]).map(|sentence| sentence.id.clone()).collect();
-        clauses.push(ClauseNode { id: format!("clause:{}", span.id), char_range: [start, end], sentence_ids, morpheme_indices, status: status(&span.status), provider: span.provider.clone(), source_id: span.source_id.clone(), labels: span.labels.clone() });
+        clauses.push(ClauseNode { id: format!("clause:{}", span.id), char_range: [start, end], sentence_ids, morpheme_indices, status: if coverage.complete { status(&span.status) } else { ClauseStatus::Pending }, provider: span.provider.clone(), source_id: span.source_id.clone(), labels: span.labels.iter().cloned().chain([format!("alignment:{}", coverage.reason)]).collect() });
     }
     let sentence_refs: Vec<_> = sentences.iter().map(|node| (node.id.clone(), node.char_range, node.provider.clone())).collect();
     let clause_refs: Vec<_> = clauses.iter().map(|node| (node.id.clone(), node.char_range, node.provider.clone())).collect();

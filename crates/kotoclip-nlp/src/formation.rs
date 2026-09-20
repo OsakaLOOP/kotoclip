@@ -67,23 +67,17 @@ pub fn collect_formations(
         if observed.trim().is_empty() {
             continue;
         }
-        let token_indices: Vec<usize> = morphemes.iter().enumerate()
-            .filter(|(_, token)| token.char_range[0] >= start && token.char_range[1] <= end)
-            .map(|(index, _)| index)
-            .collect();
-        if token_indices.is_empty() {
-            return Err(format!("构词跨度 {} 未覆盖 UniDic token", span.id));
-        }
+        let coverage = crate::alignment::cover_range(span.char_range, morphemes, text);
         nodes.push(FormationNode {
             id: format!("formation:{}", span.id),
             kind: span.kind.clone(),
             char_range: [start, end],
-            morpheme_indices: token_indices,
-            status: status(&span.status),
+            morpheme_indices: coverage.morpheme_indices,
+            status: if coverage.complete && coverage.gaps.is_empty() { status(&span.status) } else { FormationStatus::Pending },
             evidence: vec![FormationEvidence {
                 provider: span.provider.clone(),
                 source_id: span.source_id.clone(),
-                reason: "structure_compound".into(),
+                reason: coverage.reason,
             }],
         });
     }

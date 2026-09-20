@@ -62,13 +62,8 @@ pub fn collect_bunsetsu(
         if start >= end || end > chars.len() {
             return Err(format!("文节跨度 {} 超出文本范围", span.id));
         }
-        let morpheme_indices: Vec<usize> = morphemes.iter().enumerate()
-            .filter(|(_, token)| token.char_range[0] >= start && token.char_range[1] <= end)
-            .map(|(index, _)| index)
-            .collect();
-        if morpheme_indices.is_empty() {
-            return Err(format!("文节跨度 {} 未覆盖 UniDic token", span.id));
-        }
+        let coverage = crate::alignment::cover_range(span.char_range, morphemes, text);
+        let morpheme_indices = coverage.morpheme_indices;
         let head_morpheme_index = span.head_char_range.filter(|head| {
             head[0] >= start && head[1] <= end && head[0] < head[1]
         }).and_then(|head| {
@@ -85,12 +80,12 @@ pub fn collect_bunsetsu(
             char_range: [start, end],
             morpheme_indices,
             formation_node_ids,
-            status: status(&span.status),
+            status: if coverage.complete { status(&span.status) } else { BunsetsuStatus::Pending },
             provider: span.provider.clone(),
             source_id: span.source_id.clone(),
             head_char_range: span.head_char_range,
             head_morpheme_index,
-            labels: span.labels.clone(),
+            labels: span.labels.iter().cloned().chain([format!("alignment:{}", coverage.reason)]).collect(),
         });
     }
 
@@ -146,5 +141,16 @@ mod tests {
         let result = collect_bunsetsu("情報処理技術", &[token(0, [0, 2], "情報"), token(1, [2, 4], "処理"), token(2, [4, 6], "技術")], &structure, &FormationArtifact { schema: crate::formation::SCHEMA.into(), nodes: Vec::new(), conflicts: Vec::new() }).unwrap();
         assert_eq!(result.conflict_groups[0].char_range, [2, 4]);
         assert_eq!(result.conflict_groups[0].providers, vec!["ginza", "kwja"]);
+    }
+
+    #[test]
+    fn preserves_provider_boundary_inside_unidic_token() {
+        let mut structure = crate::structure::local_candidates("時折雨");
+        structure.bunsetsu.push(span("kwja:b0", [0, 1], "kwja", Some([0, 1])));
+        let formation = FormationArtifact { schema: crate::formation::SCHEMA.into(), nodes: Vec::new(), conflicts: Vec::new() };
+        let result = collect_bunsetsu("時折雨", &[token(0, [0, 2], "時折"), token(1, [2, 3], "雨")], &structure, &formation).unwrap();
+        assert_eq!(result.nodes[0].status, BunsetsuStatus::Pending);
+        assert_eq!(result.nodes[0].morpheme_indices, vec![0]);
+        assert_eq!(result.nodes[0].head_morpheme_index, None);
     }
 }

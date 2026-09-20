@@ -57,7 +57,7 @@ pub fn collect_dictionary_candidates(text: &str, morphemes: &[MorphemeToken], fo
         if start >= end || end > chars.len() { return Err(format!("词典候选 {} 超出文本范围", node.id)); }
         let surface: String = chars[start..end].iter().collect();
         if !is_queryable(&surface) { continue; }
-        let reading = node.morpheme_indices.iter().map(|index| morphemes.get(*index).and_then(|token| token.reading.clone())).collect::<Option<Vec<_>>>().map(|parts| parts.join(""));
+        let reading = if node.status == FormationStatus::Pending { None } else { node.morpheme_indices.iter().map(|index| morphemes.get(*index).and_then(|token| token.reading.clone())).collect::<Option<Vec<_>>>().map(|parts| parts.join("")) };
         candidates.push(DictionaryCandidate {
             id: format!("dictionary:formation:{}", node.id), kind: "compound".into(),
             char_range: node.char_range, surface: surface.clone(), morpheme_indices: node.morpheme_indices.clone(),
