@@ -246,6 +246,21 @@ impl DocumentSessions {
         drop(state); self.wake();
     }
 
+    pub fn refresh_language(&self) -> Result<(), String> {
+        let mut state = self.state.lock().unwrap();
+        for session in state.sessions.values_mut() {
+            let mut changed = Vec::new();
+            for (index, unit) in session.units.iter_mut().enumerate() {
+                let Some(document) = &unit.document else { continue; };
+                unit.document = Some(self.engine.refresh_language(document)?);
+                unit.artifact_revision += 1;
+                changed.push(index);
+            }
+            if !changed.is_empty() { session.publish(&changed); }
+        }
+        Ok(())
+    }
+
     pub fn control(&self, id: &str, text_version: &str, generation: u64, action: &str, range: Option<[usize; 2]>, unit_id: Option<&str>) -> Result<Value, String> {
         let mut state = self.state.lock().unwrap();
         let current = state.sessions.get(id).ok_or("文档会话已关闭")?;

@@ -71,6 +71,11 @@ pub enum Request {
     SyncDocument { session_id: String },
     PollDocument { session_id: String, text_version: String, generation: u64, after_revision: u64 },
     QueryDocument { session_id: String, text_version: String, generation: u64, unit_id: String, artifact_revision: u64, token_id: String, #[serde(default)] selected_form: Option<String> },
+    ListRules,
+    PreviewRule { session_id: String, text_version: String, generation: u64, unit_id: String, artifact_revision: u64, rule: kotoclip_nlp::rules::Rule },
+    SaveRule { rule: kotoclip_nlp::rules::Rule },
+    SetRuleEnabled { id: String, enabled: bool },
+    DeleteRule { id: String },
     AnalyzeWithArtifacts {
         text: String,
         register: Register,
@@ -163,6 +168,28 @@ impl AnalysisService {
                 let mut result = self.engine.query(Some(document.id.clone()), Some(token), &token.query_forms, selected_form.as_deref())?;
                 result["target"] = json!({"session_id": session_id, "text_version": text_version, "generation": generation, "unit_id": unit_id, "artifact_revision": artifact_revision, "token_id": token_id});
                 Ok(result)
+            },
+            Request::ListRules => serde_json::to_value(self.engine.rules.snapshot()).map_err(|error| error.to_string()),
+            Request::PreviewRule { session_id, text_version, generation, unit_id, artifact_revision, rule } => {
+                rule.validate()?;
+                let document = self.sessions.document(&session_id, &text_version, generation, &unit_id, artifact_revision)?;
+                let matches = crate::language_analysis::preview(&document, &rule)?;
+                Ok(json!({"rule": rule, "matches": matches}))
+            },
+            Request::SaveRule { rule } => {
+                let snapshot = self.engine.save_rule(rule)?;
+                self.sessions.refresh_language()?;
+                serde_json::to_value(snapshot).map_err(|error| error.to_string())
+            },
+            Request::SetRuleEnabled { id, enabled } => {
+                let snapshot = self.engine.set_rule_enabled(&id, enabled)?;
+                self.sessions.refresh_language()?;
+                serde_json::to_value(snapshot).map_err(|error| error.to_string())
+            },
+            Request::DeleteRule { id } => {
+                let snapshot = self.engine.delete_rule(&id)?;
+                self.sessions.refresh_language()?;
+                serde_json::to_value(snapshot).map_err(|error| error.to_string())
             },
             Request::Enrich { analysis_id } => {
                 let document = self.engine.document(&analysis_id)?;

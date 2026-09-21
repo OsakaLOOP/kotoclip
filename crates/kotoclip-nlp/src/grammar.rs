@@ -42,7 +42,7 @@ pub fn collect_functional_candidates(
     for (index, (source, morpheme)) in source_tokens.iter().zip(morphemes).enumerate() {
         let pos1 = source.fields.get(0).and_then(|field| field.value.as_deref()).unwrap_or("");
         let pos2 = source.fields.get(1).and_then(|field| field.value.as_deref()).unwrap_or("");
-        if !matches!(pos1, "助詞" | "助動詞") && pos2 != "非自立" { continue; }
+        if !matches!(pos1, "助詞" | "助動詞") && !pos2.starts_with("非自立") { continue; }
         let lemma = source.fields.get(7).and_then(|field| field.value.clone()).filter(|value| !value.trim().is_empty());
         let mut labels = vec!["functional_morpheme".to_owned(), format!("pos1:{pos1}")];
         if !pos2.is_empty() { labels.push(format!("pos2:{pos2}")); }

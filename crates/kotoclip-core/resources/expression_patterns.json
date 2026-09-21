@@ -249,15 +249,17 @@
       "category": "让步呼应",
       "examples": ["どんなに危険であっても行く。"],
       "counter_examples": ["どんなに危険はありませんと説明されたところで、信じない。"],
-      "head_atoms": [
-        { "lemmas": ["どんなに"], "pos": "副詞" }
+      "head_variants": [
+        [{ "lemmas": ["どんなに"], "pos": "副詞" }],
+        [{ "surfaces": ["どんな"], "pos": "形状詞" }, { "surfaces": ["に"], "lemmas": ["だ"], "pos": "助動詞" }]
       ],
       "tail_variants": [
         [{ "lemmas": ["て"] }, { "lemmas": ["も"] }],
         [{ "lemmas": ["で"] }, { "lemmas": ["も"] }],
         [{ "lemmas": ["として"] }, { "lemmas": ["も"] }],
         [{ "lemmas": ["た"] }, { "lemmas": ["ところ"] }, { "lemmas": ["で"] }],
-        [{ "lemmas": ["だ"] }, { "lemmas": ["ところ"] }, { "lemmas": ["で"] }]
+        [{ "lemmas": ["だ"] }, { "lemmas": ["ところ"] }, { "lemmas": ["で"] }],
+        [{ "lemmas": ["居る"], "conjugation_forms": ["意志推量形"] }, { "lemmas": ["と"] }]
       ],
       "gap_bunsetsu": [0, 10]
     },
@@ -284,7 +286,7 @@
     },
     {
       "id": "concessive_tatoe",
-      "label": "たとえ〜ても",
+      "label": "たとえ〜ても／とはいえ",
       "description": "假设一种极端的让步条件：即使、纵然……也。",
       "category": "让步呼应",
       "examples": ["たとえ雨でも行く。"],
@@ -300,7 +302,8 @@
         [{ "lemmas": ["だ"] }, { "lemmas": ["って"] }],
         [{ "lemmas": ["たって"] }],
         [{ "lemmas": ["だって"] }],
-        [{ "lemmas": ["と"] }, { "lemmas": ["し"] }, { "lemmas": ["て"] }, { "lemmas": ["も"] }]
+        [{ "lemmas": ["と"] }, { "lemmas": ["し"] }, { "lemmas": ["て"] }, { "lemmas": ["も"] }],
+        [{ "lemmas": ["と"] }, { "lemmas": ["は"] }, { "lemmas": ["言う"], "conjugation_forms": ["已然形", "仮定形"] }]
       ],
       "gap_bunsetsu": [0, 10]
     },

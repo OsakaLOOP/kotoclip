@@ -173,6 +173,7 @@ fn assemble(
         expression,
         projection,
         morphology,
+        application: Default::default(),
         structure_diagnostics,
         provider_token_alignments,
         external_sources: complete_sources.to_vec(),
