@@ -24,6 +24,7 @@
 | [实施记录](implementation_progress.md) | 阶段状态、实际调用与检查证据 |
 | [验收清单](acceptance.md) | 桌面场景、操作步骤、期望与异常恢复 |
 | [NLP 行为基线](nlp_behavior.md) | 本机三来源输出观察与前期设计依据 |
+| [P4 样本输出复核](p4_sample_review.md) | 十段语料的原始词法、构词、语法证据与后续设计依据 |
 
 ## 完整功能范围
 
