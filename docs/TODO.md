@@ -91,12 +91,12 @@ P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构�
 
 十段指定语料的原始输出、人工阅读结论和对象分层方案见 [P4 样本输出复核](p4_sample_review.md)。实现优先消费 UniDic 活用字段和 GiNZA C 模式正式 token／compound 范围；`sub_tokens` 仅作为来源诊断，再将 KWJA 基本句标签作为语法候选证据。
 
-- [ ] 将单 token 形态字段扩展为完整活用链，覆盖词汇与功能用言所有权、显示原型、辞书形、查询形及连接形。
-- [ ] 接入构词规则、词典整体候选与绑定，完成竞争决定和阅读单位生成；保留来源结构诊断与正式 token 查询。
-- [ ] 迁移语法规则条件到 UniDic 和统一结构，接入编译目录、命名捕获、义项选择及正文精确讲解；恢复文法库界面和核验状态操作。
-- [ ] 完成连续与非连续表达 matcher、硬边界及 gap 检查。现有 `expression_catalog.rs` 使用相邻数组成员匹配，需按字符范围验证连接条件。
-- [ ] 恢复规则编辑、作用域、预演、启停与删除。预演与正式分析调用同一实现，规则修改通过会话更新刷新正文。
-- [ ] 完成语法、表达、结构与活用的解释投影，检查实际高亮范围、整体和内部目标及待定状态。
+- [x] 将单 token 形态字段扩展为完整活用链，覆盖词汇与功能用言所有权、显示原型、辞书形、查询形及连接形。
+- [x] 接入类型化构词规则、来源构词候选、词典整体绑定与阅读单位生成，保存竞争决定；保留来源结构诊断与正式 token 查询。
+- [x] 迁移语法规则条件到 UniDic 和统一结构，接入编译目录、命名捕获、义项候选及正文精确讲解；文法库和核验状态操作保持可用。
+- [x] 完成连续与非连续表达 matcher、硬边界及 gap 检查，按字符范围保存实际命中区间。
+- [x] 恢复规则编辑、作用域、预演、启停与删除。预演与正式分析调用同一 matcher，规则修改通过会话更新刷新正文。
+- [x] 完成语法、表达、结构与活用的解释投影，保存实际高亮范围、整体和内部目标及待定状态。
 
 入口：[morphology.rs](../crates/kotoclip-nlp/src/morphology.rs)、[lexical.rs](../crates/kotoclip-nlp/src/lexical.rs)、[grammar.rs](../crates/kotoclip-nlp/src/grammar.rs)、[expression_catalog.rs](../crates/kotoclip-core/src/expression_catalog.rs)、[projection.rs](../crates/kotoclip-nlp/src/projection.rs)、[RuleWorkbench.vue](../src/components/RuleWorkbench.vue)。
 

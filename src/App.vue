@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { ArrowLeft, ArrowRight, Check, Copy, FileText, LoaderCircle, Play, Search, X } from '@lucide/vue';
+import { ArrowLeft, ArrowRight, Check, Copy, FileText, LibraryBig, LoaderCircle, Play, Search, SlidersHorizontal, X } from '@lucide/vue';
 import DictionaryContent from './components/dictionary/DictionaryContent.vue';
+import GrammarLibraryPanel from './components/GrammarLibraryPanel.vue';
+import LanguageRulePanel from './components/LanguageRulePanel.vue';
 import ProviderPanel from './components/ProviderPanel.vue';
 import { nlpRequest } from './services/nlp';
 import { useDocumentSession } from './composables/useDocumentSession';
@@ -25,11 +27,13 @@ const providerDiagnostics = computed(() => sessionState.value?.paused ? [{ id: '
 const queryBusy = ref(false);
 const error = ref('');
 const queryError = ref('');
-const tab = ref<'dictionary' | 'metadata'>('dictionary');
+const tab = ref<'dictionary' | 'language' | 'metadata'>('dictionary');
 const formIndex = ref(0);
 const dictionary = ref('');
 const search = ref('');
 const copied = ref(false);
+const showGrammarLibrary = ref(false);
+const showRulePanel = ref(false);
 const available = ref<Record<string, boolean>>({ cwj: true, csj: true });
 let analysisGeneration = 0;
 let queryGeneration = 0;
@@ -43,6 +47,9 @@ const selectedRubies = computed(() => {
   if (!selected.value || !document.value) return [];
   return document.value.ruby_validations.filter((item) => item.token_range && selected.value!.source_index >= item.token_range[0] && selected.value!.source_index < item.token_range[1]);
 });
+const selectedExplanations = computed(() => selected.value && document.value
+  ? document.value.application.explanations.filter(item => item.members.includes(selected.value!.source_index))
+  : []);
 const rubySummary = computed(() => {
   const validations = document.value?.ruby_validations || [];
   return {
@@ -66,7 +73,8 @@ const segments = computed(() => {
     ...document.value.gaps.map(gap => ({ range: gap.char_range, token: null })),
   ].filter(item => item.range[0] + offset < end && item.range[1] + offset > start).map(item => {
     const a = Math.max(start, item.range[0] + offset), b = Math.min(end, item.range[1] + offset);
-    return { start: a, surface: preparedCharacters.value.slice(a, b).join(''), token: item.token };
+    const explanations = item.token ? document.value!.application.explanations.filter(explanation => explanation.members.includes(item.token!.source_index)) : [];
+    return { start: a, surface: preparedCharacters.value.slice(a, b).join(''), token: item.token, explanations };
   }).sort((a, b) => a.start - b.start);
 });
 
@@ -176,6 +184,8 @@ onMounted(async () => {
             <button v-for="mode in (['auto', 'cwj', 'csj'] as const)" :key="mode" :class="{ active: register === mode }" :aria-pressed="register === mode" :disabled="busy" @click="register = mode; invalidate()">{{ mode === 'auto' ? '自动' : mode === 'cwj' ? '书面语 CWJ' : '口语 CSJ' }}</button>
           </div>
           <div class="toolbar-actions">
+            <button class="icon-button" title="文法库" aria-label="文法库" @click="showGrammarLibrary = true"><LibraryBig :size="18" /></button>
+            <button class="icon-button" title="语言规则" aria-label="语言规则" @click="showRulePanel = true"><SlidersHorizontal :size="18" /></button>
             <label class="icon-button" title="打开文本"><FileText :size="18" /><input type="file" accept=".txt,.md" aria-label="打开文本" :disabled="busy" @change="openText" /></label>
             <button class="icon-button" title="清空" aria-label="清空" :disabled="busy" @click="input = ''; invalidate()"><X :size="18" /></button>
             <button class="primary-button" :disabled="busy || !input.trim() || !registerAvailable" @click="analyze"><LoaderCircle v-if="busy" class="spin" :size="16" /><Play v-else :size="16" />{{ busy ? '打开中' : '分析' }}</button>
@@ -190,15 +200,15 @@ onMounted(async () => {
           <button v-if="sessionState.progress.pending" @click="cancelStructure">暂停分析</button><button v-else :disabled="sessionState.progress.complete === sessionState.progress.total" @click="session.control('continue_document')">继续分析</button>
           <span role="status">词法 {{ sessionState.progress.basic }}/{{ sessionState.progress.total }} · 结构 {{ sessionState.progress.complete }}/{{ sessionState.progress.total }}<template v-if="sessionState.paused"> · 已暂停</template></span>
         </div>
-        <div class="result-toolbar"><h1>分词结果</h1><span v-if="document">{{ document.morphemes.length }} 词 · {{ Math.round(document.elapsed_ms) }} ms · {{ sourceNames }} · 结构候选 {{ document.structure.paragraphs.length }} 段 / {{ document.structure.sentences.length }} 句 / {{ document.structure.clauses.length }} 小句<template v-if="document.routing.selected === null"> · 按叙述与引语选择词典</template><template v-if="rubySummary.total"> · 注音 {{ rubySummary.matched }}/{{ rubySummary.total }} 匹配<template v-if="rubySummary.variant"> · 读音差异 {{ rubySummary.variant }}</template><template v-if="rubySummary.pending"> · 待核验 {{ rubySummary.pending }}</template></template></span></div>
+        <div class="result-toolbar"><h1>分词结果</h1><span v-if="document">{{ document.morphemes.length }} 词 · {{ Math.round(document.elapsed_ms) }} ms · {{ sourceNames }} · 阅读单位 {{ document.application.reading_units.length }} · 语法与表达 {{ document.application.explanations.filter(item => item.layer === 'grammar' || item.layer === 'expression').length }}<template v-if="document.routing.selected === null"> · 按叙述与引语选择词典</template><template v-if="rubySummary.total"> · 注音 {{ rubySummary.matched }}/{{ rubySummary.total }} 匹配<template v-if="rubySummary.variant"> · 读音差异 {{ rubySummary.variant }}</template><template v-if="rubySummary.pending"> · 待核验 {{ rubySummary.pending }}</template></template></span></div>
         <div v-if="busy" class="empty-state" role="status"><LoaderCircle class="spin" :size="22" />正在分析</div>
         <div v-else-if="!sessionState" class="empty-state">暂无分析结果</div>
-        <article v-else class="token-text" lang="ja" aria-label="分词结果"><template v-for="segment in segments" :key="segment.start"><button v-if="segment.token" class="word" :class="{ selected: selected?.id === segment.token.id, unknown: document?.source.tokens[segment.token.source_index].lexicon_type === 'unknown' }" :aria-label="segment.surface" :aria-pressed="selected?.id === segment.token.id" @click="select(segment.token)" @mouseenter="preview(segment.token)" @mouseleave="cancelPreview" @focus="select(segment.token)">{{ segment.surface }}</button><span v-else>{{ segment.surface }}</span></template></article>
+        <article v-else class="token-text" lang="ja" aria-label="分词结果"><template v-for="segment in segments" :key="segment.start"><button v-if="segment.token" class="word" :class="{ selected: selected?.id === segment.token.id, unknown: document?.source.tokens[segment.token.source_index].lexicon_type === 'unknown', 'has-language-note': segment.explanations.length }" :title="segment.explanations.map(item => `${item.title}：${item.summary}`).join('\n')" :aria-label="segment.surface" :aria-pressed="selected?.id === segment.token.id" @click="select(segment.token)" @mouseenter="preview(segment.token)" @mouseleave="cancelPreview" @focus="select(segment.token)">{{ segment.surface }}</button><span v-else>{{ segment.surface }}</span></template></article>
         <ProviderPanel :sources="document?.external_sources || []" :graph="document?.structure_graph || null" :alignments="document?.provider_token_alignments || []" :can-analyze="!!document" :pending="structureBusy" :diagnostics="providerDiagnostics" @retry="enrich" @cancel="cancelStructure" />
       </section>
       <aside class="inspector">
         <div class="inspector-heading"><div><h2 lang="ja">{{ selected?.surface || '词语详情' }}</h2><p v-if="selected">{{ selected.pos.filter(Boolean).join(' / ') }} · [{{ selected.char_range.join(', ') }})</p></div><div class="inspector-navigation"><button class="icon-button" title="前一词" aria-label="前一词" :disabled="!selected || selected.source_index === 0" @click="move(-1)"><ArrowLeft :size="17" /></button><button class="icon-button" title="后一词" aria-label="后一词" :disabled="!selected || selected.source_index === (document?.morphemes.length || 0) - 1" @click="move(1)"><ArrowRight :size="17" /></button></div></div>
-        <div class="panel-tabs" role="tablist"><button role="tab" :aria-selected="tab === 'dictionary'" :class="{ active: tab === 'dictionary' }" @click="tab = 'dictionary'">词典</button><button role="tab" :aria-selected="tab === 'metadata'" :class="{ active: tab === 'metadata' }" @click="tab = 'metadata'">UniDic 元数据</button></div>
+        <div class="panel-tabs" role="tablist"><button role="tab" :aria-selected="tab === 'dictionary'" :class="{ active: tab === 'dictionary' }" @click="tab = 'dictionary'">词典</button><button role="tab" :aria-selected="tab === 'language'" :class="{ active: tab === 'language' }" @click="tab = 'language'">语言分析</button><button role="tab" :aria-selected="tab === 'metadata'" :class="{ active: tab === 'metadata' }" @click="tab = 'metadata'">UniDic 元数据</button></div>
         <div v-show="tab === 'dictionary'" class="dictionary-panel">
           <form class="search-form" @submit.prevent="navigate(search)"><input v-model="search" aria-label="查询词" placeholder="查询词" maxlength="100" /><button class="icon-button" aria-label="查询" title="查询" :disabled="!search.trim()"><Search :size="18" /></button></form>
           <div v-if="queryBusy" class="empty-state" role="status"><LoaderCircle class="spin" :size="20" />查询中</div>
@@ -213,6 +223,14 @@ onMounted(async () => {
             <p v-if="group && group.total > group.entries.length" class="query-reading">显示前 {{ group.entries.length }} 条，共 {{ group.total }} 条</p>
           </template>
           <div v-else class="empty-state">尚未选择词语</div>
+        </div>
+        <div v-show="tab === 'language'" class="metadata-panel">
+          <article v-for="item in selectedExplanations" :key="item.id" class="language-explanation">
+            <header><strong>{{ item.title }}</strong><span>{{ item.layer }} · {{ item.status }}</span></header>
+            <p>{{ item.summary || item.reason }}</p>
+            <dl><dt>范围</dt><dd>[{{ item.char_range.join(', ') }})</dd><dt>命中</dt><dd>{{ item.hit_ranges.map(range => `[${range.join(', ')})`).join('、') }}</dd><template v-if="item.sense_candidates.length"><dt>义项候选</dt><dd>{{ item.sense_candidates.join('、') }}</dd></template></dl>
+          </article>
+          <div v-if="!selected" class="empty-state">尚未选择词语</div><div v-else-if="!selectedExplanations.length" class="empty-state">当前词语没有语言分析说明</div>
         </div>
         <div v-show="tab === 'metadata'" class="metadata-panel">
           <template v-if="sourceToken">
@@ -229,5 +247,7 @@ onMounted(async () => {
         </div>
       </aside>
     </main>
+    <GrammarLibraryPanel :show="showGrammarLibrary" @close="showGrammarLibrary = false" />
+    <LanguageRulePanel :show="showRulePanel" :session="sessionState ? { session_id: sessionState.session_id, text_version: sessionState.text_version, generation: sessionState.generation } : null" :unit="unitState ? { unit_id: unitState.unit_id, artifact_revision: unitState.artifact_revision } : null" :tokens="document?.morphemes || []" :analysis-id="document?.id || null" @close="showRulePanel = false" />
   </div>
 </template>

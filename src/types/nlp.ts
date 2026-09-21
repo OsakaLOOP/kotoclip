@@ -70,6 +70,7 @@ export interface UnifiedDocument {
   expression: { schema: string; occurrences: ExpressionOccurrence[] };
   projection: { schema: string; targets: ProjectionTarget[] };
   morphology: MorphologyArtifact;
+  application: ApplicationArtifact;
   external_sources: SourceArtifact[];
   structure_graph: StructureGraph;
   provider_token_alignments: { schema: string; source_id: string | null; unidic_provider: string; external_provider: string; groups: AlignmentGroup[]; alignments: TokenAlignment[] }[];
@@ -136,16 +137,43 @@ export interface ExpressionOccurrence {
 export interface ProjectionTarget { id: string; char_range: [number, number]; layer: string; source_id: string; status: string; }
 export interface MorphologyOperator {
   operator_id: string; kind: string; source_morpheme_range: [number, number]; char_range: [number, number];
-  output_state: string; concept_id: string; confidence: number; evidence: string[]; candidates: string[];
+  input_state: string; output_state: string; concept_id: string; confidence: number; evidence: string[]; candidates: string[];
   label: string; description: string;
 }
 export interface MorphologyChain {
   chain_id: string; anchor_morpheme: number; anchor_range: [number, number]; morpheme_range: [number, number];
   char_range: [number, number]; role: 'lexical' | 'functional'; base_lexeme: string; surface_form: string;
-  dictionary_form: string; lemma_form: string; lookup_form: string; source_ranges: [number, number][];
+  dictionary_form: string; lemma_form: string; lookup_form: string; display_form: string; parent_chain_id: string | null; source_ranges: [number, number][];
   operators: MorphologyOperator[]; connection_forms: string[]; evidence: string[];
 }
 export interface MorphologyArtifact { schema: string; chains: MorphologyChain[]; }
+export interface DictionaryBinding { dictionary: string; entry_key: string; occurrence_id: string; headword: string; reading: string; }
+export interface LexicalDecision {
+  id: string; char_range: [number, number]; members: number[]; candidate_ids: string[]; status: string; reason: string;
+  bindings: DictionaryBinding[]; competing_ids: string[];
+}
+export interface ReadingUnit {
+  id: string; char_range: [number, number]; members: number[]; lexical_id: string | null; chain_ids: string[];
+  bunsetsu_ids: string[]; query_target_ids: string[];
+}
+export interface LanguageExplanation {
+  id: string; layer: string; source_id: string; char_range: [number, number]; hit_ranges: [number, number][]; members: number[];
+  captures: Record<string, number[]>; chain_ids: string[]; concept_id: string | null; sense_id: string | null;
+  sense_candidates: string[]; status: string; reason: string; title: string; summary: string; evidence: string[];
+}
+export interface ApplicationArtifact { version: string; rules_version: number; lexical: LexicalDecision[]; reading_units: ReadingUnit[]; explanations: LanguageExplanation[]; }
+export interface RuleAtom {
+  surfaces: string[]; base_forms: string[]; pos_major: string[]; pos_sub1: string[]; conjugation_types: string[];
+  conjugation_forms: string[]; morphology_features: string[]; capture: string | null; optional: boolean; gap_before: number;
+}
+export interface LanguageRule {
+  id: string; label: string; description: string; kind: 'idiom' | 'grammar_construction' | 'correlative' | 'lexical_unit' | 'functional_morpheme' | 'morphology_feature';
+  atoms: RuleAtom[]; priority: number; enabled: boolean; document_id: string | null; allow_whitespace: boolean;
+  concept_id: string | null; sense_ids: string[]; display_from: number; display_to: number | null; source_refs: string[];
+  gap_after_atom: number | null; gap_bunsetsu: [number, number] | null;
+}
+export interface LanguageRuleMatch { rule_id: string; members: number[]; char_range: [number, number]; hit_ranges: [number, number][]; captures: Record<string, number[]>; }
+export interface RuleSnapshot { schema: string; version: number; rules: LanguageRule[]; }
 export interface StructureSpan {
   id: string; kind: string; char_range: [number, number]; status: string; provider: string;
   source_id?: string | null; head_char_range?: [number, number] | null; labels?: string[];
