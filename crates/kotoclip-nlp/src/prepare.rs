@@ -33,7 +33,7 @@ impl PreparationMap {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PreparedText {
     pub text: String,
     pub annotations: Vec<RubyAnnotation>,
@@ -215,25 +215,6 @@ pub fn grouped_annotations(annotations: &[RubyAnnotation]) -> Vec<RubyAnnotation
     groups
 }
 
-pub fn has_long_dialogue(text: &str) -> bool {
-    let mut opening: Option<usize> = None;
-    let chars: Vec<char> = text.chars().collect();
-    for (index, character) in chars.iter().copied().enumerate() {
-        match character {
-            '「' if opening.is_none() => opening = Some(index),
-            '」' => {
-                if let Some(start) = opening.take() {
-                    if chars[start + 1..index].iter().count() > 10 {
-                        return true;
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-    false
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -282,13 +263,6 @@ mod tests {
     fn preserves_invalid_ruby() {
         assert_eq!(prepare_text("語《abc》").text, "語《abc》");
         assert_eq!(prepare_text("語《ご").text, "語《ご");
-    }
-
-    #[test]
-    fn routes_only_dialogue_longer_than_ten_scalars() {
-        assert!(!has_long_dialogue("「1234567890」"));
-        assert!(has_long_dialogue("「12345678901」"));
-        assert!(has_long_dialogue("本文「これは十一个字以上です」本文"));
     }
 
     #[test]

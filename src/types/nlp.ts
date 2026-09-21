@@ -1,6 +1,9 @@
 import type { DictEntry } from './index';
 
 export type Register = 'cwj' | 'csj';
+export type RegisterPolicy = 'auto' | Register;
+export interface RegisterRun { char_range: [number, number]; selected: Register; reason: string; }
+export interface SourceRun { provider: { id: string; version: string; dictionary_sha256: string; field_schema: string }; char_range: [number, number]; token_range: [number, number]; }
 export interface FeatureField { index: number; name: string; label: string; raw: string | null; value: string | null; }
 export interface ProviderToken {
   index: number; surface: string; char_range: [number, number]; byte_range: [number, number];
@@ -23,8 +26,8 @@ export interface UnifiedDocument {
   schema: string; id: string; text: string; characters: number; elapsed_ms: number;
   preparation: { schema: string; source_text: string; source_sha256: string; text_sha256: string; origins: number[]; removed: { source_range: [number, number]; text_offset: number; kind: string }[] };
   author_ruby: { base: string; reading: string; char_range: [number, number] }[];
-  source: { provider: { id: string; version: string; dictionary_sha256: string; field_schema: string }; tokens: ProviderToken[] };
-  routing: { requested: Register; selected: Register; reason: string | null };
+  source: { runs: SourceRun[]; tokens: ProviderToken[] };
+  routing: { version: string; requested: RegisterPolicy; selected: Register | null; runs: RegisterRun[] };
   ruby_validations: RubyValidation[];
   morphemes: MorphemeToken[]; gaps: { char_range: [number, number]; surface: string }[];
   structure: {
@@ -152,5 +155,7 @@ export interface AlignmentDiagnostic {
 }
 export interface QueryOutput {
   analysis_id: string | null; token_id: string | null; dictionary_names: string[];
-  groups: { form: QueryForm; entries: DictEntry[]; total: number }[];
+  groups: { form: QueryForm; form_id?: string | null; entries: DictEntry[]; total: number }[];
+  forms: { form_id: string; display_form: string; normalized_form: string; readings: string[]; evidence: string[]; score: number; variants: { surface_form: string; readings: string[]; evidence: string[]; score: number; dictionary_names: string[] }[]; dictionaries: { dictionary_name: string; available: boolean }[] }[];
+  selected_form_id?: string | null; mode?: string; observed_form?: string | null; reading?: string | null;
 }

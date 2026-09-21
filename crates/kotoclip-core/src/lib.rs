@@ -5,3 +5,7 @@ pub mod output;
 pub mod grammar_catalog;
 pub mod expression_catalog;
 pub mod providers;
+pub mod document_plan;
+mod analysis_cache;
+mod analysis_engine;
+mod document_session;

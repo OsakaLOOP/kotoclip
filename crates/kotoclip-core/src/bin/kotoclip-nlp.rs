@@ -8,7 +8,7 @@ use std::{
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let mut service = AnalysisService::new(ResourcePaths::development(&root));
+    let service = AnalysisService::new(ResourcePaths::development(&root));
     match args.first().map(String::as_str) {
         Some("stdio") => {
             let mut output = io::BufWriter::new(io::stdout().lock());

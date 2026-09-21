@@ -60,6 +60,7 @@ fn real_resources_preserve_ranges_fields_and_query_targets() {
         let lookup = service.dispatch(Request::Query {
             analysis_id: doc.id.clone(),
             token_id: police.id.clone(),
+            selected_form: None,
         });
         assert!(lookup.error.is_none(), "{:?}", lookup.error);
         assert!(lookup.result.unwrap()["groups"]
@@ -70,13 +71,14 @@ fn real_resources_preserve_ranges_fields_and_query_targets() {
         let invalid = service.dispatch(Request::Query {
             analysis_id: doc.id,
             token_id: "missing".into(),
+            selected_form: None,
         });
         assert!(invalid.error.is_some());
     }
 }
 
 #[test]
-fn ruby_validation_uses_the_complete_token_span_and_long_dialogue_routes_to_csj() {
+fn ruby_validation_and_automatic_routing_preserve_actual_source_runs() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut service = AnalysisService::new(ResourcePaths::development(&root));
 
@@ -103,16 +105,22 @@ fn ruby_validation_uses_the_complete_token_span_and_long_dialogue_routes_to_csj(
         Some(1)
     );
 
-    let response = service.dispatch(Request::Analyze {
-        register: Register::Cwj,
-        text: "「これはとても長い会話文を含んでいます」".into(),
+    let response = service.dispatch(Request::AnalyzeRouted {
+        policy: kotoclip_nlp::routing::RegisterPolicy::Auto,
+        text: "𠮷野は「これはとても長い会話文を含んでいます」と言った。".into(),
     });
     assert!(response.error.is_none(), "{:?}", response.error);
     let document: UnifiedDocument = serde_json::from_value(response.result.unwrap()).unwrap();
-    assert_eq!(document.routing.requested, Register::Cwj);
-    assert_eq!(document.routing.selected, Register::Csj);
-    assert_eq!(document.routing.reason.as_deref(), Some("long_dialogue"));
-    assert!(document.source.provider.id.contains("csj"));
+    assert_eq!(document.routing.requested, kotoclip_nlp::routing::RegisterPolicy::Auto);
+    assert_eq!(document.routing.selected, None);
+    assert_eq!(document.source.runs.len(), 3);
+    assert!(document.source.runs[0].provider.id.contains("cwj"));
+    assert!(document.source.runs[1].provider.id.contains("csj"));
+    assert!(document.source.runs[2].provider.id.contains("cwj"));
+    for token in &document.source.tokens {
+        assert_eq!(&document.text[token.byte_range[0]..token.byte_range[1]], token.surface);
+        assert_eq!(document.text.chars().skip(token.char_range[0]).take(token.char_range[1] - token.char_range[0]).collect::<String>(), token.surface);
+    }
 }
 
 #[test]
@@ -195,6 +203,7 @@ fn analyze_with_artifacts_preserves_bunsetsu_head_mapping() {
             capabilities: vec!["bunsetsu".into()], license: Some("MIT".into()),
         },
         text_characters: 8,
+        text_sha256: kotoclip_nlp::external::text_digest("警察へ向かった。"),
         spans: vec![
             SyntaxSpan {
                 id: "b0".into(), kind: "bunsetsu".into(), char_range: [0, 3],
@@ -215,13 +224,13 @@ fn analyze_with_artifacts_preserves_bunsetsu_head_mapping() {
     let document: UnifiedDocument = serde_json::from_value(response.result.unwrap()).unwrap();
     assert_eq!(document.bunsetsu.nodes.len(), 1);
     assert_eq!(document.bunsetsu.nodes[0].head_morpheme_index, Some(0));
-    assert_eq!(document.bunsetsu.nodes[0].labels, vec!["nominal"]);
+    assert_eq!(document.bunsetsu.nodes[0].labels, vec!["nominal", "alignment:complete_morphemes"]);
     assert!(!document.clause.sentences.is_empty());
     assert!(!document.clause.clauses.is_empty());
     assert!(document.structure_diagnostics.iter().all(|item| item.status == "aligned"));
     let candidate = document.dictionary_candidates.candidates.iter().find(|item| item.kind == "compound").unwrap();
     assert_eq!(candidate.query_forms[0].reading.as_deref(), Some("ケイサツ"));
-    let lookup = service.dispatch(Request::QueryCandidate { analysis_id: document.id, candidate_id: candidate.id.clone() });
+    let lookup = service.dispatch(Request::QueryCandidate { analysis_id: document.id, candidate_id: candidate.id.clone(), selected_form: None });
     assert!(lookup.error.is_none(), "{:?}", lookup.error);
     assert!(lookup.result.unwrap()["groups"].as_array().unwrap().iter().any(|group| !group["entries"].as_array().unwrap().is_empty()));
 }

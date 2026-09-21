@@ -125,11 +125,12 @@ pub struct ProviderManager {
     workers: HashMap<String, Worker>,
     pub cancellation: Arc<AtomicU64>,
     sequence: u64,
+    cache: crate::analysis_cache::AnalysisCache<SourceArtifact>,
 }
 
 impl ProviderManager {
     pub fn new(config_path: PathBuf, script: PathBuf, defaults: ProviderSettings) -> Self {
-        Self { config_path, script, defaults, workers: HashMap::new(), cancellation: Arc::new(AtomicU64::new(0)), sequence: 0 }
+        Self { config_path, script, defaults, workers: HashMap::new(), cancellation: Arc::new(AtomicU64::new(0)), sequence: 0, cache: crate::analysis_cache::AnalysisCache::new(32 * 1024 * 1024) }
     }
 
     pub fn settings(&self) -> Result<ProviderSettings, String> {
@@ -147,6 +148,7 @@ impl ProviderManager {
         fs::create_dir_all(self.config_path.parent().unwrap()).map_err(|e| e.to_string())?;
         fs::write(&self.config_path, serde_json::to_vec_pretty(&settings).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
         self.workers.clear();
+        self.cache.clear();
         self.status()
     }
 
@@ -174,6 +176,7 @@ impl ProviderManager {
     pub fn check(&mut self, generation: u64) -> Result<Value, String> {
         let settings = self.settings()?;
         self.workers.clear();
+        self.cache.clear();
         let mut diagnostics = Vec::new();
         for (id, config) in [("ginza", &settings.ginza), ("kwja", &settings.kwja)] {
             if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
@@ -196,13 +199,19 @@ impl ProviderManager {
             self.sequence += 1;
             let request_id = format!("{id}-{}", self.sequence);
             let started = Instant::now();
+            let mut cache_hit = false;
             let result = (|| {
                 self.initialize(id, config, &settings, generation)?;
-                self.workers.get_mut(id).unwrap().analyze(text, &request_id, config.timeout_seconds, &self.cancellation, generation)
+                let resource = self.workers[id].manifest["resource_digest"].as_str().unwrap();
+                let key = format!("{id}:{resource}:{}", kotoclip_nlp::external::text_digest(text));
+                if let Some(artifact) = self.cache.get(&key) { cache_hit = true; return Ok((*artifact).clone()); }
+                let artifact = self.workers.get_mut(id).unwrap().analyze(text, &request_id, config.timeout_seconds, &self.cancellation, generation)?;
+                self.cache.insert(key, Arc::new(artifact.clone()));
+                Ok::<_, String>(artifact)
             })();
             match result {
                 Ok(artifact) => {
-                    diagnostics.push(json!({"id": id, "status": "ready", "elapsed_ms": started.elapsed().as_millis(), "request_id": request_id}));
+                    diagnostics.push(json!({"id": id, "status": "ready", "elapsed_ms": started.elapsed().as_millis(), "request_id": request_id, "cache_hit": cache_hit}));
                     artifacts.push(artifact);
                 }
                 Err(error) => {

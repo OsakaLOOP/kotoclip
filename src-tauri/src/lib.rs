@@ -1,12 +1,12 @@
 use kotoclip_core::analysis::{AnalysisService, Request, ResourcePaths, Response};
 use std::{
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 use tauri::{Manager, State};
 
 struct AppState {
-    service: Arc<Mutex<AnalysisService>>,
+    service: Arc<AnalysisService>,
     cancellation: Arc<std::sync::atomic::AtomicU64>,
 }
 
@@ -37,7 +37,6 @@ async fn nlp_request(state: State<'_, AppState>, request: Request) -> Result<Res
     let service = state.service.clone();
     let generation = state.cancellation.load(std::sync::atomic::Ordering::Relaxed);
     tauri::async_runtime::spawn_blocking(move || {
-        let mut service = service.lock().map_err(|_| "分析服务状态异常，请重启应用")?;
         Ok(service.dispatch_at(request, generation))
     })
     .await
@@ -96,7 +95,7 @@ pub fn run() {
             };
             let service = AnalysisService::new(paths);
             let cancellation = service.cancellation();
-            app.manage(AppState { service: Arc::new(Mutex::new(service)), cancellation });
+            app.manage(AppState { service: Arc::new(service), cancellation });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept, cancel_external])

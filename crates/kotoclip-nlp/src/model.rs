@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.unified-document.v5";
+pub const SCHEMA: &str = "kotoclip.unified-document.v6";
 pub const FIELD_NAMES: [&str; 29] = [
     "pos1", "pos2", "pos3", "pos4", "cType", "cForm", "lForm", "lemma", "orth", "pron", "orthBase",
     "pronBase", "goshu", "iType", "iForm", "fType", "fForm", "iConType", "fConType", "type",
@@ -116,8 +116,15 @@ pub struct TextGap {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SourceAnalysis {
-    pub provider: ProviderMetadata,
+    pub runs: Vec<SourceRun>,
     pub tokens: Vec<ProviderToken>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SourceRun {
+    pub provider: ProviderMetadata,
+    pub char_range: [usize; 2],
+    pub token_range: [usize; 2],
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -136,9 +143,10 @@ pub struct RubyValidation {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterRouting {
-    pub requested: Register,
-    pub selected: Register,
-    pub reason: Option<String>,
+    pub version: String,
+    pub requested: crate::routing::RegisterPolicy,
+    pub selected: Option<Register>,
+    pub runs: Vec<crate::routing::RegisterRun>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

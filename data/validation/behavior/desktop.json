@@ -10,16 +10,7 @@
     "first": "1:1 · [0, 6) · completet0 → m0{\n  \"intersections\": [\n    {\n      \"char_range\": [\n        0,\n        6\n      ],\n      \"morpheme_id\": \"m0\",\n      \"provider_token_id\": \"t0\"\n    }\n  ],\n  \"provider_gaps\": [],\n  \"morpheme_gaps\": []\n}",
     "choice": "ラティメリアは b0 · [0, 7)保留候选 · 词元：m0、m1{}"
   },
-  "resourceCheck": [
-    {
-      "status": "ginza：完成",
-      "resources": "ja_ginza · 26 项资源"
-    },
-    {
-      "status": "kwja：完成",
-      "resources": "tiny · 10 项资源"
-    }
-  ],
+  "resourceCheck": null,
   "viewport": {
     "width": 390,
     "body": 375

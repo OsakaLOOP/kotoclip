@@ -1,37 +1,7 @@
 // 通过本机 WebView2 调试端口验证真实 Tauri 窗口。
 import { writeFile } from 'node:fs/promises';
-
-let page;
-const deadline = Date.now() + 90000;
-while (!page && Date.now() < deadline) {
-  const pages = await fetch('http://127.0.0.1:9222/json/list').then(r => r.json());
-  page = pages.find(p => p.title === 'Kotoclip');
-  if (!page) await new Promise(resolve => setTimeout(resolve, 250));
-}
-if (!page) throw new Error('未找到 Kotoclip 桌面窗口');
-const socket = new WebSocket(page.webSocketDebuggerUrl);
-await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
-let sequence = 0;
-const pending = new Map();
-socket.onmessage = ({ data }) => {
-  const value = JSON.parse(data);
-  const request = pending.get(value.id);
-  if (!request) return;
-  pending.delete(value.id);
-  if (value.error) request.reject(new Error(JSON.stringify(value.error)));
-  else request.resolve(value.result);
-};
-function send(method, params = {}) {
-  return new Promise((resolve, reject) => {
-    const id = ++sequence; pending.set(id, { resolve, reject });
-    socket.send(JSON.stringify({ id, method, params }));
-  });
-}
-async function evaluate(expression) {
-  const response = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-  if (response.exceptionDetails) throw new Error(JSON.stringify(response.exceptionDetails));
-  return response.result.value;
-}
+import { connectDesktop } from './desktop_cdp.mjs';
+const { send, evaluate, close } = await connectDesktop();
 try {
   const desktop = await evaluate(`Boolean(window.__TAURI_INTERNALS__)`);
   if (!desktop) throw new Error('验收页面未连接 Tauri IPC');
@@ -131,5 +101,5 @@ try {
   console.log(JSON.stringify(report));
 } finally {
   await send('Emulation.clearDeviceMetricsOverride');
-  socket.close();
+  close();
 }

@@ -1,0 +1,13 @@
+{
+  "desktop": true,
+  "units": 2,
+  "mixed_registers": true,
+  "exact_visible_text": true,
+  "selection": "ラティメリア",
+  "range_query": true,
+  "rapid_replacement": true,
+  "viewport": {
+    "width": 390,
+    "body": 375
+  }
+}

@@ -69,7 +69,7 @@ fn assemble(
         "{:x}",
         Sha256::digest(format!(
             "{SCHEMA}\0{}\0{}\0{text}",
-            source.provider.dictionary_sha256, prepared.mapping.source_sha256
+            serde_json::to_string(&source.runs).map_err(|e| e.to_string())?, prepared.mapping.source_sha256
         ))
     );
     let mut gaps = Vec::new();

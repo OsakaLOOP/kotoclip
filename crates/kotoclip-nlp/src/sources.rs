@@ -51,6 +51,8 @@ pub struct UniDicProvider {
 }
 
 impl UniDicProvider {
+    pub fn metadata(&self) -> &ProviderMetadata { &self.metadata }
+
     pub fn open(register: Register, path: &Path) -> Result<Self, String> {
         let mut reader =
             BufReader::new(File::open(path).map_err(|e| format!("{}：{e}", path.display()))?);
@@ -133,7 +135,7 @@ impl UniDicProvider {
             char_offset += line.chars().count();
         }
         Ok(SourceAnalysis {
-            provider: self.metadata.clone(),
+            runs: vec![SourceRun { provider: self.metadata.clone(), char_range: [0, text.chars().count()], token_range: [0, tokens.len()] }],
             tokens,
         })
     }

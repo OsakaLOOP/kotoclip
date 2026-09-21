@@ -32,10 +32,14 @@ function endpoint(value: SourceEndpoint): string {
 }
 async function save() {
   if (!settings.value) return;
-  error.value = ''; saved.value = false; saving.value = true;
+  error.value = ''; saved.value = false; saving.value = true; checks.value = [];
   try { await nlpRequest({ command: 'configure_providers', settings: settings.value }); saved.value = true; }
   catch (e) { error.value = String(e); }
   finally { saving.value = false; }
+}
+async function cancelCheck() {
+  try { await nlpRequest({ command: 'cancel_external' }); }
+  catch (e) { error.value = String(e); }
 }
 async function checkResources() {
   if (!settings.value) return;
@@ -73,7 +77,7 @@ onMounted(async () => {
         <label>Hugging Face 缓存目录<input v-model="settings.hf_cache" :disabled="pending || saving || checking" /></label>
         <button type="submit" :disabled="pending || saving || checking">{{ saving ? '保存中' : '保存设置' }}</button>
         <button type="button" :disabled="pending || saving || checking" @click="checkResources">{{ checking ? '检查中' : '保存并检查' }}</button>
-        <button v-if="checking" type="button" @click="emit('cancel')">取消检查</button><span v-if="saved" role="status">设置已保存</span>
+        <button v-if="checking" type="button" @click="cancelCheck">取消检查</button><span v-if="saved" role="status">设置已保存</span>
       </form>
       <div v-for="item in checks" :key="item.id" class="provider-check">
         <p :role="item.error ? 'alert' : 'status'">{{ item.id }}：{{ states[item.status] || item.status }}<span v-if="item.error"> · {{ item.error }}</span></p>

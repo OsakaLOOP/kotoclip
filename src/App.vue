@@ -1,20 +1,27 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { ArrowLeft, ArrowRight, Check, Copy, FileText, LoaderCircle, Play, Search, X } from '@lucide/vue';
 import DictionaryContent from './components/dictionary/DictionaryContent.vue';
 import ProviderPanel from './components/ProviderPanel.vue';
 import { nlpRequest } from './services/nlp';
-import type { MorphemeToken, QueryOutput, Register, UnifiedDocument } from './types/nlp';
+import { useDocumentSession } from './composables/useDocumentSession';
+import type { MorphemeToken, QueryOutput, RegisterPolicy } from './types/nlp';
 import './styles/inspection.css';
 
 const input = ref('七日は警察署へ向かった。\n「めっちゃすごいじゃん」と彼女は云う。');
-const register = ref<Register>('cwj');
-const document = ref<UnifiedDocument | null>(null);
+const register = ref<RegisterPolicy>('auto');
+const session = useDocumentSession();
+const sessionState = session.state;
+const sessionError = session.error;
+const unitIndex = ref(0);
+const unitPlan = computed(() => sessionState.value?.plan.units[unitIndex.value]);
+const unitState = computed(() => unitPlan.value && sessionState.value?.units[unitPlan.value.id]);
+const document = computed(() => unitState.value?.document || null);
 const selected = ref<MorphemeToken | null>(null);
 const result = ref<QueryOutput | null>(null);
 const busy = ref(false);
-const structureBusy = ref(false);
-const providerDiagnostics = ref<{ id: string; status: string; error?: string }[]>([]);
+const structureBusy = computed(() => !sessionState.value?.paused && (session.controlling.value > 0 || ['pending', 'analyzing', 'basic', 'enriching'].includes(unitState.value?.stage || '')));
+const providerDiagnostics = computed(() => sessionState.value?.paused ? [{ id: 'structure', status: 'cancelled' }] : structureBusy.value ? [] : unitState.value?.providers || []);
 const queryBusy = ref(false);
 const error = ref('');
 const queryError = ref('');
@@ -29,6 +36,9 @@ let queryGeneration = 0;
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 const characters = computed(() => Array.from(input.value).length);
 const sourceToken = computed(() => selected.value && document.value?.source.tokens[selected.value.source_index]);
+const selectedProvider = computed(() => selected.value && document.value?.source.runs.find(run => selected.value!.source_index >= run.token_range[0] && selected.value!.source_index < run.token_range[1])?.provider);
+const sourceNames = computed(() => [...new Set(document.value?.source.runs.map(run => run.provider.id))].join(' / '));
+const registerAvailable = computed(() => register.value === 'auto' ? available.value.cwj && available.value.csj : available.value[register.value]);
 const selectedRubies = computed(() => {
   if (!selected.value || !document.value) return [];
   return document.value.ruby_validations.filter((item) => item.token_range && selected.value!.source_index >= item.token_range[0] && selected.value!.source_index < item.token_range[1]);
@@ -45,53 +55,68 @@ const rubySummary = computed(() => {
 const group = computed(() => result.value?.groups[formIndex.value]);
 const dictionaries = computed(() => [...new Set(group.value?.entries.map(e => e.dict_name) || [])]);
 const entries = computed(() => group.value?.entries.filter(e => !dictionary.value || e.dict_name === dictionary.value) || []);
+const preparedCharacters = computed(() => Array.from(sessionState.value?.plan.prepared.text || ''));
 const segments = computed(() => {
-  if (!document.value) return [];
+  if (!unitPlan.value) return [];
+  const [start, end] = unitPlan.value.anchor.char_range;
+  if (!document.value) return [{ start, surface: preparedCharacters.value.slice(start, end).join(''), token: null }];
+  const offset = unitPlan.value.context_range[0];
   return [
-    ...document.value.morphemes.map(token => ({ start: token.char_range[0], surface: token.surface, token })),
-    ...document.value.gaps.map(gap => ({ start: gap.char_range[0], surface: gap.surface, token: null })),
-  ].sort((a, b) => a.start - b.start);
+    ...document.value.morphemes.map(token => ({ range: token.char_range, token })),
+    ...document.value.gaps.map(gap => ({ range: gap.char_range, token: null })),
+  ].filter(item => item.range[0] + offset < end && item.range[1] + offset > start).map(item => {
+    const a = Math.max(start, item.range[0] + offset), b = Math.min(end, item.range[1] + offset);
+    return { start: a, surface: preparedCharacters.value.slice(a, b).join(''), token: item.token };
+  }).sort((a, b) => a.start - b.start);
 });
 
 function invalidate() {
-  if (structureBusy.value) void cancelStructure();
+  void session.close().catch(e => { error.value = String(e); });
   analysisGeneration++; queryGeneration++; clearTimeout(hoverTimer);
-  document.value = null; selected.value = null; result.value = null; queryBusy.value = false;
-  structureBusy.value = false; providerDiagnostics.value = [];
+  selected.value = null; result.value = null; queryBusy.value = false; unitIndex.value = 0;
 }
 async function cancelStructure() {
-  try { await nlpRequest({ command: 'cancel_external' }); }
-  catch (e) { error.value = String(e); }
+  await session.control('cancel_document');
 }
 async function enrich() {
-  if (!document.value || structureBusy.value) return;
-  const generation = analysisGeneration;
-  structureBusy.value = true; providerDiagnostics.value = [];
-  try {
-    const value = await nlpRequest<{ document: UnifiedDocument; providers: typeof providerDiagnostics.value }>({ command: 'enrich', analysis_id: document.value.id });
-    if (generation !== analysisGeneration) return;
-    document.value = value.document; providerDiagnostics.value = value.providers;
-  } catch (e) { if (generation === analysisGeneration) providerDiagnostics.value = [{ id: 'structure', status: 'failed', error: String(e) }]; }
-  finally { if (generation === analysisGeneration) structureBusy.value = false; }
+  if (unitPlan.value) await session.control('retry_document', { unit_id: unitPlan.value.id });
 }
 async function analyze() {
   invalidate(); const generation = analysisGeneration;
   busy.value = true; error.value = ''; queryError.value = '';
   try {
-    const value = await nlpRequest<UnifiedDocument>({ command: 'analyze', text: input.value, register: register.value });
-    if (generation !== analysisGeneration) return;
-    document.value = value;
-    void enrich();
+    await session.open(input.value, register.value);
   } catch (e) { if (generation === analysisGeneration) error.value = String(e); }
   finally { if (generation === analysisGeneration) busy.value = false; }
 }
 async function select(token: MorphemeToken) {
   clearTimeout(hoverTimer);
-  if (!document.value) return;
+  const current = sessionState.value;
+  if (!document.value || !current || !unitState.value) return;
   if (selected.value?.id === token.id && (queryBusy.value || (result.value?.token_id === token.id && result.value.analysis_id === document.value.id))) return;
   selected.value = token; search.value = token.surface;
-  await query({ command: 'query', analysis_id: document.value.id, token_id: token.id });
+  await query({ command: 'query_document', session_id: current.session_id, text_version: current.text_version,
+    generation: current.generation, unit_id: unitState.value.unit_id, artifact_revision: unitState.value.artifact_revision, token_id: token.id, selected_form: null });
 }
+async function selectMatrixForm(formId: string) {
+  const current = sessionState.value;
+  if (!current || !document.value || !unitState.value || !selected.value) return;
+  await query({ command: 'query_document', session_id: current.session_id, text_version: current.text_version,
+    generation: current.generation, unit_id: unitState.value.unit_id, artifact_revision: unitState.value.artifact_revision,
+    token_id: selected.value.id, selected_form: formId });
+}
+async function jump(index: number) {
+  const plan = sessionState.value?.plan.units[index];
+  if (!plan) return;
+  unitIndex.value = index; selected.value = null; result.value = null; queryGeneration++;
+  await session.control('request_range', { range: plan.anchor.char_range });
+}
+watch(() => [sessionState.value?.session_id, sessionState.value?.generation, unitState.value?.artifact_revision, unitIndex.value], () => {
+  const id = selected.value?.id;
+  queryGeneration++; selected.value = null; result.value = null; queryBusy.value = false;
+  const token = document.value?.morphemes.find(token => token.id === id);
+  if (token) void select(token);
+});
 async function query(request: Record<string, unknown>) {
   const generation = ++queryGeneration;
   queryBusy.value = true; queryError.value = ''; result.value = null; formIndex.value = 0; dictionary.value = '';
@@ -116,8 +141,9 @@ function chooseForm(index: number) {
 function navigate(word: string) { tab.value = 'dictionary'; search.value = word; query({ command: 'search', word }); }
 function move(direction: number) {
   if (!document.value) return;
-  const index = document.value.morphemes.findIndex(t => t.id === selected.value?.id);
-  const token = document.value.morphemes[index + direction]; if (token) select(token);
+  const tokens = segments.value.flatMap(segment => segment.token ? [segment.token] : []);
+  const index = tokens.findIndex(t => t.id === selected.value?.id);
+  const token = tokens[index + direction]; if (token) select(token);
 }
 async function copy() {
   if (!sourceToken.value) return;
@@ -147,21 +173,27 @@ onMounted(async () => {
       <section class="reading-workspace">
         <div class="input-toolbar">
           <div class="segmented" aria-label="分析词典">
-            <button v-for="mode in (['cwj', 'csj'] as const)" :key="mode" :class="{ active: register === mode }" :aria-pressed="register === mode" :disabled="busy" @click="register = mode; invalidate()">{{ mode === 'cwj' ? '书面语 CWJ' : '口语 CSJ' }}</button>
+            <button v-for="mode in (['auto', 'cwj', 'csj'] as const)" :key="mode" :class="{ active: register === mode }" :aria-pressed="register === mode" :disabled="busy" @click="register = mode; invalidate()">{{ mode === 'auto' ? '自动' : mode === 'cwj' ? '书面语 CWJ' : '口语 CSJ' }}</button>
           </div>
           <div class="toolbar-actions">
             <label class="icon-button" title="打开文本"><FileText :size="18" /><input type="file" accept=".txt,.md" aria-label="打开文本" :disabled="busy" @change="openText" /></label>
             <button class="icon-button" title="清空" aria-label="清空" :disabled="busy" @click="input = ''; invalidate()"><X :size="18" /></button>
-            <button class="primary-button" :disabled="busy || !input.trim() || characters > 20000 || !available[register]" @click="analyze"><LoaderCircle v-if="busy" class="spin" :size="16" /><Play v-else :size="16" />{{ busy ? '分析中' : '分析' }}</button>
+            <button class="primary-button" :disabled="busy || !input.trim() || !registerAvailable" @click="analyze"><LoaderCircle v-if="busy" class="spin" :size="16" /><Play v-else :size="16" />{{ busy ? '打开中' : '分析' }}</button>
           </div>
         </div>
         <textarea v-model="input" class="source-input" lang="ja" aria-label="日文正文" placeholder="日文正文" :disabled="busy" @input="invalidate" />
-        <div class="input-footer"><span :class="{ invalid: characters > 20000 }">{{ characters.toLocaleString() }} / 20,000 字符</span><span v-if="!available[register]" class="invalid">词典资源未找到</span></div>
-        <p v-if="error" class="error-message" role="alert">{{ error }}</p>
-        <div class="result-toolbar"><h1>分词结果</h1><span v-if="document">{{ document.morphemes.length }} 词 · {{ Math.round(document.elapsed_ms) }} ms · {{ document.source.provider.id }} · 结构候选 {{ document.structure.paragraphs.length }} 段 / {{ document.structure.sentences.length }} 句 / {{ document.structure.clauses.length }} 小句<template v-if="document.routing.reason === 'long_dialogue'"> · 长对话自动使用 CSJ</template><template v-if="rubySummary.total"> · 注音 {{ rubySummary.matched }}/{{ rubySummary.total }} 匹配<template v-if="rubySummary.variant"> · 读音差异 {{ rubySummary.variant }}</template><template v-if="rubySummary.pending"> · 待核验 {{ rubySummary.pending }}</template></template></span></div>
+        <div class="input-footer"><span>{{ characters.toLocaleString() }} 字符</span><span v-if="!registerAvailable" class="invalid">词典资源未找到</span></div>
+        <p v-if="error || sessionError" class="error-message" role="alert">{{ error || sessionError }}</p>
+        <div v-if="sessionState" class="session-toolbar">
+          <label>正文段落<select :value="unitIndex" @change="jump(Number(($event.target as HTMLSelectElement).value))"><option v-for="(unit, index) in sessionState.plan.units" :key="unit.id" :value="index">第 {{ index + 1 }} 段 · {{ unit.anchor.char_range[0] }}–{{ unit.anchor.char_range[1] }}</option></select></label>
+          <button :disabled="unitIndex === 0" @click="jump(unitIndex - 1)">上一段</button><button :disabled="unitIndex + 1 === sessionState.plan.units.length" @click="jump(unitIndex + 1)">下一段</button>
+          <button v-if="sessionState.progress.pending" @click="cancelStructure">暂停分析</button><button v-else :disabled="sessionState.progress.complete === sessionState.progress.total" @click="session.control('continue_document')">继续分析</button>
+          <span role="status">词法 {{ sessionState.progress.basic }}/{{ sessionState.progress.total }} · 结构 {{ sessionState.progress.complete }}/{{ sessionState.progress.total }}<template v-if="sessionState.paused"> · 已暂停</template></span>
+        </div>
+        <div class="result-toolbar"><h1>分词结果</h1><span v-if="document">{{ document.morphemes.length }} 词 · {{ Math.round(document.elapsed_ms) }} ms · {{ sourceNames }} · 结构候选 {{ document.structure.paragraphs.length }} 段 / {{ document.structure.sentences.length }} 句 / {{ document.structure.clauses.length }} 小句<template v-if="document.routing.selected === null"> · 按叙述与引语选择词典</template><template v-if="rubySummary.total"> · 注音 {{ rubySummary.matched }}/{{ rubySummary.total }} 匹配<template v-if="rubySummary.variant"> · 读音差异 {{ rubySummary.variant }}</template><template v-if="rubySummary.pending"> · 待核验 {{ rubySummary.pending }}</template></template></span></div>
         <div v-if="busy" class="empty-state" role="status"><LoaderCircle class="spin" :size="22" />正在分析</div>
-        <div v-else-if="!document" class="empty-state">暂无分析结果</div>
-        <article v-else class="token-text" lang="ja" aria-label="分词结果"><template v-for="segment in segments" :key="segment.start"><button v-if="segment.token" class="word" :class="{ selected: selected?.id === segment.token.id, unknown: document.source.tokens[segment.token.source_index].lexicon_type === 'unknown' }" :aria-label="segment.surface" :aria-pressed="selected?.id === segment.token.id" @click="select(segment.token)" @mouseenter="preview(segment.token)" @mouseleave="cancelPreview" @focus="select(segment.token)">{{ segment.surface }}</button><span v-else>{{ segment.surface }}</span></template></article>
+        <div v-else-if="!sessionState" class="empty-state">暂无分析结果</div>
+        <article v-else class="token-text" lang="ja" aria-label="分词结果"><template v-for="segment in segments" :key="segment.start"><button v-if="segment.token" class="word" :class="{ selected: selected?.id === segment.token.id, unknown: document?.source.tokens[segment.token.source_index].lexicon_type === 'unknown' }" :aria-label="segment.surface" :aria-pressed="selected?.id === segment.token.id" @click="select(segment.token)" @mouseenter="preview(segment.token)" @mouseleave="cancelPreview" @focus="select(segment.token)">{{ segment.surface }}</button><span v-else>{{ segment.surface }}</span></template></article>
         <ProviderPanel :sources="document?.external_sources || []" :graph="document?.structure_graph || null" :alignments="document?.provider_token_alignments || []" :can-analyze="!!document" :pending="structureBusy" :diagnostics="providerDiagnostics" @retry="enrich" @cancel="cancelStructure" />
       </section>
       <aside class="inspector">
@@ -173,6 +205,7 @@ onMounted(async () => {
           <p v-else-if="queryError" class="error-message" role="alert">{{ queryError }}</p>
           <template v-else-if="result">
             <div class="query-forms"><button v-for="(item, index) in result.groups" :key="index" :class="{ active: formIndex === index }" @click="chooseForm(index)"><span lang="ja">{{ item.form.form }}</span><small>{{ ({ observed: '出现形', base: '基本形', lemma: '词元', search: '查询' } as Record<string,string>)[item.form.kind] }}</small></button></div>
+            <div v-if="result.forms.length > 1" class="query-forms matrix-forms"><button v-for="item in result.forms" :key="item.form_id" :class="{ active: result.selected_form_id === item.form_id }" @click="selectMatrixForm(item.form_id)"><span lang="ja">{{ item.display_form }}</span><small>{{ item.readings[0] || '无读音' }} · {{ item.dictionaries.filter(item => item.available).length }} 词典</small></button></div>
             <p v-if="group?.form.reading" class="query-reading" lang="ja">{{ group.form.reading }} <span>{{ group.form.reading_field }}</span></p>
             <div v-if="dictionaries.length" class="dictionary-tabs"><button v-for="name in dictionaries" :key="name" :class="{ active: dictionary === name }" @click="dictionary = name">{{ name }}</button></div>
             <article v-for="entry in entries" :key="entry.occurrence_id + entry.entry_key" class="entry"><header><h3 lang="ja">{{ entry.header.display_form || entry.headword }}</h3><span lang="ja">{{ entry.reading }}</span></header><DictionaryContent :entry="entry" @navigate="navigate" /></article>
@@ -183,7 +216,7 @@ onMounted(async () => {
         </div>
         <div v-show="tab === 'metadata'" class="metadata-panel">
           <template v-if="sourceToken">
-            <dl class="metadata-summary"><dt>来源</dt><dd>{{ document?.source.provider.id }}</dd><dt>词典类别</dt><dd>{{ sourceToken.lexicon_type }}</dd><dt>连接 ID</dt><dd>{{ sourceToken.left_id }} / {{ sourceToken.right_id }}</dd><dt>词成本 / 累计成本</dt><dd>{{ sourceToken.word_cost }} / {{ sourceToken.total_cost }}</dd><dt>UTF-8 范围</dt><dd>[{{ sourceToken.byte_range.join(', ') }})</dd></dl>
+            <dl class="metadata-summary"><dt>来源</dt><dd>{{ selectedProvider?.id }}</dd><dt>词典类别</dt><dd>{{ sourceToken.lexicon_type }}</dd><dt>连接 ID</dt><dd>{{ sourceToken.left_id }} / {{ sourceToken.right_id }}</dd><dt>词成本 / 累计成本</dt><dd>{{ sourceToken.word_cost }} / {{ sourceToken.total_cost }}</dd><dt>UTF-8 范围</dt><dd>[{{ sourceToken.byte_range.join(', ') }})</dd></dl>
             <div v-for="ruby in selectedRubies" :key="ruby.char_range.join(':')" class="ruby-validation" :class="`is-${ruby.status}`">
               <div class="ruby-validation-heading"><strong>书名号注音验证</strong><span>{{ ruby.status === 'matched' ? (ruby.reason === 'small_kana' ? '匹配（大小假名）' : '匹配') : ruby.status === 'variant' ? '读音差异' : '待核验' }}</span></div>
               <p><span lang="ja">{{ ruby.base }}</span> · 作者注音 {{ ruby.ruby_reading }}</p>
@@ -191,7 +224,7 @@ onMounted(async () => {
             </div>
             <table class="metadata-table"><thead><tr><th>字段</th><th>原始值</th></tr></thead><tbody><tr v-for="field in sourceToken.fields" :key="field.index"><th><code>{{ field.index }} · {{ field.name }}</code><small>{{ field.label }}</small></th><td lang="ja">{{ field.raw === null ? '未提供' : field.raw === '' ? '(空值)' : field.raw }}</td></tr></tbody></table>
             <div class="raw-heading"><h3>原始 CSV</h3><button class="icon-button" title="复制原始 CSV" aria-label="复制原始 CSV" @click="copy"><Check v-if="copied" :size="17" /><Copy v-else :size="17" /></button></div><pre>{{ sourceToken.raw_feature }}</pre>
-            <details><summary>资源信息</summary><p>{{ document?.schema }}</p><p>{{ document?.source.provider.field_schema }}</p><code>{{ document?.source.provider.dictionary_sha256 }}</code></details>
+            <details><summary>资源信息</summary><p>{{ document?.schema }}</p><p>{{ selectedProvider?.field_schema }}</p><code>{{ selectedProvider?.dictionary_sha256 }}</code></details>
           </template><div v-else class="empty-state">尚未选择词语</div>
         </div>
       </aside>
