@@ -18,7 +18,7 @@
 | 活用 | `morphology.rs` 按单个 token 提取字段与形式 | 多语素活用链、所有权、组合还原与解释 |
 | 构词与文节 | 消费外部 span，记录成员与冲突 | 完整覆盖检查、应用构词规则、词典绑定和阅读单位 |
 | 语法 | 功能语素候选、知识目录与只读查询命令 | 构式识别、义项决定、正文精确讲解与界面入口 |
-| 表达 | 内置目录的连续 token 扫描 | 类型化条件、间隔检查、非连续规则、预演与管理 |
+| 表达 | 当前输出不构成验收证据 | 基于词汇整体与句法结构的识别、义项决定和实例修正 |
 | 词典 | 三词典适配器、源包、schema v4、矩阵引擎 | 应用服务恢复矩阵协议、设置与双面板 |
 | 会话 | 单次最多 20,000 字符、内存保留四份结果 | 全书会话、范围调度、增量更新、取消和缓存 |
 | 书库／导入 | Rust 文件及 Vue 组件保留 | core 注册、桌面命令、应用协调和坐标接入 |
@@ -27,7 +27,7 @@
 | 审计 | `artifact.rs`、`history.rs`、宿主和 UI 文件保留 | 执行器、workspace 注册、两侧分析与桌面入口 |
 | 桌面 | Tauri 主程序、UniDic 资源和便携打包脚本 | 完整功能集、外部依赖配置、实际产物验收 |
 
-当前 `core/lib.rs` 注册 `dictionary`、`text_language`、`analysis`、`output`、`grammar_catalog` 和 `expression_catalog`。Tauri 注册 `nlp_request`、`search_grammar_catalog` 和 `get_grammar_concept`。`App.vue` 只接入分词、字段检查和基础查询。
+当前 `core/lib.rs` 注册 `dictionary`、`text_language`、`analysis`、`output` 和 `grammar_catalog` 等模块。Tauri 注册 `nlp_request`、`search_grammar_catalog` 和 `get_grammar_concept`。`App.vue` 只接入分词、字段检查和基础查询。
 
 ## 实施顺序
 
@@ -85,20 +85,20 @@ P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构�
 
 完成条件：整本书可渐进分析，快速切书、取消、跳转和迟到结果保持一致；冷分析、缓存恢复和增量更新得到相同规范结果。
 
-## P4：完成语言分析与规则
+## P4：完成语言分析
 
 依赖 P2、P3；词典整体绑定与 P5 联调。
 
 十段指定语料的原始输出、人工阅读结论和对象分层方案见 [P4 样本输出复核](p4_sample_review.md)。实现优先消费 UniDic 活用字段和 GiNZA C 模式正式 token／compound 范围；`sub_tokens` 仅作为来源诊断，再将 KWJA 基本句标签作为语法候选证据。
 
 - [x] 将单 token 形态字段扩展为完整活用链，覆盖词汇与功能用言所有权、显示原型、辞书形、查询形及连接形。
-- [x] 接入类型化构词规则、来源构词候选、词典整体绑定与阅读单位生成，保存竞争决定；保留来源结构诊断与正式 token 查询。
-- [x] 迁移语法规则条件到 UniDic 和统一结构，接入编译目录、命名捕获、义项候选及正文精确讲解；文法库和核验状态操作保持可用。
-- [x] 完成连续与非连续表达 matcher、硬边界及 gap 检查，按字符范围保存实际命中区间。
-- [x] 恢复规则编辑、作用域、预演、启停与删除。预演与正式分析调用同一 matcher，规则修改通过会话更新刷新正文。
+- [ ] 来源构词候选经词典和结构证据确认后生成词汇整体与阅读单位，保存竞争决定。
+- [ ] 以形态组合图和统一结构重建语法识别，接入概念、义项候选及正文精确讲解；文法库和核验状态操作保持可用。
+- [ ] 以词汇整体、活用链、基本句、小句和句法角色重建连续与非连续表达识别，保存候选、义项决定和实际命中范围。
+- [ ] 接入出现级结构与解释修正，支持复核和撤销；修正通过会话更新刷新正文。
 - [x] 完成语法、表达、结构与活用的解释投影，保存实际高亮范围、整体和内部目标及待定状态。
 
-入口：[morphology.rs](../crates/kotoclip-nlp/src/morphology.rs)、[lexical.rs](../crates/kotoclip-nlp/src/lexical.rs)、[grammar.rs](../crates/kotoclip-nlp/src/grammar.rs)、[expression_catalog.rs](../crates/kotoclip-core/src/expression_catalog.rs)、[projection.rs](../crates/kotoclip-nlp/src/projection.rs)、[RuleWorkbench.vue](../src/components/RuleWorkbench.vue)。
+入口：[morphology.rs](../crates/kotoclip-nlp/src/morphology.rs)、[lexical.rs](../crates/kotoclip-nlp/src/lexical.rs)、[grammar.rs](../crates/kotoclip-nlp/src/grammar.rs)与[projection.rs](../crates/kotoclip-nlp/src/projection.rs)。具体修订范围见 [P4 十段输出逐层审计](p4_layer_audit.md)。
 
 完成条件：[语言分析验收](language_analysis.md)中的代表用例能在正文显示、解释和编辑；结构、查询、讲解与用户操作使用同一组引用。
 
@@ -126,7 +126,7 @@ P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构�
 
 入口：[core/lib.rs](../crates/kotoclip-core/src/lib.rs)、[library.rs](../crates/kotoclip-core/src/library.rs)、[epub.rs](../crates/kotoclip-core/src/import/epub.rs)、[App.vue](../src/App.vue)、[reader 组件](../src/components/reader/)。
 
-完成条件：完整书籍从导入到继续阅读可用；图文、注音、章节、查词、规则选择和排版在同一实际桌面流程中通过验收。
+完成条件：完整书籍从导入到继续阅读可用；图文、注音、章节、查词、实例修正和排版在同一实际桌面流程中通过验收。
 
 ## P7：接入用户状态、收藏与导出
 
@@ -134,7 +134,7 @@ P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构�
 
 - [ ] 适配并注册 profile 和 export，处理 `crate::models`、`crate::pipeline` 及缺失 `segmentation` 模块引用，完成新词元／出现身份接口。
 - [ ] 对已有用户数据库建立版本化迁移，保留明确映射与待复核记录；完成已知状态、曝光去重、汉字知识和词典偏好操作。
-- [ ] 接入实例修正、撤销和用户规则持久化，检查来源或文本更新后的有效性。
+- [ ] 接入实例修正和撤销，检查来源或文本更新后的有效性。
 - [ ] 完成选择、收藏、笔记和 JSON 导出，保留词形、读音、释义来源、上下文及连续／非连续高亮范围。
 
 入口：[profile](../crates/kotoclip-core/src/profile/)、[export](../crates/kotoclip-core/src/export/)、[useSelection.ts](../src/composables/useSelection.ts)、[ExportPanel.vue](../src/components/ExportPanel.vue)。

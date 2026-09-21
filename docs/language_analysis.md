@@ -61,16 +61,16 @@
 
 功能语素未能确定概念或义项时，保存待定状态与原因。质量报告分别统计功能身份、语法命中、义项选择、解释可用性及未解释实例。
 
-## 表达与用户规则
+## 表达与实例修正
 
 表达按惯用语、语法构式和非连续呼应分类。词汇整体进入构词与词典对象；表达保存自身语义、成员、命中区间和成立证据。
 
-连续表达要求成员间的连接符合规则。非连续表达保存多个有序命中范围和间隔条件，间隔长度、句界、段界及引号域均参与匹配。正文高亮和导出定位使用实际命中范围，外包范围用于上下文组织。
+连续表达保存词汇整体、活用链和句法关系。非连续表达保存多个有序命中范围及其基本句、小句、句界、段界和引号域关系。正文高亮和导出定位使用实际命中范围，整体范围用于上下文组织。
 
-用户从正文选择成员后进入规则编辑，配置固定词形、词性槽位、活用条件、连续性、优先级和作用域。预演与保存后分析共用编译器和匹配器。规则支持查询、编辑、启停和删除；修改结果通过会话更新返回正文。
+用户可以对具体出现提交结构或解释修正。修正引用正文锚点、原分析签名、所选对象和理由；文本或模型更新后重新校验定位与适用性，失效记录进入待复核状态。
 
 ## 验收与入口
 
 代表用例覆盖 `見えなかった`、`記録された`、`分類し`、`読んでくださった`、`静かな`、`行くな`、`警察署`、数量表达和跨文节惯用语。每例同时检查实际范围、所属层、查询形式、解释和修改后结果。非连续用例覆盖跨句、跨段、引号及自由间隔。
 
-基础实现位于 [morphology.rs](../crates/kotoclip-nlp/src/morphology.rs)、[formation.rs](../crates/kotoclip-nlp/src/formation.rs)、[bunsetsu.rs](../crates/kotoclip-nlp/src/bunsetsu.rs)、[clause.rs](../crates/kotoclip-nlp/src/clause.rs)、[grammar.rs](../crates/kotoclip-nlp/src/grammar.rs)与[表达目录扫描](../crates/kotoclip-core/src/expression_catalog.rs)。知识资源位于 [grammar](../crates/kotoclip-core/resources/grammar/)，规则编辑界面位于 [RuleWorkbench.vue](../src/components/RuleWorkbench.vue)。
+基础对象位于 [morphology.rs](../crates/kotoclip-nlp/src/morphology.rs)、[formation.rs](../crates/kotoclip-nlp/src/formation.rs)、[bunsetsu.rs](../crates/kotoclip-nlp/src/bunsetsu.rs)、[clause.rs](../crates/kotoclip-nlp/src/clause.rs)与[grammar.rs](../crates/kotoclip-nlp/src/grammar.rs)。知识资源位于 [grammar](../crates/kotoclip-core/resources/grammar/)。

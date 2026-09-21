@@ -10,7 +10,7 @@
 | 曝光记录 | 文档出现与阅读会话，记录实际展示的内容 |
 | 汉字知识 | 从明确的词汇状态与读音证据派生 |
 | 词典顺序与默认选择 | 用户偏好，决定查询列及初始活动词典 |
-| 规则与实例修正 | 规则作用域或具体出现锚点 |
+| 实例修正 | 具体出现锚点、原分析签名与用户选择 |
 | 收藏与笔记 | 知识目标、正文出处、用户文本及创建时间 |
 | 阅读位置与排版 | 书籍状态及本机显示偏好 |
 
@@ -18,11 +18,11 @@
 
 ## 个人操作
 
-已知状态、收藏和规则操作提交实体引用、会话及预期版本。后端校验后持久化并返回受影响的投影更新。批量操作在一个事务内完成，响应携带实际成功和失败对象。
+已知状态、收藏和实例修正提交实体引用、会话及预期版本。后端校验后持久化并返回受影响的投影更新。批量操作在一个事务内完成，响应携带实际成功和失败对象。
 
 词汇状态变化刷新相关词汇显示；语法和表达继续按各自知识身份展示。汉字熟悉度由用户词汇证据推导，并保存来源关系以支持撤销后重算。
 
-用户表达规则保存结构条件、类型、来源、版本和作用域。实例修正保存原分析签名、出现锚点、所选结构或解释及撤销状态。文本或模型更新后检查修正是否仍可定位，失效记录进入待复核状态。
+实例修正保存原分析签名、出现锚点、所选结构或解释及撤销状态。文本或模型更新后检查修正是否仍可定位，失效记录进入待复核状态。
 
 ## 数据迁移
 
@@ -46,6 +46,6 @@
 
 ## 验收与入口
 
-验收覆盖重启后的已知状态、重复曝光去重、撤销、规则作用域、收藏恢复、中文路径导出、上下文高亮和助手异常。已有数据库迁移采用副本验证数据数量与身份映射。
+验收覆盖重启后的已知状态、重复曝光去重、实例修正及撤销、收藏恢复、中文路径导出、上下文高亮和助手异常。已有数据库迁移采用副本验证数据数量与身份映射。
 
-[profile](../crates/kotoclip-core/src/profile/)保存画像与规则基础，[export](../crates/kotoclip-core/src/export/)保存输出基础，[llm](../crates/kotoclip-core/src/llm/)保存结构化助手接口。[ExportPanel.vue](../src/components/ExportPanel.vue)、[RuleWorkbench.vue](../src/components/RuleWorkbench.vue)和[dictionaryAssistantPort.ts](../src/services/dictionaryAssistantPort.ts)提供对应前端入口基础。
+[profile](../crates/kotoclip-core/src/profile/)保存画像与用户状态基础，[export](../crates/kotoclip-core/src/export/)保存输出基础，[llm](../crates/kotoclip-core/src/llm/)保存结构化助手接口。[ExportPanel.vue](../src/components/ExportPanel.vue)和[dictionaryAssistantPort.ts](../src/services/dictionaryAssistantPort.ts)提供对应前端入口基础。
