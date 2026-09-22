@@ -14,7 +14,7 @@ UniDic token 保留原始词法字段、出现形及基本形查询证据。状�
 
 ## 十段回测
 
-语料为 `data/validation/refractor_source.txt`。十段均经文档会话实际调用 UniDic、GiNZA、KWJA，再执行范围、引用和代表形式校验。总计 980 字符、633 个 UniDic token、560 条链、86 个形态 occurrence、65 个整体构词对象。链数量包含保存原子身份的单成员链。
+语料为 `data/validation/refractor_source.txt`。十段均经文档会话实际调用 UniDic、GiNZA、KWJA，再执行范围、引用和代表形式校验。总计 980 字符、633 个 UniDic token、460 条链、76 个形态 occurrence、65 个整体构词对象。链数量包含保存原子身份的单成员链。
 
 | 样本 | 链 / occurrence / 整体 | 人工复核结论 |
 | --- | --- | --- |
