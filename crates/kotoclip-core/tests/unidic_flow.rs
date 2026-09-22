@@ -14,7 +14,7 @@ fn real_resources_preserve_ranges_fields_and_query_targets() {
         });
         assert!(response.error.is_none(), "{:?}", response.error);
         let doc: UnifiedDocument = serde_json::from_value(response.result.unwrap()).unwrap();
-        assert_eq!(doc.morphology.schema, "kotoclip.morphology-artifact.v1");
+        assert_eq!(doc.morphology.schema, kotoclip_nlp::morphology::SCHEMA);
         assert!(!doc.morphology.chains.is_empty());
         assert!(doc.grammar.occurrences.iter().all(|item| item.status == kotoclip_nlp::grammar::GrammarStatus::Candidate));
         assert!(doc.projection.targets.iter().all(|item| item.layer == "grammar"));

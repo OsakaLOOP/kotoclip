@@ -158,7 +158,7 @@ impl DocumentSessions {
             let Some(job) = job else { if receiver.recv().is_err() { break; } else { continue; } };
             let result = if job.stage == UnitStage::Analyzing {
                 let (prepared, routing) = job.plan.unit_input(job.index);
-                worker_engine.analyze(&prepared, routing, &[], None, None).map(|document| (document, Vec::new()))
+                worker_engine.analyze(&prepared, routing, &[], None, None, Vec::new()).map(|document| (document, Vec::new()))
             } else { worker_engine.enrich(job.document.as_ref().unwrap(), job.cancellation) };
             let mut state = worker_state.lock().unwrap();
             state.active = None;

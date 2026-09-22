@@ -117,6 +117,31 @@ fn surface(chars: &[char], ranges: &[Range]) -> Result<String, String> {
 }
 
 impl SourceArtifact {
+    /// 连续跨度导入保留实际已有字段，关系能力由空集合明确表示。
+    pub fn from_syntax(artifact: &crate::syntax::SyntaxArtifact, text: &str) -> Result<Self, String> {
+        crate::syntax::validate_identity(artifact, text)?;
+        let chars: Vec<_> = text.chars().collect();
+        let diagnostics = crate::syntax::align_to_text_content(artifact, text);
+        let nodes = artifact.spans.iter().zip(&diagnostics).filter(|(_,d)| d.status == "aligned").filter_map(|(span,_)| {
+            let kind = match span.kind.as_str() { "token" => NodeKind::Token, "compound" => NodeKind::Compound,
+                "bunsetsu" => NodeKind::Bunsetsu, "sentence" => NodeKind::Sentence, "clause" => NodeKind::Clause, _ => return None };
+            let mut features = serde_json::Map::new();
+            for label in &span.labels {
+                if let Some((key,value)) = label.split_once(':') {
+                    features.insert(key.into(), serde_json::from_str(value).unwrap_or_else(|_| Value::String(value.into())));
+                }
+            }
+            let surface: String = chars[span.char_range[0]..span.char_range[1]].iter().collect();
+            Some(SourceNode { id: span.id.clone(), kind, source_ranges: vec![span.char_range], text_ranges: vec![span.char_range],
+                source_surface: surface.clone(), surface, head: None, members: Vec::new(), features: Value::Object(features) })
+        }).collect();
+        Ok(Self { schema: SCHEMA.into(), provider: Manifest { id: artifact.provider.id.clone(), version: artifact.provider.version.clone().unwrap_or_default(),
+            model: "syntax_import".into(), model_version: String::new(), versions: BTreeMap::new(), tasks: vec!["span_import".into()],
+            capabilities: vec!["spans".into()], coordinate_system: "unicode_scalar".into(), resources: Vec::new(), resource_digest: String::new(), execution: BTreeMap::new() },
+            text_sha256: artifact.text_sha256.clone(), text_characters: chars.len(), normalized_text: text.into(), normalization_map: (0..chars.len()).map(|i| [i,i+1]).collect(),
+            deleted_ranges: Vec::new(), nodes, relations: Vec::new(), diagnostics: vec!["syntax_import_without_dependencies".into()], raw: None, elapsed_ms: 0.0 })
+    }
+
     pub fn validate(&self, text: &str) -> Result<(), String> {
         let chars: Vec<char> = text.chars().collect();
         let normalized: Vec<char> = self.normalized_text.chars().collect();

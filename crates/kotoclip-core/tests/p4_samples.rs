@@ -42,7 +42,7 @@ fn samples() -> Vec<Sample> {
 fn sample_inflection_chains_preserve_ownership_and_operators() {
     let artifacts = samples().into_iter().map(|sample| kotoclip_nlp::morphology::collect(&sample.sources, &sample.morphemes).unwrap()).collect::<Vec<_>>();
     let chains = artifacts.iter().flat_map(|artifact| &artifact.chains).collect::<Vec<_>>();
-    for surface in ["掲載された", "発展せしめる", "扱われます", "覗かれて", "しまって"] {
+    for surface in ["掲載された", "発展せしめる", "扱われます", "覗かれ", "しまって"] {
         assert!(chains.iter().any(|chain| chain.surface_form.contains(surface)), "活用链缺少 {surface}");
     }
     assert!(chains.iter().any(|chain| chain.operators.iter().any(|operator| operator.kind == "causative")));
@@ -66,19 +66,32 @@ fn sample_formations_use_formal_tokens_and_keep_unusual_readings() {
         assert_eq!(samples.iter().flat_map(|sample| &sample.morphemes).filter(|token| token.surface == surface).count(), 1,
             "正式词元流应保留 {surface} 整体");
     }
-    for surface in ["雜", "霽れ", "ゾワゾワゾワ"] {
+    for surface in ["雑", "霽れ", "ゾワゾワゾワ"] {
         assert!(samples.iter().flat_map(|sample| &sample.morphemes).any(|token| token.surface == surface), "样例缺少 {surface}");
     }
-    let rules = kotoclip_core::language_rules::word_formations().unwrap();
-    let application_matches = samples.iter().flat_map(|sample| rules.iter().flat_map(|rule|
-        kotoclip_nlp::rules::matches(rule, &sample.text, &sample.morphemes, &sample.sources).unwrap())).count();
-    assert!(application_matches > 0, "十段语料应触发类型化构词规则");
-
     let dictionary_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/dicts");
     let dictionary = kotoclip_core::dictionary::lookup::DictionaryEngine::new(dictionary_path).unwrap();
     let bindings = kotoclip_core::language_analysis::lookup_bindings(&dictionary, "方向転換", Some("ホウコウテンカン"));
     assert!(!bindings.is_empty(), "方向転換应绑定本地词典整体记录");
     assert!(bindings.iter().all(|binding| !binding.entry_key.is_empty() && !binding.occurrence_id.is_empty()));
+}
+
+#[test]
+fn sample_query_targets_preserve_source_and_derived_identity() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/validation/p4-sample-review.json");
+    let report: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    for case in report["cases"].as_array().unwrap() {
+        let document = &case["document"];
+        let candidates = document["dictionary_candidates"]["candidates"].as_array().unwrap();
+        assert!(!candidates.is_empty(), "{} 缺少来源级查询目标", case["id"]);
+        assert!(candidates.iter().filter(|candidate| candidate["kind"]=="token").all(|candidate| candidate["status"] == "observed"),
+            "{} 的原子查询状态不符", case["id"]);
+        assert!(document["morphology"]["occurrences"].is_array());
+        for node in document["formation"]["nodes"].as_array().unwrap() {
+            assert!(node["word"].is_object(), "{} 缺少整体词对象", case["id"]);
+            assert_eq!(node["word"]["dictionary_status"], "not_checked");
+        }
+    }
 }
 
 #[test]

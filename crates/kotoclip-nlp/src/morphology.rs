@@ -1,10 +1,38 @@
 //! L2 形态链层。
 //!
-//! 该层只整理 UniDic 已提供的词形、活用和连接字段，不根据表面字符串推导语法规则。
-use crate::model::MorphemeToken;
+//! UniDic 词法连接与 GiNZA 正式词界、活用、依存共同决定核心和功能所有权。
+use crate::model::{MorphemeToken, QueryForm};
+use crate::linguistic_context::SourceEvidence;
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.morphology-artifact.v2";
+pub const SCHEMA: &str = "kotoclip.morphology-artifact.v3";
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ConnectionForm { #[default] Stem, Irrealis, Continuative, Terminal, Attributive, Conditional, Imperative, Volitional, Te, Other }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MorphologyState {
+    pub category: String,
+    pub form: ConnectionForm,
+    pub conjugation_type: String,
+    pub conjugation_form: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MorphologyOccurrence {
+    pub id: String,
+    pub chain_id: String,
+    pub operator_ids: Vec<String>,
+    pub kind: String,
+    pub char_range: [usize; 2],
+    pub context_range: [usize; 2],
+    pub hit_ranges: Vec<[usize; 2]>,
+    pub morpheme_indices: Vec<usize>,
+    pub candidates: Vec<String>,
+    pub status: String,
+    pub source_evidence: Vec<SourceEvidence>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -25,6 +53,12 @@ pub struct MorphologyOperator {
     pub candidates: Vec<String>,
     pub label: String,
     pub description: String,
+    #[serde(default)]
+    pub state_before: MorphologyState,
+    #[serde(default)]
+    pub state_after: MorphologyState,
+    #[serde(default)]
+    pub normalized_form: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -48,12 +82,28 @@ pub struct MorphologyChain {
     pub operators: Vec<MorphologyOperator>,
     pub connection_forms: Vec<String>,
     pub evidence: Vec<String>,
+    #[serde(default)]
+    pub morpheme_indices: Vec<usize>,
+    #[serde(default)]
+    pub final_state: MorphologyState,
+    #[serde(default)]
+    pub core_morpheme_indices: Vec<usize>,
+    #[serde(default)]
+    pub query_forms: Vec<QueryForm>,
+    #[serde(default)]
+    pub source_evidence: Vec<SourceEvidence>,
+    #[serde(default)]
+    pub status: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MorphologyArtifact {
     pub schema: String,
     pub chains: Vec<MorphologyChain>,
+    #[serde(default)]
+    pub occurrences: Vec<MorphologyOccurrence>,
+    #[serde(default)]
+    pub diagnostics: Vec<String>,
 }
 
 fn value(token: &crate::model::ProviderToken, index: usize) -> Option<String> {
@@ -64,8 +114,20 @@ fn first(value: Option<String>, fallback: &str) -> String { value.unwrap_or_else
 
 /// 先保存原子活用，再按连接形和字符连续性建立所有权。
 pub fn collect(source_tokens: &[crate::model::ProviderToken], morphemes: &[MorphemeToken]) -> Result<MorphologyArtifact, String> {
+    collect_with_external(source_tokens, morphemes, &[])
+}
+
+/// 先保留原子词形，再由状态机共同消费词法连接和 GiNZA 结构。
+pub fn collect_with_external(
+    source_tokens: &[crate::model::ProviderToken],
+    morphemes: &[MorphemeToken],
+    external: &[crate::external::SourceArtifact],
+) -> Result<MorphologyArtifact, String> {
     if source_tokens.len() != morphemes.len() {
         return Err("形态链输入的来源 token 与统一 token 数量不一致".into());
+    }
+    if source_tokens.iter().zip(morphemes).any(|(a,b)| a.char_range != b.char_range || a.surface != b.surface) {
+        return Err("活用输入的词元范围或正文不一致".into());
     }
     let mut chains = Vec::new();
     for (index, (source, morpheme)) in source_tokens.iter().zip(morphemes).enumerate() {
@@ -93,6 +155,10 @@ pub fn collect(source_tokens: &[crate::model::ProviderToken], morphemes: &[Morph
                 output_state, input_state: dictionary_form.clone(), concept_id: "morphology.chain".into(), confidence: 1.0,
                 evidence: vec![format!("unidic:{label}:{detail}")], candidates: Vec::new(),
                 label: detail.clone(), description: format!("UniDic {label}字段：{detail}"),
+                state_before: MorphologyState { category: pos_major.clone(), form: if value(source,4).is_some() { ConnectionForm::Terminal } else { ConnectionForm::Stem },
+                    conjugation_type: value(source,4).unwrap_or_default(), conjugation_form: "基本形".into() },
+                state_after: crate::morphology_machine::state(source),
+                normalized_form: None,
             });
         }
         let connection_forms = [value(source, 17), value(source, 18)].into_iter().flatten().collect();
@@ -105,63 +171,12 @@ pub fn collect(source_tokens: &[crate::model::ProviderToken], morphemes: &[Morph
             display_form: dictionary_form.clone(), parent_chain_id: None,
             dictionary_form, lemma_form, lookup_form, source_ranges: vec![morpheme.char_range],
             operators, connection_forms, evidence,
+            morpheme_indices: vec![index], final_state: crate::morphology_machine::state(source),
+            core_morpheme_indices: vec![index], query_forms: morpheme.query_forms.clone(),
+            source_evidence: Vec::new(), status: "resolved".into(),
         });
     }
-    let mut combined: Vec<MorphologyChain> = Vec::new();
-    for mut chain in chains {
-        let index = chain.anchor_morpheme;
-        let current = &source_tokens[index];
-        let pos = value(current, 0).unwrap_or_default();
-        if let Some(previous) = combined.last_mut() {
-            let last_index = previous.morpheme_range[1] - 1;
-            let last = &source_tokens[last_index];
-            let form = value(last, 5).unwrap_or_default();
-            let contiguous = previous.char_range[1] == chain.char_range[0];
-            let sahen = pos == "動詞" && value(current, 4).is_some_and(|v| v.contains("サ行変格"))
-                && value(last, 2).is_some_and(|v| v.contains("サ変"));
-            let auxiliary = pos == "助動詞" && (!form.is_empty() || value(last, 0).as_deref() == Some("形状詞"));
-            let connector = pos == "助詞" && value(current, 1).as_deref() == Some("接続助詞")
-                && matches!(chain.surface_form.as_str(), "て" | "で" | "ば") && !form.is_empty();
-            let support = pos == "動詞" && value(current, 1).is_some_and(|v| v.starts_with("非自立"))
-                && matches!(last.surface.as_str(), "て" | "で") && value(last, 0).as_deref() == Some("助詞");
-            if contiguous && support {
-                chain.role = MorphologyRole::Functional;
-                chain.parent_chain_id = Some(previous.chain_id.clone());
-                chain.evidence.push("connection:接续助词后的补助用言".into());
-            } else if contiguous && (sahen || auxiliary || connector) {
-                if sahen {
-                    previous.dictionary_form.push_str(&chain.dictionary_form);
-                    previous.lookup_form = previous.dictionary_form.clone();
-                    previous.display_form = previous.dictionary_form.clone();
-                    previous.lemma_form.push_str(&chain.lemma_form);
-                }
-                if value(last, 0).as_deref() == Some("形状詞") && chain.surface_form == "な" {
-                    previous.display_form = format!("{}だ", previous.dictionary_form);
-                }
-                let features = features(current);
-                for feature in features {
-                    previous.operators.push(MorphologyOperator {
-                        operator_id: format!("morphology:{index}:{feature}"), kind: feature.clone(),
-                        source_morpheme_range: [index, index + 1], char_range: chain.char_range,
-                        input_state: previous.surface_form.clone(), output_state: format!("{}{}", previous.surface_form, chain.surface_form),
-                        concept_id: feature_concept(&feature).into(), confidence: 1.0,
-                        evidence: chain.evidence.clone(), candidates: if feature == "passive_potential" { vec!["受身".into(), "可能".into(), "尊敬".into(), "自発".into()] } else { Vec::new() },
-                        label: feature_label(&feature).into(), description: format!("{}：{}", feature_label(&feature), chain.surface_form),
-                    });
-                }
-                previous.surface_form.push_str(&chain.surface_form);
-                previous.morpheme_range[1] = chain.morpheme_range[1];
-                previous.char_range[1] = chain.char_range[1];
-                previous.source_ranges.extend(chain.source_ranges);
-                previous.operators.extend(chain.operators);
-                previous.connection_forms.extend(chain.connection_forms);
-                previous.evidence.extend(chain.evidence);
-                continue;
-            }
-        }
-        combined.push(chain);
-    }
-    Ok(MorphologyArtifact { schema: SCHEMA.into(), chains: combined })
+    Ok(crate::morphology_machine::compose(chains, source_tokens, morphemes, external))
 }
 
 pub fn features(token: &crate::model::ProviderToken) -> Vec<String> {
@@ -171,7 +186,9 @@ pub fn features(token: &crate::model::ProviderToken) -> Vec<String> {
     let mut result = Vec::new();
     if pos == "助動詞" {
         for (needle, feature) in [("助動詞-タ", "past"), ("助動詞-ナイ", "negative"), ("助動詞-ヌ", "negative"),
-            ("助動詞-ズ", "negative"), ("助動詞-マス", "politeness_masu"), ("助動詞-タイ", "desire")] {
+            ("助動詞-ズ", "negative"), ("助動詞-マス", "politeness_masu"), ("助動詞-デス", "politeness_desu"),
+            ("助動詞-タイ", "desire"), ("助動詞-ダ", "copula"), ("助動詞-デアル", "copula"),
+            ("助動詞-ム", "volitional"), ("助動詞-ベシ", "obligation")] {
             if kind == needle { result.push(feature.into()); }
         }
         let lemma = value(token, 7).unwrap_or_default();
@@ -179,9 +196,11 @@ pub fn features(token: &crate::model::ProviderToken) -> Vec<String> {
         if matches!(lemma.as_str(), "せる" | "させる" | "しめる") { result.push("causative".into()); }
     }
     if form.starts_with("意志推量形") { result.push("volitional".into()); }
-    if form.starts_with("仮定形") { result.push("conditional".into()); }
+    if form.starts_with("仮定形") || form.starts_with("已然形") { result.push("conditional".into()); }
+    if kind == "助動詞-タ" && form.contains("融合") { result.push("tara_condition".into()); }
+    if kind == "助動詞-タ" && form.contains("一般") && token.surface == "たり" { result.push("enumerative".into()); }
     if pos == "助詞" && value(token, 1).as_deref() == Some("接続助詞") {
-        match token.surface.as_str() { "て" => result.push("te_form".into()), "で" => result.push("de_form".into()), _ => {} }
+        match token.surface.as_str() { "て" => result.push("te_form".into()), "で" => result.push("de_form".into()), "ば" => result.push("conditional".into()), _ => {} }
     }
     result
 }
@@ -190,15 +209,20 @@ pub fn feature_concept(feature: &str) -> &str {
     match feature {
         "past" => "morphology.tense.past", "negative" => "morphology.polarity.negative",
         "causative" => "morphology.voice.causative", "passive_potential" => "morphology.voice.passive_potential",
-        "politeness_masu" => "morphology.politeness.masu", "volitional" => "morphology.mood.volitional",
-        "conditional" => "morphology.condition.ba", "te_form" => "morphology.form.te", "de_form" => "morphology.form.de",
+        "politeness_masu" => "morphology.politeness.masu", "politeness_desu" => "grammar.auxiliary.desu", "volitional" => "morphology.mood.volitional",
+        "conditional" => "morphology.mood.conditional", "te_form" => "morphology.form.te", "de_form" => "morphology.form.de",
+        "desire" => "morphology.modality.desire",
         _ => "morphology.chain",
     }
 }
 
-fn feature_label(feature: &str) -> &str {
+pub(crate) fn feature_label(feature: &str) -> &str {
     match feature { "past" => "过去", "negative" => "否定", "causative" => "使役", "passive_potential" => "受身等候选",
-        "politeness_masu" => "丁寧", "volitional" => "意向", "conditional" => "条件", "te_form" | "de_form" => "接续", _ => "活用" }
+        "politeness_masu" | "politeness_desu" => "丁寧", "volitional" => "意向", "conditional" | "ba_connection" | "tara_condition" => "条件", "desire" => "愿望",
+        "copula" | "copula_aru" => "判断", "obligation" => "当为", "te_form" | "de_form" | "te_connection" => "接续",
+        "imperative" => "命令", "prohibitive" => "禁止", "enumerative" => "列举", "concessive_connection" => "逆接",
+        "te_iru" | "contracted_te_iru" => "ている形式", "te_shimau" | "contracted_te_shimau" => "てしまう形式",
+        "te_oku" | "contracted_te_oku" => "ておく形式", "te_kudasaru" => "てくださる形式", "nagara_connection" => "ながら接续", _ => "活用" }
 }
 
 #[cfg(test)]

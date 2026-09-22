@@ -41,7 +41,7 @@ export interface UnifiedDocument {
   structure_diagnostics: AlignmentDiagnostic[];
   formation: {
     schema: string;
-    nodes: { id: string; kind: string; char_range: [number, number]; morpheme_indices: number[]; status: string; evidence: { provider: string; source_id: string | null; reason: string }[] }[];
+    nodes: { id: string; kind: string; char_range: [number, number]; morpheme_indices: number[]; status: string; evidence: { provider: string; source_id: string | null; reason: string }[]; word: FormationWord | null }[];
     conflicts: { id: string; node_ids: string[]; char_range: [number, number]; reason: string }[];
   };
   bunsetsu: {
@@ -62,7 +62,7 @@ export interface UnifiedDocument {
   dictionary_candidates: {
     schema: string;
     candidates: {
-      id: string; kind: 'token' | 'compound'; char_range: [number, number]; surface: string;
+      id: string; kind: 'token' | 'compound' | 'morphology'; char_range: [number, number]; surface: string;
       morpheme_indices: number[]; query_forms: QueryForm[]; status: string; source_id: string;
     }[];
   };
@@ -73,6 +73,7 @@ export interface UnifiedDocument {
   application: ApplicationArtifact;
   external_sources: SourceArtifact[];
   structure_graph: StructureGraph;
+  stage_timings: { stage: string; elapsed_ms: number }[];
   provider_token_alignments: { schema: string; source_id: string | null; unidic_provider: string; external_provider: string; groups: AlignmentGroup[]; alignments: TokenAlignment[] }[];
 }
 
@@ -139,14 +140,33 @@ export interface MorphologyOperator {
   operator_id: string; kind: string; source_morpheme_range: [number, number]; char_range: [number, number];
   input_state: string; output_state: string; concept_id: string; confidence: number; evidence: string[]; candidates: string[];
   label: string; description: string;
+  state_before: MorphologyState; state_after: MorphologyState;
+  normalized_form: string | null;
+}
+export interface SourceEvidence { provider: string; node_id: string | null; relation_id: string | null; reason: string; }
+export interface MorphologyState {
+  category: string; form: 'stem' | 'irrealis' | 'continuative' | 'terminal' | 'attributive' | 'conditional' | 'imperative' | 'volitional' | 'te' | 'other';
+  conjugation_type: string; conjugation_form: string;
+}
+export interface MorphologyOccurrence {
+  id: string; chain_id: string; operator_ids: string[]; kind: string; char_range: [number, number]; context_range: [number, number];
+  morpheme_indices: number[]; candidates: string[]; status: string; source_evidence: SourceEvidence[];
+  hit_ranges: [number, number][];
+}
+export interface FormationWord {
+  surface: string; head_morpheme: number | null; output_pos: (string | null)[]; core_morpheme_indices: number[];
+  chain_ids: string[]; source_token_ids: string[]; source_relation_ids: string[]; component_candidate_ids: string[];
+  query_forms: QueryForm[]; dictionary_status: string; reason: string;
 }
 export interface MorphologyChain {
   chain_id: string; anchor_morpheme: number; anchor_range: [number, number]; morpheme_range: [number, number];
   char_range: [number, number]; role: 'lexical' | 'functional'; base_lexeme: string; surface_form: string;
   dictionary_form: string; lemma_form: string; lookup_form: string; display_form: string; parent_chain_id: string | null; source_ranges: [number, number][];
   operators: MorphologyOperator[]; connection_forms: string[]; evidence: string[];
+  morpheme_indices: number[]; core_morpheme_indices: number[]; final_state: MorphologyState;
+  query_forms: QueryForm[]; source_evidence: SourceEvidence[]; status: string;
 }
-export interface MorphologyArtifact { schema: string; chains: MorphologyChain[]; }
+export interface MorphologyArtifact { schema: string; chains: MorphologyChain[]; occurrences: MorphologyOccurrence[]; diagnostics: string[]; }
 export interface DictionaryBinding { dictionary: string; entry_key: string; occurrence_id: string; headword: string; reading: string; }
 export interface LexicalDecision {
   id: string; char_range: [number, number]; members: number[]; candidate_ids: string[]; status: string; reason: string;

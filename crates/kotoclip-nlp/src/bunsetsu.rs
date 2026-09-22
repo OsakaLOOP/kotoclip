@@ -129,7 +129,7 @@ mod tests {
     #[test]
     fn maps_head_and_formation_references() {
         let structure = StructureArtifact { schema: crate::structure::SCHEMA.into(), provider: "local".into(), provider_version: None, paragraphs: Vec::new(), sentences: Vec::new(), clauses: Vec::new(), bunsetsu: vec![span("g", [0, 4], "ginza", Some([2, 4]))], compounds: Vec::new() };
-        let formation = FormationArtifact { schema: crate::formation::SCHEMA.into(), nodes: vec![crate::formation::FormationNode { id: "formation:c".into(), kind: "compound".into(), char_range: [0, 4], morpheme_indices: vec![0, 1], status: crate::formation::FormationStatus::Observed, evidence: Vec::new() }], conflicts: Vec::new() };
+        let formation = FormationArtifact { schema: crate::formation::SCHEMA.into(), nodes: vec![crate::formation::FormationNode { id: "formation:c".into(), kind: "compound".into(), char_range: [0, 4], morpheme_indices: vec![0, 1], status: crate::formation::FormationStatus::Observed, evidence: Vec::new(), word: None }], conflicts: Vec::new() };
         let result = collect_bunsetsu("情報処理", &[token(0, [0, 2], "情報"), token(1, [2, 4], "処理")], &structure, &formation).unwrap();
         assert_eq!(result.nodes[0].head_morpheme_index, Some(1));
         assert_eq!(result.nodes[0].formation_node_ids, vec!["formation:c"]);

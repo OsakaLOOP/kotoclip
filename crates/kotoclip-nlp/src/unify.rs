@@ -19,20 +19,12 @@ pub fn unify_with_native<P: crate::native::NativeStructureProvider>(
     routing: RegisterRouting,
     provider: &P,
 ) -> Result<UnifiedDocument, String> {
-    let mut document = unify(prepared, source, routing)?;
+    let document = unify(prepared, source, routing)?;
     let input = crate::native::NativeProviderInput::from_document(&document);
     let artifact = provider.analyze(input).map_err(|diagnostic| {
         serde_json::to_string(&diagnostic).unwrap_or_else(|_| "native provider failed".into())
     })?;
-    let (structure, diagnostics) = crate::structure::merge_external(document.structure, &artifact, &document.text)?;
-    document.structure = structure;
-    document.structure_diagnostics.extend(diagnostics);
-    document.provider_token_alignments.push(crate::alignment::align_artifact(&artifact, &document.morphemes));
-    document.formation = crate::formation::collect_formations(&document.text, &document.morphemes, &document.structure)?;
-    document.bunsetsu = crate::bunsetsu::collect_bunsetsu(&document.text, &document.morphemes, &document.structure, &document.formation)?;
-    document.clause = crate::clause::collect_clauses(&document.text, &document.morphemes, &document.structure)?;
-    document.dictionary_candidates = crate::lexical::collect_dictionary_candidates(&document.text, &document.morphemes, &document.formation)?;
-    Ok(document)
+    unify_with_external(prepared, document.source, document.routing, &[artifact])
 }
 
 /// 在统一词元结果上追加外部结构证据；每个 provider 的范围和对齐诊断保持可追溯。
@@ -42,7 +34,8 @@ pub fn unify_with_external(
     routing: RegisterRouting,
     external: &[crate::syntax::SyntaxArtifact],
 ) -> Result<UnifiedDocument, String> {
-    assemble(prepared, source, routing, external, &[])
+    let imported: Vec<_> = external.iter().map(|a| crate::external::SourceArtifact::from_syntax(a, &prepared.text)).collect::<Result<_,_>>()?;
+    assemble(prepared, source, routing, external, &imported)
 }
 
 pub fn unify_with_sources(
@@ -143,15 +136,19 @@ fn assemble(
         }
     }
     let structure_graph = crate::structure_graph::build(&id, text, &morphemes, complete_sources)?;
-    structure_graph.apply_selection(&mut structure);
-    let formation = crate::formation::collect_formations(text, &morphemes, &structure)?;
+    if complete_sources.iter().any(|s| s.provider.model != "syntax_import") {
+        structure_graph.apply_selection(&mut structure);
+    }
+    let morphology = crate::morphology::collect_with_external(&source.tokens, &morphemes, complete_sources)?;
+    let mut formation = crate::formation::collect_formations_with_sources(text, &morphemes, &structure, complete_sources)?;
+    crate::formation::attach_words(text, &morphemes, &morphology, &mut formation);
     let bunsetsu = crate::bunsetsu::collect_bunsetsu(text, &morphemes, &structure, &formation)?;
     let clause = crate::clause::collect_clauses(text, &morphemes, &structure)?;
-    let dictionary_candidates = crate::lexical::collect_dictionary_candidates(text, &morphemes, &formation)?;
+    let mut dictionary_candidates = crate::lexical::collect_dictionary_candidates(text, &morphemes, &formation)?;
+    crate::lexical::add_morphology_candidates(&mut dictionary_candidates, &morphology);
     let grammar = crate::grammar::collect_functional_candidates(&source.tokens, &morphemes)?;
     let expression = crate::expression::empty();
     let projection = crate::projection::from_layers(&grammar, &expression);
-    let morphology = crate::morphology::collect(&source.tokens, &morphemes)?;
     Ok(UnifiedDocument {
         schema: SCHEMA.into(),
         id,
@@ -178,6 +175,7 @@ fn assemble(
         provider_token_alignments,
         external_sources: complete_sources.to_vec(),
         structure_graph,
+        stage_timings: Vec::new(),
         elapsed_ms: 0.0,
     })
 }

@@ -1,6 +1,6 @@
 use crate::analysis_engine::AnalysisEngine;
 use kotoclip_nlp::{
-    model::{QueryForm, Register},
+    model::{QueryForm, Register, StageTiming},
     prepare::prepare_text,
     routing::{route_text, RegisterPolicy},
     syntax::SyntaxArtifact,
@@ -10,6 +10,7 @@ use serde_json::{json, Value};
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
+    time::Instant,
 };
 
 #[derive(Debug, Clone)]
@@ -220,7 +221,12 @@ impl AnalysisService {
                     .find(|candidate| candidate.id == candidate_id)
                     .cloned()
                     .ok_or("词典候选引用无效")?;
-                self.engine.query(Some(analysis_id), None, &candidate.query_forms, selected_form.as_deref())
+                let mut result = self.engine.query(Some(analysis_id.clone()), None, &candidate.query_forms, selected_form.as_deref())?;
+                result["target"] = json!({"analysis_id":analysis_id,"candidate_id":candidate.id,"source_id":candidate.source_id,
+                    "char_range":candidate.char_range,"members":candidate.morpheme_indices});
+                let matched = result["groups"].as_array().is_some_and(|groups| groups.iter().any(|g| g["total"].as_u64().unwrap_or(0)>0));
+                result["dictionary_status"] = json!(if matched { "matched" } else { "no_match" });
+                Ok(result)
             }
             Request::Search { word } => {
                 let word = word.trim();
@@ -248,9 +254,14 @@ impl AnalysisService {
     ) -> Result<Value, String> {
         if text.chars().count() > 20000 { return Err("单次分析支持 20,000 字符，长文档请使用文档会话".into()); }
         if text.trim().is_empty() { return Err("请输入日文正文".into()); }
+        let mut stage_timings = Vec::new();
+        let prepare_started = Instant::now();
         let prepared = prepare_text(&text);
+        stage_timings.push(StageTiming::new("prepare", prepare_started));
+        let routing_started = Instant::now();
         let routing = route_text(&prepared.text, policy);
-        let document = self.engine.analyze(&prepared, routing, artifacts, grammar, expression)?;
+        stage_timings.push(StageTiming::new("routing", routing_started));
+        let document = self.engine.analyze(&prepared, routing, artifacts, grammar, expression, stage_timings)?;
         serde_json::to_value(document.as_ref()).map_err(|e| e.to_string())
     }
 }

@@ -10,6 +10,8 @@ import subprocess
 import tempfile
 import threading
 import time
+import sys
+from validate_p4_language import validate
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "data/validation/p4-sample-review.json"
@@ -29,15 +31,13 @@ def digest(path):
 def compact(document):
     """保留原始实体身份、语言字段和模块结果，完整协议另存本机原始文件。"""
     result = {key: document[key] for key in (
-        "schema", "id", "text", "routing", "morphemes", "gaps", "formation",
-        "bunsetsu", "clause", "grammar", "expression", "projection", "dictionary_candidates",
-        "structure_diagnostics",
+        "schema", "id", "text", "routing", "morphemes", "gaps", "bunsetsu", "clause",
+        "dictionary_candidates", "structure_diagnostics", "formation", "morphology", "grammar", "stage_timings",
     )}
     result["source_runs"] = document["source"]["runs"]
     result["unidic_fields"] = [{"id": f"m{token['index']}", "lexicon_type": token["lexicon_type"],
         "fields": {field["name"]: field["value"] for field in token["fields"] if field["value"] is not None}}
         for token in document["source"]["tokens"]]
-    result["morphology"] = document["morphology"]
     result["sources"] = []
     for source in document["external_sources"]:
         result["sources"].append({key: source[key] for key in ("provider", "nodes", "relations")})
@@ -50,6 +50,8 @@ def compact(document):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     source_path = ROOT / "data/validation/refractor_source.txt"
     text = source_path.read_text(encoding="utf-8")
     paragraphs = text.splitlines()
@@ -114,13 +116,21 @@ def main():
                         raise ValueError("本次段落复核预期每段一个单元")
                     unit = next(iter(units.values()))
                     document = unit["document"]
-                    if document["text"] != paragraph or not all(p["status"] == "ready" for p in unit["providers"]):
+                    if document["preparation"]["source_text"] != paragraph or not all(p["status"] == "ready" for p in unit["providers"]):
                         raise ValueError({"id": case_id, "providers": unit["providers"]})
                     raw_path = RAW / f"{case_id}.json"
                     write_json(raw_path, {"plan": opened["plan"], "update": update, "unit": unit})
                     case = {"id": case_id, "paragraph": index, "source_char_range_lf": [offset, offset + len(paragraph)],
                         "elapsed_ms": round((time.monotonic() - started) * 1000), "plan": opened["plan"]["units"],
                         "providers": unit["providers"], "document": compact(document), "queries": []}
+                    case["language_validation"] = validate(case_id, document)
+                    case["whole_queries"] = []
+                    for candidate in document["dictionary_candidates"]["candidates"]:
+                        if candidate["kind"] == "token" or candidate["surface"] not in {"方向転換", "教科用図書", "神戸市", "線状降水帯", "扱われます", "這い上がる"}:
+                            continue
+                        query = request("query_candidate", analysis_id=document["id"], candidate_id=candidate["id"])
+                        case["whole_queries"].append({"surface":candidate["surface"], "target":query["target"],
+                            "dictionary_status":query["dictionary_status"], "forms":[group["form"] for group in query["groups"]]})
                     for token in document["morphemes"]:
                         if token["surface"] not in QUERY_SURFACES:
                             continue
@@ -137,7 +147,7 @@ def main():
                     write_json(OUTPUT, report)
                     request("close_document", session_id=update["session_id"])
                     offset += len(paragraph) + 1
-                    print(case_id, len(document["morphemes"]), "词元；完成", flush=True)
+                    print(case_id, json.dumps(case["language_validation"], ensure_ascii=False), flush=True)
                 # 对照例用于界定既有表达 matcher 的连接条件和词汇／功能歧义。
                 for case_id, control in [
                     ("idiom", "彼の話に耳を傾ける。"),
@@ -150,6 +160,8 @@ def main():
                     report["controls"].append({"id": case_id, "kind": "人工最小对照", "document": compact(document)})
                 report["provider_final_status"] = request("provider_status")
                 write_json(OUTPUT, report)
+                if any(not case["language_validation"]["passed"] for case in report["cases"]):
+                    raise ValueError("十段语言验收存在失败，具体范围已保存到当前报告")
             finally:
                 process.stdin.close()
                 try:

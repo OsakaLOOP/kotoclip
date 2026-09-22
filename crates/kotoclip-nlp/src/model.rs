@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.unified-document.v7";
+pub const SCHEMA: &str = "kotoclip.unified-document.v8";
 pub const FIELD_NAMES: [&str; 29] = [
     "pos1", "pos2", "pos3", "pos4", "cType", "cForm", "lForm", "lemma", "orth", "pron", "orthBase",
     "pronBase", "goshu", "iType", "iForm", "fType", "fForm", "iConType", "fConType", "type",
@@ -115,6 +115,18 @@ pub struct TextGap {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StageTiming {
+    pub stage: String,
+    pub elapsed_ms: f64,
+}
+
+impl StageTiming {
+    pub fn new(stage: impl Into<String>, started: std::time::Instant) -> Self {
+        Self { stage: stage.into(), elapsed_ms: started.elapsed().as_secs_f64() * 1000.0 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SourceAnalysis {
     pub runs: Vec<SourceRun>,
     pub tokens: Vec<ProviderToken>,
@@ -180,5 +192,7 @@ pub struct UnifiedDocument {
     #[serde(default)]
     pub external_sources: Vec<crate::external::SourceArtifact>,
     pub structure_graph: crate::structure_graph::StructureGraph,
+    #[serde(default)]
+    pub stage_timings: Vec<StageTiming>,
     pub elapsed_ms: f64,
 }

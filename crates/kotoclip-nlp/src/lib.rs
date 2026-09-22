@@ -19,6 +19,8 @@ pub mod grammar;
 pub mod expression;
 pub mod projection;
 pub mod morphology;
+pub mod linguistic_context;
+mod morphology_machine;
 pub mod native;
 pub mod external;
 pub mod rules;

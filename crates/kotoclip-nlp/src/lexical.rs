@@ -3,7 +3,7 @@
 use crate::{formation::{FormationArtifact, FormationStatus}, model::{MorphemeToken, QueryForm}};
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA: &str = "kotoclip.dictionary-candidates.v1";
+pub const SCHEMA: &str = "kotoclip.dictionary-candidates.v2";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -27,7 +27,7 @@ pub struct DictionaryCandidateArtifact {
     pub candidates: Vec<DictionaryCandidate>,
 }
 
-fn is_queryable(surface: &str) -> bool {
+pub(crate) fn is_queryable(surface: &str) -> bool {
     surface.chars().any(char::is_alphanumeric)
 }
 
@@ -61,11 +61,23 @@ pub fn collect_dictionary_candidates(text: &str, morphemes: &[MorphemeToken], fo
         candidates.push(DictionaryCandidate {
             id: format!("dictionary:formation:{}", node.id), kind: "compound".into(),
             char_range: node.char_range, surface: surface.clone(), morpheme_indices: node.morpheme_indices.clone(),
-            query_forms: vec![QueryForm { kind: "compound_observed".into(), form: surface, reading, reading_field: Some("kana_sequence".into()) }],
+            query_forms: node.word.as_ref().map(|w| w.query_forms.clone()).unwrap_or_else(|| vec![QueryForm { kind: "compound_observed".into(), form: surface, reading_field: reading.as_ref().map(|_| "kana_sequence".into()), reading }]),
             status: status(&node.status), source_id: node.id.clone(),
         });
     }
     Ok(DictionaryCandidateArtifact { schema: SCHEMA.into(), candidates })
+}
+
+pub fn add_morphology_candidates(artifact: &mut DictionaryCandidateArtifact, morphology: &crate::morphology::MorphologyArtifact) {
+    for chain in &morphology.chains {
+        if chain.morpheme_indices.len() == 1 && chain.parent_chain_id.is_none() { continue; }
+        artifact.candidates.push(DictionaryCandidate {
+            id: format!("dictionary:chain:{}", chain.chain_id), kind: "morphology".into(),
+            char_range: chain.char_range, surface: chain.surface_form.clone(), morpheme_indices: chain.morpheme_indices.clone(),
+            query_forms: chain.query_forms.clone(), source_id: chain.chain_id.clone(),
+            status: if chain.status == "pending" { DictionaryCandidateStatus::Pending } else if chain.status == "candidate" { DictionaryCandidateStatus::Candidate } else { DictionaryCandidateStatus::Observed },
+        });
+    }
 }
 
 #[cfg(test)]
@@ -75,7 +87,7 @@ mod tests {
 
     #[test]
     fn exposes_token_and_formation_queries() {
-        let formation = FormationArtifact { schema: crate::formation::SCHEMA.into(), nodes: vec![crate::formation::FormationNode { id: "formation:c".into(), kind: "compound".into(), char_range: [0, 3], morpheme_indices: vec![0, 1], status: FormationStatus::Observed, evidence: Vec::new() }], conflicts: Vec::new() };
+        let formation = FormationArtifact { schema: crate::formation::SCHEMA.into(), nodes: vec![crate::formation::FormationNode { id: "formation:c".into(), kind: "compound".into(), char_range: [0, 3], morpheme_indices: vec![0, 1], status: FormationStatus::Observed, evidence: Vec::new(), word: None }], conflicts: Vec::new() };
         let result = collect_dictionary_candidates("警察署。", &[token(0, [0, 2], "警察", "ケイサツ"), token(1, [2, 3], "署", "ショ"), token(2, [3, 4], "。", "")], &formation).unwrap();
         assert_eq!(result.candidates.len(), 3);
         let compound = result.candidates.iter().find(|item| item.kind == "compound").unwrap();

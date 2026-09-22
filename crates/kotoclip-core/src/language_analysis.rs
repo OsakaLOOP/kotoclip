@@ -11,7 +11,6 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const VERSION: &str = "kotoclip.language-application.v1";
 
 pub fn apply(document: &mut UnifiedDocument, user_rules: &[Rule], rules_version: u64) -> Result<(), String> {
-    apply_word_formations(document)?;
     let lexical = lexical_decisions(document);
     let mut explanations = morphology_explanations(document);
     explanations.extend(structure_explanations(document));
@@ -58,31 +57,6 @@ pub fn apply(document: &mut UnifiedDocument, user_rules: &[Rule], rules_version:
         document.projection.targets.push(kotoclip_nlp::projection::ProjectionTarget { id: format!("explanation:{}", explanation.id),
             char_range: explanation.char_range, layer: explanation.layer.clone(), source_id: explanation.source_id.clone(), status: explanation.status.clone() });
     }
-    Ok(())
-}
-
-fn apply_word_formations(document: &mut UnifiedDocument) -> Result<(), String> {
-    for rule in crate::language_rules::word_formations()? {
-        for found in rules::matches(&rule, &document.text, &document.morphemes, &document.source.tokens)? {
-            if document.formation.nodes.iter().any(|node| node.char_range == found.char_range && node.morpheme_indices == found.members) { continue; }
-            document.formation.nodes.push(kotoclip_nlp::formation::FormationNode { id: format!("formation:application:{}:{}:{}", rule.id, found.char_range[0], found.char_range[1]),
-                kind: rule.label.clone(), char_range: found.char_range, morpheme_indices: found.members,
-                status: kotoclip_nlp::formation::FormationStatus::Candidate, evidence: vec![kotoclip_nlp::formation::FormationEvidence {
-                    provider: "application-word-formation".into(), source_id: Some(rule.id.clone()), reason: "类型化构词规则匹配".into() }] });
-        }
-    }
-    let mut known = document.formation.conflicts.iter().map(|conflict| conflict.node_ids.clone()).collect::<BTreeSet<_>>();
-    for left in 0..document.formation.nodes.len() {
-        for right in left + 1..document.formation.nodes.len() {
-            let a = &document.formation.nodes[left]; let b = &document.formation.nodes[right];
-            if a.char_range[0] >= b.char_range[1] || b.char_range[0] >= a.char_range[1] || a.char_range == b.char_range { continue; }
-            let mut ids = vec![a.id.clone(), b.id.clone()]; ids.sort();
-            if !known.insert(ids.clone()) { continue; }
-            document.formation.conflicts.push(kotoclip_nlp::formation::FormationConflict { id: format!("formation-conflict-application-{left}-{right}"),
-                node_ids: ids, char_range: [a.char_range[0].max(b.char_range[0]), a.char_range[1].min(b.char_range[1])], reason: "overlap:application".into() });
-        }
-    }
-    document.dictionary_candidates = kotoclip_nlp::lexical::collect_dictionary_candidates(&document.text, &document.morphemes, &document.formation)?;
     Ok(())
 }
 
