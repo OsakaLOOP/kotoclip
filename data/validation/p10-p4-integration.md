@@ -11,18 +11,30 @@ ginza;176ms | kwja;697ms
 chars=63 | tokens=33 | formations_observed=1 | bunsetsu=24 | clauses=6 | query_targets=38 | entities=117 | relations=69
 词语
 わたし;代名詞;私;ワタシ;o | 比べ物;名詞;-;クラベモノ;o | なら;動詞;成る;ナラ;未然形-一般 | 貴重;形状詞;-;キチョウ;o | 彼女;代名詞;-;カノジョ;o | 時間;名詞;-;ジカン;o | 専有;名詞;-;センユウ;o | し;動詞;為る;シ;連用形-一般 | しまっ;動詞;仕舞う;シマッ;連用形-促音便 | いる;動詞;居る;イル;終止形-一般 | いう;動詞;言う;イウ;連体形-一般 | 後ろめた;形容詞;後ろめたい;ウシロメタ;語幹-一般 | さ;接尾辞;-;サ;o | 背筋;名詞;-;セスジ;o | ゾワゾワゾワ;名詞;o;o;o | 這い上がる;動詞;-;ハイアガル;終止形-一般
-来源构词
-這い上がる;compound;observed
-活用链
-morphology:m6;ならない→なる;lexical;resolved;members=6,7;parent=o;state=category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-ナイ,form:attributive;operators=conjugation,negative;sources=node_id:t6,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r7,node_id:t7,provider:ginza,reason:formal_token,relation_id:o,node_id:bp2,provider:kwja,reason:predicate_context,relation_id:o,node_id:p2,provider:kwja,reason:predicate_context,relation_id:o | morphology:m9;貴重な→貴重;lexical;resolved;members=9,10;parent=o;state=category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-ダ,form:attributive;operators=copula;sources=node_id:t9,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r10,node_id:t10,provider:ginza,reason:formal_token,relation_id:o,node_id:bp4,provider:kwja,reason:predicate_context,relation_id:o,node_id:p4,provider:kwja,reason:predicate_context,relation_id:o | morphology:m15;専有して→専有する;lexical;resolved;members=15,16,17;parent=o;state=category:助詞,conjugation_form:o,conjugation_type:o,form:te;operators=te_connection;sources=node_id:t15,provider:ginza,reason:formal_token,relation_id:o,node_id:t16,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:mark,relation_id:r17,node_id:t17,provider:ginza,reason:formal_token,relation_id:o,node_id:bp7,provider:kwja,reason:predicate_context,relation_id:o,node_id:p7,provider:kwja,reason:predicate_context,relation_id:o | morphology:m18;しまって→しまう;functional;resolved;members=18,19;parent=morphology:m15;state=category:助詞,conjugation_form:o,conjugation_type:o,form:te;operators=conjugation,initial_alternation,te_shimau,te_connection;sources=node_id:t18,provider:ginza,reason:formal_token,relation_id:o,node_id:b6,provider:ginza,reason:support_bunsetsu,relation_id:o,node_id:t19,provider:ginza,reason:formal_token,relation_id:o,node_id:bp7,provider:kwja,reason:predicate_context,relation_id:o,node_id:p7,provider:kwja,reason:predicate_context,relation_id:o | morphology:m20;いる→いる;functional;resolved;members=20;parent=morphology:m18;state=category:動詞,conjugation_form:終止形-一般,conjugation_type:上一段-ア行,form:terminal;operators=conjugation,te_iru;sources=node_id:t20,provider:ginza,reason:formal_token,relation_id:o,node_id:b6,provider:ginza,reason:support_bunsetsu,relation_id:o,node_id:bp7,provider:kwja,reason:predicate_context,relation_id:o,node_id:p7,provider:kwja,reason:predicate_context,relation_id:o | morphology:m22;いう→いう;lexical;resolved;members=22;parent=o;state=category:動詞,conjugation_form:連体形-一般,conjugation_type:五段-ワア行,form:attributive;operators=conjugation;sources=node_id:t22,provider:ginza,reason:formal_token,relation_id:o,node_id:bp8,provider:kwja,reason:predicate_context,relation_id:o,node_id:p8,provider:kwja,reason:predicate_context,relation_id:o | morphology:m23;後ろめたさ→後ろめたさ;lexical;resolved;members=23,24;parent=o;state=category:接尾辞,conjugation_form:o,conjugation_type:o,form:stem;operators=conjugation,nominalization;sources=node_id:t23,provider:ginza,reason:formal_token,relation_id:o,node_id:t24,provider:ginza,reason:formal_token,relation_id:o,node_id:bp9,provider:kwja,reason:predicate_context,relation_id:o | morphology:m31;這い上がる→這い上がる;lexical;resolved;members=31;parent=o;state=category:動詞,conjugation_form:終止形-一般,conjugation_type:五段-ラ行,form:terminal;operators=conjugation;sources=node_id:t31,provider:ginza,reason:formal_token,relation_id:o,node_id:bp12,provider:kwja,reason:predicate_context,relation_id:o,node_id:p12,provider:kwja,reason:predicate_context,relation_id:o
-形态 occurrence
-occurrence:morphology:7:negative;ない;negative;resolved;chain=morphology:m6;range=14,16;hits=14,16;candidates= | occurrence:morphology:10:copula;な;copula;resolved;chain=morphology:m9;range=20,21;hits=20,21;candidates= | occurrence:morphology:17:te_connection;て;te_connection;resolved;chain=morphology:m15;range=30,31;hits=30,31;candidates= | occurrence:morphology:18:te_shimau;てしまっ;te_shimau;resolved;chain=morphology:m18;range=30,34;hits=30,31,31,34;candidates= | occurrence:morphology:19:te_connection;て;te_connection;resolved;chain=morphology:m18;range=34,35;hits=34,35;candidates= | occurrence:morphology:20:te_iru;ている;te_iru;resolved;chain=morphology:m20;range=34,37;hits=34,35,35,37;candidates= | occurrence:morphology:24:nominalization;さ;nominalization;resolved;chain=morphology:m23;range=44,45;hits=44,45;candidates=
-形态转移
-morphology:7:negative;category:動詞,conjugation_form:未然形-一般,conjugation_type:五段-ラ行,form:irrealis→category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-ナイ,form:attributive;range=14,16;normalized=o | morphology:10:copula;category:形状詞,conjugation_form:o,conjugation_type:o,form:stem→category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-ダ,form:attributive;range=20,21;normalized=o | morphology:17:te_connection;category:動詞,conjugation_form:連用形-一般,conjugation_type:サ行変格,form:continuative→category:助詞,conjugation_form:o,conjugation_type:o,form:te;range=30,31;normalized=o | morphology:18:te_shimau;category:助詞,conjugation_form:o,conjugation_type:o,form:te→category:動詞,conjugation_form:連用形-促音便,conjugation_type:五段-ワア行,form:continuative;range=31,34;normalized=o | morphology:19:te_connection;category:動詞,conjugation_form:連用形-促音便,conjugation_type:五段-ワア行,form:continuative→category:助詞,conjugation_form:o,conjugation_type:o,form:te;range=34,35;normalized=o | morphology:20:te_iru;category:助詞,conjugation_form:o,conjugation_type:o,form:te→category:動詞,conjugation_form:終止形-一般,conjugation_type:上一段-ア行,form:terminal;range=35,37;normalized=o | morphology:24:nominalization;category:形容詞,conjugation_form:語幹-一般,conjugation_type:形容詞,form:stem→category:接尾辞,conjugation_form:o,conjugation_type:o,form:stem;range=44,45;normalized=o
-整体构词
-這い上がる;observed;members=31;word=chain_ids:morphology:m31,component_candidate_ids:dictionary:token:m31,core_morpheme_indices:31,dictionary_status:not_checked,head_morpheme:31,output_pos:動詞,一般,o,o,query_forms:form:這い上がる,kind:compound_observed,reading:ハイアガル,reading_field:composed_kana,reason:complete_lexical_members,source_relation_ids:,source_token_ids:t31,surface:這い上がる;evidence=provider:ginza,reason:complete_morphemes,source_id:bdab33e455b9243dc16c49b2b029481e3abf52f6fdcf7573c51920aa2142cf22,provider:ginza,reason:source_compound,source_id:t31
-形态诊断
-source_connection_conflict:morphology:m4:5
+
+## 活用链
+
+| 原始组成 | 构成形态 | 最终对象 |
+| --- | --- | --- |
+| なら ＋ ない | 否定 | ならない（基本形：なる） |
+| 貴重 ＋ な | 判断 | 貴重な（基本形：貴重だ）；查词：貴重 |
+| 専有 ＋ し ＋ て | て／で接续 | 専有して（基本形：専有する） |
+| （接「専有して」）しまっ ＋ て | てしまう ＋ て／で接续 | しまって（基本形：しまう） |
+| （接「しまって」）いる | ている | いる（基本形：いる） |
+| いう | 連体形 | いう（基本形：いう） |
+| 後ろめた ＋ さ | 名词化 | 後ろめたさ（基本形：後ろめたさ） |
+| 這い上がる | 終止形 | 這い上がる（基本形：這い上がる） |
+
+
+## 整体构词
+
+| 原始组成 | 构成形态 | 最终对象／查询形 |
+| --- | --- | --- |
+| 這い上がる | 整体词 | 這い上がる |
+
+<details>
+<summary>实验与来源统计</summary>
+
 文节
 provider=ginza
 わたしなんかとは;observed | 比べ物に;observed | ならないほど;observed | 貴重な;observed | 彼女の;observed | 時間を;observed | 専有してしまっているという;observed | 後ろめたさが、;observed | 背筋を;observed | ゾワゾワゾワと;observed | 這い上がる。;observed
@@ -33,14 +45,18 @@ nodes=ginza:bunsetsu=11,ginza:clause=2,ginza:compound=1,ginza:entity=2,ginza:sen
 对齐
 groups=63; cardinality=1:1=59,1:n=3,n:1=1; status=complete=63; reason=equal_coverage
 1:n;complete;[18, 21] | 1:n;complete;[29, 31] | 1:n;complete;[31, 35] | n:1;complete;[57, 62]
-来源查询目标
-わたし;observed | なんか;observed | と;observed | は;observed | 比べ物;observed | に;observed | なら;observed | ない;observed | ほど;observed | 貴重;observed | な;observed | 彼女;observed | の;observed | 時間;observed | を;observed | 専有;observed | し;observed | て;observed | しまっ;observed | て;observed | いる;observed | と;observed | いう;observed | 後ろめた;observed | さ;observed | が;observed | 背筋;observed | を;observed | ゾワゾワゾワ;observed | と;observed | 這い上がる;observed | 這い上がる;observed | ならない;observed | 貴重な;observed | 専有して;observed | しまって;observed | いる;observed | 後ろめたさ;observed
-整体与活用查询形式
-dictionary:formation:formation:ginza:compound31;form:這い上がる,kind:compound_observed,reading:ハイアガル,reading_field:composed_kana | dictionary:chain:morphology:m6;form:なら,kind:observed,reading:ナラ,reading_field:kana,form:なる,kind:base,reading:ナル,reading_field:kanaBase,form:成る,kind:lemma,reading:ナル,reading_field:lForm | dictionary:chain:morphology:m9;form:貴重,kind:observed,reading:キチョウ,reading_field:kana | dictionary:chain:morphology:m15;form:専有し,kind:observed,reading:センユウシ,reading_field:composed_kana,form:専有する,kind:base,reading:センユウスル,reading_field:composed,form:専有為る,kind:lemma,reading:センユウスル,reading_field:composed | dictionary:chain:morphology:m18;form:しまっ,kind:observed,reading:シマッ,reading_field:kana,form:しまう,kind:base,reading:シマウ,reading_field:kanaBase,form:仕舞う,kind:lemma,reading:シマウ,reading_field:lForm | dictionary:chain:morphology:m20;form:いる,kind:observed,reading:イル,reading_field:kana,form:居る,kind:lemma,reading:イル,reading_field:lForm | dictionary:chain:morphology:m23;form:後ろめたさ,kind:observed,reading:ウシロメタサ,reading_field:composed_kana
-本段校验
-通过
-整体查询实测
-這い上がる;matched;target=dictionary:formation:formation:ginza:compound31;forms=form:這い上がる,kind:compound_observed,reading:ハイアガル,reading_field:composed_kana
+
+</details>
+
+本段校验：通过。
+
+
+## 整体查询实测
+
+| 查询对象 | 词典结果 |
+| --- | --- |
+| 這い上がる | 命中 |
+
 
 ## 阶段耗时
 unidic=10.5ms | unify=1.0ms | analyze_total=11.5ms

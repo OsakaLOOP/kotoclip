@@ -29,7 +29,7 @@ UniDic token 保留原始词法字段、出现形及基本形查询证据。状�
 | [P09](../data/validation/p09-p4-integration.md) | 17 / 3 / 1 | `覗かれ → 覗く` 与 `てる → いる` 分别保留词汇、功能所有权，规范形式为 `ている`；`見渡す` 整体与单 token 查询可分别引用。 |
 | [P10](../data/validation/p10-p4-integration.md) | 25 / 7 / 1 | `専有して → しまって → いる` 的两级父链成立，各自接续成员完整；`這い上がる` 保留整体查询。 |
 
-十段报告提供活用链、形态 occurrence、输入／输出状态、整体构词、查询形式及诊断。机器产物为 [p4-sample-review.json](../data/validation/p4-sample-review.json)，原始响应位于本机 `experiments/p4-sample-review/`，记录二进制摘要、来源资源身份和执行时间。
+十段报告按“原始组成、构成形态、最终对象”逐行展示活用链与整体构词，补助用言注明前接词形。完整 occurrence、状态转移、来源引用及诊断保存在 [p4-sample-review.json](../data/validation/p4-sample-review.json)；原始响应位于本机 `experiments/p4-sample-review/`，记录二进制摘要、来源资源身份和执行时间。
 
 ## 查询与语言边界
 

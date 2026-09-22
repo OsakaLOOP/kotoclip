@@ -11,18 +11,29 @@ ginza;194ms | kwja;649ms
 chars=68 | tokens=41 | formations_observed=0 | bunsetsu=27 | clauses=7 | query_targets=44 | entities=140 | relations=81
 词语
 あなた;代名詞;貴方;アナタ;o | 作品;名詞;-;サクヒン;o | 上記;名詞;-;ジョウキ;o | 示さ;動詞;示す;シメサ;未然形-一般 | 約束;名詞;-;ヤクソク;o | 従っ;動詞;従う;シタガッ;連用形-促音便 | 扱わ;動詞;扱う;アツカワ;未然形-一般 | また;接続詞;又;マタ;o | あなた;代名詞;貴方;アナタ;o | 自身;名詞;-;ジシン;o | 青空;名詞;-;アオゾラ;o | 文庫;名詞;-;ブンコ;o | ボランティア;名詞;ボランティア-volunteer;-;o | ひとり;名詞;一人;ヒトリ;o | し;動詞;為る;シ;連用形-一般 | 登録;名詞;-;トウロク;o | さ;動詞;為る;サ;未然形-サ | こと;名詞;事;コト;o | なり;動詞;成る;ナリ;連用形-一般
-来源构词
 
-活用链
-morphology:m7;示された→示す;lexical;resolved;members=7,8,9;parent=o;state=category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-タ,form:attributive;operators=conjugation,passive_potential,past;sources=node_id:t7,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r8,node_id:t8,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r9,node_id:t9,provider:ginza,reason:formal_token,relation_id:o,node_id:bp3,provider:kwja,reason:predicate_context,relation_id:o,node_id:p3,provider:kwja,reason:predicate_context,relation_id:o | morphology:m12;従って→従う;lexical;resolved;members=12,13;parent=o;state=category:助詞,conjugation_form:o,conjugation_type:o,form:te;operators=conjugation,te_connection;sources=node_id:t12,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:mark,relation_id:r13,node_id:t13,provider:ginza,reason:formal_token,relation_id:o,node_id:bp5,provider:kwja,reason:predicate_context,relation_id:o,node_id:p5,provider:kwja,reason:predicate_context,relation_id:o | morphology:m14;扱われます→扱う;lexical;resolved;members=14,15,16;parent=o;state=category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-マス,form:terminal;operators=conjugation,passive_potential,politeness_masu;sources=node_id:t14,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r15,node_id:t15,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r16,node_id:t16,provider:ginza,reason:formal_token,relation_id:o,node_id:bp6,provider:kwja,reason:predicate_context,relation_id:o,node_id:p6,provider:kwja,reason:predicate_context,relation_id:o | morphology:m30;して→する;lexical;resolved;members=30,31;parent=o;state=category:助詞,conjugation_form:o,conjugation_type:o,form:te;operators=conjugation,te_connection;sources=node_id:t30,provider:ginza,reason:formal_token,relation_id:o,node_id:t31,provider:ginza,reason:formal_token,relation_id:o,node_id:bp13,provider:kwja,reason:predicate_context,relation_id:o,node_id:p13,provider:kwja,reason:predicate_context,relation_id:o | morphology:m33;登録される→登録する;lexical;resolved;members=33,34,35;parent=o;state=category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-レル,form:attributive;operators=passive_potential;sources=node_id:t33,provider:ginza,reason:formal_token,relation_id:o,node_id:t34,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r35,node_id:t35,provider:ginza,reason:formal_token,relation_id:o,node_id:bp14,provider:kwja,reason:predicate_context,relation_id:o,node_id:p14,provider:kwja,reason:predicate_context,relation_id:o | morphology:m36;こと→こと;lexical;resolved;members=36;parent=o;state=category:名詞,conjugation_form:o,conjugation_type:o,form:stem;operators=initial_alternation;sources=node_id:t36,provider:ginza,reason:formal_token,relation_id:o,node_id:bp14,provider:kwja,reason:predicate_context,relation_id:o,node_id:p14,provider:kwja,reason:predicate_context,relation_id:o | morphology:m38;なります→なる;lexical;resolved;members=38,39;parent=o;state=category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-マス,form:terminal;operators=conjugation,politeness_masu;sources=node_id:t38,provider:ginza,reason:formal_token,relation_id:o,node_id:t39,provider:ginza,reason:formal_token,relation_id:o,node_id:bp14,provider:kwja,reason:predicate_context,relation_id:o,node_id:p14,provider:kwja,reason:predicate_context,relation_id:o
-形态 occurrence
-occurrence:morphology:8:passive_potential;れ;passive_potential;resolved;chain=morphology:m7;range=13,14;hits=13,14;candidates=受身,可能,尊敬,自発 | occurrence:morphology:9:past;た;past;resolved;chain=morphology:m7;range=14,15;hits=14,15;candidates= | occurrence:morphology:13:te_connection;て;te_connection;resolved;chain=morphology:m12;range=20,21;hits=20,21;candidates= | occurrence:morphology:15:passive_potential;れ;passive_potential;resolved;chain=morphology:m14;range=23,24;hits=23,24;candidates=受身,可能,尊敬,自発 | occurrence:morphology:16:politeness_masu;ます;politeness_masu;resolved;chain=morphology:m14;range=24,26;hits=24,26;candidates= | occurrence:morphology:31:te_connection;て;te_connection;resolved;chain=morphology:m30;range=53,54;hits=53,54;candidates= | occurrence:morphology:35:passive_potential;れる;passive_potential;resolved;chain=morphology:m33;range=58,60;hits=58,60;candidates=受身,可能,尊敬,自発 | occurrence:morphology:39:politeness_masu;ます;politeness_masu;resolved;chain=morphology:m38;range=65,67;hits=65,67;candidates=
-形态转移
-morphology:8:passive_potential;category:動詞,conjugation_form:未然形-一般,conjugation_type:五段-サ行,form:irrealis→category:助動詞,conjugation_form:連用形-一般,conjugation_type:助動詞-レル,form:continuative;range=13,14;normalized=o | morphology:9:past;category:助動詞,conjugation_form:連用形-一般,conjugation_type:助動詞-レル,form:continuative→category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-タ,form:attributive;range=14,15;normalized=o | morphology:13:te_connection;category:動詞,conjugation_form:連用形-促音便,conjugation_type:五段-ワア行,form:continuative→category:助詞,conjugation_form:o,conjugation_type:o,form:te;range=20,21;normalized=o | morphology:15:passive_potential;category:動詞,conjugation_form:未然形-一般,conjugation_type:五段-ワア行,form:irrealis→category:助動詞,conjugation_form:連用形-一般,conjugation_type:助動詞-レル,form:continuative;range=23,24;normalized=o | morphology:16:politeness_masu;category:助動詞,conjugation_form:連用形-一般,conjugation_type:助動詞-レル,form:continuative→category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-マス,form:terminal;range=24,26;normalized=o | morphology:31:te_connection;category:動詞,conjugation_form:連用形-一般,conjugation_type:サ行変格,form:continuative→category:助詞,conjugation_form:o,conjugation_type:o,form:te;range=53,54;normalized=o | morphology:35:passive_potential;category:動詞,conjugation_form:未然形-サ,conjugation_type:サ行変格,form:irrealis→category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-レル,form:attributive;range=58,60;normalized=o | morphology:39:politeness_masu;category:動詞,conjugation_form:連用形-一般,conjugation_type:五段-ラ行,form:continuative→category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-マス,form:terminal;range=65,67;normalized=o
-整体构词
-青空文庫;candidate;members=23,24;word=chain_ids:morphology:m23,morphology:m24,component_candidate_ids:dictionary:token:m23,dictionary:token:m24,core_morpheme_indices:23,24,dictionary_status:not_checked,head_morpheme:24,output_pos:名詞,普通名詞,一般,o,query_forms:form:青空文庫,kind:compound_observed,reading:アオゾラブンコ,reading_field:composed_kana,reason:complete_lexical_members,source_relation_ids:r23,source_token_ids:t23,t24,surface:青空文庫;evidence=provider:ginza,reason:dependency_compound,source_id:t23,t24 | 登録されること;pending;members=33,34,35,36;word=chain_ids:morphology:m33,morphology:m36,component_candidate_ids:dictionary:token:m33,dictionary:token:m34,dictionary:token:m35,dictionary:token:m36,core_morpheme_indices:33,34,35,36,dictionary_status:not_checked,head_morpheme:33,output_pos:名詞,普通名詞,サ変可能,o,query_forms:form:登録されること,kind:compound_observed,reading:o,reading_field:o,reason:discontinuous_dependency,source_relation_ids:r36,source_token_ids:t33,t36,surface:登録されること;evidence=provider:ginza,reason:discontinuous_dependency,source_id:t33,t36
-形态诊断
-无
+## 活用链
+
+| 原始组成 | 构成形态 | 最终对象 |
+| --- | --- | --- |
+| 示さ ＋ れ ＋ た | 受身等候选 ＋ 过去 | 示された（基本形：示す） |
+| 従っ ＋ て | て／で接续 | 従って（基本形：従う） |
+| 扱わ ＋ れ ＋ ます | 受身等候选 ＋ 敬体 | 扱われます（基本形：扱う） |
+| し ＋ て | て／で接续 | して（基本形：する） |
+| 登録 ＋ さ ＋ れる | 受身等候选 | 登録される（基本形：登録する） |
+| なり ＋ ます | 敬体 | なります（基本形：なる） |
+
+
+## 整体构词
+
+| 原始组成 | 构成形态 | 最终对象／查询形 |
+| --- | --- | --- |
+| 青空 ＋ 文庫 | 依存候选（实验） | 青空文庫 |
+| 登録 ＋ さ ＋ れる ＋ こと | 范围不连续 | 登録されること |
+
+<details>
+<summary>实验与来源统计</summary>
+
 文节
 provider=ginza
 あなたの;observed | 作品は、;observed | 上記に;observed | 示された;observed | 約束に;observed | 従って;observed | 扱われます。;observed | また、;observed | あなた自身も;observed | 青空文庫の;observed | ボランティアの;observed | ひとりとして、;observed | 登録されることになります。;observed
@@ -33,14 +44,18 @@ nodes=ginza:bunsetsu=13,ginza:clause=4,ginza:entity=1,ginza:sentence=2,ginza:tok
 对齐
 groups=79; cardinality=1:1=76,1:n=3; status=complete=79; reason=equal_coverage
 1:n;complete;[13, 15] | 1:n;complete;[18, 21] | 1:n;complete;[52, 54]
-来源查询目标
-あなた;observed | の;observed | 作品;observed | は;observed | 上記;observed | に;observed | 示さ;observed | れ;observed | た;observed | 約束;observed | に;observed | 従っ;observed | て;observed | 扱わ;observed | れ;observed | ます;observed | また;observed | あなた;observed | 自身;observed | も;observed | 青空;observed | 文庫;observed | の;observed | ボランティア;observed | の;observed | ひとり;observed | と;observed | し;observed | て;observed | 登録;observed | さ;observed | れる;observed | こと;observed | に;observed | なり;observed | ます;observed | 青空文庫;candidate | 登録されること;pending | 示された;observed | 従って;observed | 扱われます;observed | して;observed | 登録される;observed | なります;observed
-整体与活用查询形式
-dictionary:formation:formation:ginza:36:40;form:青空文庫,kind:compound_observed,reading:アオゾラブンコ,reading_field:composed_kana | dictionary:formation:formation:ginza:55:62;form:登録されること,kind:compound_observed,reading:o,reading_field:o | dictionary:chain:morphology:m7;form:示さ,kind:observed,reading:シメサ,reading_field:kana,form:示す,kind:base,reading:シメス,reading_field:kanaBase | dictionary:chain:morphology:m12;form:従っ,kind:observed,reading:シタガッ,reading_field:kana,form:従う,kind:base,reading:シタガウ,reading_field:kanaBase | dictionary:chain:morphology:m14;form:扱わ,kind:observed,reading:アツカワ,reading_field:kana,form:扱う,kind:base,reading:アツカウ,reading_field:kanaBase | dictionary:chain:morphology:m30;form:し,kind:observed,reading:シ,reading_field:kana,form:する,kind:base,reading:スル,reading_field:kanaBase,form:為る,kind:lemma,reading:スル,reading_field:lForm | dictionary:chain:morphology:m33;form:登録さ,kind:observed,reading:トウロクサ,reading_field:composed_kana,form:登録する,kind:base,reading:トウロクスル,reading_field:composed,form:登録為る,kind:lemma,reading:トウロクスル,reading_field:composed | dictionary:chain:morphology:m38;form:なり,kind:observed,reading:ナリ,reading_field:kana,form:なる,kind:base,reading:ナル,reading_field:kanaBase,form:成る,kind:lemma,reading:ナル,reading_field:lForm
-本段校验
-通过
-整体查询实测
-扱われます;matched;target=dictionary:chain:morphology:m14;forms=form:扱わ,kind:observed,reading:アツカワ,reading_field:kana,form:扱う,kind:base,reading:アツカウ,reading_field:kanaBase
+
+</details>
+
+本段校验：通过。
+
+
+## 整体查询实测
+
+| 查询对象 | 词典结果 |
+| --- | --- |
+| 扱われます | 命中 |
+
 
 ## 阶段耗时
 unidic=8.2ms | unify=1.1ms | analyze_total=9.4ms

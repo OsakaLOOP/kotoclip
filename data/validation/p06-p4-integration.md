@@ -11,18 +11,33 @@ ginza;201ms | kwja;601ms
 chars=79 | tokens=53 | formations_observed=3 | bunsetsu=38 | clauses=12 | query_targets=58 | entities=192 | relations=109
 词语
 時折;副詞;-;トキオリ;o | 雨;名詞;-;アメ;o | 降る;動詞;-;フル;連体形-一般 | 中;名詞;-;ナカ;o | 巨大;形状詞;-;キョダイ;o | 鍋;名詞;-;ナベ;o | 周り;名詞;-;マワリ;o | 長蛇;名詞;-;チョウダ;o | 列;名詞;-;レツ;o | でき;動詞;出来る;デキ;連用形-一般 | 神戸;名詞;コウベ;コウベ;o | 市;名詞;-;シ;o | 訪れ;動詞;訪れる;オトズレ;連用形-一般 | 会社;名詞;-;カイシャ;o | 員;接尾辞;-;イン;o | 女性;名詞;-;ジョセイ;o | ２;名詞;二;ニ;o | ８;名詞;八;ハチ;o | 芋煮;名詞;-;イモニ;o | 食べ;動詞;食べる;タベ;連用形-一般 | 初めて;副詞;-;ハジメテ;o | サトイモ;名詞;里芋;-;o | とろとろ;形状詞;-;トロトロ;o | おいしい;形容詞;美味しい;オイシイ;終止形-一般 | 頬張っ;動詞;頬張る;ホオバッ;連用形-促音便 | い;動詞;居る;イ;連用形-一般
-来源构词
-神戸市;compound;observed | 会社員;compound;observed | ２８;formal_token;observed
-活用链
-morphology:m3;降る→降る;lexical;resolved;members=3;parent=o;state=category:動詞,conjugation_form:連体形-一般,conjugation_type:五段-ラ行,form:attributive;operators=conjugation;sources=node_id:t3,provider:ginza,reason:formal_token,relation_id:o,node_id:bp3,provider:kwja,reason:predicate_context,relation_id:o,node_id:p3,provider:kwja,reason:predicate_context,relation_id:o | morphology:m16;できた→できる;lexical;resolved;members=16,17;parent=o;state=category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-タ,form:terminal;operators=conjugation,past;sources=node_id:t16,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r17,node_id:t17,provider:ginza,reason:formal_token,relation_id:o,node_id:bp10,provider:kwja,reason:predicate_context,relation_id:o,node_id:p10,provider:kwja,reason:predicate_context,relation_id:o | morphology:m19;神戸市→神戸市;lexical;resolved;members=19,20;parent=o;state=category:名詞,conjugation_form:o,conjugation_type:o,form:stem;operators=;sources=node_id:t19,provider:ginza,reason:formal_token,relation_id:o,node_id:t19,provider:ginza,reason:formal_token,relation_id:o,node_id:bp11,provider:kwja,reason:predicate_context,relation_id:o | morphology:m22;訪れた→訪れる;lexical;resolved;members=22,23;parent=o;state=category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-タ,form:attributive;operators=conjugation,past;sources=node_id:t21,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r22,node_id:t22,provider:ginza,reason:formal_token,relation_id:o,node_id:bp12,provider:kwja,reason:predicate_context,relation_id:o,node_id:p12,provider:kwja,reason:predicate_context,relation_id:o | morphology:m24;会社員→会社員;lexical;resolved;members=24,25;parent=o;state=category:接尾辞,conjugation_form:o,conjugation_type:o,form:stem;operators=initial_alternation;sources=node_id:t23,provider:ginza,reason:formal_token,relation_id:o,node_id:t23,provider:ginza,reason:formal_token,relation_id:o,node_id:bp13,provider:kwja,reason:predicate_context,relation_id:o,node_id:bp14,provider:kwja,reason:predicate_context,relation_id:o | morphology:m28;２８→２８;lexical;resolved;members=28,29;parent=o;state=category:名詞,conjugation_form:o,conjugation_type:o,form:stem;operators=final_alternation,initial_alternation,final_alternation;sources=node_id:t26,provider:ginza,reason:formal_token,relation_id:o,node_id:t26,provider:ginza,reason:formal_token,relation_id:o,node_id:bp16,provider:kwja,reason:predicate_context,relation_id:o | morphology:m35;食べた→食べる;lexical;resolved;members=35,36;parent=o;state=category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-タ,form:attributive;operators=conjugation,past;sources=node_id:t32,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:aux,relation_id:r33,node_id:t33,provider:ginza,reason:formal_token,relation_id:o,node_id:bp18,provider:kwja,reason:predicate_context,relation_id:o,node_id:p18,provider:kwja,reason:predicate_context,relation_id:o | morphology:m43;とろとろで→とろとろ;lexical;resolved;members=43,44;parent=o;state=category:助動詞,conjugation_form:連用形-一般,conjugation_type:助動詞-ダ,form:continuative;operators=copula;sources=node_id:t40,provider:ginza,reason:formal_token,relation_id:o,node_id:t41,provider:ginza,reason:formal_token,relation_id:o,node_id:bp22,provider:kwja,reason:predicate_context,relation_id:o,node_id:p22,provider:kwja,reason:predicate_context,relation_id:o | morphology:m45;おいしい→おいしい;lexical;resolved;members=45;parent=o;state=category:形容詞,conjugation_form:終止形-一般,conjugation_type:形容詞,form:terminal;operators=conjugation;sources=node_id:t42,provider:ginza,reason:formal_token,relation_id:o,node_id:bp23,provider:kwja,reason:predicate_context,relation_id:o,node_id:p23,provider:kwja,reason:predicate_context,relation_id:o | morphology:m48;頬張って→頬張る;lexical;resolved;members=48,49;parent=o;state=category:助詞,conjugation_form:o,conjugation_type:o,form:te;operators=conjugation,te_connection;sources=node_id:t45,provider:ginza,reason:formal_token,relation_id:o,node_id:o,provider:ginza,reason:mark,relation_id:r46,node_id:t46,provider:ginza,reason:formal_token,relation_id:o,node_id:bp24,provider:kwja,reason:predicate_context,relation_id:o,node_id:p24,provider:kwja,reason:predicate_context,relation_id:o | morphology:m50;いた→いる;functional;resolved;members=50,51;parent=morphology:m48;state=category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-タ,form:terminal;operators=conjugation,te_iru,past;sources=node_id:t47,provider:ginza,reason:formal_token,relation_id:o,node_id:b18,provider:ginza,reason:support_bunsetsu,relation_id:o,node_id:t48,provider:ginza,reason:formal_token,relation_id:o,node_id:bp24,provider:kwja,reason:predicate_context,relation_id:o,node_id:p24,provider:kwja,reason:predicate_context,relation_id:o
-形态 occurrence
-occurrence:morphology:17:past;た;past;resolved;chain=morphology:m16;range=23,24;hits=23,24;candidates= | occurrence:morphology:23:past;た;past;resolved;chain=morphology:m22;range=32,33;hits=32,33;candidates= | occurrence:morphology:36:past;た;past;resolved;chain=morphology:m35;range=49,50;hits=49,50;candidates= | occurrence:morphology:44:copula;で;copula;resolved;chain=morphology:m43;range=65,66;hits=65,66;candidates= | occurrence:morphology:49:te_connection;て;te_connection;resolved;chain=morphology:m48;range=75,76;hits=75,76;candidates= | occurrence:morphology:50:te_iru;てい;te_iru;resolved;chain=morphology:m50;range=75,77;hits=75,76,76,77;candidates= | occurrence:morphology:51:past;た;past;resolved;chain=morphology:m50;range=77,78;hits=77,78;candidates=
-形态转移
-morphology:17:past;category:動詞,conjugation_form:連用形-一般,conjugation_type:上一段-カ行,form:continuative→category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-タ,form:terminal;range=23,24;normalized=o | morphology:23:past;category:動詞,conjugation_form:連用形-一般,conjugation_type:下一段-ラ行,form:continuative→category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-タ,form:attributive;range=32,33;normalized=o | morphology:36:past;category:動詞,conjugation_form:連用形-一般,conjugation_type:下一段-バ行,form:continuative→category:助動詞,conjugation_form:連体形-一般,conjugation_type:助動詞-タ,form:attributive;range=49,50;normalized=o | morphology:44:copula;category:形状詞,conjugation_form:o,conjugation_type:o,form:stem→category:助動詞,conjugation_form:連用形-一般,conjugation_type:助動詞-ダ,form:continuative;range=65,66;normalized=o | morphology:49:te_connection;category:動詞,conjugation_form:連用形-促音便,conjugation_type:五段-ラ行,form:continuative→category:助詞,conjugation_form:o,conjugation_type:o,form:te;range=75,76;normalized=o | morphology:50:te_iru;category:助詞,conjugation_form:o,conjugation_type:o,form:te→category:動詞,conjugation_form:連用形-一般,conjugation_type:上一段-ア行,form:continuative;range=76,77;normalized=o | morphology:51:past;category:動詞,conjugation_form:連用形-一般,conjugation_type:上一段-ア行,form:continuative→category:助動詞,conjugation_form:終止形-一般,conjugation_type:助動詞-タ,form:terminal;range=77,78;normalized=o
-整体构词
-神戸市;observed;members=19,20;word=chain_ids:morphology:m19,component_candidate_ids:dictionary:token:m19,dictionary:token:m20,core_morpheme_indices:19,20,dictionary_status:not_checked,head_morpheme:20,output_pos:名詞,普通名詞,一般,o,query_forms:form:神戸市,kind:compound_observed,reading:コウベシ,reading_field:composed_kana,reason:complete_lexical_members,source_relation_ids:,source_token_ids:t19,surface:神戸市;evidence=provider:ginza,reason:complete_morphemes,source_id:14fdfd9ad468ee0d61a3665ed33ec1d424ca5b415d30239a14cafa1bb00e2288,provider:ginza,reason:source_compound,source_id:t19,provider:ginza,reason:formal_token,source_id:t19 | 会社員;observed;members=24,25;word=chain_ids:morphology:m24,component_candidate_ids:dictionary:token:m24,dictionary:token:m25,core_morpheme_indices:24,25,dictionary_status:not_checked,head_morpheme:25,output_pos:接尾辞,名詞的,一般,o,query_forms:form:会社員,kind:compound_observed,reading:カイシャイン,reading_field:composed_kana,reason:complete_lexical_members,source_relation_ids:,source_token_ids:t23,surface:会社員;evidence=provider:ginza,reason:complete_morphemes,source_id:14fdfd9ad468ee0d61a3665ed33ec1d424ca5b415d30239a14cafa1bb00e2288,provider:ginza,reason:source_compound,source_id:t23,provider:ginza,reason:formal_token,source_id:t23 | 会社員女性（２８;pending;members=24,25,26,27,28,29;word=chain_ids:morphology:m24,morphology:m26,morphology:m28,component_candidate_ids:dictionary:token:m24,dictionary:token:m25,dictionary:token:m26,dictionary:token:m28,dictionary:token:m29,core_morpheme_indices:24,25,26,27,28,29,dictionary_status:not_checked,head_morpheme:26,output_pos:名詞,普通名詞,一般,o,query_forms:form:会社員女性（２８,kind:compound_observed,reading:o,reading_field:o,reason:discontinuous_dependency,source_relation_ids:r23,r26,source_token_ids:t23,t24,t26,surface:会社員女性（２８;evidence=provider:ginza,reason:discontinuous_dependency,source_id:t23,t24,t26 | ２８;observed;members=28,29;word=chain_ids:morphology:m28,component_candidate_ids:dictionary:token:m28,dictionary:token:m29,core_morpheme_indices:28,29,dictionary_status:not_checked,head_morpheme:29,output_pos:名詞,数詞,o,o,query_forms:form:２８,kind:compound_observed,reading:ニハチ,reading_field:composed_kana,form:２八,kind:compound_lemma,reading:ニハチ,reading_field:composed_lemma,reason:complete_lexical_members,source_relation_ids:,source_token_ids:t26,surface:２８;evidence=provider:ginza,reason:formal_token,source_id:t26
-形态诊断
-无
+
+## 活用链
+
+| 原始组成 | 构成形态 | 最终对象 |
+| --- | --- | --- |
+| 降る | 連体形 | 降る（基本形：降る） |
+| でき ＋ た | 过去 | できた（基本形：できる） |
+| 訪れ ＋ た | 过去 | 訪れた（基本形：訪れる） |
+| 食べ ＋ た | 过去 | 食べた（基本形：食べる） |
+| とろとろ ＋ で | 判断 | とろとろで（基本形：とろとろだ）；查词：とろとろ |
+| おいしい | 終止形 | おいしい（基本形：おいしい） |
+| 頬張っ ＋ て | て／で接续 | 頬張って（基本形：頬張る） |
+| （接「頬張って」）い ＋ た | ている ＋ 过去 | いた（基本形：いる） |
+
+
+## 整体构词
+
+| 原始组成 | 构成形态 | 最终对象／查询形 |
+| --- | --- | --- |
+| 神戸 ＋ 市 | 整体词 | 神戸市 |
+| 会社 ＋ 員 | 整体词 | 会社員 |
+| 会社 ＋ 員 ＋ 女性 ＋ （ ＋ ２ ＋ ８ | 范围不连续 | 会社員女性（２８ |
+| ２ ＋ ８ | 整体词 | ２８／２八 |
+
+<details>
+<summary>实验与来源统计</summary>
+
 文节
 provider=ginza
 時折;observed | 雨が;observed | 降る;observed | 中、;observed | 巨大鍋の;observed | 周りには;observed | 長蛇の;observed | 列が;observed | できた。;observed | 神戸市から;observed | 訪れた;observed | 会社員女性（２８）は;observed | 「芋煮を;observed | 食べたのは;observed | 初めて。;observed | サトイモが;observed | とろとろで;observed | おいしい」と;observed | 頬張っていた。;observed
@@ -33,14 +48,18 @@ nodes=ginza:bunsetsu=19,ginza:clause=4,ginza:compound=2,ginza:entity=3,ginza:sen
 对齐
 groups=96; cardinality=1:1=85,1:n=10,n:1=1; status=complete=96; reason=equal_coverage
 1:n;complete;[25, 28] | 1:n;complete;[33, 36] | 1:n;complete;[39, 41] | n:1;complete;[0, 2] | 1:n;complete;[21, 24] | 1:n;complete;[30, 33] | 1:n;complete;[39, 41] | 1:n;complete;[47, 50] | 1:n;complete;[61, 66] | 1:n;complete;[72, 76] | 1:n;complete;[76, 78]
-来源查询目标
-時折;observed | 雨;observed | が;observed | 降る;observed | 中;observed | 巨大;observed | 鍋;observed | の;observed | 周り;observed | に;observed | は;observed | 長蛇;observed | の;observed | 列;observed | が;observed | でき;observed | た;observed | 神戸;observed | 市;observed | から;observed | 訪れ;observed | た;observed | 会社;observed | 員;observed | 女性;observed | ２;observed | ８;observed | は;observed | 芋煮;observed | を;observed | 食べ;observed | た;observed | の;observed | は;observed | 初めて;observed | サトイモ;observed | が;observed | とろとろ;observed | で;observed | おいしい;observed | と;observed | 頬張っ;observed | て;observed | い;observed | た;observed | 神戸市;observed | 会社員;observed | 会社員女性（２８;pending | ２８;observed | できた;observed | 神戸市;observed | 訪れた;observed | 会社員;observed | ２８;observed | 食べた;observed | とろとろで;observed | 頬張って;observed | いた;observed
-整体与活用查询形式
-dictionary:formation:formation:ginza:compound19;form:神戸市,kind:compound_observed,reading:コウベシ,reading_field:composed_kana | dictionary:formation:formation:ginza:compound23;form:会社員,kind:compound_observed,reading:カイシャイン,reading_field:composed_kana | dictionary:formation:formation:ginza:33:41;form:会社員女性（２８,kind:compound_observed,reading:o,reading_field:o | dictionary:formation:formation:ginza:39:41;form:２８,kind:compound_observed,reading:ニハチ,reading_field:composed_kana,form:２八,kind:compound_lemma,reading:ニハチ,reading_field:composed_lemma | dictionary:chain:morphology:m16;form:でき,kind:observed,reading:デキ,reading_field:kana,form:できる,kind:base,reading:デキル,reading_field:kanaBase,form:出来る,kind:lemma,reading:デキル,reading_field:lForm | dictionary:chain:morphology:m19;form:神戸市,kind:observed,reading:コウベシ,reading_field:composed_kana | dictionary:chain:morphology:m22;form:訪れ,kind:observed,reading:オトズレ,reading_field:kana,form:訪れる,kind:base,reading:オトズレル,reading_field:kanaBase | dictionary:chain:morphology:m24;form:会社員,kind:observed,reading:カイシャイン,reading_field:composed_kana | dictionary:chain:morphology:m28;form:２８,kind:observed,reading:ニハチ,reading_field:composed_kana,form:２八,kind:lemma,reading:ニハチ,reading_field:composed | dictionary:chain:morphology:m35;form:食べ,kind:observed,reading:タベ,reading_field:kana,form:食べる,kind:base,reading:タベル,reading_field:kanaBase | dictionary:chain:morphology:m43;form:とろとろ,kind:observed,reading:トロトロ,reading_field:kana | dictionary:chain:morphology:m48;form:頬張っ,kind:observed,reading:ホオバッ,reading_field:kana,form:頬張る,kind:base,reading:ホオバル,reading_field:kanaBase | dictionary:chain:morphology:m50;form:い,kind:observed,reading:イ,reading_field:kana,form:いる,kind:base,reading:イル,reading_field:kanaBase,form:居る,kind:lemma,reading:イル,reading_field:lForm
-本段校验
-通过
-整体查询实测
-神戸市;no_match;target=dictionary:formation:formation:ginza:compound19;forms=form:神戸市,kind:compound_observed,reading:コウベシ,reading_field:composed_kana | 神戸市;no_match;target=dictionary:chain:morphology:m19;forms=form:神戸市,kind:observed,reading:コウベシ,reading_field:composed_kana
+
+</details>
+
+本段校验：通过。
+
+
+## 整体查询实测
+
+| 查询对象 | 词典结果 |
+| --- | --- |
+| 神戸市 | 未命中 |
+
 
 ## 阶段耗时
 unidic=6372.9ms | unify=1.4ms | analyze_total=6374.3ms

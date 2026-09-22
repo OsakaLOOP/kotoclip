@@ -21,6 +21,75 @@ def joined(values):
     return " | ".join(c(value) for value in values)
 def nodes(doc,key): return doc.get(key,{}).get("nodes", doc.get(key,{}).get("clauses",[]))
 def provider_clauses(doc): return [x for x in nodes(doc,"clause") if x.get("provider")!="local"]
+
+def table(lines, title, headers, rows):
+    lines += ["", f"## {title}", ""]
+    if not rows:
+        lines.append("无。")
+        return
+    lines += ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
+    lines.extend("| " + " | ".join(str(cell).replace("|", "／").replace("\n", " ") for cell in row) + " |" for row in rows)
+    lines.append("")
+
+FORM_NAMES = {
+    "causative": "使役", "passive_potential": "受身等候选", "negative": "否定",
+    "past": "过去", "politeness_masu": "敬体", "politeness_desu": "敬体",
+    "conditional": "假定形", "ba_connection": "ば接续", "tara_condition": "たら条件",
+    "volitional": "意志形", "imperative": "命令形", "prohibitive": "禁止",
+    "copula": "判断", "copula_aru": "である", "nominalization": "名词化",
+    "te_connection": "て／で接续", "te_form": "て接续", "de_form": "で接续",
+    "concessive_connection": "逆接", "nagara_connection": "ながら接续",
+    "you_modality": "よう", "sou_modality": "そう", "mitai_modality": "みたい",
+    "rashii_modality": "らしい", "obligation": "当为", "negative_volitional": "否定意志",
+    "desire": "愿望", "desire_outward": "愿望表现", "ease": "容易", "difficulty": "困难",
+    "enumerative": "列举", "excessive": "过度", "inceptive": "开始",
+    "continuative_aspect": "持续", "terminative": "结束", "auxiliary": "助动词连接",
+}
+SUPPORT_FORMS = {
+    "te_iru": "ている", "te_aru": "てある", "te_shimau": "てしまう", "te_oku": "ておく",
+    "te_iku": "ていく", "te_kuru": "てくる", "te_miru": "てみる", "te_kudasaru": "てくださる",
+    "te_morau": "てもらう", "te_ageru": "てあげる", "te_kureru": "てくれる", "te_hoshii": "てほしい",
+    "contracted_te_iru": "ている缩约", "contracted_te_shimau": "てしまう缩约", "contracted_te_oku": "ておく缩约",
+}
+
+def language_tables(lines, doc):
+    """按正文顺序呈现组成、形态和结果，内部引用保留在机器报告。"""
+    tokens = doc["morphemes"]
+    chains = doc["morphology"]["chains"]
+    by_id = {chain["chain_id"]: chain for chain in chains}
+    rows = []
+    for chain in chains:
+        operators = [op for op in chain["operators"] if op["kind"] not in {"conjugation", "initial_alternation", "final_alternation"}]
+        form = chain["final_state"]["conjugation_form"]
+        if not operators and not form:
+            continue
+        composition = " ＋ ".join(tokens[i]["surface"] for i in chain["morpheme_indices"])
+        if chain["parent_chain_id"]:
+            parent = by_id[chain["parent_chain_id"]]
+            composition = f"（接「{parent['surface_form']}」）{composition}"
+        names = [SUPPORT_FORMS.get(op["kind"], FORM_NAMES.get(op["kind"], op["label"])) for op in operators]
+        shape = " ＋ ".join(names) if names else form.replace("-一般", "")
+        result = f"{chain['surface_form']}（基本形：{chain['display_form']}）"
+        if chain["lookup_form"] != chain["display_form"]:
+            result += f"；查词：{chain['lookup_form']}"
+        if chain["status"] != "resolved":
+            result += "；待确认"
+        rows.append((composition, shape, result))
+    table(lines, "活用链", ("原始组成", "构成形态", "最终对象"), rows)
+    rows = []
+    reasons = {"discontinuous_dependency": "范围不连续", "incomplete_coverage": "覆盖不完整",
+               "nonlexical_members": "含功能成分或标点", "morphology_core_candidate": "词性待确认"}
+    for node in sorted(doc["formation"]["nodes"], key=lambda n: n["char_range"]):
+        word = node["word"]
+        composition = " ＋ ".join(tokens[i]["surface"] for i in node["morpheme_indices"])
+        kind = "整体词"
+        if node["status"] == "pending":
+            kind = reasons.get(word["reason"], "待确认")
+        elif node["status"] == "candidate":
+            kind = reasons.get(word["reason"], "依存候选（实验）")
+        forms = list(dict.fromkeys(q["form"] for q in word["query_forms"]))
+        rows.append((composition, kind, "／".join(forms)))
+    table(lines, "整体构词", ("原始组成", "构成形态", "最终对象／查询形"), rows)
 def counts(doc):
     graph=doc.get("structure_graph",{})
     observed_formations=[x for x in doc.get("formation",{}).get("nodes",[]) if x.get("status")=="observed"]
@@ -75,17 +144,8 @@ def append(lines, doc):
                cform]
         words.append(";".join(c(part) for part in parts))
     lines += ["词语", joined(words)]
-    # 构词仅保留 provider 明确给出的整体范围。
-    forms=[x for x in doc.get("formation",{}).get("nodes",[]) if x.get("status")=="observed"]
-    lines += ["来源构词", joined([f"{surf(text,x.get('char_range'))};{x.get('kind')};observed" for x in forms])]
-    morphology=doc.get("morphology",{})
-    chains=morphology.get("chains",[])
-    active=[x for x in chains if x.get("operators") or len(x.get("morpheme_indices",[]))>1]
-    lines += ["活用链", joined(f"{x['chain_id']};{x['surface_form']}→{x['dictionary_form']};{x['role']};{x.get('status')};members={c(x.get('morpheme_indices'))};parent={c(x.get('parent_chain_id'))};state={c(x.get('final_state'))};operators={c([o['kind'] for o in x['operators']])};sources={c(x.get('source_evidence'))}" for x in active) or "本段没有活用链"]
-    lines += ["形态 occurrence", joined(f"{x['id']};{surf(text,x['char_range'])};{x['kind']};{x['status']};chain={x['chain_id']};range={c(x['char_range'])};hits={c(x.get('hit_ranges'))};candidates={c(x['candidates'])}" for x in morphology.get("occurrences",[])) or "本段没有形态 occurrence"]
-    lines += ["形态转移", joined(f"{o['operator_id']};{c(o['state_before'])}→{c(o['state_after'])};range={c(o['char_range'])};normalized={c(o.get('normalized_form'))}" for x in active for o in x['operators'] if o['kind'] not in {'conjugation','initial_alternation','final_alternation'}) or "本段没有形态转移"]
-    lines += ["整体构词", joined(f"{surf(text,x['char_range'])};{x['status']};members={c(x['morpheme_indices'])};word={c(x.get('word'))};evidence={c(x['evidence'])}" for x in doc.get("formation",{}).get("nodes",[])) or "来源未提供可对齐的整体词范围"]
-    lines += ["形态诊断", joined(morphology.get("diagnostics",[])) or "无"]
+    language_tables(lines, doc)
+    lines += ["<details>", "<summary>实验与来源统计</summary>", ""]
     # 文节：provider 字段若全部相同则在摘要注明，逐项省略
     bs=doc.get("bunsetsu",{}).get("nodes",[])
     bs_filtered=[x for x in bs if x.get("status")=="observed" or not any(y.get("status")=="observed" for y in bs)]
@@ -119,10 +179,7 @@ def append(lines, doc):
     align_summary=f"groups={len(groups)}; cardinality={count(g.get('cardinality') for g in groups)}; status={count(g.get('status') for g in groups)}"
     if len(all_reasons)==1 and all_reasons!={None}: align_summary+=f"; reason={next(iter(all_reasons))}"
     lines += ["对齐", align_summary, joined([fmt_align(g) for g in non_std])]
-    # 来源级查询目标保留原子词元和确认的 provider compound，不执行范围竞争。
-    targets=doc.get("dictionary_candidates",{}).get("candidates",[])
-    lines += ["来源查询目标", joined([f"{surf(text,x.get('char_range'))};{x.get('status', 'source')}" for x in targets])]
-    lines += ["整体与活用查询形式", joined(f"{x['id']};{c(x['query_forms'])}" for x in targets if x['kind']!='token') or "本段仅有原子查询目标"]
+    lines += ["", "</details>", ""]
 
 def export_one(report, sample_id, output_dir, saved_output=False):
     """导出单个样本的 live integration 报告，返回输出路径。"""
@@ -149,9 +206,10 @@ def export_one(report, sample_id, output_dir, saved_output=False):
     append(lines, current)
     validation=sample.get("language_validation")
     if validation:
-        lines += ["本段校验", "通过" if validation["passed"] else c(validation["errors"])]
+        lines += ["本段校验：" + ("通过。" if validation["passed"] else c(validation["errors"])), ""]
     if sample.get("whole_queries"):
-        lines += ["整体查询实测", joined(f"{q['surface']};{q['dictionary_status']};target={q['target']['candidate_id']};forms={c(q['forms'])}" for q in sample["whole_queries"])]
+        rows = list(dict.fromkeys((q['surface'], "命中" if q['dictionary_status']=='matched' else "未命中") for q in sample['whole_queries']))
+        table(lines, "整体查询实测", ("查询对象", "词典结果"), rows)
     stage=timing_lines(current)
     if stage: lines += ["", "## 阶段耗时", *stage]
     output = output_dir / f"{sample_id}-p4-integration.md"
