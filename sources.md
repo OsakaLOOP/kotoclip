@@ -159,3 +159,12 @@
   - 选择、收藏与导出
   - 词典助手
   - 验收与入口
+# 外部来源
+
+- [kyujitai.js 1.3.0](https://github.com/hakatashi/kyujitai.js)，MIT License；仓库副本：`vendor/kyujitai.js`。Rust 前置归一化使用 `dist/kyujitai.json` 的 `kyuji` 字符映射；`douon` 词语规则保留给后置词汇层。
+  - install
+  - Use
+  - Usage
+    - new Kyujitai([options], [callback])
+    - kyujitai.encode(string, [options])
+    - kyujitai.decode(string, [options])

@@ -130,7 +130,7 @@ pub fn prepare_text(input: &str) -> PreparedText {
             continue;
         }
         if chars[index] != '《' {
-            cleaned.push(chars[index]);
+            cleaned.push(crate::kyujitai::normalize_char(chars[index]));
             origins.push(index);
             if !is_kanji(chars[index]) && !is_kana(chars[index]) {
                 base_boundary = cleaned.len();
@@ -143,7 +143,7 @@ pub fn prepare_text(input: &str) -> PreparedText {
             .iter()
             .position(|&character| character == '》')
         else {
-            cleaned.push(chars[index]);
+            cleaned.push(crate::kyujitai::normalize_char(chars[index]));
             origins.push(index);
             base_boundary = cleaned.len();
             index += 1;
@@ -172,7 +172,7 @@ pub fn prepare_text(input: &str) -> PreparedText {
             removed.push(RemovedMarkup { source_range: [index, annotation_end + 1], text_offset: cleaned.len(), kind: "ruby".into() });
             index = annotation_end + 1;
         } else {
-            cleaned.extend_from_slice(&chars[index..=annotation_end]);
+            cleaned.extend(chars[index..=annotation_end].iter().copied().map(crate::kyujitai::normalize_char));
             origins.extend(index..=annotation_end);
             base_boundary = cleaned.len();
             index = annotation_end + 1;
