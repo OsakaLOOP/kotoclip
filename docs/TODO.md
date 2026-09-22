@@ -31,7 +31,7 @@
 
 ## 实施顺序
 
-P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构；P3 建立会话。随后完成 P4 语言分析、P5 词典、P6 阅读器、P7 用户状态、P8 助手与 P9 审计，最后执行 P10 桌面交付。
+P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构；P3 建立会话；P4 核验十段来源输出并完成活用链与整体构词。后续阶段消费 P4 的对象，继续完成词典交互、构式识别及阅读功能。
 
 各模块可以复用已明确的协议独立开发。功能完成以应用调用和验收为准，每个独立修改在提交前检查 `git diff`。
 
@@ -85,22 +85,31 @@ P0 固定接口与验收集；P1 完成外部执行；P2 完成对齐与结构�
 
 完成条件：整本书可渐进分析，快速切书、取消、跳转和迟到结果保持一致；冷分析、缓存恢复和增量更新得到相同规范结果。
 
-## P4：完成语言分析
+## P4：核验来源输出与统一证据
 
-依赖 P2、P3；词典整体绑定与 P5 联调。
+依赖 P2、P3。
 
-十段指定语料的原始输出、人工阅读结论和对象分层方案见 [P4 样本输出复核](p4_sample_review.md)。实现优先消费 UniDic 活用字段和 GiNZA C 模式正式 token／compound 范围；`sub_tokens` 仅作为来源诊断，再将 KWJA 基本句标签作为语法候选证据。
+十段指定语料的原始输出、人工阅读结论和异常归因见 [P4 样本输出复核](p4_sample_review.md)与[P4 十段来源输出审计](p4_layer_audit.md)。P4 保存 UniDic 原子字段、GiNZA C 模式正式 token／compound、KWJA 基本句及关系，以及三者在共同正文上的引用。
 
-- [x] 将单 token 形态字段扩展为完整活用链，覆盖词汇与功能用言所有权、显示原型、辞书形、查询形及连接形。
-- [ ] 来源构词候选经词典和结构证据确认后生成词汇整体与阅读单位，保存竞争决定。
-- [ ] 以形态组合图和统一结构重建语法识别，接入概念、义项候选及正文精确讲解；文法库和核验状态操作保持可用。
-- [ ] 以词汇整体、活用链、基本句、小句和句法角色重建连续与非连续表达识别，保存候选、义项决定和实际命中范围。
-- [ ] 接入出现级结构与解释修正，支持复核和撤销；修正通过会话更新刷新正文。
-- [x] 完成语法、表达、结构与活用的解释投影，保存实际高亮范围、整体和内部目标及待定状态。
+- [x] 逐段保存 UniDic、GiNZA、KWJA 的实际结果、资源身份和原始来源空间。
+- [x] 校验共同正文、字符范围、多对多 token 对齐、结构实体和关系引用。
+- [x] 人工核对十段来源质量，区分可靠字段、模型错误、统一诊断和后置派生污染。
+- [x] 生成十段来源与 P4 派生对象摘要，分别记录活用链、形态 occurrence、整体构词、查询形式和诊断。
 
-入口：[morphology.rs](../crates/kotoclip-nlp/src/morphology.rs)、[lexical.rs](../crates/kotoclip-nlp/src/lexical.rs)、[grammar.rs](../crates/kotoclip-nlp/src/grammar.rs)与[projection.rs](../crates/kotoclip-nlp/src/projection.rs)。具体修订范围见 [P4 十段输出逐层审计](p4_layer_audit.md)。
+入口：[sources.rs](../crates/kotoclip-nlp/src/sources.rs)、[external.rs](../crates/kotoclip-nlp/src/external.rs)、[alignment_group.rs](../crates/kotoclip-nlp/src/alignment_group.rs)与[structure_graph.rs](../crates/kotoclip-nlp/src/structure_graph.rs)。
 
-完成条件：[语言分析验收](language_analysis.md)中的代表用例能在正文显示、解释和编辑；结构、查询、讲解与用户操作使用同一组引用。
+完成条件：十段的三来源字段、范围、实体和关系可以追溯；对齐完整性与语言学正确性分别报告；外部来源错误和后置派生异常具有明确归因。
+
+## P4 完善：活用链与整体构词
+
+- [x] 按 UniDic 连接形和 GiNZA 正式词界、辅助依存建立有限状态机，输出核心、父链、operator 与精确 occurrence。
+- [x] 处理使役、语态候选、否定、敬体、条件、补助用言与主要缩约；规范展示和查询使用基本形式，原始成员保存浊化与活用。
+- [x] 从 GiNZA compound、正式 token 覆盖及 compound 依存生成整体构词，保存内部查询、词头、来源和候选状态。
+- [x] 统一完整来源、SyntaxArtifact 导入及 native 入口，同步 Rust／TypeScript 协议与候选查询响应。
+
+实现契约见 [P4 活用链与整体构词](p4_morphology_formation.md)，回测与完成证据见 [P4 样本输出复核](p4_sample_review.md)。语法构式义项、表达成立判断、词典范围竞争、阅读单位与展示投影按后续设计实施。
+
+P4 必须保证 token、语法活用链和整体构词的对象及行为。依存、文节和其他句法结果主要用于实验与辅助复核。
 
 ## P5：恢复完整词典与解释交互
 

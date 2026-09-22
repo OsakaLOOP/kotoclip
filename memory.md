@@ -1,0 +1,10 @@
+# 开发入口记忆
+
+- P4 活用链与整体构词的实现契约位于 `docs/p4_morphology_formation.md`。
+- `morphology.rs` 定义链、状态和 occurrence；`morphology_machine.rs` 执行连接判定；`linguistic_context.rs` 读取 GiNZA 正式词界、活用字段及关系。完整来源通过 `unify_with_sources` 接入。
+- 整体词保存在 `FormationNode.word`，由 `formation.rs` 生成，查询候选由 `lexical.rs` 提供。GiNZA 适配器的显式 compound 通常对应单个正式 token；跨正式 token 的构词需要读取 `compound` dependency。
+- P01–P10 的人工阅读入口是 `data/validation/p01-p4-integration.md` 至 `p10-p4-integration.md`。大型 `p4-sample-review.json` 由采集和验证脚本处理，开发时直接阅读 Markdown。
+- 全量采集使用 `python -X utf8 scripts/review_p4_samples.py`；现有报告导出使用 `python -X utf8 scripts/export_p4_sample_report.py --saved`。原始响应保存在 `experiments/p4-sample-review/`。
+- 旧字模块的正式名称为 `kyujitai.js`，Rust 入口是 `kyujitai.rs`；审计中曾用 `kyukanji.js` 指代该能力。
+- 缩约规范形式用于查询和展示：清浊变体统一为 `ている／てしまう／ておく`，补助动词查询形为 `いる／しまう／おく`。实际缩略、浊化和活用保存在原始成员与连接信息中。
+- P4 的必须验收范围从 token 到语法活用链和整体构词。正式 token 支持整体构词；依存、文节及其他句法结果主要作为实验性辅助证据。

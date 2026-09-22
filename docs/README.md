@@ -15,6 +15,7 @@
 | [总体架构](architecture.md) | 四级处理、对象身份、会话、缓存与增量更新 |
 | [分析来源与对齐](nlp_sources.md) | UniDic 字段、GiNZA／KWJA、字符坐标、token 对齐 |
 | [语言分析](language_analysis.md) | 活用、构词、文节、小句、语法、表达与规则 |
+| [P4 活用链与整体构词](p4_morphology_formation.md) | 多来源协作、活用状态机、occurrence、整体查询对象和十段验收 |
 | [词典与解释](dictionary.md) | 查询目标、读音、表记矩阵、词典内容和浮层 |
 | [书库与阅读器](reader.md) | EPUB、Markdown、章节、虚拟滚动与阅读进度 |
 | [用户状态与输出](user_state.md) | 画像、选择、收藏、修正、导出和词典助手 |
