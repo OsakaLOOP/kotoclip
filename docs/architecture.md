@@ -11,14 +11,20 @@ flowchart TD
     Prepare --> External[GiNZA／KWJA 本机服务]
     UniDic --> Unified[来源对齐与统一对象]
     External --> Unified
-    Unified --> Analysis[活用、构词、词汇、语法与表达]
-    Dictionary[词典与知识目录] --> Analysis
-    Analysis --> Projection[阅读投影与解释目标]
+    Unified --> P4[P4：token、活用链、构词候选]
+    P4 --> Query[下一模块：词典验证、查询聚合与决定]
+    Dictionary[词典] --> Query
+    P4 --> Language[语法义项与表达]
+    Query --> Language
+    Knowledge[知识目录] --> Language
+    Query --> Projection[阅读投影与解释目标]
+    Language --> Projection
     Personal[个人状态与规则] --> Projection
     Projection --> Desktop[桌面阅读器、查询与导出]
     Desktop --> Mutation[用户操作]
     Mutation --> Personal
-    Mutation --> Analysis
+    Mutation --> Query
+    Mutation --> Language
 ```
 
 ## 四级职责
@@ -31,6 +37,8 @@ flowchart TD
 | L3 查询与展示 | 应用分析、个人状态 → 阅读投影和解释结果 | 生成着色、注音、交互目标、词典查询、语法说明及导出内容 |
 
 `kotoclip-nlp` 承担来源与语言对象处理；`kotoclip-core` 协调词典、知识目录、书库、用户数据和会话；Tauri 提供桌面命令及资源管理；Vue 消费投影并提交用户意图。
+
+阶段划分与代码层级分别描述实施顺序和职责。P4 提供来源支持的候选及词法形式；下一模块拥有词典绑定、多粒度查询聚合、范围竞争和默认选择。语法与表达独立消费这些对象，阅读分组在词汇与语言决定之后生成。现状核对见 [P4 完成范围](p4_handoff.md)，长期查询协议见 [词典与解释](dictionary.md)。
 
 ## 文本与身份
 
