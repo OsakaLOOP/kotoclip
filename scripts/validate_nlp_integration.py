@@ -86,9 +86,11 @@ def main():
             status = request({"command": "provider_status"})
             pid = next(p["pid"] for p in status["providers"] if p["id"] == "ginza")
             subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True, check=True)
-            exited = request({"command": "enrich", "analysis_id": base["id"]})
+            # 新正文触发实际推理，确保异常退出检查经过进程通信。
+            uncached = request({"command": "analyze", "text": "新しい本を読む。", "register": "cwj"})
+            exited = request({"command": "enrich", "analysis_id": uncached["id"]})
             assert exited["providers"][0]["status"] == "failed"
-            assert request({"command": "enrich", "analysis_id": base["id"]})["providers"][0]["status"] == "ready"
+            assert request({"command": "enrich", "analysis_id": uncached["id"]})["providers"][0]["status"] == "ready"
             report["unexpected_exit_recovery"] = True
         finally:
             process.stdin.close()

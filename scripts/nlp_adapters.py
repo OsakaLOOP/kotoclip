@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib.metadata
 import json
+import os
 from pathlib import Path
 import time
 
@@ -157,7 +158,7 @@ class GinzaAdapter:
 
 
 class KwjaAdapter:
-    def __init__(self, model="tiny", device="cpu", threads=4, dictionary_path=None):
+    def __init__(self, model="tiny", device="cpu", threads=None, dictionary_path=None):
         import torch
         import hydra
         import jinf
@@ -168,16 +169,19 @@ class KwjaAdapter:
         from kwja.utils.constants import RESOURCE_PATH
         from kwja.utils.jumandic import JumanDic
         from pytorch_lightning.callbacks.progress.rich_progress import RichProgressBar
-        modules = ["senter", "char", "word"] if model != "tiny" else ["char", "word"]
+        resource_modules = ["senter", "char", "word"] if model != "tiny" else ["char", "word"]
+        execution_modules = ["senter", "char", "word"]
+        if threads is None:
+            threads = max(1, min(8, os.cpu_count() or 4))
         resources = []
-        for module in modules:
+        for module in resource_modules:
             resources += file_resources(f"kwja_{module}", _get_kwja_cache_dir() / _get_model_version() / _CHECKPOINT_FILE_NAMES[ModelSize(model)][module])
         dictionary_path = Path(dictionary_path).resolve() if dictionary_path else RESOURCE_PATH / "jumandic"
         resources += file_resources("juman_dictionary", dictionary_path)
         resources += file_resources("reading_vocabulary", RESOURCE_PATH / "reading_prediction/vocab.txt")
         resources += file_resources("inflection_dictionary", Path(jinf.__file__).parent / "data")
         torch.set_num_threads(threads)
-        self.processor = CLIProcessor(CLIConfig(model_size=ModelSize(model), device=Device(device)), ["senter", "char", "word"])
+        self.processor = CLIProcessor(CLIConfig(model_size=ModelSize(model), device=Device(device)), execution_modules)
         self.processor.load_all_modules()
         for item in self.processor.processors:
             if item.trainer is not None:
@@ -198,7 +202,7 @@ class KwjaAdapter:
         for task, capability in [("ner", "entity"), ("cohesion_analysis", "cohesion"), ("discourse_parsing", "discourse")]:
             if task in self.manifest["tasks"]:
                 self.manifest["capabilities"].append(capability)
-        identify(self.manifest, resources, {"device": device, "threads": threads, "modules": ["senter", "char", "word"], "offline": True})
+        identify(self.manifest, resources, {"device": device, "threads": threads, "modules": execution_modules, "offline": True})
 
     def analyze(self, text):
         from kwja.cli.cli import _normalize_text

@@ -8,7 +8,7 @@ use std::{
     io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     process::{Child, ChildStdin, Command, Stdio},
-    sync::{atomic::{AtomicU64, Ordering}, mpsc::{self, Receiver}, Arc},
+    sync::{atomic::{AtomicU64, Ordering}, mpsc::{self, Receiver}, Arc, Mutex},
     time::{Duration, Instant},
 };
 
@@ -122,15 +122,15 @@ pub struct ProviderManager {
     config_path: PathBuf,
     script: PathBuf,
     defaults: ProviderSettings,
-    workers: HashMap<String, Worker>,
+    workers: HashMap<String, Arc<Mutex<Worker>>>,
     pub cancellation: Arc<AtomicU64>,
     sequence: u64,
-    cache: crate::analysis_cache::AnalysisCache<SourceArtifact>,
+    cache: Mutex<crate::analysis_cache::AnalysisCache<SourceArtifact>>,
 }
 
 impl ProviderManager {
     pub fn new(config_path: PathBuf, script: PathBuf, defaults: ProviderSettings) -> Self {
-        Self { config_path, script, defaults, workers: HashMap::new(), cancellation: Arc::new(AtomicU64::new(0)), sequence: 0, cache: crate::analysis_cache::AnalysisCache::new(32 * 1024 * 1024) }
+        Self { config_path, script, defaults, workers: HashMap::new(), cancellation: Arc::new(AtomicU64::new(0)), sequence: 0, cache: Mutex::new(crate::analysis_cache::AnalysisCache::new(32 * 1024 * 1024)) }
     }
 
     pub fn settings(&self) -> Result<ProviderSettings, String> {
@@ -148,7 +148,7 @@ impl ProviderManager {
         fs::create_dir_all(self.config_path.parent().unwrap()).map_err(|e| e.to_string())?;
         fs::write(&self.config_path, serde_json::to_vec_pretty(&settings).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
         self.workers.clear();
-        self.cache.clear();
+        self.cache.lock().unwrap().clear();
         self.status()
     }
 
@@ -156,8 +156,9 @@ impl ProviderManager {
         let settings = self.settings()?;
         let providers: Vec<Value> = [("ginza", &settings.ginza), ("kwja", &settings.kwja)].into_iter().map(|(id, config)| {
             let worker = self.workers.get(id);
+            let (pid, manifest) = worker.map(|w| { let w = w.lock().unwrap(); (Some(w.child.id()), Some(w.manifest.clone())) }).unwrap_or((None, None));
             json!({"id": id, "configured": config.python.is_file() && self.script.is_file(), "available": worker.is_some(), "enabled": config.enabled,
-                "loaded": worker.is_some(), "pid": worker.map(|w| w.child.id()), "manifest": worker.map(|w| &w.manifest)})
+                "loaded": worker.is_some(), "pid": pid, "manifest": manifest})
         }).collect();
         Ok(json!({"settings": settings, "providers": providers, "config_path": self.config_path, "script": self.script}))
     }
@@ -167,8 +168,9 @@ impl ProviderManager {
         if !self.workers.contains_key(id) {
             let log_dir = self.config_path.parent().unwrap().join("provider-logs");
             fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;
-            let worker = Worker::start(id, config, settings, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)?;
-            self.workers.insert(id.into(), worker);
+            let worker = Worker::start(id, config, settings, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)
+                .map_err(|error| format!("{id} 初始化失败：{error}"))?;
+            self.workers.insert(id.into(), Arc::new(Mutex::new(worker)));
         }
         Ok(())
     }
@@ -176,13 +178,13 @@ impl ProviderManager {
     pub fn check(&mut self, generation: u64) -> Result<Value, String> {
         let settings = self.settings()?;
         self.workers.clear();
-        self.cache.clear();
+        self.cache.lock().unwrap().clear();
         let mut diagnostics = Vec::new();
         for (id, config) in [("ginza", &settings.ginza), ("kwja", &settings.kwja)] {
             if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
             let result = self.initialize(id, config, &settings, generation);
             diagnostics.push(match result {
-                Ok(()) => json!({"id": id, "status": "ready", "manifest": self.workers[id].manifest, "pid": self.workers[id].child.id()}),
+                Ok(()) => { let worker = self.workers[id].lock().unwrap(); json!({"id": id, "status": "ready", "manifest": worker.manifest, "pid": worker.child.id()}) },
                 Err(error) => json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error}),
             });
         }
@@ -193,33 +195,78 @@ impl ProviderManager {
         let settings = match self.settings() { Ok(s) => s, Err(e) => return (vec![], vec![json!({"id": "configuration", "status": "failed", "error": e})]) };
         let mut artifacts = Vec::new();
         let mut diagnostics = Vec::new();
-        for (id, config) in [("ginza", &settings.ginza), ("kwja", &settings.kwja)] {
+        let mut jobs = Vec::new();
+        let configs = [("ginza", settings.ginza.clone()), ("kwja", settings.kwja.clone())];
+        let mut pending = Vec::new();
+        for (id, config) in configs {
             if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
             if self.cancellation.load(Ordering::Relaxed) != generation { diagnostics.push(json!({"id": id, "status": "cancelled"})); continue; }
             self.sequence += 1;
             let request_id = format!("{id}-{}", self.sequence);
-            let started = Instant::now();
-            let mut cache_hit = false;
-            let result = (|| {
-                self.initialize(id, config, &settings, generation)?;
-                let resource = self.workers[id].manifest["resource_digest"].as_str().unwrap();
-                let key = format!("{id}:{resource}:{}", kotoclip_nlp::external::text_digest(text));
-                if let Some(artifact) = self.cache.get(&key) { cache_hit = true; return Ok((*artifact).clone()); }
-                let artifact = self.workers.get_mut(id).unwrap().analyze(text, &request_id, config.timeout_seconds, &self.cancellation, generation)?;
-                self.cache.insert(key, Arc::new(artifact.clone()));
-                Ok::<_, String>(artifact)
-            })();
-            match result {
-                Ok(artifact) => {
-                    diagnostics.push(json!({"id": id, "status": "ready", "elapsed_ms": started.elapsed().as_millis(), "request_id": request_id, "cache_hit": cache_hit}));
-                    artifacts.push(artifact);
-                }
-                Err(error) => {
-                    self.workers.remove(id);
-                    diagnostics.push(json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error, "request_id": request_id}));
-                }
+            if let Some(worker) = self.workers.get(id).cloned() {
+                jobs.push((id.to_string(), config, request_id, worker));
+            } else {
+                pending.push((id.to_string(), config, request_id));
             }
         }
+        let script = self.script.clone();
+        let config_path = self.config_path.clone();
+        let cancellation = self.cancellation.clone();
+        std::thread::scope(|scope| {
+            let mut handles = Vec::new();
+            for (id, config, request_id) in pending {
+                let script = script.clone();
+                let config_path = config_path.clone();
+                let settings = settings.clone();
+                let cancellation = cancellation.clone();
+                handles.push(scope.spawn(move || {
+                    let log_dir = config_path.parent().unwrap().join("provider-logs");
+                    let result = fs::create_dir_all(&log_dir).map_err(|e| e.to_string())
+                        .and_then(|_| Worker::start(&id, &config, &settings, &script, &log_dir.join(format!("{id}.log")), &cancellation, generation));
+                    result.map(|worker| (id.clone(), config, request_id, worker)).map_err(|error| (id, error))
+                }));
+            }
+            for handle in handles {
+                match handle.join().unwrap() {
+                    Ok((id, config, request_id, worker)) => {
+                        let worker = Arc::new(Mutex::new(worker));
+                        self.workers.insert(id.clone(), worker.clone());
+                        jobs.push((id, config, request_id, worker));
+                    }
+                    Err((id, error)) => diagnostics.push(json!({"id": id, "status": if cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error})),
+                }
+            }
+        });
+        let digest = kotoclip_nlp::external::text_digest(text);
+        let cache = &self.cache;
+        let cancellation = &self.cancellation;
+        std::thread::scope(|scope| {
+            let mut handles = Vec::new();
+            for (id, config, request_id, worker) in jobs {
+                let digest = digest.clone();
+                handles.push(scope.spawn(move || {
+                    let started = Instant::now();
+                    let mut cache_hit = false;
+                    let result = (|| {
+                        let resource = worker.lock().unwrap().manifest["resource_digest"].as_str().unwrap().to_string();
+                        let key = format!("{id}:{resource}:{digest}");
+                        if let Some(artifact) = cache.lock().unwrap().get(&key) { cache_hit = true; return Ok((*artifact).clone()); }
+                        let artifact = worker.lock().unwrap().analyze(text, &request_id, config.timeout_seconds, cancellation, generation)?;
+                        cache.lock().unwrap().insert(key, Arc::new(artifact.clone()));
+                        Ok::<_, String>(artifact)
+                    })();
+                    (id, request_id, started.elapsed().as_millis(), cache_hit, result)
+                }));
+            }
+            for handle in handles {
+                match handle.join().unwrap() {
+                    (id, request_id, elapsed, cache_hit, Ok(artifact)) => { diagnostics.push(json!({"id": id, "status": "ready", "elapsed_ms": elapsed, "request_id": request_id, "cache_hit": cache_hit})); artifacts.push(artifact); }
+                    (id, request_id, _, _, Err(error)) => { self.workers.remove(&id); diagnostics.push(json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error, "request_id": request_id})); }
+                }
+            }
+        });
+        artifacts.sort_by(|a, b| a.provider.id.cmp(&b.provider.id));
+        diagnostics.sort_by(|a, b| a["id"].as_str().cmp(&b["id"].as_str()));
         (artifacts, diagnostics)
     }
 }
