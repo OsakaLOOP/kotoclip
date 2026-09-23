@@ -184,9 +184,9 @@ p08 的 GiNZA compound 只有 `大多数`、`無意識`。`東京市`、`市内`
 
 ## 9. P4 后续边界
 
-P4 输出应包含可追溯的来源证据、统一引用和主要提取/聚合对象。建议重新生成一份 P4 报告，包含完整 UniDic token、活用链、两套 provider 实体与关系、GiNZA observed compound、来源小句、对齐组、结构选择、来源级 query target 和诊断；应用构词 candidate、最长范围竞争、语法/表达成立判断、阅读单位、解释和投影移到单独后置报告。
+P4 输出包含可追溯的来源证据、统一引用、活用链及构词候选。来源结果与 P4 派生结果分别报告；词典范围竞争、语法／表达成立判断、阅读单位、解释和投影在后续阶段单独验收。
 
-语法规则和表达识别作为 P4 后的独立阶段保留设计位置，当前开发跳过。该阶段未来消费 UniDic 形态、GiNZA/KWJA 结构和词典身份，输出候选、义项与成立依据。
+语法与表达在 P5D 独立实施，消费形态、词典身份和必要的结构证据，输出候选、义项与成立依据；明确的规则条件只用于适合声明的形式。
 
 阅读单位位于词汇、语法和表达决定之后。其边界、整体与成分入口、功能语素归属和重叠选择尚需单独设计；P4 只提供它所需的 token、chain、compound、structure 和 query target，不生成用户可见阅读单位。
 
@@ -198,7 +198,7 @@ P4 输出应包含可追溯的来源证据、统一引用和主要提取/聚合�
 - 删除 `crates/kotoclip-core/src/language_rules.rs` 对语法目录、`expression_patterns.json` 和 `word_formation_patterns.json` 的通用规则适配。
 - 删除 `crates/kotoclip-core/src/language_analysis.rs` 的 `find`、`preview`、`rule_explanation`、`rule_evidence`、三段规则循环，以及 `apply_word_formations` 生成 candidate formation 的路径。
 - 删除 `analysis_engine.rs`、`analysis.rs`、`document_session.rs` 中的旧规则注入、预演、规则版本触发和 `user-rule` overlay 调用链。
-- 删除 `rule_store.rs` 及对应 IPC、前端类型和编辑组件；用户实例修正采用独立对象。
+- 清理 `rule_store.rs` 及对应 IPC、前端类型和编辑组件中仅服务旧通用扫描的接口；适用条件的规则管理在 P5D 重新确定。
 - 删除 `expression_patterns.json`、`word_formation_patterns.json`；`lexical_candidate_patterns.json` 在确认没有独立消费方后删除。
 - 删除只验证上述扫描行为的测试和 P4 报告字段；重新生成纯来源报告。
 
