@@ -6,7 +6,8 @@ import os
 from pathlib import Path
 import sys
 
-from nlp_adapters import KwjaAdapter, validation_segment
+from kwja_adapter import KwjaAdapter
+from nlp_adapters import validation_segment
 
 ROOT = Path(__file__).resolve().parents[1]
 

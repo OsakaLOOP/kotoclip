@@ -73,7 +73,10 @@ impl DocumentPlan {
         let mut start = 0;
         while start < chars.len() {
             let limit = (start + UNIT_CHARACTERS).min(chars.len());
-            let end = lines.get(lines.partition_point(|&end| end <= start)).copied().filter(|&end| end <= limit).unwrap_or_else(|| {
+            let end = if limit == chars.len() { Some(limit) } else {
+                lines.get(lines.partition_point(|&end| end <= limit).saturating_sub(1)).copied()
+                    .filter(|&end| end > start + UNIT_CHARACTERS / 2)
+            }.unwrap_or_else(|| {
                 if limit == chars.len() { return limit; }
                 breaks.get(breaks.partition_point(|&end| end <= limit).saturating_sub(1)).copied().filter(|&end| end > start + UNIT_CHARACTERS / 2)
                     .unwrap_or_else(|| {
@@ -128,9 +131,9 @@ mod tests {
 
     #[test]
     fn repeated_text_keeps_distinct_anchors_and_context_mapping() {
-        let input = "![](x.png)警察署《けいさつしょ》へ向かった。\n警察署《けいさつしょ》へ向かった。  \n";
-        let plan = DocumentPlan::new(Some("book".into()), input, RegisterPolicy::Auto);
-        assert_eq!(plan.units.len(), 2);
+        let input = format!("![](x.png){}", "警察署《けいさつしょ》へ向かった。\n".repeat(180));
+        let plan = DocumentPlan::new(Some("book".into()), &input, RegisterPolicy::Auto);
+        assert!(plan.units.len() > 1);
         assert_ne!(plan.units[0].id, plan.units[1].id);
         assert_eq!(plan.units[0].anchor.char_range[1], plan.units[1].anchor.char_range[0]);
         for index in 0..plan.units.len() {
@@ -141,7 +144,20 @@ mod tests {
             assert!(!prepared.annotations.is_empty());
         }
         assert!(plan.units[1].context_range[0] < plan.units[1].anchor.char_range[0]);
-        assert_eq!(plan.unit_input(1).0.text.matches("警察署").count(), 2);
+        assert!(plan.unit_input(1).0.text.matches("警察署").count() >= 2);
+    }
+
+    #[test]
+    fn short_lines_fill_windows_without_losing_boundaries() {
+        let input = "警察署へ向かった。\n".repeat(150);
+        let plan = DocumentPlan::new(Some("book".into()), &input, RegisterPolicy::Auto);
+        assert!(plan.units.len() < 5);
+        assert!(plan.units.windows(2).all(|pair| pair[0].anchor.char_range[1] == pair[1].anchor.char_range[0]));
+        assert_eq!(plan.units.last().unwrap().anchor.char_range[1], input.chars().count());
+        for unit in &plan.units {
+            assert!(unit.anchor.char_range[1] - unit.anchor.char_range[0] <= UNIT_CHARACTERS);
+            assert_eq!(input.chars().nth(unit.anchor.char_range[1] - 1), Some('\n'));
+        }
     }
 
     #[test]

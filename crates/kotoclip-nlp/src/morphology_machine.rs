@@ -251,15 +251,6 @@ pub(crate) fn compose(atoms: Vec<MorphologyChain>, source: &[ProviderToken], mor
         }
         chains.push(atom);
     }
-    for chain in &mut chains {
-        for source in external.iter().filter(|s| s.provider.id == "kwja") {
-            for node in source.nodes.iter().filter(|n| matches!(n.kind, crate::external::NodeKind::Predicate | crate::external::NodeKind::BasicPhrase)) {
-                if node.text_ranges.iter().any(|r| r[0] < chain.char_range[1] && chain.char_range[0] < r[1]) {
-                    chain.source_evidence.push(crate::linguistic_context::SourceEvidence { provider: "kwja".into(), node_id: Some(node.id.clone()), relation_id: None, reason: "predicate_context".into() });
-                }
-            }
-        }
-    }
     let occurrences = chains.iter().flat_map(|chain| chain.operators.iter().filter(|op|
         !matches!(op.kind.as_str(), "conjugation" | "initial_alternation" | "final_alternation"))
         .map(|op| {

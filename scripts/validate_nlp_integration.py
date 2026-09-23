@@ -1,4 +1,4 @@
-"""验证 Rust 服务到两项本机模型的短文本调用、复用及恢复。"""
+"""验证 Rust 服务到本机 GiNZA 模型的短文本调用、复用及恢复。"""
 from __future__ import annotations
 
 import json
@@ -38,7 +38,7 @@ def main():
                 result = request({"command": "enrich", "analysis_id": base["id"]})
                 assert all(p["status"] == "ready" for p in result["providers"]), result["providers"]
                 sources = result["document"]["external_sources"]
-                assert {s["provider"]["id"] for s in sources} == {"ginza", "kwja"}
+                assert {s["provider"]["id"] for s in sources} == {"ginza"}
                 report["cases"].append({"id": case["id"], "characters": len(case["text"]),
                     "elapsed_ms": (time.perf_counter() - started) * 1000, "providers": result["providers"],
                     "sources": [{"provider": s["provider"], "nodes": len(s["nodes"]), "relations": len(s["relations"]), "deleted_ranges": s["deleted_ranges"]} for s in sources]})
@@ -53,7 +53,6 @@ def main():
             settings = status["settings"]
             original = settings["ginza"]["python"]
             settings["ginza"]["python"] = str(Path(data) / "missing-python.exe")
-            settings["kwja"]["enabled"] = False
             request({"command": "configure_providers", "settings": settings})
             failed = request({"command": "enrich", "analysis_id": base["id"]})
             assert failed["providers"][0]["status"] == "failed"

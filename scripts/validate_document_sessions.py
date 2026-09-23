@@ -82,12 +82,12 @@ def main():
             assert canonical == {key: value["document"] for key, value in units.items()}
             assert all(p["cache_hit"] for u in units.values() for p in u["providers"])
             report.update(real_units=len(units), cold_warm_equal=True, stale_query_rejected=True, wrong_text_rejected=True, cancellation_recovery=True)
-            settings["ginza"]["enabled"] = False; settings["kwja"]["enabled"] = False
+            settings["ginza"]["enabled"] = False
             request({"command": "configure_providers", "settings": settings})
             long_text = "甲。\n" * 7000
             large = request({"command": "open_document", "document_id": "synthetic-plan", "text": long_text, "policy": "cwj"})
             update = request(bound(large["update"], "cancel_document"))
-            assert len(large["plan"]["units"]) == 7000
+            assert 10 < len(large["plan"]["units"]) < 100
             assert raw(bound(update, "request_range", range=[0, len(long_text) + 1]))["error"]
             snapshot = request({"command": "sync_document", "session_id": update["session_id"]})
             assert snapshot["generation"] == update["generation"]

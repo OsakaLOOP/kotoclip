@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 import unittest
 
-from nlp_adapters import KwjaAdapter, normalization_map, syntax_artifact
+from kwja_adapter import KwjaAdapter
+from nlp_adapters import normalization_map, syntax_artifact
 
 ROOT = Path(__file__).resolve().parents[1]
 

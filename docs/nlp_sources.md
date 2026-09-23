@@ -8,11 +8,10 @@
 | --- | --- | --- |
 | UniDic | 准备后的正文；Vibrato、CWJ／CSJ 2025.12 | 短单位词法、四级词性、词元、活用、表记、读音和查询字段 |
 | GiNZA | 同一正文；本机 Python、spaCy、Sudachi 词典与模型 | 复合词、文节、主辞、依存、句界及模型提供的实体结果 |
-| KWJA | 同一正文；本机 Python、模型 tokenizer、Juman／KNP 相关资源 | 基本句、谓语、论元及模型提供的实体、照应和篇章关系 |
 
-GiNZA 和 KWJA 使用各自原生输入流程。版本清单分别固定程序、tokenizer、词典、模型和执行选项。应用以 UniDic 组织词汇查询和个人知识，同时保留外部来源的完整词法与结构空间。
+GiNZA 使用原生输入流程，版本清单固定程序、词典、模型和执行选项。应用以 UniDic 组织词汇查询和个人知识，同时保留 GiNZA 的词法与结构空间。KWJA 仅保留为离线研究材料，不参与桌面来源配置与分析。
 
-GiNZA 优先提供复合词、文节和依存候选；KWJA 提供基本句与谓语等补充结构。同类分歧保存两侧证据，由版本化选择策略或用户决定产生应用结果。不同模型任务按实际能力登记并接入。
+GiNZA 提供复合词、文节和依存候选。与 UniDic 的词界分歧保留双方证据；结构选择使用版本化策略。
 
 ## 正文准备与语域
 
@@ -47,7 +46,7 @@ CWJ／CSJ 在分析单元上选择，保存请求语域、实际语域及选择�
 
 每份来源结果包含输入正文摘要、字符数、分析单元、来源版本、能力状态、token、结构跨度、关系和诊断。关系端点引用来源实体，模型主辞、依存目标、谓语和论元分别表达。
 
-KWJA 的基本句（base phrase）与小句（clause）保持独立类型。依存弧保存从属项、目标项和标签；主辞保存结构内部的核心。照应和篇章关系采用允许跨句的关系类型，局部词法跨度采用连续范围。
+结构协议保留基本句（base phrase）与小句（clause）的独立类型。依存弧保存从属项、目标项和标签；主辞保存结构内部的核心。照应和篇章关系采用允许跨句的关系类型，局部词法跨度采用连续范围。
 
 ## 对齐机制
 
@@ -65,20 +64,20 @@ KWJA 的基本句（base phrase）与小句（clause）保持独立类型。依�
 
 来源实体、统一词元和阅读单位拥有独立身份。应用分组生成派生阅读单位，原始 token 序列和来源结果继续作为复核依据。
 
-`kotoclip.provider-token-alignment.v2` 按字符交集建立两侧 token 的连通分量，保存完整、部分及单侧未匹配分组。`kotoclip.structure-graph.v1` 保存来源实体、组合主辞、类型化关系和选择候选；所有引用在 `document_id` 内解析。默认选择版本为 `source-preference.v1`：基本句、小句和谓语优先 KWJA，其他结构优先 GiNZA。同范围同类型合并证据，同类交叉边界保留竞争候选，小句与实体允许嵌套。部分覆盖、主辞越界、构词内部 gap 及跨句依存形成明确诊断，消费层继承待定状态。
+`kotoclip.provider-token-alignment.v2` 按字符交集建立两侧 token 的连通分量，保存完整、部分及单侧未匹配分组。`kotoclip.structure-graph.v1` 保存来源实体、组合主辞、类型化关系和选择候选；所有引用在 `document_id` 内解析。当前默认选择 GiNZA 的结构候选。同范围同类型合并证据，同类交叉边界保留竞争候选，小句与实体允许嵌套。部分覆盖、主辞越界、构词内部 gap 及跨句依存形成明确诊断，消费层继承待定状态。
 
-连续结构导入采用 `kotoclip.syntax-artifact.v2`，校验完整正文字符数、SHA-256 和表面串。两套离线采集器共用应用适配器，输出 `kotoclip.provider-validation.v2`；导出器保留内部主辞与规范化后的原文映射，字符数包含末尾空白。完整关系和非连续跨度保存在来源结果中。
+连续结构导入采用 `kotoclip.syntax-artifact.v2`，校验完整正文字符数、SHA-256 和表面串。GiNZA 离线采集器复用应用适配器；研究用 KWJA 采集器位于 `scripts/kwja_adapter.py`。导出器保留内部主辞与规范化后的原文映射，字符数包含末尾空白。完整关系和非连续跨度保存在来源结果中。
 
 ## 本机执行
 
 Rust 启动配置指定的解释器与适配器，复用模型进程，通过版本化消息提交正文和接收结果。消息包含请求 ID、分析单元、文本版本和任务选项；标准输出用于协议，诊断写入标准错误。Windows 下统一使用 UTF-8。
 
-启动检查分别报告解释器、包、词典和模型是否可用。执行支持超时、取消、进程退出检测和重启。外部结构完成后继续统一与应用分析，基础正文保持可读。完整交付验收要求两条外部来源实际执行并进入桌面结果。
+启动检查报告 GiNZA 解释器、包、词典和模型是否可用。执行支持超时、取消、进程退出检测和重启。外部结构完成后继续统一与应用分析，基础正文保持可读。完整交付验收要求 GiNZA 实际执行并进入桌面结果。
 
 ## 代码入口
 
 本机适配器位于 [nlp_adapters.py](../scripts/nlp_adapters.py)，常驻入口位于 [nlp_provider.py](../scripts/nlp_provider.py)。[providers.rs](../crates/kotoclip-core/src/providers.rs) 管理进程与配置；[external.rs](../crates/kotoclip-nlp/src/external.rs) 定义完整来源实体、规范化映射及关系，并校验正文身份。
 
-[sources.rs](../crates/kotoclip-nlp/src/sources.rs)、[prepare.rs](../crates/kotoclip-nlp/src/prepare.rs)、[routing.rs](../crates/kotoclip-nlp/src/routing.rs)负责基础输入；[syntax.rs](../crates/kotoclip-nlp/src/syntax.rs)、[alignment.rs](../crates/kotoclip-nlp/src/alignment.rs)负责外部结果和对齐。现有离线转换器为 [GiNZA](../scripts/emit_ginza_syntax_artifact.py) 与 [KWJA](../scripts/emit_kwja_syntax_artifact.py)。
+[sources.rs](../crates/kotoclip-nlp/src/sources.rs)、[prepare.rs](../crates/kotoclip-nlp/src/prepare.rs)、[routing.rs](../crates/kotoclip-nlp/src/routing.rs)负责基础输入；[syntax.rs](../crates/kotoclip-nlp/src/syntax.rs)、[alignment.rs](../crates/kotoclip-nlp/src/alignment.rs)负责外部结果和对齐。当前离线转换器为 [GiNZA](../scripts/emit_ginza_syntax_artifact.py)；[KWJA 转换器](../scripts/emit_kwja_syntax_artifact.py)仅供研究。
 
 [alignment_group.rs](../crates/kotoclip-nlp/src/alignment_group.rs) 生成多对多分组；[structure_graph.rs](../crates/kotoclip-nlp/src/structure_graph.rs) 负责实体映射、关系校验和多来源选择。`unify_with_sources` 接收完整来源，在应用层生成前完成选择；统一结果版本为 `kotoclip.unified-document.v5`。

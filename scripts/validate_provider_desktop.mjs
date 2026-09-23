@@ -47,7 +47,7 @@ try {
     while (Date.now() < deadline) {
       const panel = document.querySelector('.provider-panel');
       const status = [...panel.querySelectorAll(':scope > p')].map(item => item.textContent).join(' ');
-      if (status.includes('ginza：完成') && status.includes('kwja：完成'))
+      if (status.includes('ginza：完成'))
         return { text: panel.textContent, words: document.querySelectorAll('.word').length };
       if (status.includes('失败')) throw new Error(status);
       await new Promise(resolve => setTimeout(resolve, 250));
@@ -70,14 +70,13 @@ try {
     const deadline = Date.now() + 60000;
     while (Date.now() < deadline) {
       const text = [...document.querySelectorAll('.provider-panel > p')].map(item => item.textContent).join(' ');
-      if (text.includes('ginza：完成') && text.includes('kwja：完成')) return;
+      if (text.includes('ginza：完成')) return;
       await new Promise(resolve => setTimeout(resolve, 250));
     }
     throw new Error('桌面取消后重试超时');
   })()`);
-  await evaluate(`(() => { const select = document.querySelector('.provider-filters select'); select.value = 'kwja'; select.dispatchEvent(new Event('change', {bubbles:true})); })()`);
-  const kwja = await evaluate(`document.querySelector('.source-nodes').textContent`);
-  if (!kwja.includes('ラティメリア')) throw new Error('KWJA 结构未显示');
+  const ginza = await evaluate(`document.querySelector('.source-nodes').textContent`);
+  if (!ginza.includes('ラティメリア')) throw new Error('GiNZA 结构未显示');
   const alignment = await evaluate(`(() => {
     const panel = document.querySelector('.provider-panel');
     const section = [...panel.querySelectorAll('details')].find(item => item.querySelector('summary')?.textContent.startsWith('词元对齐'));
@@ -96,7 +95,7 @@ try {
   if (overflow.body > overflow.width) throw new Error('窄窗口内容溢出');
   const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   await writeFile('experiments/provider-desktop.png', Buffer.from(screenshot.data, 'base64'));
-  const report = { desktop, words: state.words, ginza: true, kwja: true, cancellation_recovery: cancellation, kwja_structure: kwja, alignment, resourceCheck, viewport: overflow };
+  const report = { desktop, words: state.words, ginza: true, cancellation_recovery: cancellation, ginza_structure: ginza, alignment, resourceCheck, viewport: overflow };
   await writeFile('data/validation/behavior/desktop.json', JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(report));
 } finally {

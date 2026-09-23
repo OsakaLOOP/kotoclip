@@ -2,7 +2,7 @@
 
 Kotoclip 是本地日文阅读与语言分析桌面应用，使用 Rust、Tauri 2 和 Vue 3。当前目标是完成全部模块接入，恢复完整的阅读、查词、语法解释、适用的规则管理、用户状态与导出功能，生成可用的 Windows 桌面应用。
 
-语言分析采用 UniDic，并接入 GiNZA、KWJA 的现有模型和词典。桌面应用允许依赖本机已配置的 Python 环境；Rust 服务负责调用、坐标对齐、应用分析和状态管理。
+语言分析采用 UniDic，并接入 GiNZA 的现有模型和词典。当前运行链路不使用 KWJA；桌面应用允许依赖本机已配置的 Python 环境。Rust 服务负责调用、坐标对齐、应用分析和状态管理。
 
 ## 文档
 
@@ -28,4 +28,4 @@ npx tauri dev
 cargo run -p kotoclip-core --bin kotoclip-nlp -- inspect cwj "七日は警察署へ向かった。"
 ```
 
-当前桌面入口提供 UniDic 分词、字段检查、基础查词，以及本机 GiNZA／KWJA 的结构分析、模型配置和来源查看。来源实测与阶段证据见[实施记录](docs/implementation_progress.md)，完整模块接入按 TODO 继续实施。资源路径、开发渠道和桌面交付要求见[开发与交付](docs/development.md)。
+当前桌面入口提供 UniDic 分词、字段检查、基础查词，以及本机 GiNZA 的结构分析、模型配置和来源查看。来源实测与阶段证据见[实施记录](docs/implementation_progress.md)，完整模块接入按 TODO 继续实施。资源路径、开发渠道和桌面交付要求见[开发与交付](docs/development.md)。

@@ -11,12 +11,11 @@ const saved = ref(false);
 const saving = ref(false);
 const checking = ref(false);
 const checks = ref<ProviderCheck[]>([]);
-const providerId = ref('ginza');
 const kind = ref('bunsetsu');
-const source = computed(() => props.sources.find(item => item.provider.id === providerId.value));
+const source = computed(() => props.sources.find(item => item.provider.id === 'ginza'));
 const nodes = computed(() => source.value?.nodes.filter(node => node.kind === kind.value) || []);
-const mapped = computed(() => new Map(props.graph?.entities.filter(entity => entity.provider === providerId.value).map(entity => [entity.source_id, entity]) || []));
-const alignment = computed(() => props.alignments.find(item => item.external_provider === providerId.value));
+const mapped = computed(() => new Map(props.graph?.entities.filter(entity => entity.provider === 'ginza').map(entity => [entity.source_id, entity]) || []));
+const alignment = computed(() => props.alignments.find(item => item.external_provider === 'ginza'));
 function choice(id: string) {
   const entity = mapped.value.get(id);
   if (!entity?.complete) return '对齐待定';
@@ -65,16 +64,14 @@ onMounted(async () => {
     <details>
       <summary>本机模型设置</summary>
       <form v-if="settings" @submit.prevent="save">
-        <fieldset v-for="id in (['ginza', 'kwja'] as const)" :key="id" :disabled="pending || saving || checking">
-          <legend>{{ id === 'ginza' ? 'GiNZA' : 'KWJA' }}</legend>
-          <label class="provider-toggle"><input v-model="settings[id].enabled" type="checkbox" />启用</label>
-          <label>Python 解释器<input v-model="settings[id].python" required /></label>
-          <label>模型<input v-model="settings[id].model" required /></label>
-          <label>{{ id === 'ginza' ? 'Sudachi 词典文件' : 'JumanDic 词典目录' }}<input v-model="settings[id].dictionary" placeholder="留空使用随包词典" /></label>
-          <label>超时（秒）<input v-model.number="settings[id].timeout_seconds" type="number" min="1" required /></label>
+        <fieldset :disabled="pending || saving || checking">
+          <legend>GiNZA</legend>
+          <label class="provider-toggle"><input v-model="settings.ginza.enabled" type="checkbox" />启用</label>
+          <label>Python 解释器<input v-model="settings.ginza.python" required /></label>
+          <label>模型<input v-model="settings.ginza.model" required /></label>
+          <label>Sudachi 词典文件<input v-model="settings.ginza.dictionary" placeholder="留空使用随包词典" /></label>
+          <label>超时（秒）<input v-model.number="settings.ginza.timeout_seconds" type="number" min="1" required /></label>
         </fieldset>
-        <label>KWJA 模型目录<input v-model="settings.kwja_cache" :disabled="pending || saving || checking" /></label>
-        <label>Hugging Face 缓存目录<input v-model="settings.hf_cache" :disabled="pending || saving || checking" /></label>
         <button type="submit" :disabled="pending || saving || checking">{{ saving ? '保存中' : '保存设置' }}</button>
         <button type="button" :disabled="pending || saving || checking" @click="checkResources">{{ checking ? '检查中' : '保存并检查' }}</button>
         <button v-if="checking" type="button" @click="cancelCheck">取消检查</button><span v-if="saved" role="status">设置已保存</span>
@@ -85,7 +82,7 @@ onMounted(async () => {
       </div>
     </details>
     <p v-if="error" role="alert">{{ error }}</p>
-    <div class="provider-filters"><label>来源<select v-model="providerId"><option value="ginza">GiNZA</option><option value="kwja">KWJA</option></select></label><label>结构<select v-model="kind"><option v-for="(label, id) in kinds" :key="id" :value="id">{{ label }}</option></select></label></div>
+    <div class="provider-filters"><label>结构<select v-model="kind"><option v-for="(label, id) in kinds" :key="id" :value="id">{{ label }}</option></select></label></div>
     <template v-if="source">
       <p>{{ source.provider.model }} · {{ source.provider.version }} · {{ Math.round(source.elapsed_ms) }} ms</p>
       <div class="source-nodes">

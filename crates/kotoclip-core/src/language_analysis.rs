@@ -172,13 +172,6 @@ fn rule_evidence(document: &UnifiedDocument, rule: &Rule, found: &RuleMatch) -> 
     for entity in document.structure_graph.entities.iter().filter(|entity| entity.kind == kotoclip_nlp::external::NodeKind::BasicPhrase
         && entity.coverage.iter().any(|coverage| coverage.morpheme_indices.iter().any(|index| found.members.contains(index)))) {
         evidence.push(format!("{}:basic_phrase:{}", entity.provider, entity.source_id));
-        if entity.provider == "kwja" {
-            if let Some(object) = entity.features.as_object() {
-                for (key, value) in object.iter().filter(|(key, _)| key.contains("type") || key.contains("label") || key.contains("feature")) {
-                    evidence.push(format!("kwja:{key}:{value}"));
-                }
-            }
-        }
     }
     evidence
 }

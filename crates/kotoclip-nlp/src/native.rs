@@ -102,35 +102,6 @@ impl UnavailableNativeProvider {
         )
     }
 
-    pub fn kwja() -> Self {
-        Self::new(
-            NativeModelManifest {
-                id: "kwja-native".into(),
-                version: "2.1.3".into(),
-                runtime: "rust".into(),
-                model_format: "pytorch-checkpoint-pending-conversion".into(),
-                capabilities: vec![
-                    "token".into(),
-                    "bunsetsu".into(),
-                    "sentence".into(),
-                    "dependency".into(),
-                    "predicate".into(),
-                    "basic_phrase".into(),
-                ],
-                input_schema: "kotoclip.text.v1".into(),
-                output_schema: crate::syntax::SCHEMA.into(),
-                coordinate_system: "unicode_scalar".into(),
-                parameter_count: Some(17_224_819),
-                weight_bytes: Some(69_022_387),
-                training_dataset_version: None,
-                installed_bytes: Some(157_388_505),
-                peak_working_set: None,
-                inference_ms_per_1000_tokens: None,
-            },
-            "native_model_graph_and_decoder_not_installed",
-        )
-    }
-
     pub fn new(manifest: NativeModelManifest, reason: impl Into<String>) -> Self {
         Self {
             manifest,
@@ -181,7 +152,7 @@ mod tests {
 
     #[test]
     fn mismatched_character_count_is_explicit() {
-        let provider = UnavailableNativeProvider::kwja();
+        let provider = UnavailableNativeProvider::ginza();
         let error = provider
             .analyze(NativeProviderInput {
                 text: "太郎",

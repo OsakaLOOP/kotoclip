@@ -27,17 +27,12 @@ pub struct ProviderConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderSettings {
     pub ginza: ProviderConfig,
-    pub kwja: ProviderConfig,
-    pub kwja_cache: PathBuf,
-    pub hf_cache: PathBuf,
 }
 
 impl ProviderSettings {
     pub fn development(root: &Path) -> Self {
         Self {
             ginza: ProviderConfig { python: root.join("experiments/ginza311/Scripts/python.exe"), model: "ja_ginza".into(), enabled: true, timeout_seconds: 120, dictionary: PathBuf::new() },
-            kwja: ProviderConfig { python: root.join("experiments/kwja311/Scripts/python.exe"), model: "tiny".into(), enabled: true, timeout_seconds: 120, dictionary: PathBuf::new() },
-            kwja_cache: root.join("experiments/kwja-cache"), hf_cache: root.join("experiments/hf-cache"),
         }
     }
 }
@@ -50,12 +45,10 @@ struct Worker {
 }
 
 impl Worker {
-    fn start(id: &str, config: &ProviderConfig, settings: &ProviderSettings, script: &Path, log: &Path, cancel: &AtomicU64, generation: u64) -> Result<Self, String> {
+    fn start(id: &str, config: &ProviderConfig, script: &Path, log: &Path, cancel: &AtomicU64, generation: u64) -> Result<Self, String> {
         let mut command = Command::new(&config.python);
         command.args(["-X", "utf8", "-u"]).arg(script)
             .args(["--provider", id, "--model", &config.model])
-            .arg("--kwja-cache").arg(&settings.kwja_cache)
-            .arg("--hf-cache").arg(&settings.hf_cache)
             .stdin(Stdio::piped()).stdout(Stdio::piped())
             .stderr(Stdio::from(File::create(log).map_err(|e| format!("无法创建来源日志：{e}"))?));
         if !config.dictionary.as_os_str().is_empty() { command.arg("--dictionary").arg(&config.dictionary); }
@@ -142,7 +135,7 @@ impl ProviderManager {
     }
 
     pub fn configure(&mut self, settings: ProviderSettings) -> Result<Value, String> {
-        for (id, config) in [("ginza", &settings.ginza), ("kwja", &settings.kwja)] {
+        for (id, config) in [("ginza", &settings.ginza)] {
             if config.timeout_seconds == 0 || config.model.trim().is_empty() { return Err(format!("{id} 的模型和超时设置无效")); }
         }
         fs::create_dir_all(self.config_path.parent().unwrap()).map_err(|e| e.to_string())?;
@@ -154,7 +147,7 @@ impl ProviderManager {
 
     pub fn status(&self) -> Result<Value, String> {
         let settings = self.settings()?;
-        let providers: Vec<Value> = [("ginza", &settings.ginza), ("kwja", &settings.kwja)].into_iter().map(|(id, config)| {
+        let providers: Vec<Value> = [("ginza", &settings.ginza)].into_iter().map(|(id, config)| {
             let worker = self.workers.get(id);
             let (pid, manifest) = worker.map(|w| { let w = w.lock().unwrap(); (Some(w.child.id()), Some(w.manifest.clone())) }).unwrap_or((None, None));
             json!({"id": id, "configured": config.python.is_file() && self.script.is_file(), "available": worker.is_some(), "enabled": config.enabled,
@@ -163,12 +156,12 @@ impl ProviderManager {
         Ok(json!({"settings": settings, "providers": providers, "config_path": self.config_path, "script": self.script}))
     }
 
-    fn initialize(&mut self, id: &str, config: &ProviderConfig, settings: &ProviderSettings, generation: u64) -> Result<(), String> {
+    fn initialize(&mut self, id: &str, config: &ProviderConfig, generation: u64) -> Result<(), String> {
         if self.cancellation.load(Ordering::Relaxed) != generation { return Err("来源初始化已取消".into()); }
         if !self.workers.contains_key(id) {
             let log_dir = self.config_path.parent().unwrap().join("provider-logs");
             fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;
-            let worker = Worker::start(id, config, settings, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)
+            let worker = Worker::start(id, config, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)
                 .map_err(|error| format!("{id} 初始化失败：{error}"))?;
             self.workers.insert(id.into(), Arc::new(Mutex::new(worker)));
         }
@@ -180,9 +173,9 @@ impl ProviderManager {
         self.workers.clear();
         self.cache.lock().unwrap().clear();
         let mut diagnostics = Vec::new();
-        for (id, config) in [("ginza", &settings.ginza), ("kwja", &settings.kwja)] {
+        for (id, config) in [("ginza", &settings.ginza)] {
             if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
-            let result = self.initialize(id, config, &settings, generation);
+            let result = self.initialize(id, config, generation);
             diagnostics.push(match result {
                 Ok(()) => { let worker = self.workers[id].lock().unwrap(); json!({"id": id, "status": "ready", "manifest": worker.manifest, "pid": worker.child.id()}) },
                 Err(error) => json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error}),
@@ -196,7 +189,7 @@ impl ProviderManager {
         let mut artifacts = Vec::new();
         let mut diagnostics = Vec::new();
         let mut jobs = Vec::new();
-        let configs = [("ginza", settings.ginza.clone()), ("kwja", settings.kwja.clone())];
+        let configs = [("ginza", settings.ginza.clone())];
         let mut pending = Vec::new();
         for (id, config) in configs {
             if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
@@ -217,12 +210,11 @@ impl ProviderManager {
             for (id, config, request_id) in pending {
                 let script = script.clone();
                 let config_path = config_path.clone();
-                let settings = settings.clone();
                 let cancellation = cancellation.clone();
                 handles.push(scope.spawn(move || {
                     let log_dir = config_path.parent().unwrap().join("provider-logs");
                     let result = fs::create_dir_all(&log_dir).map_err(|e| e.to_string())
-                        .and_then(|_| Worker::start(&id, &config, &settings, &script, &log_dir.join(format!("{id}.log")), &cancellation, generation));
+                        .and_then(|_| Worker::start(&id, &config, &script, &log_dir.join(format!("{id}.log")), &cancellation, generation));
                     result.map(|worker| (id.clone(), config, request_id, worker)).map_err(|error| (id, error))
                 }));
             }

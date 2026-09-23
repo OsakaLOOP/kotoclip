@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import shutil
 from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,14 +31,9 @@ def main():
                 manifest = provider["manifest"]
                 assert len(manifest["resource_digest"]) == 64
                 assert all(len(resource["sha256"]) == 64 for resource in manifest["resources"])
-                role = "sudachi_dictionary" if provider["id"] == "ginza" else "juman_dictionary"
+                role = "sudachi_dictionary"
                 resource = next(r for r in manifest["resources"] if r["role"] == role)
-                if role == "sudachi_dictionary":
-                    settings[provider["id"]]["dictionary"] = resource["path"]
-                else:
-                    directory = Path(data) / "jumandic"
-                    shutil.copytree(Path(resource["path"]).parent, directory)
-                    settings[provider["id"]]["dictionary"] = str(directory)
+                settings[provider["id"]]["dictionary"] = resource["path"]
             print("默认资源初始化通过", flush=True)
             request({"command": "configure_providers", "settings": settings})
             explicit = request({"command": "check_providers"})["providers"]
@@ -53,9 +47,8 @@ def main():
             assert all(s["provider"]["resources"] for s in enriched["document"]["external_sources"])
             print("指定词典与进程复用通过", flush=True)
             failures = []
-            for provider in ["ginza", "kwja"]:
+            for provider in ["ginza"]:
                 missing = copy.deepcopy(settings)
-                missing["kwja" if provider == "ginza" else "ginza"]["enabled"] = False
                 missing[provider]["dictionary"] = str(Path(data) / "missing-dictionary")
                 request({"command": "configure_providers", "settings": missing})
                 result = request({"command": "check_providers"})["providers"]

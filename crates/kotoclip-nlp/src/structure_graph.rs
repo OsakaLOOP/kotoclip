@@ -71,12 +71,8 @@ fn stable_id(prefix: &str, value: impl Serialize) -> String {
     format!("{prefix}:{}", &external::text_digest(&serde_json::to_string(&value).unwrap())[..24])
 }
 
-fn preference(kind: &NodeKind, provider: &str) -> usize {
-    let preferred = match kind {
-        NodeKind::BasicPhrase | NodeKind::Clause | NodeKind::Predicate => "kwja",
-        _ => "ginza",
-    };
-    if provider == preferred { 0 } else { 1 }
+fn preference(_kind: &NodeKind, provider: &str) -> usize {
+    if provider == "ginza" { 0 } else { 1 }
 }
 
 fn overlap(a: &[Range], b: &[Range]) -> bool {
