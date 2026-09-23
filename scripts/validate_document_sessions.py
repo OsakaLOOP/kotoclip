@@ -98,7 +98,7 @@ def main():
             update = request(bound(update, "continue_document"))
             update = request(bound(update, "cancel_document"))
             assert update["paused"]
-            report.update(planned_characters=len(long_text), planned_units=7000, tail_range_verified=True, invalid_range_atomic=True, continue_cancel=True)
+            report.update(planned_characters=len(long_text), planned_units=len(large["plan"]["units"]), tail_range_verified=True, invalid_range_atomic=True, continue_cancel=True)
             print("缓存一致性、长文档规划及尾部定位通过", flush=True)
         finally:
             process.stdin.close(); process.wait(timeout=30)

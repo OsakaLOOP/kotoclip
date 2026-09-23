@@ -1,6 +1,6 @@
 # P4 小说性能测量
 
-测量日期：2026-09-23。源文件是本机《七日の喰い神》的 Markdown 文本，来源登记见 [sources.md](../sources.md)。测量程序为 release 配置的 `kotoclip-nlp`；代码基线 `ec34be5`，本轮修正了 `DocumentPlan` 的短行分窗行为。原始逐窗统计保存在 `.agents/analysis/p4-novel-10.json`。
+测量日期：2026-09-23。源文件是本机《七日の喰い神》的 Markdown 文本，来源登记见 [sources.md](../sources.md)。测量程序为 release 配置的 `kotoclip-nlp`；代码基线 `ec34be5`，本轮修正了 `DocumentPlan` 的短行分窗行为。原始逐窗统计保存在 `.agents/analysis/p4-novel-10.json`。本报告保留移除 KWJA 前的测量结果，仅用于解释当时的性能瓶颈；当前链路仅运行 UniDic 和 GiNZA。
 
 ## 语料与划分
 

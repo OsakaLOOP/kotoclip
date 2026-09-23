@@ -40,14 +40,11 @@ def main():
             alignment_groups = [group for source in doc["provider_token_alignments"] for group in source["groups"]]
             group_ids = {g["id"] for g in alignment_groups}
             assert all(set(e["alignment_group_ids"]).issubset(group_ids) for e in entities.values())
-            if case["id"] == "news":
-                first_kwja = next(e for e in entities.values() if e["provider"] == "kwja" and e["source_id"] == "b0")
-                assert not first_kwja["complete"] and "partial_morpheme" in first_kwja["diagnostics"]
             if case["id"] == "boundaries":
                 head = next(e for e in entities.values() if e["provider"] == "ginza" and e["source_id"] == "b1")
                 assert len(head["head_morpheme_ids"]) == 2
             if case["id"] == "repeated-ruby":
-                sentences = [e for e in entities.values() if e["kind"] == "sentence" and e["provider"] == "kwja"]
+                sentences = [e for e in entities.values() if e["kind"] == "sentence" and e["provider"] == "ginza"]
                 assert len(sentences) >= 2 and sentences[0]["id"] != sentences[1]["id"]
                 assert len(doc["author_ruby"]) == 2
             artifact = syntax_artifact(doc["external_sources"][0], case["id"])
