@@ -1,4 +1,8 @@
-use kotoclip_core::analysis::{AnalysisService, Request, ResourcePaths, Response};
+mod reader_engine;
+
+use kotoclip_core::analysis::{Request, ResourcePaths, Response};
+use kotoclip_core::reader_state::{SavedSelection, WordState};
+use reader_engine::ReaderEngine;
 use std::{
     path::PathBuf,
     sync::Arc,
@@ -6,7 +10,7 @@ use std::{
 use tauri::{Manager, State};
 
 struct AppState {
-    service: Arc<AnalysisService>,
+    reader: Arc<ReaderEngine>,
     cancellation: Arc<std::sync::atomic::AtomicU64>,
 }
 
@@ -34,7 +38,7 @@ async fn nlp_request(state: State<'_, AppState>, request: Request) -> Result<Res
         cancel_external(state);
         return Ok(Response { result: Some(serde_json::json!({"cancelled": true})), error: None });
     }
-    let service = state.service.clone();
+    let service = state.reader.analysis.clone();
     let generation = state.cancellation.load(std::sync::atomic::Ordering::Relaxed);
     tauri::async_runtime::spawn_blocking(move || {
         Ok(service.dispatch_at(request, generation))
@@ -42,6 +46,71 @@ async fn nlp_request(state: State<'_, AppState>, request: Request) -> Result<Res
     .await
     .map_err(|e| e.to_string())?
 }
+
+#[tauri::command]
+fn reader_library(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    Ok(serde_json::json!({"books": state.reader.books()?, "path": state.reader.library_path()}))
+}
+
+#[tauri::command]
+async fn reader_import(state: State<'_, AppState>, path: String) -> Result<kotoclip_core::library::LibraryBook, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.import(&path)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn reader_open_book(state: State<'_, AppState>, id: String) -> Result<serde_json::Value, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.open_book(&id)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn reader_open_text(state: State<'_, AppState>, text: String) -> Result<serde_json::Value, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.open_text(text)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+fn reader_close(state: State<'_, AppState>) { state.reader.close(); }
+
+#[tauri::command]
+fn reader_progress(state: State<'_, AppState>, id: String, offset: usize, total: usize, chapter: Option<String>, seconds: u64) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    state.reader.progress(&id, offset, total, chapter.as_deref(), seconds)
+}
+
+#[tauri::command]
+fn reader_organize(state: State<'_, AppState>, id: String, color: Option<String>, tags: Vec<String>) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    state.reader.organize(&id, color.as_deref(), &tags)
+}
+
+#[tauri::command]
+fn reader_reset(state: State<'_, AppState>, id: String) -> Result<kotoclip_core::library::LibraryBookSummary, String> { state.reader.reset(&id) }
+
+#[tauri::command]
+fn reader_remove(state: State<'_, AppState>, id: String) -> Result<bool, String> { state.reader.remove(&id) }
+
+#[tauri::command]
+fn reader_word(state: State<'_, AppState>, base: String, reading: String) -> Result<WordState, String> { state.reader.word(&base, &reading) }
+
+#[tauri::command]
+fn reader_mark(state: State<'_, AppState>, base: String, reading: String, known: bool) -> Result<WordState, String> { state.reader.mark(&base, &reading, known) }
+
+#[tauri::command]
+fn reader_expose(state: State<'_, AppState>, base: String, reading: String) -> Result<(), String> { state.reader.expose(&base, &reading) }
+
+#[tauri::command]
+fn reader_selections(state: State<'_, AppState>, book: String, version: String) -> Result<Vec<SavedSelection>, String> { state.reader.selections(&book, &version) }
+
+#[tauri::command]
+fn reader_save_selection(state: State<'_, AppState>, selection: SavedSelection) -> Result<(), String> { state.reader.save_selection(&selection) }
+
+#[tauri::command]
+fn reader_delete_selection(state: State<'_, AppState>, book: String, version: String, start: usize, end: usize) -> Result<(), String> {
+    state.reader.delete_selection(&book, &version, start, end)
+}
+
+#[tauri::command]
+fn reader_clear_selections(state: State<'_, AppState>, book: String, version: String) -> Result<(), String> { state.reader.clear_selections(&book, &version) }
 
 pub fn run() {
     tauri::Builder::default()
@@ -93,12 +162,17 @@ pub fn run() {
                     provider_defaults: kotoclip_core::providers::ProviderSettings::development(&portable),
                 }
             };
-            let service = AnalysisService::new(paths);
-            let cancellation = service.cancellation();
-            app.manage(AppState { service: Arc::new(service), cancellation });
+            let data = std::env::var_os("KOTOCLIP_DATA_DIR").map(PathBuf::from).unwrap_or(app.path().app_data_dir()?);
+            let library = app.path().document_dir()?.join("Kotoclip Library");
+            let reader = Arc::new(ReaderEngine::new(paths, library, data).map_err(std::io::Error::other)?);
+            let cancellation = reader.analysis.cancellation();
+            app.manage(AppState { reader, cancellation });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept, cancel_external])
+        .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept, cancel_external,
+            reader_library, reader_import, reader_open_book, reader_open_text, reader_close, reader_progress,
+            reader_organize, reader_reset, reader_remove, reader_word, reader_mark, reader_expose,
+            reader_selections, reader_save_selection, reader_delete_selection, reader_clear_selections])
         .run(tauri::generate_context!())
         .expect("桌面应用启动失败");
 }

@@ -1,5 +1,6 @@
-import type { Paragraph } from "../composables/useTokenization.ts";
-import type { ReaderChapter, ReaderDocument, ReaderImageBlock } from "./document.ts";
+import type { ReaderChapter, ReaderDocument, ReaderImageBlock, ReaderTextBlock } from "./document.ts";
+
+export type Paragraph = ReaderTextBlock;
 
 export interface ReaderTextRow {
   key: string;

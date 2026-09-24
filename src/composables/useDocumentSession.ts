@@ -61,6 +61,15 @@ export function useDocumentSession() {
     finally { if (expected === operation) opening.value = false; }
   }
 
+  function adopt(plan: DocumentPlan, update: DocumentUpdate) {
+    operation++;
+    clearTimeout(timer);
+    error.value = '';
+    state.value = openSession(plan, update);
+    opening.value = false;
+    void poll();
+  }
+
   function control(command: string, payload: Record<string, unknown> = {}) {
     const sessionId = state.value?.session_id;
     if (!sessionId) return Promise.resolve();
@@ -80,5 +89,5 @@ export function useDocumentSession() {
   }
 
   onUnmounted(() => { void close(); });
-  return { state, error, opening, controlling, open, close, control };
+  return { state, error, opening, controlling, open, adopt, close, control };
 }

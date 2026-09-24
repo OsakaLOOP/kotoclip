@@ -13,3 +13,6 @@
 - P4 人工报告采用“原始组成、构成形态、最终对象”三列，每条链竖向独占一行；补助用言用前接词形说明归属。内部 ID、完整状态和来源引用保存在机器报告。
 - P4 完成范围的最新核对为 `docs/p4_handoff.md`。P4 提供 token、活用链和构词候选，词典验证、查询聚合与决定归下一模块；当前修复与长期方案严格分开。本轮职责整理只修改文档。
 - 多粒度查询协议在 `docs/dictionary.md`，验收在 `docs/quality.md` 和 A28–A33。P5A–P5C 负责词典查询、绑定、决定和交互；P5D 独立实施语法与表达，结合词典、形态和结构证据，规则仅覆盖适合声明条件的部分。P7 持久化词汇状态、收藏及阅读数据。
+- P5 查词处理草案位于 `docs/lookup_processing_draft.md`：活用功能范围先排除，剩余词汇范围按最大范围无重叠贪心覆盖，再归属内部子对象；词典元数据由后续解析器提供，P5 仅接收并用于筛选和排序。
+- 阅读器 Engine 生命周期、UniDic／GiNZA 分析进度和词典气泡投影协议位于 `docs/reader_engine.md`；显示外围整体由 GiNZA 整体或未覆盖的独立词及其活用链组成，悬浮查询当前核心词，非整体单击切换到底层 token 查询。
+- 阅读器应用入口为 `src/App.vue`，正文投影和虚拟行位于 `src/components/reader/ReaderDocumentView.vue`，宿主调用适配位于 `src/services/reader.ts`；新用户状态文件为 `reader-state.sqlite`，选择与笔记类型位于 `src/types/reader.ts`。

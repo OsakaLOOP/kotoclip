@@ -212,3 +212,12 @@
     - new Kyujitai([options], [callback])
     - kyujitai.encode(string, [options])
     - kyujitai.decode(string, [options])
+
+## 竞品与生态参考 (2026-09-23)
+
+| 来源 | 链接 | 用途 |
+| --- | --- | --- |
+| asbplayer | <https://github.com/asbplayer/asbplayer> | 浏览器端字幕/视频语言学习播放器，支持 Yomitan 与 Anki 联动，提供“句子挖掘”工作流参考。 |
+| Hoshi Reader | <https://github.com/Manhhao/Hoshi-Reader> (iOS), <https://github.com/HuangAntimony/Hoshi-Reader-Android> (Android) | 跨平台开源日文小说/有声书阅读器，集成查词与闪卡创建，验证核心阅读器需求边界。 |
+| moemeter (萌メーター) | <https://moemeter.netlify.app/books> | 针对 TMW Novel Club 的 Bookmeter 增强工具，提供社区阅读统计、排行榜功能参考。 |
+| Jiten.moe | <https://jiten.moe/decks/media> | 提供媒体词汇统计、阅读跟踪与已知/未知词汇状态管理，为本地阅读数据持久化提供参考。 |
