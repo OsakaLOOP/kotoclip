@@ -5,10 +5,10 @@ paragraph=10 | schema=kotoclip.unified-document.v8
 わたしなんかとは比べ物にならないほど貴重な彼女の時間を専有してしまっているという後ろめたさが、背筋をゾワゾワゾワと這い上がる。
 
 ## Provider
-ginza;176ms | kwja;697ms
+ginza;123ms
 
 数量
-chars=63 | tokens=33 | formations_observed=1 | bunsetsu=24 | clauses=6 | query_targets=38 | entities=117 | relations=69
+chars=63 | tokens=33 | formations_observed=1 | bunsetsu=11 | clauses=2 | query_targets=38 | entities=50 | relations=33
 词语
 わたし;代名詞;私;ワタシ;o | 比べ物;名詞;-;クラベモノ;o | なら;動詞;成る;ナラ;未然形-一般 | 貴重;形状詞;-;キチョウ;o | 彼女;代名詞;-;カノジョ;o | 時間;名詞;-;ジカン;o | 専有;名詞;-;センユウ;o | し;動詞;為る;シ;連用形-一般 | しまっ;動詞;仕舞う;シマッ;連用形-促音便 | いる;動詞;居る;イル;終止形-一般 | いう;動詞;言う;イウ;連体形-一般 | 後ろめた;形容詞;後ろめたい;ウシロメタ;語幹-一般 | さ;接尾辞;-;サ;o | 背筋;名詞;-;セスジ;o | ゾワゾワゾワ;名詞;o;o;o | 這い上がる;動詞;-;ハイアガル;終止形-一般
 
@@ -22,7 +22,7 @@ chars=63 | tokens=33 | formations_observed=1 | bunsetsu=24 | clauses=6 | query_t
 | （接「専有して」）しまっ ＋ て | てしまう ＋ て／で接续 | しまって（基本形：しまう） |
 | （接「しまって」）いる | ている | いる（基本形：いる） |
 | いう | 連体形 | いう（基本形：いう） |
-| 後ろめた ＋ さ | 名词化 | 後ろめたさ（基本形：後ろめたさ） |
+| 後ろめた ＋ さ | 名词化 | 後ろめたさ（基本形：後ろめたい） |
 | 這い上がる | 終止形 | 這い上がる（基本形：這い上がる） |
 
 
@@ -32,6 +32,32 @@ chars=63 | tokens=33 | formations_observed=1 | bunsetsu=24 | clauses=6 | query_t
 | --- | --- | --- |
 | 這い上がる | 整体词 | 這い上がる |
 
+
+## 词典查询对象
+
+`[]` 表示最大查询范围，`-` 表示可独立查词的内部边界；构件和活用连接不加分隔符。
+
+正文查询分布：
+
+```text
+[わたし]なんかとは[比べ物]に[なら]ないほど[貴重]な[彼女]の[時間]を[専有し]てしまっていると[いう][後ろめた]さが、[背筋]を[ゾワゾワゾワ]と[這い上がる]。
+```
+
+| 最大范围 | 规范查询形 | 真实词典词条与释义摘要 |
+| --- | --- | --- |
+| [わたし] | 私／わたし | Crown：私〈わたし〉 — 我<br>小学馆：私〈わたし〉 — 我 我 ， ，<br>大辞林：私〈わたし〉 — （代） 〔「わたくし」の転。近世以降の語〕 一人称。「わたくし」よりもうちとけた場で用いる。現在，一人称としてもっとも普通の語で，男女ともに用いる。<br>Crown：渡し〈わたし〉 — 渡口 交接<br>大辞林：渡し〈わたし〉 — 船で人を対岸に運ぶこと。また，その船。また，その船の着くところ。 物と物とにかけ渡す板など。 直径。さしわたし。<br>小学馆：渡し〈わたし〉 — 摆渡，渡船 渡口 摆渡，渡船 渡口 跳板 跳板 （车床的）马鞍，过桥 （车床的）马鞍，过桥 交付，交给 交货 交付，交给 交货 |
+| [比べ物] | 比べ物 | 大辞林：比べ物〈くらべもの〉 — 物を比較すること。また，比較するだけの値打ちのある物。 |
+| [なら] | なる／成る | 大辞林：なる〈なる〉 — に同じ。 （補助動詞）に同じ。<br>大辞林：慣る〈なる〉 — ・・<br>大辞林：成る〈なる〉 — 完成する。実現する。 （「だれだれの…になる」の形で）その人により作られる。 （「…からなる」「…よりなる」の形で）構成されている。形づくられている。 願い…<br>大辞林：生る〈なる〉 — 果実が生ずる。みのる。 何もなかったところに，新たなものが形をとって現れ出る。存在するようになる。生まれ出る。<br>大辞林：鳴る〈なる〉 — 音が出る。ひびく。 ある特徴によって，広く知られる。<br>Crown：成る〈なる〉 — 做 成为 变为 达 算 可以认作 经过<br>Crown：生る〈なる〉 — 结果<br>Crown：鳴る〈なる〉 — 响 鸣 著称<br>大辞林：成〈なる〉 — 暦注の十二直の一。新たに事を始めることに吉，訴訟や談判に凶という日。<br>小学馆：成る・為る〈なる〉 — 变成，变为 成为 变成，变为 成为 当 当 共计 达到 共计 达到 到 经过（……年月） 到 经过（……年月） 有益，有用，起作用 有益，有用，起作用 做好…<br>小学馆：生る〈なる〉 — 结（果） 结（果）<br>小学馆：鳴る〈なる〉 — 鸣 响 鸣 响 驰名，闻名 驰名，闻名 |
+| [貴重] | 貴重 | 大辞林：貴重〈きちょう〉 — 非常に価値のあるさま。きわめて大切なさま。 大切にすること。重んずること。<br>小学馆：貴重〈きちょう〉 — 贵重，宝贵，珍贵 贵重，宝贵，珍贵 |
+| [彼女] | 彼女 | Crown：彼女〈かのじょ〉 — 她<br>大辞林：彼女〈かのじょ〉 — （代） 〔西欧語の三人称単数の女性をさす代名詞（英語のsheなど）の翻訳語「彼女かのおんな（あのおんな）」から生まれた語〕三人称。話し手，聞き手以外の女性を…<br>小学馆：彼女〈かのじょ〉 — 她 她 她 女朋友，女友 未婚妻，对象，情人 情妇 妻子 她 女朋友，女友 未婚妻，对象，情人 情妇 妻子 |
+| [時間] | 時間 | Crown：時間〈じかん〉 — 时间 小时 时间 工夫<br>大辞林：時間〈じかん〉 — 時の長さ。時の流れのある一点からある一点まで。 時の流れのある一点。時刻。 時間の単位。3600秒。助数詞的にも用いる。 学校などで，授業の単位として設けた…<br>小学馆：時間〈じかん〉 — 时间，工夫，功夫 时间，工夫，功夫 时刻，钟点，时候 时刻，钟点，时候 小时，钟头，钟点 小时，钟头，钟点 授课时间，课时 授课时间，课时 时间 时间 時刻… |
+| [専有し] | 専有する／専有 | Crown：専有する〈せんゆうする〉 — 专有<br>小学馆：専有〈せんゆう〉 — 专有，独占 垄断 专有，独占 垄断<br>大辞林：専有〈せんゆう〉 — ある特定の人だけが所有すること。自分ひとりだけで所有すること。独占。 |
+| [いう] | 言う／いう | 大辞林：言う〈いう〉 — 何らかの音・単語を発する。 事実や考えを表出する。告げる。 人が，何かの言葉を口から発する。 動物や物が声や音を発する。 自分の考え・判断や事実の指摘を述べ…<br>Crown：言う〈いう〉 — 说<br>小学馆：言う〈いう〉 — 说，讲，道 说，讲，道 说话 吭（声） 说话 吭（声） 说，告诉，告诫 说，告诉，告诫 说，诉说 承认 说，诉说 承认 表达 表明 说清，说明 表达 表明 … |
+| [後ろめた] | 後ろめたい | 大辞林：後ろめたい〈うしろめたい〉 — 後ろ暗いところがあって，良心がとがめる。やましい。 あとのことが気懸かりだ。将来が心配だ。なりゆきが不安だ。 気が許せない。油断がならない。<br>Crown：後ろめたい〈うしろめたい〉 — 亏心 内疚<br>小学馆：後ろめたい〈うしろめたい〉 — 内疚，负疚 内疚，负疚 |
+| [背筋] | 背筋 | Crown：背筋〈せすじ〉 — 脊梁<br>大辞林：背筋〈せすじ〉 — 背中を縦に走る中心線。背骨とその両側の部分。<br>小学馆：背筋〈せすじ〉 — 背部 脊梁 背部 脊梁 脊缝 脊缝 |
+| [ゾワゾワゾワ] | ゾワゾワゾワ | 未收录；保留基本形查询 |
+| [這い上がる] | 這い上がる | Crown：這い上がる〈はいあがる〉 — 爬上<br>小学馆：這い上がる〈はいあがる〉 — 往上爬 往上爬<br>大辞林：這い上（が）る〈はいあがる〉 — 這って上に上がる。 低い地位や苦しい境遇などから抜け出す。 |
+
 <details>
 <summary>实验与来源统计</summary>
 
@@ -39,12 +65,13 @@ chars=63 | tokens=33 | formations_observed=1 | bunsetsu=24 | clauses=6 | query_t
 provider=ginza
 わたしなんかとは;observed | 比べ物に;observed | ならないほど;observed | 貴重な;observed | 彼女の;observed | 時間を;observed | 専有してしまっているという;observed | 後ろめたさが、;observed | 背筋を;observed | ゾワゾワゾワと;observed | 這い上がる。;observed
 小句
-わたしなんかとは比べ物にならないほど貴重な彼女の時間を専有してしまっているという後ろめたさが、;ginza;observed | 背筋をゾワゾワゾワと這い上がる。;ginza;observed | わたしなんかとは比べ物にならない;kwja;observed | ほど;kwja;observed | 貴重な彼女の時間を専有してしまっていると;kwja;observed | いう後ろめたさが、背筋をゾワゾワゾワと這い上がる。;kwja;pending
+provider=ginza
+わたしなんかとは比べ物にならないほど貴重な彼女の時間を専有してしまっているという後ろめたさが、;observed | 背筋をゾワゾワゾワと這い上がる。;observed
 来源关联
-nodes=ginza:bunsetsu=11,ginza:clause=2,ginza:compound=1,ginza:entity=2,ginza:sentence=1,ginza:token=33,kwja:basic_phrase=13,kwja:bunsetsu=13,kwja:clause=4,kwja:predicate=5,kwja:sentence=1,kwja:token=31; relations=ginza:dependency:ROOT=1,ginza:dependency:acl=1,ginza:dependency:advcl=3,ginza:dependency:aux=4,ginza:dependency:case=9,ginza:dependency:fixed=3,ginza:dependency:mark=4,ginza:dependency:nmod=1,ginza:dependency:nsubj=1,ginza:dependency:obj=2,ginza:dependency:obl=2,ginza:dependency:punct=2,kwja:bridging:ノ=3,kwja:coreference:==1,kwja:dependency:D=26,kwja:predicate_argument:ガ=4,kwja:predicate_argument:ニ=1,kwja:predicate_argument:ヲ=1; entities=117; selected=basic_phrase=12,bunsetsu=11,clause=5,compound=1,entity=2,predicate=4,sentence=1; incomplete=5
+nodes=ginza:bunsetsu=11,ginza:clause=2,ginza:compound=1,ginza:entity=2,ginza:sentence=1,ginza:token=33; relations=ginza:dependency:ROOT=1,ginza:dependency:acl=1,ginza:dependency:advcl=3,ginza:dependency:aux=4,ginza:dependency:case=9,ginza:dependency:fixed=3,ginza:dependency:mark=4,ginza:dependency:nmod=1,ginza:dependency:nsubj=1,ginza:dependency:obj=2,ginza:dependency:obl=2,ginza:dependency:punct=2; entities=50; selected=bunsetsu=11,clause=2,compound=1,entity=2,sentence=1; incomplete=0
 对齐
-groups=63; cardinality=1:1=59,1:n=3,n:1=1; status=complete=63; reason=equal_coverage
-1:n;complete;[18, 21] | 1:n;complete;[29, 31] | 1:n;complete;[31, 35] | n:1;complete;[57, 62]
+groups=33; cardinality=1:1=33; status=complete=33
+
 
 </details>
 
@@ -59,5 +86,5 @@ groups=63; cardinality=1:1=59,1:n=3,n:1=1; status=complete=63; reason=equal_cove
 
 
 ## 阶段耗时
-unidic=10.5ms | unify=1.0ms | analyze_total=11.5ms
-enrich.external=698.5ms | enrich.unify=22.7ms | enrich_total=721.2ms
+prepare=3.8ms | routing=0.0ms | unidic=6137.5ms | unify=1.2ms | analyze_total=6142.5ms
+enrich.external=9099.2ms | enrich.unify=7.9ms | enrich_total=9107.1ms

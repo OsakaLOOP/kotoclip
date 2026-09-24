@@ -131,6 +131,7 @@ def main():
                         query = request("query_candidate", analysis_id=document["id"], candidate_id=candidate["id"])
                         case["whole_queries"].append({"surface":candidate["surface"], "target":query["target"],
                             "dictionary_status":query["dictionary_status"], "forms":[group["form"] for group in query["groups"]]})
+                    case["lookup_targets"] = request("lookup_report", analysis_id=document["id"])
                     for token in document["morphemes"]:
                         if token["surface"] not in QUERY_SURFACES:
                             continue

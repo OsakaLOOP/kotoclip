@@ -5,10 +5,10 @@ paragraph=9 | schema=kotoclip.unified-document.v8
 ラティメリアはきょろきょろと部屋を見渡すが、鏡の裏から覗かれてるとは気づかない。
 
 ## Provider
-ginza;96ms | kwja;534ms
+ginza;88ms
 
 数量
-chars=40 | tokens=21 | formations_observed=1 | bunsetsu=16 | clauses=4 | query_targets=23 | entities=79 | relations=44
+chars=40 | tokens=21 | formations_observed=1 | bunsetsu=8 | clauses=2 | query_targets=23 | entities=34 | relations=21
 词语
 ラティメリア;名詞;o;o;o | きょろきょろ;副詞;-;キョロキョロ;o | 部屋;名詞;-;ヘヤ;o | 見渡す;動詞;-;ミワタス;終止形-一般 | 鏡;名詞;-;カガミ;o | 裏;名詞;-;ウラ;o | 覗か;動詞;覗く;ノゾカ;未然形-一般 | 気づか;動詞;気付く;キヅカ;未然形-一般
 
@@ -28,6 +28,28 @@ chars=40 | tokens=21 | formations_observed=1 | bunsetsu=16 | clauses=4 | query_t
 | --- | --- | --- |
 | 見渡す | 整体词 | 見渡す |
 
+
+## 词典查询对象
+
+`[]` 表示最大查询范围，`-` 表示可独立查词的内部边界；构件和活用连接不加分隔符。
+
+正文查询分布：
+
+```text
+[ラティメリア]は[きょろきょろ]と[部屋]を[見渡す]が、[鏡]の[裏]から[覗か]れてるとは[気づか]ない。
+```
+
+| 最大范围 | 规范查询形 | 真实词典词条与释义摘要 |
+| --- | --- | --- |
+| [ラティメリア] | ラティメリア | 未收录；保留基本形查询 |
+| [きょろきょろ] | きょろきょろ | 大辞林：きょろきょろ〈きょろきょろ〉 — 何かを探し求めたり，とまどったり，あわてたりして，あたりを落ち着きなく見回すさま。けろけろ。<br>小学馆：きょろきょろ〈きょろきょろ〉 — （毛毛腾腾，怯生生，慌慌张张地）东张西望 ，四下张望，贼眉鼠眼 （毛毛腾腾，怯生生，慌慌张张地）东张西望 ，四下张望，贼眉鼠眼 |
+| [部屋] | 部屋 | Crown：部屋〈へや〉 — 房间 屋子<br>小学馆：部屋〈へや〉 — 房间，屋子 ……室，……间 房间，屋子 ……室，……间 部屋（老年力士退出第一线后，按规定继承的培养青年力士的地方） 门 部屋（老年力士退出第一线后，按规定…<br>大辞林：《部屋》〈へや〉 — 家の内部を壁や建具で仕切った一画。人が起居し，物などを置くための空間。座敷。室。 「相撲部屋」の略。 殿中の女中の居間。局つぼね。 江戸時代，諸大名の江戸屋… |
+| [見渡す] | 見渡す | 大辞林：見渡す〈みわたす〉 — 遠くまで見る。 広く全体を見る。<br>Crown：見渡す〈みわたす〉 — 张望 环视 瞭望<br>小学馆：見渡す〈みわたす〉 — 放眼望去 瞭望 远望 张望 放眼望去 瞭望 远望 张望 |
+| [鏡] | 鏡 | Crown：鏡〈かがみ〉 — 镜子<br>大辞林：鏡〈かがみ〉 — 光の反射を利用して形・姿を映して見る道具。古くは銅合金など金属を用いたが，現在は，ガラス板の裏面に銀鍍金めつきをして作る。古来霊的なものとみなされ，神社の神…<br>小学馆：鏡〈かがみ〉 — 镜，镜子 镜，镜子 酒桶的盖子 酒桶的盖子 |
+| [裏] | 裏 | Crown：裏〈うら〉 — 背面 后面 背景 内幕 下半场<br>大辞林：裏〈うら〉 — 表面と反対の面。下または陰になって見えない部分。 前面・正面の反対側。うしろ。 衣服・袋物などの内側に付ける布。 相手の予想や世間の常識の反対。逆。 表面に…<br>小学馆：裏〈うら〉 — 背面，反面 背面，反面 后（面），后边 后（面），后边 里儿，里子 底子 里儿，里子 底子 内部，里（面） 背后 内幕，幕后 内部，里（面） 背后 内幕，幕… |
+| [覗か] | 覗く | 大辞林：覗く〈のぞく〉 — すき間や穴などからこっそりと見る。 高い所から下を見る。 ちょっと立ち寄る。 こっそり見る。また，ちょっと見る。 望遠鏡・顕微鏡などで見る。 一部分がちらり…<br>Crown：覗く〈のぞく〉 — 张望 窥视 顺便去看一眼 露出<br>小学馆：覗く〈のぞく〉 — 露出 露出 窥视，探视 窥视，探视 往下望 往下望 看一看，瞧瞧 看一看，瞧瞧 |
+| [気づか] | 気づく／気付く | 大辞林：気付く〈きづく〉 — それまで意識になかったことに，思いが及ぶ。気がつく。 意識を取り戻す。正気しようきにかえる。気がつく。<br>Crown：気付く〈きづく〉 — 发觉 察觉 注意到<br>小学馆：気付く〈きづく〉 — 注意到，理会到 发现，发觉 察觉 意识到 认识到 想到 注意到，理会到 发现，发觉 察觉 意识到 认识到 想到 清醒过来 苏醒过来 清醒过来 苏醒过来 |
+
 <details>
 <summary>实验与来源统计</summary>
 
@@ -35,12 +57,13 @@ chars=40 | tokens=21 | formations_observed=1 | bunsetsu=16 | clauses=4 | query_t
 provider=ginza
 ラティメリアは;observed | きょろきょろと;observed | 部屋を;observed | 見渡すが、;observed | 鏡の;observed | 裏から;observed | 覗かれてるとは;observed | 気づかない。;observed
 小句
-ラティメリアはきょろきょろと部屋を見渡すが、;ginza;candidate | 鏡の裏から覗かれてるとは気づかない。;ginza;candidate | ラティメリアはきょろきょろと部屋を見渡すが、;kwja;observed | 鏡の裏から覗かれてるとは気づかない。;kwja;observed
+provider=ginza
+ラティメリアはきょろきょろと部屋を見渡すが、;observed | 鏡の裏から覗かれてるとは気づかない。;observed
 来源关联
-nodes=ginza:bunsetsu=8,ginza:clause=2,ginza:compound=1,ginza:entity=1,ginza:sentence=1,ginza:token=21,kwja:basic_phrase=9,kwja:bunsetsu=8,kwja:clause=2,kwja:predicate=3,kwja:sentence=1,kwja:token=22; relations=ginza:dependency:ROOT=1,ginza:dependency:advcl=2,ginza:dependency:advmod=1,ginza:dependency:aux=3,ginza:dependency:case=7,ginza:dependency:mark=1,ginza:dependency:nmod=1,ginza:dependency:nsubj=1,ginza:dependency:obj=1,ginza:dependency:obl=1,ginza:dependency:punct=2,kwja:bridging:ノ=1,kwja:dependency:D=17,kwja:discourse:逆接=1,kwja:predicate_argument:ガ=3,kwja:predicate_argument:ヲ=1; entities=79; selected=basic_phrase=7,bunsetsu=8,clause=2,compound=1,entity=1,predicate=3,sentence=1; incomplete=6
+nodes=ginza:bunsetsu=8,ginza:clause=2,ginza:compound=1,ginza:entity=1,ginza:sentence=1,ginza:token=21; relations=ginza:dependency:ROOT=1,ginza:dependency:advcl=2,ginza:dependency:advmod=1,ginza:dependency:aux=3,ginza:dependency:case=7,ginza:dependency:mark=1,ginza:dependency:nmod=1,ginza:dependency:nsubj=1,ginza:dependency:obj=1,ginza:dependency:obl=1,ginza:dependency:punct=2; entities=34; selected=bunsetsu=8,clause=2,compound=1,entity=1,sentence=1; incomplete=0
 对齐
-groups=41; cardinality=1:1=39,n:1=1,n:m=1; status=complete=41; reason=equal_coverage
-n:1;complete;[7, 13] | n:m;complete;[29, 32]
+groups=21; cardinality=1:1=21; status=complete=21
+
 
 </details>
 
@@ -48,5 +71,5 @@ n:1;complete;[7, 13] | n:m;complete;[29, 32]
 
 
 ## 阶段耗时
-unidic=6.6ms | unify=0.8ms | analyze_total=7.4ms
-enrich.external=535.0ms | enrich.unify=13.2ms | enrich_total=548.2ms
+prepare=2.7ms | routing=0.0ms | unidic=6112.8ms | unify=0.9ms | analyze_total=6116.4ms
+enrich.external=10140.4ms | enrich.unify=7.8ms | enrich_total=10148.2ms

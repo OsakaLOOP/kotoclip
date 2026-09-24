@@ -1,5 +1,5 @@
 //! 词法连接状态机。GiNZA 参与复合核心、功能所有权和来源冲突判定。
-use crate::{external::SourceArtifact, linguistic_context::Context, model::{MorphemeToken, ProviderToken, QueryForm}, morphology::*};
+use crate::{external::{SourceArtifact, SourceNode}, linguistic_context::Context, model::{MorphemeToken, ProviderToken, QueryForm}, morphology::*};
 
 fn field(t: &ProviderToken, n: usize) -> &str { t.fields.get(n).and_then(|f| f.value.as_deref()).unwrap_or("") }
 
@@ -53,6 +53,10 @@ fn transition(previous: &MorphologyChain, next: &ProviderToken, context: &Contex
     let sahen = field(last, 0) == "名詞" && (field(last, 2).contains("サ変") || context.tag(last.char_range).is_some_and(|tag| tag.contains("サ変")))
         && pos == "動詞" && ctype.contains("サ行変格") && matches!(base, "する" | "為る");
     if sahen { return Transition::Core; }
+    if pos == "接尾辞" && base == "さ" && *form == Stem
+        && matches!(previous.final_state.category.as_str(), "形容詞" | "形状詞") {
+        return Transition::Attach(vec!["nominalization".into()]);
+    }
     if pos=="接尾辞" && matches!(form, Continuative | Stem) && matches!(previous.final_state.category.as_str(),"動詞"|"形容詞"|"形状詞")
         && matches!(base,"やすい"|"易い"|"にくい"|"難い"|"づらい"|"辛い"|"さ") { return Transition::Core; }
     if *form==Continuative && pos=="動詞" && field(next,1).starts_with("非自立") {
@@ -159,6 +163,45 @@ fn merge(chain: &mut MorphologyChain, atom: MorphologyChain, core: bool) {
     chain.evidence.extend(atom.evidence); chain.final_state = atom.final_state;
 }
 
+fn merge_verb_core(chain: &mut MorphologyChain, atom: MorphologyChain, current: &ProviderToken, node: &SourceNode) {
+    let lemma = node.features["lemma"].as_str().unwrap();
+    let (conjugation_type, conjugation_form) = node.features["morph"]["Inflection"].as_str().unwrap().split_once(';').unwrap();
+    let reading = node.features["morph"]["Reading"].as_str().map(str::to_owned);
+    let mut supplemented = current.clone();
+    supplemented.fields[0].value = Some("動詞".into());
+    supplemented.fields[4].value = Some(conjugation_type.into());
+    supplemented.fields[5].value = Some(conjugation_form.into());
+    let verb_state = state(&supplemented);
+    let mut conjugation = operator(chain, &atom, "conjugation".into());
+    conjugation.input_state = lemma.into();
+    conjugation.output_state = conjugation_form.into();
+    conjugation.label = format!("{conjugation_type}/{conjugation_form}");
+    conjugation.description = format!("GiNZA 活用字段：{}", conjugation.label);
+    conjugation.evidence = vec![format!("ginza:{}:Inflection", node.id)];
+    conjugation.source_morpheme_range = [chain.anchor_morpheme, atom.morpheme_range[1]];
+    conjugation.char_range = [chain.char_range[0], atom.char_range[1]];
+    conjugation.state_before = MorphologyState { category: "動詞".into(), form: ConnectionForm::Terminal,
+        conjugation_type: conjugation_type.into(), conjugation_form: "基本形".into() };
+    conjugation.state_after = verb_state.clone();
+    chain.source_evidence.extend(atom.source_evidence.clone());
+    chain.source_evidence.push(crate::linguistic_context::SourceEvidence {
+        provider: "ginza".into(), node_id: Some(node.id.clone()), relation_id: None, reason: "verb_core".into(),
+    });
+    merge(chain, atom, true);
+    chain.dictionary_form = lemma.into();
+    chain.lemma_form = lemma.into();
+    chain.lookup_form = lemma.into();
+    chain.display_form = lemma.into();
+    chain.final_state = verb_state;
+    chain.query_forms = vec![QueryForm { kind: "observed".into(), form: chain.surface_form.clone(),
+        reading: reading.clone(), reading_field: reading.as_ref().map(|_| "ginza:morph.Reading".into()) }];
+    if lemma != chain.surface_form {
+        chain.query_forms.push(QueryForm { kind: "base".into(), form: lemma.into(), reading: None, reading_field: None });
+    }
+    chain.operators.push(conjugation);
+    chain.evidence.push(format!("ginza:{}:verb_core", node.id));
+}
+
 pub(crate) fn compose(atoms: Vec<MorphologyChain>, source: &[ProviderToken], morphemes: &[MorphemeToken], external: &[SourceArtifact]) -> MorphologyArtifact {
     let context = Context::new(external);
     let mut chains: Vec<MorphologyChain> = Vec::new();
@@ -180,8 +223,18 @@ pub(crate) fn compose(atoms: Vec<MorphologyChain>, source: &[ProviderToken], mor
         let mut linked = false;
         if let Some(previous) = chains.last_mut().filter(|p| p.char_range[1] == atom.char_range[0] && p.morpheme_range[1] == index) {
             let first = previous.core_morpheme_indices[0];
+            let verb_core = (previous.morpheme_indices.len() == 1 && field(&source[first], 0) == "名詞"
+                && field(current, 0) == "助動詞")
+                .then(|| context.verb_core([previous.char_range[0], atom.char_range[1]], &source[first].surface))
+                .flatten();
+            if let Some(node) = verb_core {
+                merge_verb_core(previous, atom, current, node);
+                continue;
+            }
             let members = context.core_members(morphemes, first);
-            let step = if members.contains(&index) { Transition::Core } else { transition(previous, current, &context, source) };
+            let local_step = transition(previous, current, &context, source);
+            let nominalization = matches!(&local_step, Transition::Attach(kinds) if kinds.iter().any(|kind| kind == "nominalization"));
+            let step = if members.contains(&index) && !nominalization { Transition::Core } else { local_step };
             match step {
                 Transition::Core => {
                     previous.evidence.push("connection:lexical_core".into());
@@ -198,6 +251,7 @@ pub(crate) fn compose(atoms: Vec<MorphologyChain>, source: &[ProviderToken], mor
                     let before = previous.final_state.clone();
                     let copula = kinds.iter().any(|k| k == "copula");
                     let te = kinds.iter().any(|k| k == "te_connection");
+                    if kinds.iter().any(|kind| kind == "nominalization") { atom.final_state.category = "名詞".into(); }
                     if te { atom.final_state.form = ConnectionForm::Te; }
                     if kinds.is_empty() { kinds.push("auxiliary".into()); }
                     for kind in kinds { previous.operators.push(operator(previous, &atom, kind)); }

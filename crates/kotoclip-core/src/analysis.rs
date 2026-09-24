@@ -98,6 +98,11 @@ pub enum Request {
         #[serde(default)]
         selected_form: Option<String>,
     },
+    LookupTargets { analysis_id: String, range: [usize; 2] },
+    LookupReport { analysis_id: String },
+    LookupDocument { session_id: String, text_version: String, generation: u64, unit_id: String, artifact_revision: u64, range: [usize; 2] },
+    QueryLookupDocument { session_id: String, text_version: String, generation: u64, unit_id: String, artifact_revision: u64, target_id: String, #[serde(default)] selected_form: Option<String> },
+    QueryTarget { analysis_id: String, target_id: String, #[serde(default)] selected_form: Option<String> },
     Search {
         word: String,
     },
@@ -227,6 +232,27 @@ impl AnalysisService {
                 let matched = result["groups"].as_array().is_some_and(|groups| groups.iter().any(|g| g["total"].as_u64().unwrap_or(0)>0));
                 result["dictionary_status"] = json!(if matched { "matched" } else { "no_match" });
                 Ok(result)
+            }
+            Request::LookupTargets { analysis_id, range } => {
+                let document = self.engine.document(&analysis_id)?;
+                self.engine.lookup_targets(&document, range)
+            }
+            Request::LookupReport { analysis_id } => self.engine.lookup_report(self.engine.document(&analysis_id)?.as_ref()),
+            Request::LookupDocument { session_id, text_version, generation, unit_id, artifact_revision, range } => {
+                let document = self.sessions.document(&session_id, &text_version, generation, &unit_id, artifact_revision)?;
+                let mut result = self.engine.lookup_targets(&document, range)?;
+                result["target"] = json!({"session_id": session_id, "text_version": text_version, "generation": generation, "unit_id": unit_id, "artifact_revision": artifact_revision});
+                Ok(result)
+            }
+            Request::QueryLookupDocument { session_id, text_version, generation, unit_id, artifact_revision, target_id, selected_form } => {
+                let document = self.sessions.document(&session_id, &text_version, generation, &unit_id, artifact_revision)?;
+                let mut result = self.engine.query_target(&document, &target_id, selected_form.as_deref())?;
+                result["target"] = json!({"session_id": session_id, "text_version": text_version, "generation": generation, "unit_id": unit_id, "artifact_revision": artifact_revision, "target_id": target_id});
+                Ok(result)
+            }
+            Request::QueryTarget { analysis_id, target_id, selected_form } => {
+                let document = self.engine.document(&analysis_id)?;
+                self.engine.query_target(&document, &target_id, selected_form.as_deref())
             }
             Request::Search { word } => {
                 let word = word.trim();

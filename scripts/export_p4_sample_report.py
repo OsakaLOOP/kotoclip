@@ -1,6 +1,7 @@
 """导出单个 P4 样本的紧凑逐层 Markdown 报告。"""
 from __future__ import annotations
 import argparse, json, os, subprocess, tempfile, sys
+from html.parser import HTMLParser
 from collections import Counter
 from pathlib import Path
 
@@ -29,6 +30,69 @@ def table(lines, title, headers, rows):
         return
     lines += ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
     lines.extend("| " + " | ".join(str(cell).replace("|", "／").replace("\n", " ") for cell in row) + " |" for row in rows)
+    lines.append("")
+
+class EntryText(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.parts = []
+
+    def handle_data(self, data):
+        self.parts.append(data)
+
+def entry_summary(entry):
+    fragments = []
+    def collect(senses):
+        for sense in senses:
+            for field in ("definitions", "glosses"):
+                fragments.extend(value.get("html", "") for value in sense.get(field, []))
+            for group in sense.get("gloss_groups", []):
+                fragments.extend(clause.get("text", {}).get("html", "") for clause in group.get("clauses", []))
+            collect(sense.get("children", []))
+    collect(entry.get("senses", []))
+    parser = EntryText()
+    parser.feed(" ".join(fragments) or entry.get("definition_html", ""))
+    text = " ".join("".join(parser.parts).split())
+    return text[:78] + ("…" if len(text) > 78 else "")
+
+def lookup_tables(lines, doc):
+    lookup = doc.get("lookup_targets")
+    if not lookup:
+        return
+    text = doc["text"]
+    outer = lookup["outer_targets"]
+    inner = lookup["inner_targets"]
+    def bracket(target):
+        start, end = target["char_range"]
+        members = [token for token in doc["morphemes"] if token["id"] in target["morpheme_ids"]]
+        if any(token["pos"][0] in {"動詞", "形容詞"} for token in members):
+            return "[" + text[start:end] + "]"
+        cuts = {start, end}
+        for child in inner:
+            if child["parent_outer_id"] == target["id"] and child["decision"] == "queryable":
+                cuts.update(child["char_range"])
+        cuts = sorted(cuts)
+        return "[" + "-".join(text[left:right] for left, right in zip(cuts, cuts[1:])) + "]"
+    pieces = []
+    cursor = 0
+    for target in outer:
+        start, end = target["char_range"]
+        pieces.extend((text[cursor:start], bracket(target)))
+        cursor = end
+    pieces.append(text[cursor:])
+    lines += ["", "## 词典查询对象", "", "`[]` 表示最大查询范围，`-` 表示可独立查词的内部边界；构件和活用连接不加分隔符。", "",
+              "正文查询分布：", "", "```text", "".join(pieces), "```", "",
+              "| 最大范围 | 规范查询形 | 真实词典词条与释义摘要 |", "| --- | --- | --- |"]
+    names = {"三省堂Super大辞林3.1": "大辞林", "小学馆日中辞典": "小学馆", "Crown日中辞典": "Crown"}
+    for target in outer:
+        forms = "／".join(dict.fromkeys(form["form"] for form in target["lookup_forms"]))
+        entries = []
+        for entry in target["entries"]:
+            headword = entry.get("header", {}).get("display_form") or entry["headword"]
+            reading = f"〈{entry['reading']}〉" if entry.get("reading") else ""
+            entries.append(f"{names.get(entry['dict_name'], entry['dict_name'])}：{headword}{reading} — {entry_summary(entry)}")
+        cells = (bracket(target), forms, "<br>".join(entries) or "未收录；保留基本形查询")
+        lines.append("| " + " | ".join(cell.replace("\n", " ") for cell in cells) + " |")
     lines.append("")
 
 FORM_NAMES = {
@@ -145,6 +209,7 @@ def append(lines, doc):
         words.append(";".join(c(part) for part in parts))
     lines += ["词语", joined(words)]
     language_tables(lines, doc)
+    lookup_tables(lines, doc)
     lines += ["<details>", "<summary>实验与来源统计</summary>", ""]
     # 文节：provider 字段若全部相同则在摘要注明，逐项省略
     bs=doc.get("bunsetsu",{}).get("nodes",[])
@@ -190,6 +255,8 @@ def export_one(report, sample_id, output_dir, saved_output=False):
         current, providers=raw["unit"]["document"],raw["unit"]["providers"]
     else:
         current, providers = live(saved["text"])
+    current = dict(current)
+    current["lookup_targets"] = sample.get("lookup_targets")
     schema=current.get("schema","")
     # Provider：status=ready 固定值省略，只保留 id;time
     prov_line=" | ".join(

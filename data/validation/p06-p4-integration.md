@@ -5,10 +5,10 @@ paragraph=6 | schema=kotoclip.unified-document.v8
 時折雨が降る中、巨大鍋の周りには長蛇の列ができた。神戸市から訪れた会社員女性（２８）は「芋煮を食べたのは初めて。サトイモがとろとろでおいしい」と頬張っていた。
 
 ## Provider
-ginza;201ms | kwja;601ms
+ginza;153ms
 
 数量
-chars=79 | tokens=53 | formations_observed=3 | bunsetsu=38 | clauses=12 | query_targets=58 | entities=192 | relations=109
+chars=79 | tokens=53 | formations_observed=3 | bunsetsu=19 | clauses=4 | query_targets=58 | entities=81 | relations=50
 词语
 時折;副詞;-;トキオリ;o | 雨;名詞;-;アメ;o | 降る;動詞;-;フル;連体形-一般 | 中;名詞;-;ナカ;o | 巨大;形状詞;-;キョダイ;o | 鍋;名詞;-;ナベ;o | 周り;名詞;-;マワリ;o | 長蛇;名詞;-;チョウダ;o | 列;名詞;-;レツ;o | でき;動詞;出来る;デキ;連用形-一般 | 神戸;名詞;コウベ;コウベ;o | 市;名詞;-;シ;o | 訪れ;動詞;訪れる;オトズレ;連用形-一般 | 会社;名詞;-;カイシャ;o | 員;接尾辞;-;イン;o | 女性;名詞;-;ジョセイ;o | ２;名詞;二;ニ;o | ８;名詞;八;ハチ;o | 芋煮;名詞;-;イモニ;o | 食べ;動詞;食べる;タベ;連用形-一般 | 初めて;副詞;-;ハジメテ;o | サトイモ;名詞;里芋;-;o | とろとろ;形状詞;-;トロトロ;o | おいしい;形容詞;美味しい;オイシイ;終止形-一般 | 頬張っ;動詞;頬張る;ホオバッ;連用形-促音便 | い;動詞;居る;イ;連用形-一般
 
@@ -35,6 +35,44 @@ chars=79 | tokens=53 | formations_observed=3 | bunsetsu=38 | clauses=12 | query_
 | 会社 ＋ 員 ＋ 女性 ＋ （ ＋ ２ ＋ ８ | 范围不连续 | 会社員女性（２８ |
 | ２ ＋ ８ | 整体词 | ２８／２八 |
 
+
+## 词典查询对象
+
+`[]` 表示最大查询范围，`-` 表示可独立查词的内部边界；构件和活用连接不加分隔符。
+
+正文查询分布：
+
+```text
+[時折][雨]が[降る][中]、[巨大][鍋]の[周り]には[長蛇]の[列]が[でき]た。[神戸][市]から[訪れ]た[会社-員][女性]（[２][８]）は「[芋煮]を[食べ]たのは[初めて]。[サトイモ]が[とろとろ]で[おいしい]」と[頬張っ]ていた。
+```
+
+| 最大范围 | 规范查询形 | 真实词典词条与释义摘要 |
+| --- | --- | --- |
+| [時折] | 時折 | 大辞林：時折〈ときおり〉 — 頻度がかなり低いさま。ときどき。ときたま。たまに。<br>Crown：時折〈ときおり〉 — 偶尔 有时 间或<br>小学馆：時折〈ときおり〉 — 有时，偶尔 有时，偶尔 |
+| [雨] | 雨 | Crown：雨〈あめ〉 — 雨<br>大辞林：雨〈あめ〉 — 空から降ってくる水滴。大気中の水蒸気が高所で気温冷却により凝結し水滴となって落ちてくるもの。また，それが降る天候。雨天。 （雨のように）絶え間なく降りそそぐ…<br>小学馆：雨〈あめ〉 — 雨 下雨 雨天 雨量 雨 下雨 雨天 雨量 雨点般落下 雨点般落下 |
+| [降る] | 降る | 大辞林：降る〈ふる〉 — 空から雨・雪などが落ちてくる。露・霜・霧などにもいう。 上から物が落ちてくる。 思いがけないことが身に及ぶ。 たくさんの物が集中する。<br>Crown：降る〈ふる〉 — 下 降<br>小学馆：降る〈ふる〉 — 下 降 下 降 |
+| [中] | 中 | Crown：中〈なか〉 — 里面 中间 中间值<br>大辞林：中〈なか〉 — 空間的な，ある範囲の内側。 家庭・学校・会社など，ある組織や集団の内部。 事物についてある範囲を限定し，その範囲内でことを考えるときに用いる語。うち。 区切…<br>小学馆：中〈なか〉 — 里边里面，……里，……中，内部 里边里面，……里，……中，内部 中，当中 中，当中 中，其中 中，其中 中央，当中 中，中间 中央，当中 中，中间 中等 中…<br>大辞林：中〈なか〉 — 姓氏の一。 |
+| [巨大] | 巨大 | 大辞林：巨大〈きょだい〉 — 非常に大きい・こと（さま）。<br>小学馆：巨大〈きょだい〉 — 巨大 巨大 |
+| [鍋] | 鍋 | Crown：鍋〈なべ〉 — 锅子<br>大辞林：鍋〈なべ〉 — 食物を煮るのに用いる金属製または陶器製の器。釜かまより浅く，取っ手・つるなどをつける。 「鍋料理」の略。 女中・下女をいう語。おなべ。<br>小学馆：鍋〈なべ〉 — 锅 锅 火锅 火锅 |
+| [周り] | 周り | Crown：周り〈まわり〉 — 周围 四周 附近 经由 绕 圈 |
+| [長蛇] | 長蛇 | Crown：長蛇〈ちょうだ〉 — 长蛇<br>大辞林：長蛇〈ちょうだ〉 — 長く大きなヘビ。 長く延び続いているもののたとえ。<br>小学馆：長蛇〈ちょうだ〉 — 长蛇 长蛇 |
+| [列] | 列 | 大辞林：列〈れつ〉 — 長く並んだもの。行列。 仲間。 〘数〙二（接尾） 助数詞。並んでいるもののつらなりを数えるのに用いる。 ある一定の規則に従って数などを並べたもの。 行列また…<br>Crown：列〈れつ〉 — 行列 列 队<br>小学馆：列〈れつ〉 — 队，行列，列 排 行 队伍，队列 队，行列，列 排 行 队伍，队列 类 类 |
+| [でき] | できる／出来る | 大辞林：出来る〈できる〉 — 自然に生じる。 それまでなかった物が生じる。 ある人にある事態が出現する。おこる。生じる。 新たに作られて完成する。 作物が成熟する。また，作物が生長する。…<br>Crown：出来る〈できる〉 — 会 能 办得到 做好 建成 发生 有 人品好<br>小学馆：出来る〈できる〉 — 做好，做完 做好，做完 修，修建 做出，建成 修，修建 做出，建成 形成，出现 形成，出现 产，发生，有，长 产，发生，有，长 产，出产 产，出产 能，能够…<br>大辞林：出切る〈できる〉 — 中に入っていたものが全部出る。出尽くす。 完全に外に出る。<br>小学馆：出切る〈できる〉 — 全部出去，全部出来 全部出去，全部出来 |
+| [神戸] | コウベ／神戸 | Crown：こうべ〈こうべ〉 — 头 首<br>大辞林：神戸〈こうべ〉 — 兵庫県南東部の市。県庁所在地。指定都市。大阪湾に臨み，背後に六甲山地が迫る狭長な地に中心市街地が発達。日本有数の貿易港で，阪神工業地帯の中核。<br>大辞林：首〈こうべ〉 — くびから上の部分。あたま。かしら。 |
+| [市] | 市 | Crown：市〈し〉 — 市 城市<br>大辞林：市〈し〉 — 地方公共団体の一。人口五万以上を有し，中心市街地にある戸数が全体の六割以上を占め，その他都市に必要な諸施設・諸要件を備えていることなどの条件を満たしているも…<br>小学馆：市〈し〉 — 市 市 城市，都市 城市，都市 |
+| [訪れ] | 訪れる | 大辞林：訪れる〈おとずれる〉 — ある場所や人の家に行く。訪問する。 （時節やある状態などが）やってくる。 音をたてる。 たよりをする。手紙で安否を問う。<br>Crown：訪れる〈おとずれる〉 — 访问 找<br>小学馆：訪れる〈おとずれる〉 — 访问，过访 访问，过访 到来 来临 到来 来临 |
+| [会社-員] | 会社員 | 大辞林：会社員〈かいしゃいん〉 — 会社に雇われて業務に従事する者。<br>小学馆：会社員 — 公司职员 公司职员 |
+| [女性] | 女性 | Crown：女性〈じょせい〉 — 女性 女子 妇女<br>大辞林：女性〈じょせい〉 — おんな。婦人。 文法上の性の一。男性・中性に対する。 ； ； ； ； ； ； ；<br>小学馆：女性〈じょせい〉 — 女性，妇女，女的，女子 女性，妇女，女的，女子 阴性 阴性 |
+| [２] | 二／２ | Crown：二〈に〉 — 二 贰 两个<br>大辞林：二〈に〉 — 数の名。一より一つ多い数。ふ。ふた。ふたつ。 一の次の順序。二番目。第二位。つぎ。 「二の糸」の略。<br>小学馆：二〈に〉 — 二 两 二 两 （第）二，其次 （第）二，其次 中弦，第二弦 中弦，第二弦 |
+| [８] | 八／８ | Crown：八〈はち〉 — 八 捌<br>大辞林：八〈はち〉 — 数の名。七より一つ多い数。末広がりの字形から，縁起のよい数とされる。や。やつ。やっつ。〔大字として「捌」の字を用いる〕・<br>小学馆：八〈はち〉 — 八 第八个 八 第八个 |
+| [芋煮] | 芋煮 | 未收录；保留基本形查询 |
+| [食べ] | 食べる | 大辞林：食べる〈たべる〉 — 食物を口に入れ，かんで飲み込む。現在では「食う」よりは上品な言い方とされる。 生計を立てる。生活する。暮らす。 「飲む」「食う」の謙譲語，また丁寧語。<br>Crown：食べる〈たべる〉 — 吃 生活 吃饭<br>StarterDict：食べる〈タベル〉 — 食べる（たべる）：食物を口に入れて咀嚼し、飲み下す。<br>小学馆：食べる〈たべる〉 — 吃 吃 维持生活 养家糊口 维持生活 养家糊口 |
+| [初めて] | 初めて | 大辞林：初めて〈はじめて〉 — その状態・事柄をそれまで経験していないさま。最初。 （「…てはじめて」の形で）さまざまな経過を経てようやくその状態になるさま。やっと。<br>小学馆：初めて〈はじめて〉 — 初次，第一次，头一次 初次，第一次，头一次 ……后，才…… ……后，方…… ……后，才…… ……后，方…… |
+| [サトイモ] | 里芋／サトイモ | Crown：里芋〈サトイモ〉 — 芋头 芋艿<br>大辞林：里芋〈さといも〉 — サトイモ科の多年草。熱帯アジア原産。熱帯・温帯で広く栽培される。葉は長い葉柄につき，卵形で深く二裂する。球茎（芋）と葉柄は食用。日本への渡来は古く，近年まで…<br>小学馆：里芋〈さといも〉 — 芋，芋头，芋艿 芋，芋头，芋艿 |
+| [とろとろ] | とろとろ | Crown：とろとろ〈とろとろ〉 — 微弱 小<br>大辞林：とろとろ〈とろとろ〉 — 物がとけて軟らかくなり，形が半ば崩れたさま。物がとけこんだりして，液に粘り気があるさま。 浅く眠るさま。また，眠気のために意識が薄れてくるさま。 火などの勢…<br>小学馆：とろとろ〈とろとろ〉 — 黏糊糊（的状态） 黏糊糊（的状态） 微火 微火 打盹儿 ，打瞌睡 打盹儿 ，打瞌睡 慢腾腾，磨蹭 慢腾腾，磨蹭 |
+| [おいしい] | 美味しい／おいしい | Crown：美味しい〈おいしい〉 — 好吃 鲜美 香甜<br>小学馆：美味しい〈おいしい〉 — 好吃 好喝 可口，味道鲜美，味美 清新 好吃 好喝 可口，味道鲜美，味美 清新 对口，合乎，合适 对口，合乎，合适<br>大辞林：おいしい〈おいしい〉 — 物の味がよい。 都合がよい。利益になる。好ましい。 |
+| [頬張っ] | 頬張る | 小学馆：頬張る〈ほおばる〉 — 大口吃 把嘴塞满 大口吃 把嘴塞满 |
+
 <details>
 <summary>实验与来源统计</summary>
 
@@ -42,12 +80,13 @@ chars=79 | tokens=53 | formations_observed=3 | bunsetsu=38 | clauses=12 | query_
 provider=ginza
 時折;observed | 雨が;observed | 降る;observed | 中、;observed | 巨大鍋の;observed | 周りには;observed | 長蛇の;observed | 列が;observed | できた。;observed | 神戸市から;observed | 訪れた;observed | 会社員女性（２８）は;observed | 「芋煮を;observed | 食べたのは;observed | 初めて。;observed | サトイモが;observed | とろとろで;observed | おいしい」と;observed | 頬張っていた。;observed
 小句
-時折雨が降る中、;ginza;observed | 巨大鍋の周りには長蛇の列ができた。;ginza;candidate | 神戸市から訪れた会社員女性（２８）は「芋煮を食べたのは初めて。;ginza;observed | サトイモがとろとろでおいしい」と頬張っていた。;ginza;observed | 時折雨が降る;kwja;observed | 中、;kwja;observed | 巨大鍋の周りには長蛇の列ができた。;kwja;observed | 神戸市から訪れた;kwja;observed | 会社員女性（２８）は「芋煮を食べたのは;kwja;observed | 初めて。;kwja;observed | サトイモがとろとろでおいしい」と;kwja;observed | 頬張っていた。;kwja;observed
+provider=ginza
+時折雨が降る中、;observed | 巨大鍋の周りには長蛇の列ができた。;observed | 神戸市から訪れた会社員女性（２８）は「芋煮を食べたのは初めて。;observed | サトイモがとろとろでおいしい」と頬張っていた。;observed
 来源关联
-nodes=ginza:bunsetsu=19,ginza:clause=4,ginza:compound=2,ginza:entity=3,ginza:sentence=3,ginza:token=50,kwja:basic_phrase=25,kwja:bunsetsu=19,kwja:clause=8,kwja:entity=1,kwja:predicate=9,kwja:sentence=2,kwja:token=47; relations=ginza:dependency:ROOT=3,ginza:dependency:acl=2,ginza:dependency:advcl=1,ginza:dependency:advmod=2,ginza:dependency:amod=1,ginza:dependency:aux=4,ginza:dependency:case=13,ginza:dependency:compound=2,ginza:dependency:csubj=1,ginza:dependency:fixed=1,ginza:dependency:mark=2,ginza:dependency:nmod=2,ginza:dependency:nsubj=4,ginza:dependency:obj=1,ginza:dependency:obl=3,ginza:dependency:punct=8,kwja:bridging:ノ=4,kwja:dependency:D=44,kwja:predicate_argument:ガ=9,kwja:predicate_argument:ガ２=1,kwja:predicate_argument:ヲ=1; entities=192; selected=basic_phrase=23,bunsetsu=19,clause=11,compound=2,entity=3,predicate=9,sentence=3; incomplete=6
+nodes=ginza:bunsetsu=19,ginza:clause=4,ginza:compound=2,ginza:entity=3,ginza:sentence=3,ginza:token=50; relations=ginza:dependency:ROOT=3,ginza:dependency:acl=2,ginza:dependency:advcl=1,ginza:dependency:advmod=2,ginza:dependency:amod=1,ginza:dependency:aux=4,ginza:dependency:case=13,ginza:dependency:compound=2,ginza:dependency:csubj=1,ginza:dependency:fixed=1,ginza:dependency:mark=2,ginza:dependency:nmod=2,ginza:dependency:nsubj=4,ginza:dependency:obj=1,ginza:dependency:obl=3,ginza:dependency:punct=8; entities=81; selected=bunsetsu=19,clause=4,compound=2,entity=3,sentence=3; incomplete=0
 对齐
-groups=96; cardinality=1:1=85,1:n=10,n:1=1; status=complete=96; reason=equal_coverage
-1:n;complete;[25, 28] | 1:n;complete;[33, 36] | 1:n;complete;[39, 41] | n:1;complete;[0, 2] | 1:n;complete;[21, 24] | 1:n;complete;[30, 33] | 1:n;complete;[39, 41] | 1:n;complete;[47, 50] | 1:n;complete;[61, 66] | 1:n;complete;[72, 76] | 1:n;complete;[76, 78]
+groups=50; cardinality=1:1=47,1:n=3; status=complete=50; reason=equal_coverage
+1:n;complete;[25, 28] | 1:n;complete;[33, 36] | 1:n;complete;[39, 41]
 
 </details>
 
@@ -62,5 +101,5 @@ groups=96; cardinality=1:1=85,1:n=10,n:1=1; status=complete=96; reason=equal_cov
 
 
 ## 阶段耗时
-unidic=6372.9ms | unify=1.4ms | analyze_total=6374.3ms
-enrich.external=602.4ms | enrich.unify=34.5ms | enrich_total=636.9ms
+prepare=2.4ms | routing=0.0ms | unidic=5875.8ms | unify=1.6ms | analyze_total=5879.9ms
+enrich.external=8616.0ms | enrich.unify=12.3ms | enrich_total=8628.3ms

@@ -136,4 +136,29 @@ impl AnalysisEngine {
         if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|e| e.to_string())?); }
         serde_json::to_value(output::query(dictionary.as_ref().unwrap(), analysis_id, token, forms, selected_form)).map_err(|e| e.to_string())
     }
+
+    pub fn lookup_targets(&self, document: &UnifiedDocument, range: [usize; 2]) -> Result<Value, String> {
+        let mut dictionary = self.dictionary.lock().unwrap();
+        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|e| e.to_string())?); }
+        let group = crate::dictionary::targets::build(dictionary.as_ref().unwrap(), document, range, &[])?;
+        serde_json::to_value(group).map_err(|error| error.to_string())
+    }
+
+    pub fn lookup_report(&self, document: &UnifiedDocument) -> Result<Value, String> {
+        let mut dictionary = self.dictionary.lock().unwrap();
+        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|error| error.to_string())?); }
+        let dictionary = dictionary.as_ref().unwrap();
+        let group = crate::dictionary::targets::build(dictionary, document, [0, document.characters], &[])?;
+        crate::dictionary::targets::report(dictionary, &group)
+    }
+
+    pub fn query_target(&self, document: &UnifiedDocument, target_id: &str, selected_form: Option<&str>) -> Result<Value, String> {
+        let mut dictionary = self.dictionary.lock().unwrap();
+        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|e| e.to_string())?); }
+        let group = crate::dictionary::targets::build(dictionary.as_ref().unwrap(), document, [0, document.characters], &[])?;
+        let target = group.outer_targets.iter().chain(group.inner_targets.iter()).chain(group.candidate_targets.iter())
+            .find(|target| target.id == target_id).ok_or("查词目标引用无效")?;
+        let request = target.matrix_request.as_ref().ok_or("该目标没有词条矩阵")?;
+        serde_json::to_value(crate::dictionary::targets::query(dictionary.as_ref().unwrap(), request, selected_form)).map_err(|error| error.to_string())
+    }
 }

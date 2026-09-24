@@ -66,6 +66,15 @@ impl<'a> Context<'a> {
             || n.features["bunsetu_position"].as_str() == Some("FUNC"))
     }
 
+    pub fn verb_core(&self, range: [usize; 2], prefix: &str) -> Option<&'a SourceNode> {
+        self.tokens(range).into_iter().find(|node| node.text_ranges[0] == range
+            && node.features["pos"].as_str() == Some("VERB")
+            && node.features["tag"].as_str().is_some_and(|tag| tag.starts_with("動詞-"))
+            && node.features["lemma"].as_str().is_some_and(|lemma| lemma.starts_with(prefix))
+            && node.features["morph"]["Inflection"].as_str()
+                .and_then(|inflection| inflection.split_once(';')).is_some())
+    }
+
     /// 来源词界与统一成员都完整时，正式词元可以确认一个复合词核心。
     pub fn core_members(&self, morphemes: &[MorphemeToken], start: usize) -> Vec<usize> {
         let range = morphemes[start].char_range;

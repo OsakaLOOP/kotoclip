@@ -1,8 +1,10 @@
 //! P4 十段核查语料的离线回归测试。
 use kotoclip_nlp::{
     bunsetsu::BunsetsuArtifact,
+    external::{text_digest, SourceArtifact, SourceNode, SourceRelation},
     formation::FormationArtifact,
     model::{FeatureField, MorphemeToken, ProviderToken, FIELD_LABELS, FIELD_NAMES},
+    syntax::{SyntaxArtifact, SyntaxProviderDescriptor},
 };
 use serde_json::Value;
 use std::{collections::BTreeSet, path::PathBuf};
@@ -74,6 +76,51 @@ fn sample_formations_use_formal_tokens_and_keep_unusual_readings() {
     let bindings = kotoclip_core::language_analysis::lookup_bindings(&dictionary, "方向転換", Some("ホウコウテンカン"));
     assert!(!bindings.is_empty(), "方向転換应绑定本地词典整体记录");
     assert!(bindings.iter().all(|binding| !binding.entry_key.is_empty() && !binding.occurrence_id.is_empty()));
+}
+
+#[test]
+fn ginza_verb_core_recovers_classical_verb_without_orphan_auxiliary() {
+    let samples = samples();
+    let sample = &samples[1];
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/validation/p4-sample-review.json");
+    let report: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let source = report["cases"][1]["document"]["sources"].as_array().unwrap().iter()
+        .find(|source| source["provider"]["id"] == "ginza").unwrap();
+    let syntax = SyntaxArtifact { schema: kotoclip_nlp::syntax::SCHEMA.into(), segment_id: None,
+        provider: SyntaxProviderDescriptor { id: "ginza".into(), version: None, capabilities: vec![], license: None },
+        text_sha256: text_digest(&sample.text), text_characters: sample.text.chars().count(), spans: vec![] };
+    let mut ginza = SourceArtifact::from_syntax(&syntax, &sample.text).unwrap();
+    ginza.nodes = serde_json::from_value::<Vec<SourceNode>>(source["nodes"].clone()).unwrap();
+    ginza.relations = serde_json::from_value::<Vec<SourceRelation>>(source["relations"].clone()).unwrap();
+    let artifact = kotoclip_nlp::morphology::collect_with_external(
+        &sample.sources, &sample.morphemes, std::slice::from_ref(&ginza)).unwrap();
+    let chain = artifact.chains.iter().find(|chain| chain.surface_form == "流る").unwrap();
+    assert_eq!(chain.dictionary_form, "流る");
+    assert_eq!(chain.lookup_form, "流る");
+    assert_eq!(chain.status, "resolved");
+    assert_eq!(chain.morpheme_indices, vec![65, 66]);
+    assert_eq!(chain.core_morpheme_indices, vec![65, 66]);
+    assert_eq!(chain.final_state.category, "動詞");
+    assert_eq!(chain.final_state.conjugation_type, "文語下二段-ラ行");
+    assert_eq!(chain.final_state.conjugation_form, "終止形-一般");
+    assert!(chain.operators.iter().any(|operator| operator.kind == "conjugation"
+        && operator.state_after == chain.final_state
+        && operator.evidence.iter().any(|evidence| evidence.starts_with("ginza:"))));
+    assert!(chain.query_forms.iter().any(|form| form.form == "流る" && form.reading.as_deref() == Some("ナガル")));
+    assert!(chain.source_evidence.iter().any(|evidence| evidence.provider == "ginza" && evidence.reason == "verb_core"));
+    assert!(!artifact.chains.iter().any(|chain| chain.surface_form == "る"));
+    assert!(!artifact.diagnostics.iter().any(|diagnostic| diagnostic == "unattached_auxiliary:66"));
+    assert!(artifact.chains.iter().any(|chain| chain.surface_form == "なり" && chain.status == "pending"));
+    assert!(artifact.chains.iter().any(|chain| chain.surface_form == "送梅" && chain.status == "candidate"));
+
+    let without_ginza = kotoclip_nlp::morphology::collect(&sample.sources, &sample.morphemes).unwrap();
+    assert!(without_ginza.chains.iter().any(|chain| chain.surface_form == "る"));
+
+    let verb = ginza.nodes.iter_mut().find(|node| node.surface == "流る").unwrap();
+    verb.features["pos"] = Value::String("NOUN".into());
+    let noun_source = kotoclip_nlp::morphology::collect_with_external(
+        &sample.sources, &sample.morphemes, &[ginza]).unwrap();
+    assert!(noun_source.chains.iter().any(|chain| chain.surface_form == "る"));
 }
 
 #[test]

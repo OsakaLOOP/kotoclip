@@ -219,7 +219,7 @@ pub fn feature_concept(feature: &str) -> &str {
 pub(crate) fn feature_label(feature: &str) -> &str {
     match feature { "past" => "过去", "negative" => "否定", "causative" => "使役", "passive_potential" => "受身等候选",
         "politeness_masu" | "politeness_desu" => "丁寧", "volitional" => "意向", "conditional" | "ba_connection" | "tara_condition" => "条件", "desire" => "愿望",
-        "copula" | "copula_aru" => "判断", "obligation" => "当为", "te_form" | "de_form" | "te_connection" => "接续",
+        "copula" | "copula_aru" => "判断", "nominalization" => "名词化", "obligation" => "当为", "te_form" | "de_form" | "te_connection" => "接续",
         "imperative" => "命令", "prohibitive" => "禁止", "enumerative" => "列举", "concessive_connection" => "逆接",
         "te_iru" | "contracted_te_iru" => "ている形式", "te_shimau" | "contracted_te_shimau" => "てしまう形式",
         "te_oku" | "contracted_te_oku" => "ておく形式", "te_kudasaru" => "てくださる形式", "nagara_connection" => "ながら接续", _ => "活用" }
