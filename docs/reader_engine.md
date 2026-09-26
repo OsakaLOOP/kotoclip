@@ -18,10 +18,7 @@
 DocumentPlan
     ↓
 DocumentSession
-    ├─ UniDic 基础分析
-    ├─ 活用链与整体构词
-    ├─ 词典查询目标
-    └─ GiNZA 结构补充
+    └─ 各单元独立完成 UniDic、GiNZA、来源统一、整体构词与查词目标
     ↓
 阅读投影
     ├─ 书籍正文
@@ -30,7 +27,7 @@ DocumentSession
     └─ 用户状态与导出
 ```
 
-`basic` 阶段已经提供正文阅读、词元信息、活用链、整体构词候选和词典查询所需对象。GiNZA 结构补充完成后，阅读投影追加结构证据和整体关系；GiNZA 暂不可用时，UniDic 结果继续支持阅读和查词。
+各单元只有在 UniDic、GiNZA 和来源统一完成后才发布完整产物。未完成单元保持普通正文；已完成单元支持胶囊、查词和交互。来源失败时保留失败状态与重试入口。
 
 ## 生命周期
 
@@ -59,8 +56,8 @@ closed → opened → preparing → analyzing → readable → complete
 - `opened`：已读取 `LibraryBook`，正文和资源路径可用。
 - `preparing`：编译 Markdown、整理 ruby、建立章节／图片锚点和 Unicode 字符范围。
 - `analyzing`：已创建 `DocumentSession`，按计划调度正文单元。
-- `readable`：当前可见范围至少完成 UniDic 基础分析，阅读和查词可用。
-- `complete`：全文计划单元完成，GiNZA 结构追加也已结束。
+- `readable`：阅读位置所在单元的完整分析已发布，阅读和查词可用。
+- `complete`：全文计划单元的完整分析已结束。
 - `failed`：存在失败单元；已完成单元继续显示，失败单元保留重试入口。
 
 切换书籍时，Engine 按以下顺序处理：
@@ -72,25 +69,27 @@ closed → opened → preparing → analyzing → readable → complete
 5. 请求保存位置附近的分析范围，优先生成可见正文。
 6. 恢复滚动位置，并在后台继续全文分析。
 
+书籍打开命令只读取 `LibraryBook` 并结束旧会话；前端先进入阅读加载状态，再由 `document.worker.ts` 编译正文，随后按保存位置创建 `DocumentSession` 并调用 `continue_document`。正文准备和语言分析均通过独立工作线程执行，阅读界面持续显示完整单元数；词典目标只为可见正文范围请求。
+
 ### 文档会话层
 
 `DocumentSession` 由后端持有，前端通过 `open_document`、`poll_document`、`request_range`、`continue_document`、`cancel_document`、`retry_document` 和 `close_document` 操作。
 
-单元状态沿用当前已验证的模型：
+单元状态采用完整产物原子发布模型：
 
 ```text
-pending → analyzing → basic → enriching → complete
-              └──────────────→ failed
+pending → processing → complete
+                  └──→ failed
 ```
 
 | 状态 | 实际工作 |
 | --- | --- |
 | `pending` | 等待调度 |
-| `analyzing` | 正文准备后的 UniDic 分析、来源对齐、活用链和整体构词 |
-| `basic` | 基础 `UnifiedDocument` 已生成，可阅读和查词 |
-| `enriching` | GiNZA 请求、结构对齐和来源追加 |
-| `complete` | 基础与结构来源均完成 |
+| `processing` | 在同一个单元任务内完成 UniDic、GiNZA、来源对齐、活用链、整体构词和查词目标 |
+| `complete` | 完整 `UnifiedDocument` 已原子发布，可阅读和交互 |
 | `failed` | 当前单元记录错误，其他单元保持可用 |
+
+单元任务记录本次处理耗时 `elapsed_ms`；`generated_ms` 和 UniDic、GiNZA、来源统一、查词目标的分项耗时保存首次生成的数据。缓存命中时可比较读取耗时与原始生成耗时。阅读界面可切换诊断并导出单元 JSON。完整产物与查词目标按正文、来源配置、词典资源及模型资源身份写入磁盘缓存，切换耗时开关不会再次生成结果。
 
 控制操作会提升 `generation`。迟到结果必须经过会话 ID、文本版本、任务代次和产物版本校验后才可进入阅读器。当前单元重新分析后，旧的 `artifact_revision` 立即失效，前端从最新单元状态重新建立查询目标。
 
@@ -112,36 +111,30 @@ pending → analyzing → basic → enriching → complete
 
 EPUB、Markdown 和纯文本输入统一为阅读正文，建立书籍 ID 或独立文本 ID、正文文本版本、Unicode scalar 字符范围、原始文本与准备文本的映射，以及章节、图片和 ruby 锚点。准备结果同时服务正文渲染和 `DocumentPlan`，阅读器与 NLP 使用同一份字符坐标。
 
-### UniDic 基础阶段
+### 单元完整分析
 
 每个正文单元执行以下工作：
 
 1. 根据 CWJ／CSJ 路由选择 UniDic 来源。
 2. 生成正式 token、词性、表记、读音、基本形和原始字段。
-3. 生成活用链、连接状态、功能成分和 occurrence。
-4. 生成整体构词词与候选查询形。
-5. 保留来源 token、字符范围、来源版本和对齐证据。
-6. 生成阅读投影和词典查询目标的基础数据。
+3. 请求 GiNZA 结构来源，并校验来源身份和字符范围。
+4. 统一生成活用链、整体构词、对齐关系及查询候选，并构建该单元的查词目标。
+5. 原子发布完整产物和查词目标，并写入磁盘缓存。
 
 UniDic 是阅读器的词法主来源。词典查询使用 UniDic 的出现形、基本形、读音和活用链规范形式；词典结果不改变原始分析对象。
-
-### GiNZA 补充阶段
-
-GiNZA 在基础结果之后运行，提供结构补充、实体／组合关系、依存关系和来源诊断。结构结果经过字符范围对齐和来源身份校验后，合并到当前 `UnifiedDocument`。
 
 GiNZA 的“整体”只在具有合法字符范围、成员关系和结构证据时进入阅读器的整体显示投影。来源诊断继续保存，无法表达为阅读目标的实验结果保持在分析产物中。
 
 ## 分析进度
 
-旧进度模型中的语法匹配、表达匹配、画像评分和曝光记录阶段属于已拆出的旧管线。阅读器进度只反映当前真实的正文准备、UniDic 和 GiNZA 工作。
+阅读器进度按完整单元统计，单元内部阶段只保留在耗时诊断中。
 
 ### 进度对象
 
 ```ts
 interface ReaderAnalysisProgress {
-  phase: "preparing" | "unidic" | "ginza" | "completed" | "failed";
+  phase: "preparing" | "processing" | "completed";
   totalUnits: number;
-  basicUnits: number;
   completeUnits: number;
   failedUnits: number;
   pendingUnits: number;
@@ -151,17 +144,16 @@ interface ReaderAnalysisProgress {
 }
 ```
 
-后端已有 `progress.total`、`basic`、`complete`、`failed` 和 `pending` 字段。Engine 根据单元状态计算展示模型：`preparing` 使用不定进度；存在 `analyzing` 单元时进入 `unidic`；基础单元生成后存在 `enriching` 单元时进入 `ginza`；所有单元结束后进入 `completed` 或 `failed`。
+后端保留 `progress.total`、`basic`、`complete`、`failed` 和 `pending` 字段；`basic` 表示仍在内存中保留完整产物的数量，`complete` 表示已经完成的数量。界面使用 `complete / total`，失败数量单独提示。
 
 推荐的总进度计算为：
 
 ```text
-preparing: 0%–5%
-UniDic:    5%–70% × basicUnits / totalUnits
-GiNZA:    70%–100% × completeUnits / totalUnits
+preparing: 不定进度
+processing: completeUnits / totalUnits
 ```
 
-首屏可用性和全文完成度分别表达：首屏关联单元达到 `basic` 即可进入阅读；全文进度继续由后台单元状态推进。取消分析时，已生成的基础和完整产物保持可用，未处理单元进入暂停状态。界面文案使用 `准备正文`、`UniDic 分析`、`GiNZA 结构分析`、`已完成基础分析 N / M` 和 `结构分析 N / M`，不展示旧管线阶段。
+首屏关联单元达到 `complete` 后进入阅读，全文继续按单元完成度更新。取消分析时，已发布产物保持可用；滚动到内存中已释放的范围时，从完整缓存恢复相应单元。
 
 ## 词典气泡投影
 
@@ -179,6 +171,8 @@ GiNZA:    70%–100% × completeUnits / totalUnits
 
 外层显示对象是“整体词／独立词 + 其活用链成员”的阅读查询单元。
 
+正文胶囊根据已确认的整体词与词汇链建立边界，附属活用链归入所属胶囊。文节和查词命中仅提供各自的结构与交互信息，不决定胶囊范围；标点和空白保持普通正文排版。
+
 ### 核心词
 
 | 类型 | 核心词数量 | 默认查询对象 |
@@ -192,21 +186,21 @@ GiNZA 整体可能包含多个具有独立词典意义的核心词。气泡打�
 
 ### 活用链展示
 
-存在活用链时，气泡同时展示用户可理解的链信息：
+存在活用链时，词典气泡右上展示整体形式名称、实际表记、基本形式、活用形和组成还原。当前词条的完整释义仍由词典气泡展示：
 
 ```text
 出现形式 → 基本形式 → 活用连接
 ```
 
-展示正文中的实际形式、规范查询形（例如 `読む`、`ている`、`てしまう`）、活用类型和活用形、链中各成员的表记与作用、补助成分的连接关系，以及当前核心词对应的词典查询入口。内部 `operator`、状态和来源证据继续保存，用户界面采用规范形式和简短说明。
+悬浮在活用部分时，形态 occurrence 的命中范围打开独立的说明气泡，与词典气泡并列。说明气泡呈现该部分的形式、作用、规范形式和已有候选含义；词典气泡继续查询所属核心词。表达和语法后续采用同一个说明气泡容器及其对应的分析对象。内部 `operator`、状态和来源证据继续保存，用户界面采用通用术语和简短说明。
 
 ### 悬浮与点击行为
 
 悬浮行为固定为当前核心词查询：
 
-1. 指针进入显示外围整体时，定位其对应的核心词。
+1. 指针进入显示外围整体或其活用部分时，定位所属核心词；活用部分的命中可延伸到外围词汇查询范围之外。
 2. 延迟触发当前核心词的词典查询。
-3. 气泡外层显示整体表记、读音和活用链摘要。
+3. 词典气泡右上显示整体活用概要；进入活用部分时，并列显示该部分的说明气泡。
 4. 气泡主体显示当前核心词的词典矩阵和释义。
 5. 整体含有多个核心词时，提供核心词切换入口，切换只更新主体查询。
 
@@ -246,10 +240,12 @@ GiNZA 整体可能包含多个具有独立词典意义的核心词。气泡打�
 
 应用级协调入口为 `src-tauri/src/reader_engine.rs`，Tauri 命令在 `src-tauri/src/lib.rs` 注册。核心依赖为 `crates/kotoclip-core/src/analysis.rs`、`crates/kotoclip-core/src/document_session.rs`、`crates/kotoclip-core/src/library.rs` 和 `crates/kotoclip-core/src/profile/`。阅读器投影位于 `src/components/reader/`，查询目标和词典矩阵位于 `crates/kotoclip-core/src/dictionary/targets.rs` 与 `src/types/nlp.ts`。
 
+运行 `cargo build -p kotoclip-core --bin kotoclip-nlp` 后，可用 `python -X utf8 scripts/test_reader_pipeline.py` 生成冷启动、重启缓存、关闭耗时诊断和查词验证报告，默认写入 `.agents/analysis/reader-pipeline-test.json`。阅读界面的“导出耗时”可保存当前书籍每个单元的诊断数据。
+
 验收顺序如下：
 
 1. EPUB 或 Markdown 导入后创建书籍和阅读文档。
-2. 首屏单元完成 UniDic 后进入阅读，全文在后台继续分析。
+2. 首屏单元完成 UniDic、GiNZA 和统一处理后进入阅读，全文在后台继续分析。
 3. GiNZA 整体和未覆盖独立词分别形成显示外围整体。
 4. 悬浮查询当前核心词，活用链以规范形式和连接信息展示。
 5. 非整体单击后切换到底层 token 查询，并可返回外层整体。

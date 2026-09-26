@@ -67,6 +67,7 @@ onMounted(async () => {
         <fieldset :disabled="pending || saving || checking">
           <legend>GiNZA</legend>
           <label class="provider-toggle"><input v-model="settings.ginza.enabled" type="checkbox" />启用</label>
+          <label class="provider-toggle"><input v-model="settings.analysis_timing_enabled" type="checkbox" />记录分析耗时</label>
           <label>Python 解释器<input v-model="settings.ginza.python" required /></label>
           <label>模型<input v-model="settings.ginza.model" required /></label>
           <label>Sudachi 词典文件<input v-model="settings.ginza.dictionary" placeholder="留空使用随包词典" /></label>

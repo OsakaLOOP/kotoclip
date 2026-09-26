@@ -65,8 +65,12 @@ impl ReaderLibrary {
         std::fs::create_dir_all(library.root.join("books"))?;
         let connection = library.connection()?;
         initialize_schema(&connection)?;
-        backfill_resource_dimensions(&connection, &library.root)?;
         Ok(library)
+    }
+
+    pub fn backfill_resource_dimensions(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let connection = self.connection()?;
+        backfill_resource_dimensions(&connection, &self.root)
     }
 
     pub fn root(&self) -> &Path {

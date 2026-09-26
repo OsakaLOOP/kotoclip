@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { openSession, mergeSession } from './session.ts';
+import { openSession, mergeSession, matchesSessionGeneration } from './session.ts';
 
 const plan = { id: 'book', text_version: 'text-v1', units: [] };
 const initial = { schema: 'kotoclip.document-update.v1', session_id: 's1', text_version: 'text-v1', generation: 1,
@@ -21,4 +21,12 @@ test('取消后的新代次快照替换状态且排除旧任务', () => {
   assert.equal(cancelled.paused, true);
   assert.equal(mergeSession(cancelled, { ...initial, revision: 3 }), cancelled);
   assert.equal(mergeSession(cancelled, { ...initial, generation: 3, base_revision: 2, revision: 3, snapshot: false }), null);
+});
+
+test('查词目标响应核对完整会话 ID 和分析代次', () => {
+  const session = { session_id: 'session:1', generation: 2 };
+  assert.equal(matchesSessionGeneration(session, 'session:1', 2), true);
+  assert.equal(matchesSessionGeneration(session, 'session', 2), false);
+  assert.equal(matchesSessionGeneration(session, 'session:2', 2), false);
+  assert.equal(matchesSessionGeneration(session, 'session:1', 1), false);
 });

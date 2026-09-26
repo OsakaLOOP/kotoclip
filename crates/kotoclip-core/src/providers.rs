@@ -27,12 +27,17 @@ pub struct ProviderConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderSettings {
     pub ginza: ProviderConfig,
+    #[serde(default = "default_analysis_timing_enabled")]
+    pub analysis_timing_enabled: bool,
 }
+
+fn default_analysis_timing_enabled() -> bool { true }
 
 impl ProviderSettings {
     pub fn development(root: &Path) -> Self {
         Self {
             ginza: ProviderConfig { python: root.join("experiments/ginza311/Scripts/python.exe"), model: "ja_ginza".into(), enabled: true, timeout_seconds: 120, dictionary: PathBuf::new() },
+            analysis_timing_enabled: true,
         }
     }
 }
@@ -134,6 +139,16 @@ impl ProviderManager {
         }
     }
 
+    pub fn analysis_timing_enabled(&self) -> Result<bool, String> {
+        Ok(self.settings()?.analysis_timing_enabled)
+    }
+
+    pub fn cache_identity(&self) -> Result<String, String> {
+        let mut value = serde_json::to_value(self.settings()?).map_err(|error| error.to_string())?;
+        value.as_object_mut().map(|object| object.remove("analysis_timing_enabled"));
+        serde_json::to_string(&value).map_err(|error| error.to_string())
+    }
+
     pub fn configure(&mut self, settings: ProviderSettings) -> Result<Value, String> {
         for (id, config) in [("ginza", &settings.ginza)] {
             if config.timeout_seconds == 0 || config.model.trim().is_empty() { return Err(format!("{id} 的模型和超时设置无效")); }
@@ -143,6 +158,14 @@ impl ProviderManager {
         self.workers.clear();
         self.cache.lock().unwrap().clear();
         self.status()
+    }
+
+    pub fn set_analysis_timing(&self, enabled: bool) -> Result<Value, String> {
+        let mut settings = self.settings()?;
+        settings.analysis_timing_enabled = enabled;
+        fs::create_dir_all(self.config_path.parent().unwrap()).map_err(|error| error.to_string())?;
+        fs::write(&self.config_path, serde_json::to_vec_pretty(&settings).map_err(|error| error.to_string())?).map_err(|error| error.to_string())?;
+        Ok(json!({"analysis_timing_enabled": enabled}))
     }
 
     pub fn status(&self) -> Result<Value, String> {

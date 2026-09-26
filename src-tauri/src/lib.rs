@@ -59,7 +59,7 @@ async fn reader_import(state: State<'_, AppState>, path: String) -> Result<kotoc
 }
 
 #[tauri::command]
-async fn reader_open_book(state: State<'_, AppState>, id: String) -> Result<serde_json::Value, String> {
+async fn reader_open_book(state: State<'_, AppState>, id: String) -> Result<kotoclip_core::library::LibraryBook, String> {
     let reader = state.reader.clone();
     tauri::async_runtime::spawn_blocking(move || reader.open_book(&id)).await.map_err(|error| error.to_string())?
 }
@@ -165,6 +165,12 @@ pub fn run() {
             let data = std::env::var_os("KOTOCLIP_DATA_DIR").map(PathBuf::from).unwrap_or(app.path().app_data_dir()?);
             let library = app.path().document_dir()?.join("Kotoclip Library");
             let reader = Arc::new(ReaderEngine::new(paths, library, data).map_err(std::io::Error::other)?);
+            let background_reader = Arc::clone(&reader);
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(error) = background_reader.backfill_resource_dimensions() {
+                    eprintln!("资源尺寸回填失败：{error}");
+                }
+            });
             let cancellation = reader.analysis.cancellation();
             app.manage(AppState { reader, cancellation });
             Ok(())

@@ -11,9 +11,13 @@ export interface DocumentPlan {
   routing: UnifiedDocument['routing']; units: AnalysisUnit[];
 }
 export interface UnitUpdate {
-  unit_id: string; stage: 'pending' | 'analyzing' | 'basic' | 'enriching' | 'complete' | 'failed';
+  unit_id: string; stage: 'pending' | 'processing' | 'complete' | 'failed';
   artifact_revision: number; document: UnifiedDocument | null;
-  providers: { id: string; status: string; error?: string; cache_hit?: boolean }[]; error: string | null;
+  lookup: unknown | null;
+  cache_hit: boolean;
+  providers: { id: string; status: string; error?: string; cache_hit?: boolean }[];
+  timing: { elapsed_ms: number; generated_ms: number; stages: { stage: string; elapsed_ms: number }[]; cache_hit: boolean } | null;
+  error: string | null;
 }
 export interface DocumentUpdate {
   schema: string; session_id: string; document_id: string; text_version: string; generation: number;
@@ -24,6 +28,14 @@ export interface DocumentUpdate {
 export interface DocumentSession {
   plan: DocumentPlan; session_id: string; text_version: string; generation: number; revision: number;
   paused: boolean; progress: DocumentUpdate['progress']; units: Record<string, UnitUpdate>;
+}
+
+export function matchesSessionGeneration(
+  session: Pick<DocumentSession, 'session_id' | 'generation'>,
+  sessionId: string,
+  generation: number,
+) {
+  return session.session_id === sessionId && session.generation === generation;
 }
 
 export function openSession(plan: DocumentPlan, update: DocumentUpdate): DocumentSession {

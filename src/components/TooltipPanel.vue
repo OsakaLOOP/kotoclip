@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { ChevronLeft } from "@lucide/vue";
+import { ChevronLeft, X } from "@lucide/vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
 import {
   dictionaryShortcutSettings,
@@ -30,12 +30,14 @@ const props = defineProps<{
   x: number;
   y: number;
   token: AnnotatedToken | null;
+  headword?: string;
   lookup: DictionaryLookup | null;
   loading: boolean;
   canGoBack: boolean;
   width?: number;
   maxHeight?: number;
   kindLabel?: string;
+  summaryVisible?: boolean;
   panelId: string;
   shortcutsEnabled?: boolean;
 }>();
@@ -46,6 +48,7 @@ const emit = defineEmits<{
   navigate: [target: string];
   selectForm: [formId: string];
   back: [];
+  close: [];
 }>();
 
 const morphologyChain = computed(() => (
@@ -55,12 +58,13 @@ const morphologyChain = computed(() => (
 const sourceLemma = computed(() => (
   morphologyChain.value
     ? morphologyLemma(morphologyChain.value)
-    : props.token?.bunsetsu.head_word.base_form ?? ""
+    : props.token?.bunsetsu.head_word.base_form ?? props.headword ?? ""
 ));
 
 const sourceQuery = computed(() => (
   morphologyChain.value?.lookup_form
   || props.token?.bunsetsu.head_word.base_form
+  || props.headword
   || ""
 ));
 
@@ -408,7 +412,7 @@ function handleDefinitionClick(event: MouseEvent) {
 <template>
   <Transition name="fade">
     <section
-      v-if="show && token"
+      v-if="show && (token || headword)"
       class="tooltip-panel"
       :id="panelId"
       :data-explanation-panel="panelId"
@@ -422,6 +426,7 @@ function handleDefinitionClick(event: MouseEvent) {
       <div class="tooltip-content" :data-explanation-content="panelId">
         <header class="tooltip-header">
           <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')"><ChevronLeft :size="20" aria-hidden="true" /></button>
+          <button v-if="headword" type="button" class="back-button" aria-label="关闭词典" @click="emit('close')"><X :size="18" aria-hidden="true" /></button>
           <div class="header-grid">
             <div class="headword-block">
               <div class="headword-line">
@@ -436,8 +441,9 @@ function handleDefinitionClick(event: MouseEvent) {
                 <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
               </div>
             </div>
-            <div v-if="activeHeaderFacts.length || showMorphologySummary && morphologyChain && isSourceQuery" class="header-morphology" aria-label="当前词条与本句信息">
+            <div v-if="activeHeaderFacts.length || showMorphologySummary && morphologyChain && isSourceQuery || summaryVisible" class="header-morphology" aria-label="当前词条与本句信息">
               <div v-for="fact in activeHeaderFacts" :key="fact" class="header-fact">{{ fact }}</div>
+              <slot name="summary" />
               <template v-if="showMorphologySummary && morphologyChain && isSourceQuery">
                 <strong v-if="morphologyChain.surface_form !== sourceLemma" class="current-form">{{ morphologyChain.surface_form }}</strong>
                 <div v-for="step in morphologySteps" :key="step.operator_id" class="morphology-step">
@@ -449,7 +455,9 @@ function handleDefinitionClick(event: MouseEvent) {
           </div>
         </header>
 
-        <DictionaryFormSelector
+          <slot name="context" />
+
+          <DictionaryFormSelector
           v-if="lookup?.forms.length"
           :forms="lookup.forms"
           :selected-form-id="lookup.selected_form_id"

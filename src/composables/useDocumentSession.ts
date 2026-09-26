@@ -45,7 +45,7 @@ export function useDocumentSession() {
     if (current) await nlpRequest({ command: 'close_document', session_id: current.session_id });
   }
 
-  async function open(text: string, policy: RegisterPolicy, documentId?: string) {
+  async function open(text: string, policy: RegisterPolicy, documentId?: string, initialOffset = 0) {
     const expected = ++operation;
     clearTimeout(timer);
     const previous = state.value; state.value = null;
@@ -53,7 +53,7 @@ export function useDocumentSession() {
     try {
       if (previous) await nlpRequest({ command: 'close_document', session_id: previous.session_id });
       if (expected !== operation) return;
-      const value = await nlpRequest<{ plan: DocumentPlan; update: DocumentUpdate }>({ command: 'open_document', text, policy, document_id: documentId ?? null });
+      const value = await nlpRequest<{ plan: DocumentPlan; update: DocumentUpdate }>({ command: 'open_document', text, policy, document_id: documentId ?? null, initial_offset: initialOffset });
       if (expected !== operation) { await nlpRequest({ command: 'close_document', session_id: value.update.session_id }); return; }
       state.value = openSession(value.plan, value.update);
       void poll();

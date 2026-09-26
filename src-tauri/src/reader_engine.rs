@@ -1,10 +1,9 @@
 use kotoclip_core::{
     analysis::{AnalysisService, Request, ResourcePaths},
     library::{LibraryBook, LibraryBookSummary, ReaderLibrary},
-    reader_markdown::compile_analysis_text,
     reader_state::{ReaderState, SavedSelection, WordState},
 };
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::{path::PathBuf, sync::{Arc, Mutex}};
 
 pub struct ReaderEngine {
@@ -27,22 +26,21 @@ impl ReaderEngine {
 
     pub fn library_path(&self) -> String { self.library.root().to_string_lossy().into_owned() }
     pub fn books(&self) -> Result<Vec<LibraryBookSummary>, String> { self.library.list_books().map_err(|error| error.to_string()) }
+    pub fn backfill_resource_dimensions(&self) -> Result<(), String> { self.library.backfill_resource_dimensions().map_err(|error| error.to_string()) }
     pub fn import(&self, path: &str) -> Result<LibraryBook, String> { self.library.import_epub(path).map_err(|error| error.to_string()) }
 
     fn open_document(&self, document_id: Option<String>, text: String) -> Result<Value, String> {
         let mut active = self.active_session.lock().unwrap();
         if let Some(previous) = active.take() { self.analysis.dispatch(Request::CloseDocument { session_id: previous }); }
-        let response = self.analysis.dispatch(Request::OpenDocument { document_id, text, policy: Default::default() });
+        let response = self.analysis.dispatch(Request::OpenDocument { document_id, text, policy: Default::default(), initial_offset: 0 });
         let value = response.result.ok_or_else(|| response.error.unwrap_or_else(|| "文档分析启动失败".into()))?;
         *active = value["update"]["session_id"].as_str().map(str::to_owned);
         Ok(value)
     }
 
-    pub fn open_book(&self, id: &str) -> Result<Value, String> {
-        let book = self.library.open_book(id).map_err(|error| error.to_string())?;
-        let text = compile_analysis_text(&book.markdown);
-        let session = self.open_document(Some(id.into()), text)?;
-        Ok(json!({"book": book, "session": session}))
+    pub fn open_book(&self, id: &str) -> Result<LibraryBook, String> {
+        self.close();
+        self.library.open_book(id).map_err(|error| error.to_string())
     }
 
     pub fn open_text(&self, text: String) -> Result<Value, String> { self.open_document(None, text) }

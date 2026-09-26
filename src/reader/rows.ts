@@ -130,7 +130,7 @@ export function buildReaderRows(
       chapterIndex++;
     }
     const chapter = chapters[chapterIndex];
-    const heading = chapter?.charOffset < paragraph.charRange[1] ? chapter : undefined;
+    const heading = paragraph.kind === "heading" && chapter?.charOffset === paragraph.charRange[0] ? chapter : undefined;
     if (heading) chapterIndex++;
     rows.push({
       key: paragraphKey(paragraph),

@@ -102,7 +102,7 @@ export interface StructureGraph {
 }
 
 export interface ProviderConfig { python: string; model: string; enabled: boolean; timeout_seconds: number; dictionary: string; }
-export interface ProviderSettings { ginza: ProviderConfig; }
+export interface ProviderSettings { ginza: ProviderConfig; analysis_timing_enabled: boolean; }
 export interface ProviderManifest {
   id: string; version: string; model: string; model_version: string; versions: Record<string, string>; tasks: string[]; capabilities: string[]; coordinate_system: string;
   resources: { role: string; name: string; path: string | null; sha256: string; bytes: number }[];

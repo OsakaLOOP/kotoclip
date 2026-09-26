@@ -482,3 +482,18 @@ export function compileReaderDocument(source: string): ReaderDocument {
     cleanup: stats,
   };
 }
+export function compileReaderDocumentAsync(source: string): Promise<ReaderDocument> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./document.worker.ts", import.meta.url), { type: "module" });
+    worker.onmessage = (event: MessageEvent<{ document?: ReaderDocument; error?: string }>) => {
+      worker.terminate();
+      if (event.data.document) resolve(event.data.document);
+      else reject(new Error(event.data.error || "正文准备失败"));
+    };
+    worker.onerror = () => {
+      worker.terminate();
+      reject(new Error("正文准备失败"));
+    };
+    worker.postMessage(source);
+  });
+}

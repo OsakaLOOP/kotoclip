@@ -9,7 +9,7 @@ pub const SCHEMA: &str = "kotoclip.document-update.v1";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum UnitStage { Pending, Analyzing, Basic, Enriching, Complete, Failed }
+pub enum UnitStage { Pending, Processing, Complete, Failed }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct UnitUpdate {
@@ -17,8 +17,19 @@ pub struct UnitUpdate {
     pub stage: UnitStage,
     pub artifact_revision: u64,
     pub document: Option<Arc<UnifiedDocument>>,
+    pub lookup: Option<Value>,
     pub providers: Vec<Value>,
+    pub cache_hit: bool,
+    pub timing: Option<UnitTiming>,
     pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UnitTiming {
+    pub elapsed_ms: f64,
+    pub generated_ms: f64,
+    pub stages: Vec<kotoclip_nlp::model::StageTiming>,
+    pub cache_hit: bool,
 }
 
 struct Session {
@@ -48,9 +59,9 @@ impl Session {
     }
 
     fn progress(&self) -> Value {
-        json!({"total": self.units.len(), "basic": self.units.iter().filter(|u| u.document.is_some() || u.stage == UnitStage::Complete).count(),
+        json!({"total": self.units.len(), "basic": self.units.iter().filter(|u| u.document.is_some()).count(),
             "complete": self.units.iter().filter(|u| u.stage == UnitStage::Complete).count(), "failed": self.units.iter().filter(|u| u.stage == UnitStage::Failed).count(),
-            "pending": if self.paused { 0 } else { self.order.iter().filter(|&&i| matches!(self.units[i].stage, UnitStage::Pending | UnitStage::Analyzing | UnitStage::Basic | UnitStage::Enriching)).count() }})
+            "pending": if self.paused { 0 } else { self.order.iter().filter(|&&i| matches!(self.units[i].stage, UnitStage::Pending | UnitStage::Processing)).count() }})
     }
 
     fn update(&self, after: Option<u64>) -> Value {
@@ -71,8 +82,8 @@ impl Session {
         self.generation += 1;
         self.history.clear();
         for unit in &mut self.units {
-            if matches!(unit.stage, UnitStage::Analyzing | UnitStage::Enriching) {
-                unit.stage = if unit.document.is_some() { UnitStage::Basic } else { UnitStage::Pending };
+            if unit.stage == UnitStage::Processing {
+                unit.stage = if unit.document.is_some() { UnitStage::Complete } else { UnitStage::Pending };
             }
         }
     }
@@ -81,11 +92,15 @@ impl Session {
         if range[0] > range[1] || range[1] > self.plan.prepared.mapping.origins.len() { return Err("请求范围超出正文".into()); }
         let first = self.plan.units.partition_point(|unit| unit.anchor.char_range[1] <= range[0]).min(self.units.len().saturating_sub(1));
         let last = self.plan.units.partition_point(|unit| unit.anchor.char_range[0] < range[1]).max(first + 1).min(self.units.len());
-        self.order = (first..last).collect();
-        if first > 0 { self.order.push(first - 1); }
-        if last < self.units.len() { self.order.push(last); }
-        self.priority_count = self.order.len().min(8);
-        for &index in &self.order {
+        let mut priority: Vec<_> = (first..last).collect();
+        if first > 0 { priority.push(first - 1); }
+        if last < self.units.len() { priority.push(last); }
+        self.priority_count = priority.len();
+        self.order = priority;
+        for index in 0..self.units.len() {
+            if !self.order.contains(&index) { self.order.push(index); }
+        }
+        for &index in &self.order[..self.priority_count] {
             let unit = &mut self.units[index];
             if unit.document.is_none() { unit.stage = UnitStage::Pending; unit.error = None; }
         }
@@ -98,9 +113,7 @@ struct Job {
     session_id: String,
     generation: u64,
     index: usize,
-    stage: UnitStage,
     plan: Arc<DocumentPlan>,
-    document: Option<Arc<UnifiedDocument>>,
     cancellation: u64,
 }
 
@@ -120,15 +133,12 @@ impl State {
             if session.paused { continue; }
             let primary = &session.order[..session.priority_count];
             let index = primary.iter().copied().find(|&i| session.units[i].stage == UnitStage::Pending)
-                .or_else(|| primary.iter().copied().find(|&i| session.units[i].stage == UnitStage::Basic))
-                .or_else(|| session.order[session.priority_count..].iter().copied().find(|&i| matches!(session.units[i].stage, UnitStage::Pending | UnitStage::Basic)));
+                .or_else(|| session.order[session.priority_count..].iter().copied().find(|&i| session.units[i].stage == UnitStage::Pending));
             if let Some(index) = index {
-                let stage = if session.units[index].stage == UnitStage::Pending { UnitStage::Analyzing } else { UnitStage::Enriching };
-                session.units[index].stage = stage;
+                session.units[index].stage = UnitStage::Processing;
                 session.publish(&[index]);
                 self.active = Some(id.clone());
-                return Some(Job { session_id: id.clone(), generation: session.generation, index, stage, plan: session.plan.clone(),
-                    document: session.units[index].document.clone(), cancellation });
+                return Some(Job { session_id: id.clone(), generation: session.generation, index, plan: session.plan.clone(), cancellation });
             }
         }
         self.active = None;
@@ -156,33 +166,41 @@ impl DocumentSessions {
                 state.next(worker_engine.cancellation.load(Ordering::Relaxed))
             };
             let Some(job) = job else { if receiver.recv().is_err() { break; } else { continue; } };
-            let result = if job.stage == UnitStage::Analyzing {
-                let (prepared, routing) = job.plan.unit_input(job.index);
-                worker_engine.analyze(&prepared, routing, &[], None, None, Vec::new()).map(|document| (document, Vec::new()))
-            } else { worker_engine.enrich(job.document.as_ref().unwrap(), job.cancellation) };
+            let started = std::time::Instant::now();
+            let (prepared, routing) = job.plan.unit_input(job.index);
+            let unit = &job.plan.units[job.index];
+            let range = [unit.anchor.char_range[0] - unit.context_range[0], unit.anchor.char_range[1] - unit.context_range[0]];
+            let result = worker_engine.analyze_complete(&prepared, routing, range, job.cancellation);
             let mut state = worker_state.lock().unwrap();
             state.active = None;
             let Some(session) = state.sessions.get_mut(&job.session_id) else { continue; };
             if session.generation != job.generation { continue; }
             let unit = &mut session.units[job.index];
             match result {
-                Ok((document, providers)) => {
+                Ok((document, lookup, providers, timing_enabled, cache_hit)) => {
                     let failed = providers.iter().any(|p| p["status"] == "failed" || p["status"] == "cancelled");
-                    unit.stage = if job.stage == UnitStage::Analyzing { UnitStage::Basic } else if failed { UnitStage::Failed } else { UnitStage::Complete };
+                    unit.stage = if failed { UnitStage::Failed } else { UnitStage::Complete };
                     unit.artifact_revision += 1;
-                    unit.document = Some(document);
+                    unit.timing = timing_enabled.then(|| UnitTiming { elapsed_ms: started.elapsed().as_secs_f64() * 1000.0,
+                        generated_ms: document.elapsed_ms, stages: document.stage_timings.clone(), cache_hit });
+                    unit.document = (!failed).then_some(document);
+                    unit.lookup = (!failed).then_some(lookup);
                     unit.providers = providers;
+                    unit.cache_hit = cache_hit;
                     unit.error = failed.then(|| "部分来源分析未完成，可重试该单元".into());
                 }
                 Err(error) => { unit.stage = UnitStage::Failed; unit.error = Some(error); },
             }
-            session.retained.retain(|&index| index != job.index);
-            session.retained.push_back(job.index);
+            if session.units[job.index].document.is_some() {
+                session.retained.retain(|&index| index != job.index);
+                session.retained.push_back(job.index);
+            }
             let mut changed = vec![job.index];
             while session.retained.len() > 24 {
-                let position = session.retained.iter().position(|index| !session.order[..session.priority_count].contains(index)).unwrap();
+                let Some(position) = session.retained.iter().position(|index| !session.order[..session.priority_count].contains(index)) else { break; };
                 let index = session.retained.remove(position).unwrap();
                 session.units[index].document = None;
+                session.units[index].lookup = None;
                 changed.push(index);
             }
             session.publish(&changed);
@@ -192,7 +210,7 @@ impl DocumentSessions {
 
     fn wake(&self) { let _ = self.wake.as_ref().unwrap().try_send(()); }
 
-    pub fn open(&self, document_id: Option<String>, text: &str, policy: RegisterPolicy) -> Result<Value, String> {
+    pub fn open(&self, document_id: Option<String>, text: &str, policy: RegisterPolicy, initial_offset: usize) -> Result<Value, String> {
         if text.trim().is_empty() { return Err("请输入日文正文".into()); }
         let plan = Arc::new(DocumentPlan::new(document_id, text, policy));
         if plan.units.is_empty() { return Err("输入内容没有可分析的正文".into()); }
@@ -201,10 +219,11 @@ impl DocumentSessions {
         for session in state.sessions.values_mut() { session.advance_generation(); session.paused = true; session.publish(&[]); }
         state.sequence += 1;
         let id = format!("session:{}", state.sequence);
-        let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending, artifact_revision: 0, document: None, providers: Vec::new(), error: None }).collect();
+        let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
         let mut session = Session { id: id.clone(), plan: plan.clone(), generation: 1, revision: 0, paused: false,
             order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new() };
-        session.request_range([0, plan.prepared.mapping.origins.len().min(crate::document_plan::UNIT_CHARACTERS)])?;
+        let start = initial_offset.min(plan.prepared.mapping.origins.len().saturating_sub(1));
+        session.request_range([start, (start + crate::document_plan::UNIT_CHARACTERS).min(plan.prepared.mapping.origins.len())])?;
         let result = json!({"plan": plan.as_ref(), "update": session.update(None)});
         state.sessions.insert(id.clone(), session);
         state.recent.push_back(id);
@@ -238,8 +257,10 @@ impl DocumentSessions {
             for unit in &mut session.units {
                 unit.stage = UnitStage::Pending;
                 unit.document = None;
+                unit.lookup = None;
                 unit.artifact_revision += 1;
-                unit.providers.clear(); unit.error = None;
+                unit.providers.clear(); unit.cache_hit = false; unit.error = None;
+                unit.timing = None;
             }
             session.publish(&[]);
         }
@@ -267,9 +288,9 @@ impl DocumentSessions {
         current.validate(text_version, generation)?;
         if range.is_some_and(|r| r[0] > r[1] || r[1] > current.plan.prepared.mapping.origins.len()) { return Err("请求范围超出正文".into()); }
         if unit_id.is_some_and(|id| !current.units.iter().any(|unit| unit.unit_id == id)) { return Err("正文单元引用无效".into()); }
-        if state.active.as_deref() == Some(id) { self.engine.cancellation.fetch_add(1, Ordering::Relaxed); }
+        if action != "continue" && state.active.as_deref() == Some(id) { self.engine.cancellation.fetch_add(1, Ordering::Relaxed); }
         let session = state.sessions.get_mut(id).unwrap();
-        session.advance_generation();
+        if action != "continue" { session.advance_generation(); }
         match action {
             "range" => session.request_range(range.unwrap())?,
             "continue" => {
@@ -280,7 +301,7 @@ impl DocumentSessions {
             "retry" => {
                 for (index, unit) in session.units.iter_mut().enumerate() {
                     if unit_id.map_or(unit.stage == UnitStage::Failed, |id| id == unit.unit_id) {
-                        unit.stage = if unit.document.is_some() { UnitStage::Basic } else { UnitStage::Pending };
+                        unit.stage = if unit.document.is_some() { UnitStage::Complete } else { UnitStage::Pending };
                         unit.error = None;
                         if !session.order.contains(&index) { session.order.push(index); }
                     }
@@ -310,7 +331,17 @@ impl DocumentSessions {
         session.validate(text_version, generation)?;
         let unit = session.units.iter().find(|unit| unit.unit_id == unit_id).ok_or("正文单元引用无效")?;
         if unit.artifact_revision != revision { return Err("分析产物已更新，请重新选择词语".into()); }
+        if unit.stage != UnitStage::Complete { return Err("正文单元尚未完成分析".into()); }
         unit.document.clone().ok_or_else(|| "正文范围已释放，请重新请求该范围".into())
+    }
+
+    pub fn lookup(&self, id: &str, text_version: &str, generation: u64, unit_id: &str, revision: u64) -> Result<Value, String> {
+        let state = self.state.lock().unwrap();
+        let session = state.sessions.get(id).ok_or("文档会话已关闭")?;
+        session.validate(text_version, generation)?;
+        let unit = session.units.iter().find(|unit| unit.unit_id == unit_id).ok_or("正文单元引用无效")?;
+        if unit.artifact_revision != revision || unit.stage != UnitStage::Complete { return Err("查词目标已更新，请重新选择词语".into()); }
+        unit.lookup.clone().ok_or_else(|| "正文范围已释放，请重新请求该范围".into())
     }
 }
 
@@ -320,5 +351,33 @@ impl Drop for DocumentSessions {
         self.engine.cancellation.fetch_add(1, Ordering::Relaxed);
         self.wake.take();
         if let Some(worker) = self.worker.take() { let _ = worker.join(); }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn priority_unit_runs_as_one_job_without_publishing_intermediate_document() {
+        let text = "七日は警察署へ向かった。\n".repeat(100);
+        let plan = Arc::new(DocumentPlan::new(Some("book".into()), &text, RegisterPolicy::Auto));
+        assert!(plan.units.len() >= 2);
+        let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending,
+            artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
+        let mut session = Session { id: "session".into(), plan: plan.clone(), generation: 1, revision: 0,
+            paused: false, order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new() };
+        let priority = plan.units[1].anchor.char_range[0];
+        session.request_range([priority, priority + 1]).unwrap();
+        let mut state = State::default();
+        state.recent.push_back("session".into());
+        state.sessions.insert("session".into(), session);
+        let job = state.next(0).unwrap();
+        assert_eq!(job.index, 1);
+        let active = &state.sessions["session"].units[1];
+        assert_eq!(active.stage, UnitStage::Processing);
+        assert!(active.document.is_none());
+        assert_eq!(state.sessions["session"].progress()["basic"], 0);
+        assert_eq!(state.sessions["session"].progress()["complete"], 0);
     }
 }

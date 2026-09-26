@@ -56,6 +56,7 @@ pub enum Request {
     ProviderStatus,
     CheckProviders,
     ConfigureProviders { settings: crate::providers::ProviderSettings },
+    SetAnalysisTiming { enabled: bool },
     Enrich { analysis_id: String },
     CancelExternal,
     Analyze {
@@ -63,7 +64,7 @@ pub enum Request {
         register: Register,
     },
     AnalyzeRouted { text: String, policy: RegisterPolicy },
-    OpenDocument { document_id: Option<String>, text: String, #[serde(default)] policy: RegisterPolicy },
+    OpenDocument { document_id: Option<String>, text: String, #[serde(default)] policy: RegisterPolicy, #[serde(default)] initial_offset: usize },
     RequestRange { session_id: String, text_version: String, generation: u64, range: [usize; 2] },
     ContinueDocument { session_id: String, text_version: String, generation: u64 },
     CancelDocument { session_id: String, text_version: String, generation: u64 },
@@ -160,7 +161,8 @@ impl AnalysisService {
                 if result.is_ok() { self.sessions.invalidate_sources(); }
                 result
             },
-            Request::OpenDocument { document_id, text, policy } => self.sessions.open(document_id, &text, policy),
+            Request::SetAnalysisTiming { enabled } => self.engine.external.lock().unwrap().set_analysis_timing(enabled),
+            Request::OpenDocument { document_id, text, policy, initial_offset } => self.sessions.open(document_id, &text, policy, initial_offset),
             Request::RequestRange { session_id, text_version, generation, range } => self.sessions.control(&session_id, &text_version, generation, "range", Some(range), None),
             Request::ContinueDocument { session_id, text_version, generation } => self.sessions.control(&session_id, &text_version, generation, "continue", None, None),
             Request::CancelDocument { session_id, text_version, generation } => self.sessions.control(&session_id, &text_version, generation, "cancel", None, None),
@@ -245,8 +247,8 @@ impl AnalysisService {
                 Ok(result)
             }
             Request::QueryLookupDocument { session_id, text_version, generation, unit_id, artifact_revision, target_id, selected_form } => {
-                let document = self.sessions.document(&session_id, &text_version, generation, &unit_id, artifact_revision)?;
-                let mut result = self.engine.query_target(&document, &target_id, selected_form.as_deref())?;
+                let group = self.sessions.lookup(&session_id, &text_version, generation, &unit_id, artifact_revision)?;
+                let mut result = self.engine.query_group(group, &target_id, selected_form.as_deref())?;
                 result["target"] = json!({"session_id": session_id, "text_version": text_version, "generation": generation, "unit_id": unit_id, "artifact_revision": artifact_revision, "target_id": target_id});
                 Ok(result)
             }

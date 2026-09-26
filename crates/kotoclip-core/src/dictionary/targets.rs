@@ -1,7 +1,7 @@
 use super::{lookup::DictionaryEngine, lookup_state, model::{DictEntry, DictionaryLookup, PosTag}};
 use kotoclip_nlp::{model::{MorphemeToken, QueryForm, UnifiedDocument}, morphology::MorphologyRole};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ScopeConstraint {
@@ -278,14 +278,17 @@ pub fn build(
     }
     let words = candidates.values().flat_map(|candidate| candidate.forms.iter().map(|query| query.form.clone())).collect::<HashSet<_>>();
     let exact = dictionary.contains_exact_batch(&words);
+    let mut lookup_cache: HashMap<(String, Option<String>, Option<PosTag>), Vec<DictEntry>> = HashMap::new();
     for candidate in candidates.values_mut() {
         let mut seen = HashSet::new();
         for query in &candidate.forms {
             if !exact.contains(&query.form) && !candidate.minimal { continue; }
-            let entries = dictionary.lookup_profiled_with_pos(&query.form, query.reading.as_deref(), candidate.pos.as_ref()).0;
+            let key = (query.form.clone(), query.reading.clone(), candidate.pos.clone());
+            let entries = lookup_cache.entry(key).or_insert_with(||
+                dictionary.lookup_profiled_with_pos(&query.form, query.reading.as_deref(), candidate.pos.as_ref()).0);
             for entry in entries {
-                let hint = supplied_metadata.iter().find(|hint| hint.entry_id == entry.occurrence_id).cloned().unwrap_or_else(|| metadata(&entry));
-                if !candidate.minimal && !lookup_state::entry_matches_form(&entry, &query.form) { continue; }
+                let hint = supplied_metadata.iter().find(|hint| hint.entry_id == entry.occurrence_id).cloned().unwrap_or_else(|| metadata(entry));
+                if !candidate.minimal && !lookup_state::entry_matches_form(entry, &query.form) { continue; }
                 if hint.compatibility == "incompatible" { continue; }
                 if !seen.insert(entry.occurrence_id.clone()) { continue; }
                 if scope_matches(&hint, &chars, candidate.range) { candidate.hints.push(hint); }
