@@ -78,7 +78,7 @@ export function useDocumentSession() {
       const current = state.value;
       if (!current || current.session_id !== sessionId) return;
       try {
-        const update = await nlpRequest<DocumentUpdate>({ command, ...payload, session_id: sessionId, text_version: current.text_version, generation: current.generation });
+        const update = await nlpRequest<DocumentUpdate>({ command, ...payload, session_id: sessionId, text_version: current.text_version, generation: current.generation, after_revision: current.revision });
         if (state.value?.session_id === sessionId) await apply(update);
         error.value = '';
       } catch (e) {

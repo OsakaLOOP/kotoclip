@@ -88,7 +88,7 @@ impl Session {
         }
     }
 
-    fn request_range(&mut self, range: [usize; 2]) -> Result<(), String> {
+    fn request_range(&mut self, range: [usize; 2]) -> Result<Vec<usize>, String> {
         if range[0] > range[1] || range[1] > self.plan.prepared.mapping.origins.len() { return Err("请求范围超出正文".into()); }
         let first = self.plan.units.partition_point(|unit| unit.anchor.char_range[1] <= range[0]).min(self.units.len().saturating_sub(1));
         let last = self.plan.units.partition_point(|unit| unit.anchor.char_range[0] < range[1]).max(first + 1).min(self.units.len());
@@ -100,12 +100,16 @@ impl Session {
         for index in 0..self.units.len() {
             if !self.order.contains(&index) { self.order.push(index); }
         }
+        let mut changed = Vec::new();
         for &index in &self.order[..self.priority_count] {
             let unit = &mut self.units[index];
-            if unit.document.is_none() { unit.stage = UnitStage::Pending; unit.error = None; }
+            if unit.stage == UnitStage::Complete && unit.document.is_none() {
+                unit.stage = UnitStage::Pending;
+                changed.push(index);
+            }
         }
         self.paused = false;
-        Ok(())
+        Ok(changed)
     }
 }
 
@@ -282,17 +286,20 @@ impl DocumentSessions {
         Ok(())
     }
 
-    pub fn control(&self, id: &str, text_version: &str, generation: u64, action: &str, range: Option<[usize; 2]>, unit_id: Option<&str>) -> Result<Value, String> {
+    pub fn control(&self, id: &str, text_version: &str, generation: u64, action: &str, range: Option<[usize; 2]>, unit_id: Option<&str>, after_revision: Option<u64>) -> Result<Value, String> {
         let mut state = self.state.lock().unwrap();
         let current = state.sessions.get(id).ok_or("文档会话已关闭")?;
         current.validate(text_version, generation)?;
         if range.is_some_and(|r| r[0] > r[1] || r[1] > current.plan.prepared.mapping.origins.len()) { return Err("请求范围超出正文".into()); }
         if unit_id.is_some_and(|id| !current.units.iter().any(|unit| unit.unit_id == id)) { return Err("正文单元引用无效".into()); }
-        if action != "continue" && state.active.as_deref() == Some(id) { self.engine.cancellation.fetch_add(1, Ordering::Relaxed); }
+        if !matches!(action, "range" | "continue" | "cancel" | "retry") { return Err("未知文档操作".into()); }
+        let interrupts = matches!(action, "cancel" | "retry");
+        if interrupts && state.active.as_deref() == Some(id) { self.engine.cancellation.fetch_add(1, Ordering::Relaxed); }
         let session = state.sessions.get_mut(id).unwrap();
-        if action != "continue" { session.advance_generation(); }
+        if interrupts { session.advance_generation(); }
+        let mut changed = Vec::new();
         match action {
-            "range" => session.request_range(range.unwrap())?,
+            "range" => changed = session.request_range(range.unwrap())?,
             "continue" => {
                 for index in 0..session.units.len() { if !session.order.contains(&index) { session.order.push(index); } }
                 session.paused = false;
@@ -310,8 +317,8 @@ impl DocumentSessions {
             },
             _ => return Err("未知文档操作".into()),
         }
-        session.publish(&[]);
-        let result = session.update(None);
+        session.publish(&changed);
+        let result = session.update(if interrupts { None } else { after_revision });
         state.recent.retain(|item| item != id); state.recent.push_back(id.into());
         drop(state); self.wake();
         Ok(result)

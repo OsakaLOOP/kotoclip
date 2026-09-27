@@ -130,6 +130,7 @@ const einkMode = ref(false);
 const groups = shallowRef(new Map<string, UnitLookup>());
 const pendingTargets = new Set<string>();
 let requestedRange = "";
+let rangeTimer: ReturnType<typeof setTimeout> | undefined;
 const targetErrors = shallowRef(new Map<string, string>());
 const targetError = computed(() => [...targetErrors.value.values()][0] ?? "");
 const activeHit = shallowRef<TargetHit | null>(null);
@@ -368,14 +369,16 @@ async function syncTargets() {
 }
 
 function requestVisibleUnits() {
-  if (!visibleRows.value.length) return;
+  clearTimeout(rangeTimer);
+  if (!visibleRows.value.length || props.session.paused) return;
   const visible = props.session.plan.units.filter((unit) =>
     unit.anchor.char_range[1] > visibleRange.value[0] && unit.anchor.char_range[0] < visibleRange.value[1]);
-  if (!visible.some((unit) => props.session.units[unit.id]?.stage !== "failed" && !props.session.units[unit.id]?.document)) return;
   const key = `${props.session.session_id}:${visible[0]?.id}:${visible[visible.length - 1]?.id}`;
   if (key === requestedRange || !visible.length) return;
-  requestedRange = key;
-  emit("range", [visible[0].anchor.char_range[0], visible[visible.length - 1].anchor.char_range[1]]);
+  rangeTimer = setTimeout(() => {
+    requestedRange = key;
+    emit("range", [visible[0].anchor.char_range[0], visible[visible.length - 1].anchor.char_range[1]]);
+  }, 120);
 }
 
 function unitLookups(): UnitLookup[] {
@@ -851,6 +854,7 @@ async function restoreOffset() {
 
 watch(() => [props.session.session_id, props.session.revision, props.session.generation, visibleRange.value[0], visibleRange.value[1]], ([sessionId, , generation], previous) => {
   if (!previous || sessionId !== previous[0] || generation !== previous[2]) {
+    requestedRange = "";
     groups.value = new Map();
     targetErrors.value = new Map();
   }
@@ -869,6 +873,7 @@ onMounted(() => {
   void restoreOffset();
 });
 onBeforeUnmount(() => {
+  clearTimeout(rangeTimer);
   clearTimeout(hoverTimer);
   clearTimeout(closeTimer);
   clearTimeout(progressTimer);
