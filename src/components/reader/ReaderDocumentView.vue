@@ -21,6 +21,7 @@ import { readingEstimate, type ReaderAppearance } from "../../reader/reading";
 import { estimateReaderRow, resolveReaderRowMeasurement } from "../../reader/virtualization";
 import { dictionaryLookupFromSearch, readerCapsuleRanges, readerChains, readerMorphologyHits, type ReaderMorphologyDetail } from "../../reader/lookupPresentation";
 import { explanationPanelWidth, placeExplanationPanels, snapshotRect } from "../../explanation/geometry";
+import { EXPLANATION_CLOSE_GRACE_MS } from "../../explanation/closeGrace";
 import { resourceKey, type LibraryBook, type LibraryResource } from "../../reader/library";
 import type { ReaderDocument, ReaderTextBlock } from "../../reader/document";
 import type { DictionaryLookup, DictionarySettings } from "../../types";
@@ -147,6 +148,8 @@ const pendingSelection = ref<SelectionDraft | null>(null);
 const exposedTargets = new Set<string>();
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
+let activeCapsule: HTMLElement | null = null;
+let pendingCapsule: HTMLElement | null = null;
 let progressTimer: ReturnType<typeof setTimeout> | undefined;
 let lastProgressAt = Date.now();
 
@@ -374,6 +377,27 @@ function hitsForBlock(block: ReaderTextBlock): TargetHit[] {
         .map((child) => ({ ...child, char_range: [child.char_range[0] + lookup.contextOffset, child.char_range[1] + lookup.contextOffset] as [number, number] }));
       hits.push({ key: `${lookup.unit.unit_id}:${target.id}`, unit: lookup, target, range, children });
     }
+    for (const grammar of lookup.group.grammar_targets) {
+      const range: [number, number] = [
+        grammar.char_range[0] + lookup.contextOffset,
+        grammar.char_range[1] + lookup.contextOffset,
+      ];
+      if (range[1] <= block.charRange[0] || range[0] >= block.charRange[1]) continue;
+      const target: LookupTarget = {
+        id: `grammar:${lookup.unit.unit_id}:${grammar.char_range[0]}:${grammar.char_range[1]}`,
+        parent_outer_id: null,
+        char_range: grammar.char_range,
+        surface: grammar.display_form,
+        morpheme_ids: [],
+        lexical_core_ids: [],
+        source_formation_ids: [],
+        lookup_forms: [],
+        reading_evidence: [],
+        decision: "grammar",
+        reason: grammar.normalized_form,
+      };
+      hits.push({ key: `${lookup.unit.unit_id}:${target.id}`, unit: lookup, target, range, children: [] });
+    }
   }
   return hits.sort((left, right) => left.range[0] - right.range[0] || right.range[1] - left.range[1]);
 }
@@ -397,7 +421,10 @@ function partsFor(row: ReaderTextRow): TextPart[] {
     }
   }
   const details = morphologyHits.value.filter((item) => item.range[0] < block.charRange[1] && item.range[1] > block.charRange[0])
-    .map((item) => ({ ...item, hit: hits.find((hit) => hit.unit === item.lookup && hit.target.id === item.targetId) ?? null }))
+    .map((item) => ({ ...item, hit: hits.find((hit) => hit.unit === item.lookup && hit.target.id === item.targetId)
+      ?? hits.find((hit) => hit.unit === item.lookup && hit.target.decision === "grammar"
+        && hit.range[0] < item.range[1] && hit.range[1] > item.range[0])
+      ?? null }))
     .filter((item) => item.hit)
     .sort((left, right) => (left.range[1] - left.range[0]) - (right.range[1] - right.range[0]));
   const boundaries = new Set<number>([block.charRange[0], block.charRange[1]]);
@@ -415,7 +442,8 @@ function partsFor(row: ReaderTextRow): TextPart[] {
   return points.slice(0, -1).map((start, index) => {
     const end = points[index + 1];
     const detail = details.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
-    const hit = detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
+    const candidateHit = detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
+    const hit = candidateHit?.target.decision === "grammar" && !detail ? null : candidateHit;
     const reading = annotations.find((annotation) => annotation.char_range[0] === start && annotation.char_range[1] === end)?.reading;
     const capsule = capsuleRanges.value.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
     return {
@@ -495,6 +523,10 @@ function exportSelections() {
 
 function positionLookup(event: MouseEvent, paired = false) {
   const anchor = snapshotRect((event.currentTarget as HTMLElement).getBoundingClientRect());
+  positionLookupAt(anchor, paired);
+}
+
+function positionLookupAt(anchor: ReturnType<typeof snapshotRect>, paired = false) {
   const width = explanationPanelWidth(window.innerWidth, paired);
   const placement = placeExplanationPanels(anchor, anchor,
     { width: paired ? Math.min(310, width) : width, height: paired ? 240 : 420 },
@@ -524,32 +556,62 @@ function updateDictionaryOrder(order: string[]) {
 }
 
 function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphologyDetail | null) {
-  clearTimeout(closeTimer);
-  positionLookup(event, Boolean(detail));
+  if (hit.target.decision === "grammar" && !detail) return;
+  cancelCloseLookup();
   clearTimeout(hoverTimer);
+  const source = event.currentTarget as HTMLElement;
+  const capsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
+  const anchor = snapshotRect(source.getBoundingClientRect());
   if (activeHit.value?.key === hit.key) {
+    activeCapsule = capsule;
     activeDetail.value = detail;
+    positionLookupAt(anchor, Boolean(detail));
     return;
   }
-  activeDetail.value = null;
-  hoverTimer = setTimeout(() => {
+  const open = () => {
+    pendingCapsule = null;
+    activeCapsule = capsule;
+    positionLookupAt(anchor, Boolean(detail));
+    activeHit.value = hit;
     activeDetail.value = detail;
-    void queryTarget(hit);
-  }, 220);
+    activeQuery.value = null;
+    queryError.value = "";
+    queryBusy.value = hit.target.decision !== "grammar";
+    if (hit.target.decision !== "grammar") void queryTarget(hit);
+  };
+  pendingCapsule = capsule;
+  hoverTimer = setTimeout(open, 60);
 }
 
 function scheduleCloseLookup() {
-  clearTimeout(hoverTimer);
-  clearTimeout(closeTimer);
-  closeTimer = setTimeout(closeLookup, 450);
+  if (closeTimer !== undefined) return;
+  closeTimer = setTimeout(closeLookup, EXPLANATION_CLOSE_GRACE_MS);
 }
 
 function cancelCloseLookup() {
   clearTimeout(closeTimer);
+  closeTimer = undefined;
+}
+
+function insideLookupRegion(target: EventTarget | null): boolean {
+  if (!(target instanceof Node)) return false;
+  return Boolean(activeCapsule?.contains(target)
+    || document.getElementById("reader-dictionary")?.contains(target)
+    || document.querySelector(".reader-explanation")?.contains(target));
+}
+
+function leaveCapsule(event: PointerEvent) {
+  if (pendingCapsule === event.currentTarget) {
+    clearTimeout(hoverTimer);
+    pendingCapsule = null;
+  }
+  if (activeHit.value && !insideLookupRegion(event.relatedTarget)) scheduleCloseLookup();
 }
 
 function openChildren(hit: TargetHit, event: MouseEvent) {
-  clearTimeout(closeTimer);
+  cancelCloseLookup();
+  const source = event.currentTarget as HTMLElement;
+  activeCapsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
   positionLookup(event);
   clearTimeout(hoverTimer);
   activeDetail.value = null;
@@ -616,6 +678,9 @@ function closeLookup() {
   ++queryGeneration;
   clearTimeout(hoverTimer);
   clearTimeout(closeTimer);
+  closeTimer = undefined;
+  activeCapsule = null;
+  pendingCapsule = null;
   activeHit.value = null;
   activeDetail.value = null;
   outerHit.value = null;
@@ -742,7 +807,12 @@ onMounted(() => {
   } catch { dictionaryOrder.value = []; }
   void restoreOffset();
 });
-onBeforeUnmount(() => { clearTimeout(hoverTimer); clearTimeout(closeTimer); clearTimeout(progressTimer); document.body.classList.remove("eink-mode"); });
+onBeforeUnmount(() => {
+  clearTimeout(hoverTimer);
+  clearTimeout(closeTimer);
+  clearTimeout(progressTimer);
+  document.body.classList.remove("eink-mode");
+});
 
 function toggleEinkMode() {
   einkMode.value = !einkMode.value;
@@ -783,6 +853,7 @@ function toggleEinkMode() {
                   :key="capsule.key"
                   class="reader-capsule"
                   :class="{ 'reader-capsule--group': capsule.capsuleKey }"
+                  @pointerleave="leaveCapsule"
                 ><span
                   v-for="part in capsule.parts"
                   :key="part.key"
@@ -791,7 +862,7 @@ function toggleEinkMode() {
                   :data-char-start="part.range[0]"
                   :data-char-end="part.range[1]"
                   @pointerenter="part.hit && scheduleLookup(part.hit, $event, part.detail)"
-                  @click="part.hit && openChildren(part.hit, $event)"
+                  @click="part.hit && part.hit.target.decision !== 'grammar' && openChildren(part.hit, $event)"
                 ><ruby v-if="part.reading">{{ part.text }}<rt>{{ part.reading }}</rt></ruby><template v-else>{{ part.text }}</template></span></span>
               </component>
             </section>
@@ -801,7 +872,7 @@ function toggleEinkMode() {
 
     </div>
 
-    <TooltipPanel :show="Boolean(activeHit)" :x="lookupPosition.x" :y="lookupPosition.y" :width="lookupPosition.width" :max-height="lookupPosition.maxHeight" :token="null" :headword="activeHit?.target.surface" :lookup="activeQuery" :loading="queryBusy" :can-go-back="lookupHistory.length > 0" :summary-visible="!relatedWord && Boolean(chainOverview)" panel-id="reader-dictionary" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="closeLookup" @back="backLookup" @select-form="selectLookupForm" @navigate="void navigateLookup($event)">
+    <TooltipPanel :show="Boolean(activeHit) && activeHit?.target.decision !== 'grammar'" :x="lookupPosition.x" :y="lookupPosition.y" :width="lookupPosition.width" :max-height="lookupPosition.maxHeight" :token="null" :headword="activeHit?.target.surface" :lookup="activeQuery" :loading="queryBusy" :can-go-back="lookupHistory.length > 0" :summary-visible="!relatedWord && Boolean(chainOverview)" panel-id="reader-dictionary" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="closeLookup" @back="backLookup" @select-form="selectLookupForm" @navigate="void navigateLookup($event)">
       <template #summary>
         <div v-if="!relatedWord && chainOverview" class="reader-lookup__summary">
           <strong>{{ chainOverview.name }}</strong>
@@ -825,7 +896,7 @@ function toggleEinkMode() {
         </div>
       </template>
     </TooltipPanel>
-    <ReaderExplanationBubble v-if="activeDetail && !relatedWord" :show="Boolean(activeHit)" :x="detailPosition.x" :y="detailPosition.y" :width="detailPosition.width" :max-height="detailPosition.maxHeight" :title="activeDetail.title" :surface="activeDetail.surface" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="activeDetail = null">
+    <ReaderExplanationBubble v-if="activeDetail && !relatedWord" :show="Boolean(activeHit) && Boolean(activeDetail)" :x="detailPosition.x" :y="detailPosition.y" :width="detailPosition.width" :max-height="detailPosition.maxHeight" :title="activeDetail.title" :surface="activeDetail.surface" @enter="cancelCloseLookup" @leave="scheduleCloseLookup">
       <p v-if="activeDetail.description">{{ activeDetail.description }}</p>
       <p v-if="activeDetail.normalizedForm">完整形式：{{ activeDetail.normalizedForm }}</p>
       <p v-if="activeDetail.candidates.length">可能含义：{{ activeDetail.candidates.join('、') }}</p>

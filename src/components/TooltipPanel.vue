@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { ChevronLeft, X } from "@lucide/vue";
+import { ChevronLeft } from "@lucide/vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
 import {
   dictionaryShortcutSettings,
@@ -426,7 +426,6 @@ function handleDefinitionClick(event: MouseEvent) {
       <div class="tooltip-content" :data-explanation-content="panelId">
         <header class="tooltip-header">
           <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')"><ChevronLeft :size="20" aria-hidden="true" /></button>
-          <button v-if="headword" type="button" class="back-button" aria-label="关闭词典" @click="emit('close')"><X :size="18" aria-hidden="true" /></button>
           <div class="header-grid">
             <div class="headword-block">
               <div class="headword-line">

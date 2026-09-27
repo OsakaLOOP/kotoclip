@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { X } from "@lucide/vue";
-
 defineProps<{
   show: boolean;
   x: number;
@@ -11,7 +9,7 @@ defineProps<{
   surface: string;
 }>();
 
-const emit = defineEmits<{ enter: []; leave: []; close: [] }>();
+const emit = defineEmits<{ enter: []; leave: [] }>();
 </script>
 
 <template>
@@ -28,7 +26,6 @@ const emit = defineEmits<{ enter: []; leave: []; close: [] }>();
     >
       <header>
         <div><strong>{{ title }}</strong><span>{{ surface }}</span></div>
-        <button type="button" aria-label="关闭说明" @click="emit('close')"><X :size="17" aria-hidden="true" /></button>
       </header>
       <slot />
     </aside>
@@ -41,7 +38,6 @@ const emit = defineEmits<{ enter: []; leave: []; close: [] }>();
 .reader-explanation header div { display: flex; min-width: 0; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .reader-explanation strong { color: var(--accent-color); }
 .reader-explanation header span { font-family: var(--font-ja); font-size: 1.05rem; }
-.reader-explanation button { flex: 0 0 auto; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; }
 .fade-enter-active, .fade-leave-active { transition: opacity 120ms ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .fade-enter-active, .fade-leave-active { transition: none; } }
