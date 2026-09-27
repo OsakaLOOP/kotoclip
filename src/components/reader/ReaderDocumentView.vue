@@ -70,7 +70,7 @@ interface TargetHit {
 interface TextPart {
   key: string;
   text: string;
-  reading?: string;
+  annotation?: { char_range: [number, number]; reading: string };
   range: [number, number];
   hit: TargetHit | null;
   detail: ReaderMorphologyDetail | null;
@@ -81,6 +81,12 @@ interface TextCapsule {
   key: string;
   capsuleKey: string | null;
   parts: TextPart[];
+}
+
+interface TextRun {
+  key: string;
+  reading?: string;
+  capsules: TextCapsule[];
 }
 
 interface SelectionDraft {
@@ -178,7 +184,9 @@ function estimateRow(index: number): number {
     viewportHeight: scrollElement.value?.clientHeight ?? window.innerHeight,
     fontSize: props.appearance.fontSize,
     lineHeight: props.appearance.lineHeight,
-    contentWidth: Math.min(props.appearance.contentWidth, Math.max(0, window.innerWidth - 40)),
+    contentWidth: Math.min(props.appearance.contentWidth, Math.max(0, (scrollElement.value?.clientWidth ?? window.innerWidth) - (window.innerWidth <= 700 ? 32 : 48))),
+    text: row?.kind === "text" ? row.paragraph.text : undefined,
+    paragraphGap: props.appearance.paragraphGap,
     imageWidth,
     imageHeight: images.reduce((height, item) => Math.max(height, item.intrinsicHeight ?? 0), 0) || undefined,
     imageLayout: row?.kind === "image" ? row.layout : undefined,
@@ -193,7 +201,7 @@ function measureReaderRow(element: HTMLElement, entry: ResizeObserverEntry | und
     kind: row?.kind ?? "text",
     imageState: element.querySelector<HTMLElement>("[data-image-state]")?.dataset.imageState,
     cachedSize: row ? instance.itemSizeCache.get(row.key) : undefined,
-    estimatedSize: estimateRow(index),
+    estimatedSize: row?.kind === "image" ? estimateRow(index) : 0,
     observedSize: entry?.borderBoxSize?.[0]?.blockSize,
     elementSize: element.getBoundingClientRect().height,
   });
@@ -205,8 +213,11 @@ const virtualizer = useVirtualizer<HTMLElement, HTMLElement>(computed(() => ({
   getItemKey: (index: number) => rows.value[index]?.key ?? index,
   estimateSize: estimateRow,
   measureElement: measureReaderRow,
+  scrollMargin: 42,
   overscan: 6,
 })));
+virtualizer.value.shouldAdjustScrollPositionOnItemSizeChange = (item, _delta, instance) =>
+  item.end <= (instance.scrollOffset ?? 0);
 const visibleRows = computed(() => virtualizer.value.getVirtualItems().map((item) => ({ item, row: rows.value[item.index] })).filter((value) => value.row));
 const visibleRange = computed<[number, number]>(() => {
   const ranges = visibleRows.value
@@ -459,10 +470,10 @@ function partsFor(row: ReaderTextRow, lookups: UnitLookup[]): TextPart[] {
     const detail = details.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
     const candidateHit = detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
     const hit = candidateHit?.target.decision === "grammar" && !detail ? null : candidateHit;
-    const reading = annotations.find((annotation) => annotation.char_range[0] === start && annotation.char_range[1] === end)?.reading;
+    const annotation = annotations.find((annotation) => annotation.char_range[0] <= start && end <= annotation.char_range[1]);
     const capsule = capsules.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
     return {
-      key: `${block.id}:${start}`, text: preparedCharacters.value.slice(start, end).join(""), reading,
+      key: `${block.id}:${start}`, text: preparedCharacters.value.slice(start, end).join(""), annotation,
       range: [start, end] as [number, number], hit, detail: detail?.detail ?? null,
       capsuleKey: capsule?.key ?? null,
     };
@@ -482,16 +493,28 @@ function capsulesForParts(parts: TextPart[]): TextCapsule[] {
   return capsules;
 }
 
+function runsForParts(parts: TextPart[]): TextRun[] {
+  const groups: TextPart[][] = [];
+  for (const part of parts) {
+    const previous = groups[groups.length - 1];
+    if (previous && previous[0].annotation === part.annotation) previous.push(part);
+    else groups.push([part]);
+  }
+  return groups.map((group) => ({
+    key: group[0].key, reading: group[0].annotation?.reading, capsules: capsulesForParts(group),
+  }));
+}
+
 let rowProjectionCache = new Map<ReaderTextRow, {
   lookups: UnitLookup[];
   innerId: string | null;
   prepared: typeof prepared.value;
-  capsules: TextCapsule[];
+  runs: TextRun[];
 }>();
-const visibleCapsules = computed(() => {
+const visibleRuns = computed(() => {
   const lookups = unitLookups();
   const next: typeof rowProjectionCache = new Map();
-  const result = new Map<string, TextCapsule[]>();
+  const result = new Map<string, TextRun[]>();
   for (const { row } of visibleRows.value) {
     if (row.kind !== "text") continue;
     const relevant = lookups.filter((lookup) => lookup.range[0] < row.paragraph.charRange[1] && lookup.range[1] > row.paragraph.charRange[0]);
@@ -499,10 +522,10 @@ const visibleCapsules = computed(() => {
     let entry = rowProjectionCache.get(row);
     if (!entry || entry.prepared !== prepared.value || entry.innerId !== innerId
       || entry.lookups.length !== relevant.length || entry.lookups.some((lookup, index) => lookup !== relevant[index])) {
-      entry = { lookups: relevant, innerId, prepared: prepared.value, capsules: capsulesForParts(partsFor(row, relevant)) };
+      entry = { lookups: relevant, innerId, prepared: prepared.value, runs: runsForParts(partsFor(row, relevant)) };
     }
     next.set(row, entry);
-    result.set(row.key, entry.capsules);
+    result.set(row.key, entry.runs);
   }
   rowProjectionCache = next;
   return result;
@@ -882,12 +905,12 @@ function toggleEinkMode() {
     <div ref="scrollElement" class="reader-view__scroll" @scroll.passive="handleScroll" @mouseup="captureSelection">
       <main class="reader-view__content" :style="{ maxWidth: `${appearance.contentWidth}px`, fontSize: `${appearance.fontSize}px`, lineHeight: appearance.lineHeight, '--reader-paragraph-gap': `${appearance.paragraphGap}px` }">
         <div class="reader-row-layer" :style="{ height: `${virtualizer.getTotalSize()}px` }">
-          <section v-for="visible in visibleRows" :key="visible.row.key" :ref="(node) => measureRow(node, visible.row.key)" class="reader-row" :data-index="visible.item.index" :style="{ transform: `translateY(${visible.item.start}px)` }">
+          <section v-for="visible in visibleRows" :key="visible.row.key" :ref="(node) => measureRow(node, visible.row.key)" class="reader-row" :data-index="visible.item.index" :style="{ transform: `translateY(${visible.item.start - 42}px)` }">
             <ReaderImageBlock v-if="visible.row.kind === 'image'" :items="visible.row.items" :layout="visible.row.layout" class="reader-view__image" @settled="measureSettledImage(visible.row.key)" />
             <section v-else class="reader-view__paragraph" :class="{ 'reader-view__heading': visible.row.heading }" :data-char-start="visible.row.paragraph.charRange[0]">
               <component :is="visible.row.heading ? 'h2' : 'p'">
-                <span
-                  v-for="capsule in visibleCapsules.get(visible.row.key) ?? []"
+                <component v-for="run in visibleRuns.get(visible.row.key) ?? []" :key="run.key" :is="run.reading ? 'ruby' : 'span'"><span
+                  v-for="capsule in run.capsules"
                   :key="capsule.key"
                   class="reader-capsule"
                   :class="{ 'reader-capsule--group': capsule.capsuleKey }"
@@ -901,7 +924,7 @@ function toggleEinkMode() {
                   :data-char-end="part.range[1]"
                   @pointerenter="part.hit && scheduleLookup(part.hit, $event, part.detail)"
                   @click="part.hit && part.hit.target.decision !== 'grammar' && openChildren(part.hit, $event)"
-                ><ruby v-if="part.reading">{{ part.text }}<rt>{{ part.reading }}</rt></ruby><template v-else>{{ part.text }}</template></span></span>
+                >{{ part.text }}</span></span><rt v-if="run.reading">{{ run.reading }}</rt></component>
               </component>
             </section>
           </section>
@@ -963,18 +986,18 @@ function toggleEinkMode() {
 .reader-view__lookup-error button { flex: 0 0 auto; border: 0; background: transparent; color: var(--accent-color); cursor: pointer; }
 .reader-view__chapter { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; }
 .reader-view__count { font-size: .65rem; }
-.reader-view__scroll { min-height: 0; flex: 1; overflow: auto; padding: 42px 24px 92px; }
+.reader-view__scroll { min-height: 0; flex: 1; overflow: auto; overflow-anchor: none; scrollbar-gutter: stable; padding: 42px 24px 92px; }
 .reader-view__content { margin: 0 auto; color: var(--text-primary); font-family: var(--font-ja); }
 .reader-row-layer { position: relative; width: 100%; }
 .reader-row { position: absolute; top: 0; left: 0; width: 100%; }
 .reader-view__paragraph { margin: 0 0 var(--reader-paragraph-gap, 20px); }
-.reader-view__paragraph p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.reader-view__paragraph p, .reader-view__paragraph h2 { white-space: pre-wrap; overflow-wrap: anywhere; }
 .reader-view__heading { margin-top: 34px; }
 .reader-view__heading h2 { margin-bottom: 18px; color: var(--accent-color); font-size: 1.25em; font-weight: 600; }
 .reader-view__image { max-width: 100%; margin: 24px auto; }
 .reader-capsule { display: inline; }
-.reader-capsule--group { margin-right: .12em; padding: .05rem .12rem; border: 1px solid transparent; border-radius: var(--radius-sm); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-.reader-capsule--group:hover { border-color: var(--border-color); }
+.reader-capsule--group { border-radius: var(--radius-sm); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.reader-capsule--group:hover { outline: 1px solid var(--border-color); }
 .reader-capsule__part--lookup { cursor: pointer; }
 .reader-capsule__part { white-space: pre-wrap; }
 .reader-selection-action { position: fixed; z-index: 42; bottom: 56px; left: 50%; display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 13px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-primary); box-shadow: var(--shadow-sm); transform: translateX(-50%); color: var(--text-secondary); font-size: .75rem; }
