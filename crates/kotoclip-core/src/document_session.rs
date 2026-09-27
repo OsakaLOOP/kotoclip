@@ -46,6 +46,8 @@ struct Session {
     units: Vec<UnitUpdate>,
     history: VecDeque<(u64, Vec<UnitUpdate>)>,
     retained: VecDeque<usize>,
+    load_units: Vec<usize>,
+    load_cache: bool,
 }
 
 impl Session {
@@ -62,14 +64,17 @@ impl Session {
     }
 
     fn progress(&self) -> Value {
-        let analyzed = self.units.iter().map(|unit| unit.analysis_runs).sum::<usize>();
-        let cached = self.units.iter().map(|unit| unit.cache_reads).sum::<usize>();
-        let analysis_remaining = self.units.iter().filter(|unit| unit.stage != UnitStage::Complete && !unit.analysis_complete).count();
-        let cache_remaining = self.units.iter().filter(|unit| unit.stage != UnitStage::Complete && unit.analysis_complete).count();
+        let load_total = self.load_units.len();
+        let load_complete = self.load_units.iter().filter(|&&index| self.units[index].stage == UnitStage::Complete).count();
+        let (analysis_complete, analysis_total, cache_complete, cache_total) = if self.load_cache {
+            (0, 0, load_complete, load_total)
+        } else {
+            (load_complete, load_total, 0, 0)
+        };
         json!({"total": self.units.len(), "basic": self.units.iter().filter(|u| u.document.is_some()).count(),
             "complete": self.units.iter().filter(|u| u.analysis_complete).count(), "failed": self.units.iter().filter(|u| u.stage == UnitStage::Failed).count(),
-            "analysis": {"complete": analyzed, "total": analyzed + analysis_remaining},
-            "cache": {"complete": cached, "total": cached + cache_remaining},
+            "analysis": {"complete": analysis_complete, "total": analysis_total},
+            "cache": {"complete": cache_complete, "total": cache_total},
             "pending": if self.paused { 0 } else { self.order.iter().filter(|&&i| matches!(self.units[i].stage, UnitStage::Pending | UnitStage::Processing)).count() }})
     }
 
@@ -97,13 +102,21 @@ impl Session {
         }
     }
 
-    fn request_range(&mut self, range: [usize; 2]) -> Result<Vec<usize>, String> {
+    fn request_range(&mut self, range: [usize; 2], full_load: bool) -> Result<Vec<usize>, String> {
         if range[0] > range[1] || range[1] > self.plan.prepared.mapping.origins.len() { return Err("请求范围超出正文".into()); }
         let first = self.plan.units.partition_point(|unit| unit.anchor.char_range[1] <= range[0]).min(self.units.len().saturating_sub(1));
         let last = self.plan.units.partition_point(|unit| unit.anchor.char_range[0] < range[1]).max(first + 1).min(self.units.len());
         let mut priority: Vec<_> = (first..last).collect();
         if first > 0 { priority.push(first - 1); }
         if last < self.units.len() { priority.push(last); }
+        self.load_cache = priority.iter().all(|&index| self.units[index].analysis_complete);
+        self.load_units = if full_load {
+            (0..self.units.len()).collect()
+        } else {
+            priority.iter().copied().filter(|&index| {
+                self.units[index].stage != UnitStage::Complete || self.units[index].document.is_none()
+            }).collect()
+        };
         self.priority_count = priority.len();
         self.order = priority;
         self.order.extend((0..first.saturating_sub(1)).chain((last + 1).min(self.units.len())..self.units.len()));
@@ -236,9 +249,9 @@ impl DocumentSessions {
         let id = format!("session:{}", state.sequence);
         let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending, analysis_complete: false, analysis_runs: 0, cache_reads: 0, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
         let mut session = Session { id: id.clone(), plan: plan.clone(), generation: 1, revision: 0, paused: false,
-            order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new() };
+            order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new(), load_units: Vec::new(), load_cache: false };
         let start = initial_offset.min(plan.prepared.mapping.origins.len().saturating_sub(1));
-        session.request_range([start, (start + crate::document_plan::UNIT_CHARACTERS).min(plan.prepared.mapping.origins.len())])?;
+        session.request_range([start, (start + crate::document_plan::UNIT_CHARACTERS).min(plan.prepared.mapping.origins.len())], true)?;
         let result = json!({"plan": plan.as_ref(), "update": session.update(None)});
         state.sessions.insert(id.clone(), session);
         state.recent.push_back(id);
@@ -281,6 +294,8 @@ impl DocumentSessions {
                 unit.providers.clear(); unit.cache_hit = false; unit.error = None;
                 unit.timing = None;
             }
+            session.load_units = (0..session.units.len()).collect();
+            session.load_cache = false;
             session.publish(&[]);
         }
         drop(state); self.wake();
@@ -314,7 +329,7 @@ impl DocumentSessions {
         if interrupts { session.advance_generation(); }
         let mut changed = Vec::new();
         match action {
-            "range" => changed = session.request_range(range.unwrap())?,
+            "range" => changed = session.request_range(range.unwrap(), false)?,
             "continue" => {
                 session.paused = false;
             },
@@ -387,9 +402,9 @@ mod tests {
         let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending,
             analysis_complete: false, analysis_runs: 0, cache_reads: 0, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
         let mut session = Session { id: "session".into(), plan: plan.clone(), generation: 1, revision: 0,
-            paused: false, order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new() };
+            paused: false, order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new(), load_units: Vec::new(), load_cache: false };
         let priority = plan.units[1].anchor.char_range[0];
-        session.request_range([priority, priority + 1]).unwrap();
+        session.request_range([priority, priority + 1], false).unwrap();
         let mut state = State::default();
         state.recent.push_back("session".into());
         state.sessions.insert("session".into(), session);
