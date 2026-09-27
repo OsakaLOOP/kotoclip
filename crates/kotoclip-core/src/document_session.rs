@@ -97,9 +97,7 @@ impl Session {
         if last < self.units.len() { priority.push(last); }
         self.priority_count = priority.len();
         self.order = priority;
-        for index in 0..self.units.len() {
-            if !self.order.contains(&index) { self.order.push(index); }
-        }
+        self.order.extend((0..first.saturating_sub(1)).chain((last + 1).min(self.units.len())..self.units.len()));
         let mut changed = Vec::new();
         for &index in &self.order[..self.priority_count] {
             let unit = &mut self.units[index];
@@ -301,7 +299,6 @@ impl DocumentSessions {
         match action {
             "range" => changed = session.request_range(range.unwrap())?,
             "continue" => {
-                for index in 0..session.units.len() { if !session.order.contains(&index) { session.order.push(index); } }
                 session.paused = false;
             },
             "cancel" => session.paused = true,

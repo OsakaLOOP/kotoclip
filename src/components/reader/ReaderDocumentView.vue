@@ -201,13 +201,14 @@ function estimateRow(index: number): number {
 function measureReaderRow(element: HTMLElement, entry: ResizeObserverEntry | undefined, instance: Virtualizer<HTMLElement, HTMLElement>): number {
   const index = Number(element.dataset.index);
   const row = rows.value[index];
+  const observedSize = entry?.borderBoxSize?.[0]?.blockSize;
   return resolveReaderRowMeasurement({
     kind: row?.kind ?? "text",
     imageState: element.querySelector<HTMLElement>("[data-image-state]")?.dataset.imageState,
     cachedSize: row ? instance.itemSizeCache.get(row.key) : undefined,
     estimatedSize: row?.kind === "image" ? estimateRow(index) : 0,
-    observedSize: entry?.borderBoxSize?.[0]?.blockSize,
-    elementSize: element.getBoundingClientRect().height,
+    observedSize,
+    elementSize: observedSize ?? element.getBoundingClientRect().height,
   });
 }
 
@@ -360,10 +361,12 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
 
 async function syncTargets(retry = false) {
   if (retry) targetErrors.value = new Map();
-  const validKeys = new Set(Object.values(props.session.units).filter((unit) => unit.stage === "complete" && unit.document)
-    .map((unit) => `${props.session.session_id}:${props.session.generation}:${unit.unit_id}:${unit.artifact_revision}`));
-  const errors = new Map([...targetErrors.value].filter(([key]) => validKeys.has(key)));
-  if (errors.size !== targetErrors.value.size) targetErrors.value = errors;
+  if (targetErrors.value.size) {
+    const validKeys = new Set(Object.values(props.session.units).filter((unit) => unit.stage === "complete" && unit.document)
+      .map((unit) => `${props.session.session_id}:${props.session.generation}:${unit.unit_id}:${unit.artifact_revision}`));
+    const errors = new Map([...targetErrors.value].filter(([key]) => validKeys.has(key)));
+    if (errors.size !== targetErrors.value.size) targetErrors.value = errors;
+  }
   const retained = new Map([...groups.value].filter(([, lookup]) => {
     const current = documentUnit(lookup.unit.unit_id);
     return current?.document && current.stage === "complete" && current.artifact_revision === lookup.unit.artifact_revision;
@@ -932,7 +935,8 @@ watch(() => props.session, () => {
 }, { flush: "sync" });
 watch(() => [showNavigation.value, showAppearance.value, showExport.value, showDictionarySettings.value], () => closeLookup());
 
-watch(() => [props.session.session_id, props.session.revision, props.session.generation, visibleRange.value[0], visibleRange.value[1]], ([sessionId, , generation], previous) => {
+watch([() => props.session.session_id, () => props.session.revision, () => props.session.generation,
+  () => visibleRange.value[0], () => visibleRange.value[1]], ([sessionId, , generation], previous) => {
   if (!previous || sessionId !== previous[0] || generation !== previous[2]) {
     requestedRange = "";
     groups.value = new Map();
