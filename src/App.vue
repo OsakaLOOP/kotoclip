@@ -424,6 +424,7 @@ onBeforeUnmount(() => { readerViewTransition.dispose(); void closeSession(); });
       @continue="void session.control('continue_document')"
       @range="void session.control('request_range', { range: $event })"
       @retry="void session.control('retry_document', { unit_id: $event || null })"
+      @sync="void session.synchronize().catch(() => undefined)"
       @save-selection="saveSelection"
       @remove-selection="removeSelection"
       @clear-selections="clearSelections"

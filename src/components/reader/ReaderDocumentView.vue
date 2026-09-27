@@ -15,7 +15,7 @@ import ReaderProgressBar from "./ReaderProgressBar.vue";
 import { isTauri } from "@tauri-apps/api/core";
 import { nlpRequest } from "../../services/nlp";
 import { readerRequest } from "../../services/reader";
-import { matchesSessionGeneration, type AnalysisUnit, type DocumentSession, type UnitUpdate } from "../../reader/session";
+import { isSessionGenerationError, matchesSessionGeneration, type AnalysisUnit, type DocumentSession, type UnitUpdate } from "../../reader/session";
 import { buildReaderRows, rowCharacterOffset, rowIndexForOffset, type ReaderRow, type ReaderTextRow } from "../../reader/rows";
 import { readingEstimate, type ReaderAppearance } from "../../reader/reading";
 import { estimateReaderRow, resolveReaderRowMeasurement } from "../../reader/virtualization";
@@ -116,6 +116,7 @@ const emit = defineEmits<{
   continue: [];
   range: [range: [number, number]];
   retry: [unitId?: string];
+  sync: [];
   saveSelection: [selection: SelectionDraft];
   removeSelection: [selection: SavedSelection];
   clearSelections: [];
@@ -352,6 +353,7 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
   } catch (error) {
     if (!disposed && matchesSessionGeneration(props.session, sessionId, generation)
       && props.session.units[unit.unit_id]?.artifact_revision === unit.artifact_revision) {
+      if (isSessionGenerationError(error)) { emit("sync"); return; }
       targetErrors.value = new Map(targetErrors.value).set(key, error instanceof Error ? error.message : String(error));
     }
   } finally {
@@ -788,7 +790,10 @@ async function queryTarget(hit: TargetHit, selectedForm?: string) {
       }
     }
   } catch (error) {
-    if (generation === queryGeneration) queryError.value = error instanceof Error ? error.message : String(error);
+    if (generation === queryGeneration) {
+      if (isSessionGenerationError(error)) { closeLookup(); emit("sync"); }
+      else queryError.value = error instanceof Error ? error.message : String(error);
+    }
   } finally {
     if (generation === queryGeneration) queryBusy.value = false;
   }

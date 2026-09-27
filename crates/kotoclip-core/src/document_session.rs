@@ -237,6 +237,9 @@ impl DocumentSessions {
     pub fn poll(&self, id: &str, text_version: &str, generation: u64, after: u64) -> Result<Value, String> {
         let state = self.state.lock().unwrap();
         let session = state.sessions.get(id).ok_or("文档会话已关闭")?;
+        if session.plan.text_version == text_version && generation < session.generation {
+            return Ok(session.update(None));
+        }
         session.validate(text_version, generation)?;
         Ok(session.update(Some(after)))
     }

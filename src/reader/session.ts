@@ -38,6 +38,10 @@ export function matchesSessionGeneration(
   return session.session_id === sessionId && session.generation === generation;
 }
 
+export function isSessionGenerationError(error: unknown): boolean {
+  return (error instanceof Error ? error.message : String(error)) === '文档任务代次已改变，请同步会话';
+}
+
 export function openSession(plan: DocumentPlan, update: DocumentUpdate): DocumentSession {
   return { plan, session_id: update.session_id, text_version: update.text_version, generation: update.generation,
     revision: update.revision, paused: update.paused, progress: update.progress,
