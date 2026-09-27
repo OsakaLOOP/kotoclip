@@ -91,6 +91,17 @@ interface TextRun {
   capsules: TextCapsule[];
 }
 
+interface MergeDrag {
+  pointerId: number;
+  source: HTMLElement;
+  block: ReaderTextBlock;
+  start: TextPart;
+  end: TextPart;
+  x: number;
+  y: number;
+  moved: boolean;
+}
+
 interface SelectionDraft {
   start: number;
   end: number;
@@ -159,6 +170,9 @@ let disposed = false;
 const wordState = ref<{ known: boolean; exposures: number } | null>(null);
 const innerOuterId = ref<string | null>(null);
 const pendingSelection = ref<SelectionDraft | null>(null);
+const mergeDrag = shallowRef<MergeDrag | null>(null);
+let suppressPartClick = false;
+let mergedPointer: { x: number; y: number } | null = null;
 const exposedTargets = new Set<string>();
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -553,6 +567,82 @@ const visibleRuns = computed(() => {
   return result;
 });
 
+const visibleParts = computed(() => new Map([...visibleRuns.value.values()]
+  .flatMap((runs) => runs.flatMap((run) => run.capsules.flatMap((capsule) => capsule.parts)))
+  .map((part) => [part.key, part])));
+const mergeRange = computed<[number, number] | null>(() => {
+  const drag = mergeDrag.value;
+  if (!drag?.moved) return null;
+  return [
+    Math.max(drag.block.charRange[0], Math.min(drag.start.hit!.range[0], drag.start.range[0], drag.end.hit!.range[0], drag.end.range[0])),
+    Math.min(drag.block.charRange[1], Math.max(drag.start.hit!.range[1], drag.start.range[1], drag.end.hit!.range[1], drag.end.range[1])),
+  ];
+});
+const highlightedRange = computed(() => mergeRange.value
+  ?? (activeHit.value?.target.decision === "selection" ? activeHit.value.range : null));
+
+function startMerge(part: TextPart, block: ReaderTextBlock, event: PointerEvent) {
+  suppressPartClick = false;
+  if (!part.hit || event.button !== 0 || !event.isPrimary || event.pointerType === "touch" || !lookupIsCurrent(part.hit.unit)) return;
+  event.preventDefault();
+  const innerId = innerOuterId.value;
+  closeLookup();
+  innerOuterId.value = innerId;
+  clearPendingSelection();
+  mergedPointer = null;
+  const source = event.currentTarget as HTMLElement;
+  source.setPointerCapture(event.pointerId);
+  mergeDrag.value = { pointerId: event.pointerId, source, block, start: part, end: part, x: event.clientX, y: event.clientY, moved: false };
+}
+
+function moveMerge(event: PointerEvent) {
+  const drag = mergeDrag.value;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  if (!drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+  event.preventDefault();
+  const element = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-part-key]");
+  const part = element ? visibleParts.value.get(element.dataset.partKey!) : undefined;
+  const end = part?.hit && element?.closest<HTMLElement>("[data-block-id]")?.dataset.blockId === drag.block.id
+    && lookupIsCurrent(part.hit.unit) ? part : drag.end;
+  if (!drag.moved || end.key !== drag.end.key) mergeDrag.value = { ...drag, end, moved: true };
+}
+
+function cancelMerge() {
+  const drag = mergeDrag.value;
+  if (drag?.moved) suppressPartClick = true;
+  mergeDrag.value = null;
+  if (drag?.source.hasPointerCapture(drag.pointerId)) drag.source.releasePointerCapture(drag.pointerId);
+}
+
+function finishMerge(event: PointerEvent) {
+  const drag = mergeDrag.value;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  const range = mergeRange.value;
+  cancelMerge();
+  if (!range) return;
+  suppressPartClick = true;
+  event.preventDefault();
+  if (!lookupIsCurrent(drag.start.hit!.unit) || !lookupIsCurrent(drag.end.hit!.unit)) return;
+  const source = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-part-key]") ?? drag.source;
+  activeCapsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
+  positionLookupAt(snapshotRect(source.getBoundingClientRect()));
+  mergedPointer = { x: event.clientX, y: event.clientY };
+  const hit = drag.start.hit!;
+  const target: LookupTarget = {
+    ...hit.target, id: `selection:${range[0]}:${range[1]}`, parent_outer_id: null,
+    char_range: [range[0] - hit.unit.contextOffset, range[1] - hit.unit.contextOffset],
+    surface: preparedCharacters.value.slice(...range).join(""), decision: "selection",
+    morpheme_ids: [], lexical_core_ids: [], source_formation_ids: [], lookup_forms: [], reading_evidence: [],
+  };
+  void queryTarget({ key: `${hit.unit.unit.unit_id}:${target.id}`, unit: hit.unit, target, range, children: [] });
+}
+
+function clickPart(part: TextPart, event: MouseEvent) {
+  if (suppressPartClick) { suppressPartClick = false; return; }
+  if (part.hit && part.hit.target.decision !== "grammar") openChildren(part.hit, event, part.range);
+  else if (part.hit && part.detail) scheduleLookup(part.hit, event, part.detail);
+}
+
 function selectionOffset(node: Node, offset: number): number | null {
   const element = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
   const part = element?.closest<HTMLElement>("[data-char-start]");
@@ -655,7 +745,9 @@ function updateDictionaryOrder(order: string[]) {
 }
 
 function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphologyDetail | null) {
-  if (!lookupIsCurrent(hit.unit) || (hit.target.decision === "grammar" && !detail) || window.getSelection()?.isCollapsed === false) return;
+  if (mergeDrag.value || event.buttons !== 0 || !lookupIsCurrent(hit.unit) || (hit.target.decision === "grammar" && !detail) || window.getSelection()?.isCollapsed === false) return;
+  if (mergedPointer && Math.hypot(event.clientX - mergedPointer.x, event.clientY - mergedPointer.y) < 5) return;
+  mergedPointer = null;
   cancelCloseLookup();
   clearTimeout(hoverTimer);
   pendingCapsule = null;
@@ -769,6 +861,14 @@ async function queryTarget(hit: TargetHit, selectedForm?: string) {
   queryBusy.value = true;
   queryError.value = "";
   try {
+    if (hit.target.decision === "selection") {
+      relatedWord.value = hit.target.surface;
+      const result = await nlpRequest<QueryOutput>({ command: "search", word: hit.target.surface });
+      if (generation !== queryGeneration || !lookupIsCurrent(hit.unit)) return;
+      relatedSearch.value = result;
+      activeQuery.value = orderedLookup(dictionaryLookupFromSearch(result, hit.target.surface));
+      return;
+    }
     const result = await nlpRequest<DictionaryLookup>({
       command: "query_lookup_document",
       session_id: props.session.session_id,
@@ -902,6 +1002,7 @@ async function markWord(known: boolean) {
 function handleScroll() {
   const element = scrollElement.value;
   if (!element) return;
+  cancelMerge();
   closeLookup();
   const firstVisible = virtualizer.value.getVirtualItems().find((item) => item.end > element.scrollTop);
   if (firstVisible) currentOffset.value = rowCharacterOffset(rows.value[firstVisible.index]);
@@ -929,14 +1030,17 @@ async function restoreOffset() {
 }
 
 function dismissLookup(event: PointerEvent) {
+  if (mergeDrag.value) return;
   if (!insideLookupRegion(event.target)) closeLookup();
 }
 
 function handleEscape(event: KeyboardEvent) {
-  if (event.key === "Escape") closeLookup();
+  if (event.key === "Escape") { cancelMerge(); closeLookup(); }
 }
 
 watch(() => props.session, () => {
+  const drag = mergeDrag.value;
+  if (drag && (!lookupIsCurrent(drag.start.hit!.unit) || !lookupIsCurrent(drag.end.hit!.unit))) cancelMerge();
   if (activeHit.value && !lookupIsCurrent(activeHit.value.unit)) closeLookup();
 }, { flush: "sync" });
 watch(() => [showNavigation.value, showAppearance.value, showExport.value, showDictionarySettings.value], () => closeLookup());
@@ -955,6 +1059,10 @@ watch(() => [props.readerDocument.analysisText, props.appearance.fontSize, props
   virtualizer.value.measure();
 });
 onMounted(() => {
+  window.addEventListener("blur", cancelMerge);
+  document.addEventListener("pointermove", moveMerge);
+  document.addEventListener("pointerup", finishMerge);
+  document.addEventListener("pointercancel", cancelMerge);
   document.addEventListener("pointerdown", dismissLookup);
   document.addEventListener("keydown", handleEscape);
   window.addEventListener("resize", closeLookup);
@@ -967,6 +1075,11 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   disposed = true;
+  window.removeEventListener("blur", cancelMerge);
+  cancelMerge();
+  document.removeEventListener("pointermove", moveMerge);
+  document.removeEventListener("pointerup", finishMerge);
+  document.removeEventListener("pointercancel", cancelMerge);
   closeLookup();
   document.removeEventListener("pointerdown", dismissLookup);
   document.removeEventListener("keydown", handleEscape);
@@ -1010,7 +1123,7 @@ function toggleEinkMode() {
         <div class="reader-row-layer" :style="{ height: `${virtualizer.getTotalSize()}px` }">
           <section v-for="visible in visibleRows" :key="visible.row.key" :ref="(node) => measureRow(node, visible.row.key)" class="reader-row" :data-index="visible.item.index" :style="{ transform: `translateY(${visible.item.start - 42}px)` }">
             <ReaderImageBlock v-if="visible.row.kind === 'image'" :items="visible.row.items" :layout="visible.row.layout" class="reader-view__image" @settled="measureSettledImage(visible.row.key)" />
-            <section v-else class="reader-view__paragraph" :class="{ 'reader-view__heading': visible.row.heading }" :data-char-start="visible.row.paragraph.charRange[0]">
+            <section v-else class="reader-view__paragraph" :class="{ 'reader-view__heading': visible.row.heading }" :data-char-start="visible.row.paragraph.charRange[0]" :data-block-id="visible.row.paragraph.id">
               <component :is="visible.row.heading ? 'h2' : 'p'">
                 <component v-for="run in visibleRuns.get(visible.row.key) ?? []" :key="run.key" :is="run.reading ? 'ruby' : 'span'"><span
                   v-for="capsule in run.capsules"
@@ -1022,12 +1135,14 @@ function toggleEinkMode() {
                   v-for="part in capsule.parts"
                   :key="part.key"
                   class="reader-capsule__part"
-                  :class="{ 'reader-capsule__part--lookup': part.hit }"
+                  :class="{ 'reader-capsule__part--lookup': part.hit, 'reader-capsule__part--merging': highlightedRange && part.range[0] < highlightedRange[1] && part.range[1] > highlightedRange[0] }"
+                  :data-part-key="part.key"
                   :data-char-start="part.range[0]"
                   :data-char-end="part.range[1]"
                   @pointerenter="part.hit ? scheduleLookup(part.hit, $event, part.detail) : scheduleCloseLookup()"
                   @pointerleave="leavePart"
-                  @click="part.hit && part.hit.target.decision !== 'grammar' && openChildren(part.hit, $event, part.range)"
+                  @pointerdown="startMerge(part, visible.row.paragraph, $event)"
+                  @click="clickPart(part, $event)"
                 >{{ part.text }}</span></span><rt v-if="run.reading">{{ run.reading }}</rt></component>
               </component>
             </section>
@@ -1103,6 +1218,7 @@ function toggleEinkMode() {
 .reader-capsule--group { border-radius: var(--radius-sm); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .reader-capsule--group:hover { outline: 1px solid var(--border-color); }
 .reader-capsule__part--lookup { cursor: pointer; }
+.reader-capsule__part--merging { background: var(--accent-light); text-decoration: underline; text-decoration-color: var(--accent-color); }
 .reader-capsule__part { white-space: pre-wrap; }
 .reader-selection-action { position: fixed; z-index: 42; bottom: 56px; left: 50%; display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 13px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-primary); box-shadow: var(--shadow-sm); transform: translateX(-50%); color: var(--text-secondary); font-size: .75rem; }
 .reader-selection-action button { padding: 5px 9px; border: 0; border-radius: 999px; background: var(--accent-color); color: #fff; cursor: pointer; font-size: .74rem; }
