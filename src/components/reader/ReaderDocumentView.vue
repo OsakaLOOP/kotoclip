@@ -51,6 +51,8 @@ interface LookupGroup {
 }
 
 interface UnitLookup {
+  sessionId: string;
+  generation: number;
   unit: UnitUpdate;
   contextOffset: number;
   group: LookupGroup;
@@ -152,6 +154,7 @@ const dictionarySettings = computed<DictionarySettings>(() => ({
 }));
 const lookupHistory = ref<{ query: DictionaryLookup; word: string; search: QueryOutput | null }[]>([]);
 let queryGeneration = 0;
+let disposed = false;
 const wordState = ref<{ known: boolean; exposures: number } | null>(null);
 const innerOuterId = ref<string | null>(null);
 const pendingSelection = ref<SelectionDraft | null>(null);
@@ -266,6 +269,7 @@ function createUnitLookup(unitPlan: AnalysisUnit, unit: UnitUpdate, group: Looku
   const [start, end] = localLookupRange(unitPlan, unit.document!);
   const globalRange = (range: [number, number]): [number, number] => [range[0] + offset, range[1] + offset];
   return {
+    sessionId: props.session.session_id, generation: props.session.generation,
     unit, group, contextOffset: offset, range: unitPlan.anchor.char_range,
     capsules: readerCapsuleRanges(unit.document!)
       .filter((capsule) => capsule.range[0] >= start && capsule.range[1] <= end)
@@ -319,7 +323,7 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
   const sessionId = props.session.session_id;
   const generation = props.session.generation;
   const key = `${sessionId}:${generation}:${unit.unit_id}:${unit.artifact_revision}`;
-  if (groups.value.has(key) || pendingTargets.has(key)) return;
+  if (groups.value.has(key) || pendingTargets.has(key) || targetErrors.value.has(key)) return;
   if (unit.lookup) {
     groups.value = new Map(groups.value).set(key, createUnitLookup(unitPlan, unit, unit.lookup as LookupGroup));
     return;
@@ -335,8 +339,9 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
       artifact_revision: unit.artifact_revision,
       range: localLookupRange(unitPlan, unit.document),
     });
-    if (!matchesSessionGeneration(props.session, sessionId, generation)
-      || props.session.units[unit.unit_id]?.artifact_revision !== unit.artifact_revision) return;
+    if (disposed || !matchesSessionGeneration(props.session, sessionId, generation)
+      || props.session.units[unit.unit_id]?.artifact_revision !== unit.artifact_revision
+      || !props.session.units[unit.unit_id]?.document) return;
     groups.value = new Map(groups.value).set(key, createUnitLookup(unitPlan, unit, group));
     if (targetErrors.value.has(key)) {
       const errors = new Map(targetErrors.value);
@@ -344,7 +349,7 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
       targetErrors.value = errors;
     }
   } catch (error) {
-    if (matchesSessionGeneration(props.session, sessionId, generation)
+    if (!disposed && matchesSessionGeneration(props.session, sessionId, generation)
       && props.session.units[unit.unit_id]?.artifact_revision === unit.artifact_revision) {
       targetErrors.value = new Map(targetErrors.value).set(key, error instanceof Error ? error.message : String(error));
     }
@@ -353,7 +358,12 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
   }
 }
 
-async function syncTargets() {
+async function syncTargets(retry = false) {
+  if (retry) targetErrors.value = new Map();
+  const validKeys = new Set(Object.values(props.session.units).filter((unit) => unit.stage === "complete" && unit.document)
+    .map((unit) => `${props.session.session_id}:${props.session.generation}:${unit.unit_id}:${unit.artifact_revision}`));
+  const errors = new Map([...targetErrors.value].filter(([key]) => validKeys.has(key)));
+  if (errors.size !== targetErrors.value.size) targetErrors.value = errors;
   const retained = new Map([...groups.value].filter(([, lookup]) => {
     const current = documentUnit(lookup.unit.unit_id);
     return current?.document && current.stage === "complete" && current.artifact_revision === lookup.unit.artifact_revision;
@@ -382,10 +392,13 @@ function requestVisibleUnits() {
 }
 
 function unitLookups(): UnitLookup[] {
-  return [...groups.value.values()].filter((lookup) => {
-    const current = props.session.units[lookup.unit.unit_id];
-    return current?.stage === "complete" && current.artifact_revision === lookup.unit.artifact_revision && Boolean(current.document);
-  });
+  return [...groups.value.values()].filter(lookupIsCurrent);
+}
+
+function lookupIsCurrent(lookup: UnitLookup): boolean {
+  const current = props.session.units[lookup.unit.unit_id];
+  return !disposed && matchesSessionGeneration(props.session, lookup.sessionId, lookup.generation)
+    && current?.stage === "complete" && current.artifact_revision === lookup.unit.artifact_revision && Boolean(current.document);
 }
 
 function hitsForBlock(block: ReaderTextBlock, lookups = unitLookups()): TargetHit[] {
@@ -435,14 +448,13 @@ function partsFor(row: ReaderTextRow, lookups: UnitLookup[]): TextPart[] {
     (target.lexical_core_ids.length > 0 || target.source_formation_ids.length > 0))
     .map((target) => ({ key: `${outer.key}:${target.id}`, unit: outer.unit, target, range: target.char_range, children: [] })));
   hits = [...coreHits, ...hits];
+  let tokenHits: TargetHit[] = [];
   if (innerOuterId.value) {
-    const outer = hits.find((hit) => hit.key === innerOuterId.value);
+    const outer = outerHits.find((hit) => hit.key === innerOuterId.value);
     if (outer) {
-      hits = [
-        ...outer.children.filter((target) => target.decision === "queryable" && !coreHits.some((hit) => hit.target.id === target.id))
-          .map((target) => ({ key: `${outer.key}:${target.id}`, unit: outer.unit, target, range: target.char_range, children: [] })),
-        ...hits,
-      ];
+      tokenHits = outer.children.filter((target) => target.decision === "queryable" && target.morpheme_ids.length === 1)
+        .map((target) => ({ key: `${outer.key}:${target.id}`, unit: outer.unit, target, range: target.char_range, children: [] }));
+      hits = [...tokenHits, ...hits];
     }
   }
   const details = lookups.flatMap((lookup) => lookup.morphology.map((hit) => ({ ...hit, lookup })))
@@ -471,7 +483,8 @@ function partsFor(row: ReaderTextRow, lookups: UnitLookup[]): TextPart[] {
   return points.slice(0, -1).map((start, index) => {
     const end = points[index + 1];
     const detail = details.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
-    const candidateHit = detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
+    const candidateHit = tokenHits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1])
+      ?? detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
     const hit = candidateHit?.target.decision === "grammar" && !detail ? null : candidateHit;
     const annotation = annotations.find((annotation) => annotation.char_range[0] <= start && end <= annotation.char_range[1]);
     const capsule = capsules.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
@@ -620,19 +633,21 @@ function updateDictionaryOrder(order: string[]) {
 }
 
 function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphologyDetail | null) {
-  if (hit.target.decision === "grammar" && !detail) return;
+  if (!lookupIsCurrent(hit.unit) || (hit.target.decision === "grammar" && !detail) || window.getSelection()?.isCollapsed === false) return;
   cancelCloseLookup();
   clearTimeout(hoverTimer);
+  pendingCapsule = null;
   const source = event.currentTarget as HTMLElement;
   const capsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
   const anchor = snapshotRect(source.getBoundingClientRect());
-  if (activeHit.value?.key === hit.key) {
+  if (activeHit.value?.key === hit.key && !relatedWord.value) {
     activeCapsule = capsule;
     activeDetail.value = detail;
     positionLookupAt(anchor, Boolean(detail));
     return;
   }
   const open = () => {
+    if (!capsule.isConnected || !lookupIsCurrent(hit.unit) || window.getSelection()?.isCollapsed === false) return;
     pendingCapsule = null;
     activeCapsule = capsule;
     positionLookupAt(anchor, Boolean(detail));
@@ -642,6 +657,14 @@ function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphol
     queryError.value = "";
     queryBusy.value = hit.target.decision !== "grammar";
     if (hit.target.decision !== "grammar") void queryTarget(hit);
+    else {
+      ++queryGeneration;
+      outerHit.value = null;
+      wordState.value = null;
+      relatedWord.value = "";
+      relatedSearch.value = null;
+      lookupHistory.value = [];
+    }
   };
   pendingCapsule = capsule;
   hoverTimer = setTimeout(open, 60);
@@ -672,35 +695,49 @@ function leaveCapsule(event: PointerEvent) {
   if (activeHit.value && !insideLookupRegion(event.relatedTarget)) scheduleCloseLookup();
 }
 
-function openChildren(hit: TargetHit, event: MouseEvent) {
+function leavePart() {
+  clearTimeout(hoverTimer);
+  pendingCapsule = null;
+}
+
+function outerForHit(hit: TargetHit): TargetHit {
+  if (!hit.target.parent_outer_id) return hit;
+  const parent = hit.unit.group.outer_targets.find((target) => target.id === hit.target.parent_outer_id);
+  if (!parent) return hit;
+  return {
+    key: `${hit.unit.unit.unit_id}:${parent.id}`, unit: hit.unit, target: parent,
+    range: [parent.char_range[0] + hit.unit.contextOffset, parent.char_range[1] + hit.unit.contextOffset],
+    children: hit.unit.group.inner_targets.filter((target) => target.parent_outer_id === parent.id)
+      .map((target) => ({ ...target, char_range: [target.char_range[0] + hit.unit.contextOffset, target.char_range[1] + hit.unit.contextOffset] as [number, number] })),
+  };
+}
+
+function openChildren(hit: TargetHit, event: MouseEvent, range: [number, number]) {
+  if (window.getSelection()?.isCollapsed === false || !lookupIsCurrent(hit.unit)) return;
   cancelCloseLookup();
   const source = event.currentTarget as HTMLElement;
   activeCapsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
   positionLookup(event);
   clearTimeout(hoverTimer);
   activeDetail.value = null;
-  if (hit.children.length > 0 && hit.target.source_formation_ids.length === 0) {
-    innerOuterId.value = hit.key;
-    outerHit.value = hit;
-    activeHit.value = hit;
-    void queryTarget(hit);
+  const outer = outerForHit(hit);
+  if (outer.children.some((child) => child.decision === "queryable" && child.morpheme_ids.length === 1)
+    && outer.target.source_formation_ids.length === 0) {
+    innerOuterId.value = outer.key;
+    outerHit.value = outer;
+    const child = outer.children.find((child) => child.decision === "queryable" && child.morpheme_ids.length === 1
+      && child.char_range[0] <= range[0] && range[1] <= child.char_range[1]);
+    if (child) selectChild(child);
+    else void queryTarget(hit);
     return;
   }
   void queryTarget(hit);
 }
 
 async function queryTarget(hit: TargetHit, selectedForm?: string) {
+  if (!lookupIsCurrent(hit.unit)) return;
   const generation = ++queryGeneration;
-  if (!hit.target.parent_outer_id) outerHit.value = hit;
-  else {
-    const parent = hit.unit.group.outer_targets.find((target) => target.id === hit.target.parent_outer_id);
-    if (parent) outerHit.value = {
-      key: `${hit.unit.unit.unit_id}:${parent.id}`, unit: hit.unit, target: parent,
-      range: [parent.char_range[0] + hit.unit.contextOffset, parent.char_range[1] + hit.unit.contextOffset],
-      children: hit.unit.group.inner_targets.filter((target) => target.parent_outer_id === parent.id)
-        .map((target) => ({ ...target, char_range: [target.char_range[0] + hit.unit.contextOffset, target.char_range[1] + hit.unit.contextOffset] as [number, number] })),
-    };
-  }
+  outerHit.value = outerForHit(hit);
   activeHit.value = hit;
   activeQuery.value = null;
   wordState.value = null;
@@ -720,11 +757,11 @@ async function queryTarget(hit: TargetHit, selectedForm?: string) {
       target_id: hit.target.id,
       selected_form: selectedForm || null,
     });
-    if (generation !== queryGeneration) return;
+    if (generation !== queryGeneration || !lookupIsCurrent(hit.unit)) return;
     activeQuery.value = orderedLookup(result);
     const form = hit.target.lookup_forms[0];
     if (form) {
-      await refreshWord(form.form, form.reading || "");
+      await refreshWord(form.form, form.reading || "", generation);
       if (generation !== queryGeneration) return;
       if (!exposedTargets.has(hit.key)) {
         exposedTargets.add(hit.key);
@@ -753,6 +790,16 @@ function closeLookup() {
   relatedSearch.value = null;
   relatedWord.value = "";
   lookupHistory.value = [];
+  queryBusy.value = false;
+  wordState.value = null;
+}
+
+function returnToOuter() {
+  const outer = outerHit.value;
+  if (!outer) return;
+  innerOuterId.value = null;
+  activeDetail.value = null;
+  void queryTarget(outer);
 }
 
 function selectLookupForm(formId: string) {
@@ -796,6 +843,7 @@ function backLookup() {
 
 function selectChild(child: LookupTarget) {
   if (!outerHit.value) return;
+  activeDetail.value = null;
   void queryTarget({
     ...outerHit.value,
     key: `${outerHit.value.key}:${child.id}`,
@@ -805,28 +853,31 @@ function selectChild(child: LookupTarget) {
   });
 }
 
-async function refreshWord(baseForm: string, reading: string) {
+async function refreshWord(baseForm: string, reading: string, generation: number) {
   try {
-    wordState.value = await readerRequest<{ known: boolean; exposures: number }>("reader_word", { base: baseForm, reading });
+    const result = await readerRequest<{ known: boolean; exposures: number }>("reader_word", { base: baseForm, reading });
+    if (generation === queryGeneration) wordState.value = result;
   } catch {
-    wordState.value = null;
+    if (generation === queryGeneration) wordState.value = null;
   }
 }
 
 async function markWord(known: boolean) {
+  const generation = queryGeneration;
   const form = activeHit.value?.target.lookup_forms[0];
-  if (!form) return;
+  if (!form || relatedWord.value) return;
   try {
-    wordState.value = await readerRequest<{ known: boolean; exposures: number }>("reader_mark", { base: form.form, reading: form.reading || "", known });
+    const result = await readerRequest<{ known: boolean; exposures: number }>("reader_mark", { base: form.form, reading: form.reading || "", known });
+    if (generation === queryGeneration) wordState.value = result;
   } catch (error) {
-    queryError.value = error instanceof Error ? error.message : String(error);
+    if (generation === queryGeneration) queryError.value = error instanceof Error ? error.message : String(error);
   }
 }
 
 function handleScroll() {
   const element = scrollElement.value;
   if (!element) return;
-  if (activeHit.value) closeLookup();
+  closeLookup();
   const firstVisible = virtualizer.value.getVirtualItems().find((item) => item.end > element.scrollTop);
   if (firstVisible) currentOffset.value = rowCharacterOffset(rows.value[firstVisible.index]);
   clearTimeout(progressTimer);
@@ -852,6 +903,19 @@ async function restoreOffset() {
   currentOffset.value = props.initialOffset;
 }
 
+function dismissLookup(event: PointerEvent) {
+  if (!insideLookupRegion(event.target)) closeLookup();
+}
+
+function handleEscape(event: KeyboardEvent) {
+  if (event.key === "Escape") closeLookup();
+}
+
+watch(() => props.session, () => {
+  if (activeHit.value && !lookupIsCurrent(activeHit.value.unit)) closeLookup();
+}, { flush: "sync" });
+watch(() => [showNavigation.value, showAppearance.value, showExport.value, showDictionarySettings.value], () => closeLookup());
+
 watch(() => [props.session.session_id, props.session.revision, props.session.generation, visibleRange.value[0], visibleRange.value[1]], ([sessionId, , generation], previous) => {
   if (!previous || sessionId !== previous[0] || generation !== previous[2]) {
     requestedRange = "";
@@ -865,6 +929,9 @@ watch(() => [props.readerDocument.analysisText, props.appearance.fontSize, props
   virtualizer.value.measure();
 });
 onMounted(() => {
+  document.addEventListener("pointerdown", dismissLookup);
+  document.addEventListener("keydown", handleEscape);
+  window.addEventListener("resize", closeLookup);
   lastProgressAt = Date.now();
   try {
     const saved = JSON.parse(localStorage.getItem("kotoclip.reader.dictionaryOrder") || "[]");
@@ -873,6 +940,11 @@ onMounted(() => {
   void restoreOffset();
 });
 onBeforeUnmount(() => {
+  disposed = true;
+  closeLookup();
+  document.removeEventListener("pointerdown", dismissLookup);
+  document.removeEventListener("keydown", handleEscape);
+  window.removeEventListener("resize", closeLookup);
   clearTimeout(rangeTimer);
   clearTimeout(hoverTimer);
   clearTimeout(closeTimer);
@@ -904,7 +976,7 @@ function toggleEinkMode() {
 
     <div v-if="targetError" class="reader-view__lookup-error" role="alert">
       <span>查词加载失败：{{ targetError }}</span>
-      <button type="button" @click="void syncTargets()">重试</button>
+      <button type="button" @click="void syncTargets(true)">重试</button>
     </div>
 
     <div ref="scrollElement" class="reader-view__scroll" @scroll.passive="handleScroll" @mouseup="captureSelection">
@@ -927,8 +999,9 @@ function toggleEinkMode() {
                   :class="{ 'reader-capsule__part--lookup': part.hit }"
                   :data-char-start="part.range[0]"
                   :data-char-end="part.range[1]"
-                  @pointerenter="part.hit && scheduleLookup(part.hit, $event, part.detail)"
-                  @click="part.hit && part.hit.target.decision !== 'grammar' && openChildren(part.hit, $event)"
+                  @pointerenter="part.hit ? scheduleLookup(part.hit, $event, part.detail) : scheduleCloseLookup()"
+                  @pointerleave="leavePart"
+                  @click="part.hit && part.hit.target.decision !== 'grammar' && openChildren(part.hit, $event, part.range)"
                 >{{ part.text }}</span></span><rt v-if="run.reading">{{ run.reading }}</rt></component>
               </component>
             </section>
@@ -938,7 +1011,7 @@ function toggleEinkMode() {
 
     </div>
 
-    <TooltipPanel :show="Boolean(activeHit) && activeHit?.target.decision !== 'grammar'" :x="lookupPosition.x" :y="lookupPosition.y" :width="lookupPosition.width" :max-height="lookupPosition.maxHeight" :token="null" :headword="activeHit?.target.surface" :lookup="activeQuery" :loading="queryBusy" :can-go-back="lookupHistory.length > 0" :summary-visible="!relatedWord && Boolean(chainOverview)" panel-id="reader-dictionary" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="closeLookup" @back="backLookup" @select-form="selectLookupForm" @navigate="void navigateLookup($event)">
+    <TooltipPanel :show="Boolean(activeHit) && activeHit?.target.decision !== 'grammar'" :x="lookupPosition.x" :y="lookupPosition.y" :width="lookupPosition.width" :max-height="lookupPosition.maxHeight" :token="null" :headword="relatedWord || activeHit?.target.surface" :lookup="activeQuery" :loading="queryBusy" :can-go-back="lookupHistory.length > 0" :summary-visible="!relatedWord && Boolean(chainOverview)" panel-id="reader-dictionary" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="closeLookup" @back="backLookup" @select-form="selectLookupForm" @navigate="void navigateLookup($event)">
       <template #summary>
         <div v-if="!relatedWord && chainOverview" class="reader-lookup__summary">
           <strong>{{ chainOverview.name }}</strong>
@@ -950,10 +1023,10 @@ function toggleEinkMode() {
       <template #context>
         <div v-if="activeHit" class="reader-lookup__context">
           <div v-if="activeChildren.length" class="reader-lookup__children">
-            <button type="button" @click="innerOuterId = null; void queryTarget(activeHit!)">外围整体</button>
-            <button v-for="child in activeChildren" :key="child.id" type="button" @click="selectChild(child)">{{ child.surface }}</button>
+            <button type="button" :aria-pressed="!relatedWord && activeHit.key === outerHit?.key" @click="returnToOuter">外围整体</button>
+            <button v-for="child in activeChildren" :key="child.id" type="button" :aria-pressed="!relatedWord && activeHit.target.id === child.id" @click="selectChild(child)">{{ child.surface }}</button>
           </div>
-          <div v-if="wordState" class="reader-lookup__state">
+          <div v-if="wordState && !relatedWord" class="reader-lookup__state">
             <span>{{ wordState.known ? '已知' : '未标记' }} · 曝光 {{ wordState.exposures }}</span>
             <button v-if="!wordState.known" type="button" @click="void markWord(true)">标为已知</button>
             <button v-else type="button" @click="void markWord(false)">标为未掌握</button>
@@ -1014,7 +1087,7 @@ function toggleEinkMode() {
 .reader-lookup__summary span, .reader-lookup__summary small { overflow-wrap: anywhere; color: var(--text-secondary); font-family: var(--font-ja); }
 .reader-lookup__children, .reader-lookup__state { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
 .reader-lookup__children button, .reader-lookup__state button { padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: .75rem; }
-.reader-lookup__children button:hover, .reader-lookup__state button:hover { border-color: var(--accent-color); color: var(--accent-color); }
+.reader-lookup__children button:hover, .reader-lookup__children button[aria-pressed="true"], .reader-lookup__state button:hover { border-color: var(--accent-color); color: var(--accent-color); }
 .reader-lookup__state { align-items: center; justify-content: space-between; color: var(--text-muted); font-size: .72rem; }
 .reader-lookup__error { margin: 8px 0; color: var(--novelty-high-text); font-size: .8rem; }
 @media (max-width: 700px) { .reader-view__chapter { display: none; } .reader-view__scroll { padding-inline: 16px; } }

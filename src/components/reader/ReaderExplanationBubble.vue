@@ -33,7 +33,7 @@ const emit = defineEmits<{ enter: []; leave: [] }>();
 </template>
 
 <style scoped>
-.reader-explanation { position: fixed; z-index: 1001; box-sizing: border-box; width: min(310px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: var(--glass-bg); backdrop-filter: var(--glass-filter); box-shadow: var(--shadow-md); color: var(--text-primary); font: .84rem/1.5 var(--font-ui); }
+.reader-explanation { position: fixed; z-index: 1001; box-sizing: border-box; width: min(310px, calc(100vw - 24px)); overflow: auto; overflow-wrap: anywhere; overscroll-behavior: contain; padding: 14px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: var(--glass-bg); backdrop-filter: var(--glass-filter); box-shadow: var(--shadow-md); color: var(--text-primary); font: .84rem/1.5 var(--font-ui); }
 .reader-explanation header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .reader-explanation header div { display: flex; min-width: 0; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .reader-explanation strong { color: var(--accent-color); }
