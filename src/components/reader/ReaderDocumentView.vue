@@ -231,7 +231,7 @@ const visibleRange = computed<[number, number]>(() => {
   return [Math.max(0, Math.min(...ranges.map((range) => range[0])) - 768), Math.max(...ranges.map((range) => range[1])) + 768];
 });
 const currentOffset = ref(props.initialOffset);
-const estimate = computed(() => readingEstimate(currentOffset.value, props.session.plan.prepared.text.length));
+const estimate = computed(() => readingEstimate(currentOffset.value, preparedCharacters.value.length));
 const currentChapter = computed(() => {
   const chapters = props.readerDocument.chapters.filter((chapter) => chapter.charOffset <= currentOffset.value);
   return chapters[chapters.length - 1]?.title || "正文";
@@ -550,26 +550,42 @@ const visibleRuns = computed(() => {
 function selectionOffset(node: Node, offset: number): number | null {
   const element = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
   const part = element?.closest<HTMLElement>("[data-char-start]");
-  if (!part) return null;
+  if (!part || !scrollElement.value?.contains(part)) return null;
   const start = Number(part.dataset.charStart);
-  return Number.isFinite(start) ? start + (node.nodeType === Node.TEXT_NODE ? offset : 0) : null;
+  if (!Number.isFinite(start)) return null;
+  const prefix = document.createRange();
+  prefix.selectNodeContents(part);
+  prefix.setEnd(node, offset);
+  const content = prefix.cloneContents();
+  content.querySelectorAll("rt, rp").forEach((reading) => reading.remove());
+  return start + Array.from(content.textContent ?? "").length;
+}
+
+function selectedRange(): [number, number] | null {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || !scrollElement.value || !selection.rangeCount) return null;
+  const range = selection.getRangeAt(0);
+  if (!scrollElement.value.contains(range.commonAncestorContainer)) return null;
+  const anchor = selectionOffset(range.startContainer, range.startOffset);
+  const focus = selectionOffset(range.endContainer, range.endOffset);
+  return anchor === null || focus === null ? null : [Math.min(anchor, focus), Math.max(anchor, focus)];
+}
+
+function copySelection(event: ClipboardEvent) {
+  const range = selectedRange();
+  if (!range || range[0] === range[1] || !event.clipboardData) return;
+  event.clipboardData.setData("text/plain", preparedCharacters.value.slice(...range).join(""));
+  event.preventDefault();
 }
 
 function captureSelection() {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) {
-    pendingSelection.value = null;
-    return;
-  }
-  if (!scrollElement.value || !selection.rangeCount) return;
-  const range = selection.getRangeAt(0);
-  if (!scrollElement.value.contains(range.commonAncestorContainer)) return;
-  const anchor = selectionOffset(range.startContainer, range.startOffset);
-  const focus = selectionOffset(range.endContainer, range.endOffset);
-  if (anchor === null || focus === null) return;
-  const start = Math.min(anchor, focus);
-  const end = Math.max(anchor, focus);
-  const surface = preparedCharacters.value.slice(start, end).join("").trim();
+  pendingSelection.value = null;
+  const range = selectedRange();
+  if (!range) return;
+  let [start, end] = range;
+  while (start < end && /\s/u.test(preparedCharacters.value[start])) start++;
+  while (end > start && /\s/u.test(preparedCharacters.value[end - 1])) end--;
+  const surface = preparedCharacters.value.slice(start, end).join("");
   if (!surface) return;
   const block = props.readerDocument.blocks.find((item): item is ReaderTextBlock => item.kind !== "image" && item.charRange[0] <= start && start < item.charRange[1])
     || props.readerDocument.blocks.find((item): item is ReaderTextBlock => item.kind !== "image");
@@ -979,7 +995,7 @@ function toggleEinkMode() {
       <button type="button" @click="void syncTargets(true)">重试</button>
     </div>
 
-    <div ref="scrollElement" class="reader-view__scroll" @scroll.passive="handleScroll" @mouseup="captureSelection">
+    <div ref="scrollElement" class="reader-view__scroll" @scroll.passive="handleScroll" @mouseup="captureSelection" @keyup="captureSelection" @copy="copySelection">
       <main class="reader-view__content" :style="{ maxWidth: `${appearance.contentWidth}px`, fontSize: `${appearance.fontSize}px`, lineHeight: appearance.lineHeight, '--reader-paragraph-gap': `${appearance.paragraphGap}px` }">
         <div class="reader-row-layer" :style="{ height: `${virtualizer.getTotalSize()}px` }">
           <section v-for="visible in visibleRows" :key="visible.row.key" :ref="(node) => measureRow(node, visible.row.key)" class="reader-row" :data-index="visible.item.index" :style="{ transform: `translateY(${visible.item.start - 42}px)` }">
@@ -1043,7 +1059,7 @@ function toggleEinkMode() {
 
     <ReaderProgressBar :percent="estimate.percent" :current-chapter="currentChapter" :remaining-label="`剩余 ${estimate.remainingCharacters} 字符`" :completion-label="estimate.completionLabel" />
     <div v-if="pendingSelection" class="reader-selection-action">
-      <span>已选择 {{ pendingSelection.surface.length }} 字符</span>
+      <span>已选择 {{ pendingSelection.end - pendingSelection.start }} 字符</span>
       <button type="button" class="reader-selection-action__cancel" @click="clearPendingSelection">取消</button>
       <button type="button" @click="savePendingSelection">保存选择</button>
     </div>
