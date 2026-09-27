@@ -428,7 +428,10 @@ function partsFor(row: ReaderTextRow): TextPart[] {
     .filter((item) => item.hit)
     .sort((left, right) => (left.range[1] - left.range[0]) - (right.range[1] - right.range[0]));
   const boundaries = new Set<number>([block.charRange[0], block.charRange[1]]);
-  for (const hit of [...hits, ...details, ...capsuleRanges.value]) {
+  const capsules = capsuleRanges.value.filter((capsule) =>
+    capsule.range[0] < block.charRange[1] && capsule.range[1] > block.charRange[0]);
+  for (const hit of [...hits, ...details, ...capsules]) {
+    if (hit.range[0] >= block.charRange[1] || hit.range[1] <= block.charRange[0]) continue;
     boundaries.add(Math.max(block.charRange[0], hit.range[0]));
     boundaries.add(Math.min(block.charRange[1], hit.range[1]));
   }
@@ -445,7 +448,7 @@ function partsFor(row: ReaderTextRow): TextPart[] {
     const candidateHit = detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
     const hit = candidateHit?.target.decision === "grammar" && !detail ? null : candidateHit;
     const reading = annotations.find((annotation) => annotation.char_range[0] === start && annotation.char_range[1] === end)?.reading;
-    const capsule = capsuleRanges.value.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
+    const capsule = capsules.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
     return {
       key: `${block.id}:${start}`, text: preparedCharacters.value.slice(start, end).join(""), reading,
       range: [start, end] as [number, number], hit, detail: detail?.detail ?? null,
