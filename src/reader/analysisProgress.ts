@@ -21,6 +21,7 @@ export interface AnalysisProgress {
   total: number;
   percent: number;
   message: string;
+  work?: { analysis: { complete: number; total: number }; cache: { complete: number; total: number } };
 }
 
 export interface ProgressStage {

@@ -35,7 +35,13 @@ const countText = computed(() => {
       aria-live="polite"
       aria-atomic="true"
     >
-      <div class="progress-summary">
+      <div v-if="progress.work" class="progress-work">
+        <span>已分析 {{ progress.work.analysis.complete }}/{{ progress.work.analysis.total }}</span>
+        <span>已缓存 {{ progress.work.cache.complete }}/{{ progress.work.cache.total }}</span>
+        <span class="progress-message">{{ progress.message }}</span>
+        <span class="progress-percent">{{ progress.percent }}%</span>
+      </div>
+      <div v-else class="progress-summary">
         <span class="progress-pulse" aria-hidden="true"></span>
         <strong>{{ currentLabel }}</strong>
         <span class="progress-message">{{ progress.message }}</span>
@@ -83,6 +89,9 @@ const countText = computed(() => {
 </template>
 
 <style scoped>
+.progress-work { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-bottom: 9px; color: var(--text-primary); font-size: .84rem; font-variant-numeric: tabular-nums; }
+.progress-work > span { white-space: nowrap; }
+.progress-work .progress-percent { margin-left: auto; }
 .analysis-progress-panel {
   width: 100%;
   padding: 14px 16px 12px;

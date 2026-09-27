@@ -242,6 +242,7 @@ const readableCount = computed(() => props.session.progress.complete);
 const statusLabel = computed(() => {
   if (props.session.progress.failed) return "部分分析失败";
   if (props.session.paused) return "分析已暂停";
+  if (props.session.progress.complete === props.session.progress.total && props.session.progress.pending > 0) return "恢复阅读内容";
   if (props.session.progress.complete >= props.session.progress.total && props.session.progress.total > 0) return "分析完成";
   return `已分析 ${readableCount.value}/${props.session.progress.total}`;
 });

@@ -15,6 +15,9 @@ pub enum UnitStage { Pending, Processing, Complete, Failed }
 pub struct UnitUpdate {
     pub unit_id: String,
     pub stage: UnitStage,
+    pub analysis_complete: bool,
+    pub analysis_runs: usize,
+    pub cache_reads: usize,
     pub artifact_revision: u64,
     pub document: Option<Arc<UnifiedDocument>>,
     pub lookup: Option<Value>,
@@ -59,8 +62,14 @@ impl Session {
     }
 
     fn progress(&self) -> Value {
+        let analyzed = self.units.iter().map(|unit| unit.analysis_runs).sum::<usize>();
+        let cached = self.units.iter().map(|unit| unit.cache_reads).sum::<usize>();
+        let analysis_remaining = self.units.iter().filter(|unit| unit.stage != UnitStage::Complete && !unit.analysis_complete).count();
+        let cache_remaining = self.units.iter().filter(|unit| unit.stage != UnitStage::Complete && unit.analysis_complete).count();
         json!({"total": self.units.len(), "basic": self.units.iter().filter(|u| u.document.is_some()).count(),
-            "complete": self.units.iter().filter(|u| u.stage == UnitStage::Complete).count(), "failed": self.units.iter().filter(|u| u.stage == UnitStage::Failed).count(),
+            "complete": self.units.iter().filter(|u| u.analysis_complete).count(), "failed": self.units.iter().filter(|u| u.stage == UnitStage::Failed).count(),
+            "analysis": {"complete": analyzed, "total": analyzed + analysis_remaining},
+            "cache": {"complete": cached, "total": cached + cache_remaining},
             "pending": if self.paused { 0 } else { self.order.iter().filter(|&&i| matches!(self.units[i].stage, UnitStage::Pending | UnitStage::Processing)).count() }})
     }
 
@@ -182,6 +191,10 @@ impl DocumentSessions {
                 Ok((document, lookup, providers, timing_enabled, cache_hit)) => {
                     let failed = providers.iter().any(|p| p["status"] == "failed" || p["status"] == "cancelled");
                     unit.stage = if failed { UnitStage::Failed } else { UnitStage::Complete };
+                    if !failed {
+                        unit.analysis_complete = true;
+                        if cache_hit { unit.cache_reads += 1; } else { unit.analysis_runs += 1; }
+                    }
                     unit.artifact_revision += 1;
                     unit.timing = timing_enabled.then(|| UnitTiming { elapsed_ms: started.elapsed().as_secs_f64() * 1000.0,
                         generated_ms: document.elapsed_ms, stages: document.stage_timings.clone(), cache_hit });
@@ -221,7 +234,7 @@ impl DocumentSessions {
         for session in state.sessions.values_mut() { session.advance_generation(); session.paused = true; session.publish(&[]); }
         state.sequence += 1;
         let id = format!("session:{}", state.sequence);
-        let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
+        let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending, analysis_complete: false, analysis_runs: 0, cache_reads: 0, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
         let mut session = Session { id: id.clone(), plan: plan.clone(), generation: 1, revision: 0, paused: false,
             order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new() };
         let start = initial_offset.min(plan.prepared.mapping.origins.len().saturating_sub(1));
@@ -261,6 +274,7 @@ impl DocumentSessions {
             }
             for unit in &mut session.units {
                 unit.stage = UnitStage::Pending;
+                unit.analysis_complete = false;
                 unit.document = None;
                 unit.lookup = None;
                 unit.artifact_revision += 1;
@@ -371,7 +385,7 @@ mod tests {
         let plan = Arc::new(DocumentPlan::new(Some("book".into()), &text, RegisterPolicy::Auto));
         assert!(plan.units.len() >= 2);
         let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending,
-            artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
+            analysis_complete: false, analysis_runs: 0, cache_reads: 0, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
         let mut session = Session { id: "session".into(), plan: plan.clone(), generation: 1, revision: 0,
             paused: false, order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new() };
         let priority = plan.units[1].anchor.char_range[0];

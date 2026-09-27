@@ -17,16 +17,19 @@ export function readerAnalysisProgress(
     };
   }
 
-  const { complete, total, failed, pending } = session.progress;
-  const safeTotal = Math.max(1, total);
-  const phase = complete + failed < total ? "processing" : "completed";
-  const completed = complete;
+  const { analysis, cache, failed } = session.progress;
+  const completed = analysis.complete + cache.complete;
+  const total = analysis.total + cache.total;
+  const remaining = total - completed;
+  const weightedComplete = analysis.complete + cache.complete / 4;
+  const weightedTotal = analysis.total + cache.total / 4;
+  const phase = completed + failed < total ? "processing" : "completed";
   const message = failed > 0
     ? "部分单元失败"
     : session.paused
       ? "分析已暂停"
       : phase === "processing"
-        ? `完整单元分析 · ${pending} 个待处理`
+        ? `剩余 ${remaining} 个单元`
         : "分析完成";
 
   return {
@@ -35,7 +38,8 @@ export function readerAnalysisProgress(
     phase,
     completed,
     total,
-    percent: Math.round((completed / safeTotal) * 100),
+    percent: weightedTotal > 0 ? Math.floor((weightedComplete / weightedTotal) * 1000) / 10 : 0,
     message,
+    work: { analysis, cache },
   };
 }

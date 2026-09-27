@@ -12,6 +12,8 @@ export interface DocumentPlan {
 }
 export interface UnitUpdate {
   unit_id: string; stage: 'pending' | 'processing' | 'complete' | 'failed';
+  analysis_complete: boolean;
+  analysis_runs: number; cache_reads: number;
   artifact_revision: number; document: UnifiedDocument | null;
   lookup: unknown | null;
   cache_hit: boolean;
@@ -22,7 +24,8 @@ export interface UnitUpdate {
 export interface DocumentUpdate {
   schema: string; session_id: string; document_id: string; text_version: string; generation: number;
   base_revision: number | null; revision: number; snapshot: boolean; paused: boolean;
-  progress: { total: number; basic: number; complete: number; failed: number; pending: number };
+  progress: { total: number; basic: number; complete: number; failed: number; pending: number;
+    analysis: { complete: number; total: number }; cache: { complete: number; total: number } };
   changes: UnitUpdate[];
 }
 export interface DocumentSession {
