@@ -19,7 +19,7 @@ import { matchesSessionGeneration, type AnalysisUnit, type DocumentSession, type
 import { buildReaderRows, rowCharacterOffset, rowIndexForOffset, type ReaderRow, type ReaderTextRow } from "../../reader/rows";
 import { readingEstimate, type ReaderAppearance } from "../../reader/reading";
 import { estimateReaderRow, resolveReaderRowMeasurement } from "../../reader/virtualization";
-import { dictionaryLookupFromSearch, readerCapsuleRanges, readerChains, readerMorphologyHits, type ReaderMorphologyDetail } from "../../reader/lookupPresentation";
+import { dictionaryLookupFromSearch, readerCapsuleRanges, readerChains, readerMorphologyHits, type ReaderMorphologyDetail, type ReaderMorphologyHit } from "../../reader/lookupPresentation";
 import { explanationPanelWidth, placeExplanationPanels, snapshotRect } from "../../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS } from "../../explanation/closeGrace";
 import { resourceKey, type LibraryBook, type LibraryResource } from "../../reader/library";
@@ -54,6 +54,9 @@ interface UnitLookup {
   unit: UnitUpdate;
   contextOffset: number;
   group: LookupGroup;
+  range: [number, number];
+  capsules: { key: string; range: [number, number] }[];
+  morphology: ReaderMorphologyHit[];
 }
 
 interface TargetHit {
@@ -123,16 +126,16 @@ const pendingTargets = new Set<string>();
 let requestedRange = "";
 const targetErrors = shallowRef(new Map<string, string>());
 const targetError = computed(() => [...targetErrors.value.values()][0] ?? "");
-const activeHit = ref<TargetHit | null>(null);
+const activeHit = shallowRef<TargetHit | null>(null);
 const activeDetail = ref<ReaderMorphologyDetail | null>(null);
-const outerHit = ref<TargetHit | null>(null);
-const activeQuery = ref<DictionaryLookup | null>(null);
+const outerHit = shallowRef<TargetHit | null>(null);
+const activeQuery = shallowRef<DictionaryLookup | null>(null);
 const queryBusy = ref(false);
 const queryError = ref("");
 const lookupPosition = ref({ x: 12, y: 72, width: 420, maxHeight: 480 });
 const detailPosition = ref({ x: 12, y: 12, width: 310, maxHeight: 240 });
 const relatedWord = ref("");
-const relatedSearch = ref<QueryOutput | null>(null);
+const relatedSearch = shallowRef<QueryOutput | null>(null);
 const dictionaryNames = ref<string[]>([]);
 const dictionaryOrder = ref<string[]>([]);
 const dictionarySettings = computed<DictionarySettings>(() => ({
@@ -159,7 +162,8 @@ const rows = computed<ReaderRow[]>(() => buildReaderRows(
   resolveImage,
   true,
 ));
-const preparedCharacters = computed(() => Array.from(props.session.plan.prepared.text));
+const prepared = computed(() => props.session.plan.prepared);
+const preparedCharacters = computed(() => Array.from(prepared.value.text));
 const rowElements = new Map<string, HTMLElement>();
 
 function estimateRow(index: number): number {
@@ -245,20 +249,21 @@ const chainOverview = computed(() => {
     members: chains.flatMap((chain) => chain.members.map((member) => member.surface)),
   };
 });
-const morphologyHits = computed(() => unitLookups().flatMap((lookup) => readerMorphologyHits(
-  [...lookup.group.inner_targets.filter((target) => target.decision === "queryable"), ...lookup.group.outer_targets], lookup.unit.document,
-).map((hit) => ({ ...hit, lookup, range: [hit.range[0] + lookup.contextOffset, hit.range[1] + lookup.contextOffset] as [number, number] }))));
-const capsuleRanges = computed(() => props.session.plan.units.flatMap((unitPlan) => {
-  const unit = documentUnit(unitPlan.id);
-  if (unit?.stage !== "complete" || !unit.document) return [];
-  const [start, end] = localLookupRange(unitPlan, unit.document);
-  return readerCapsuleRanges(unit.document)
-    .filter((capsule) => capsule.range[0] >= start && capsule.range[1] <= end)
-    .map((capsule) => ({
-      key: `${unit.unit_id}:${capsule.id}`,
-      range: [capsule.range[0] + unitPlan.context_range[0], capsule.range[1] + unitPlan.context_range[0]] as [number, number],
-    }));
-}));
+function createUnitLookup(unitPlan: AnalysisUnit, unit: UnitUpdate, group: LookupGroup): UnitLookup {
+  const offset = unitPlan.context_range[0];
+  const [start, end] = localLookupRange(unitPlan, unit.document!);
+  const globalRange = (range: [number, number]): [number, number] => [range[0] + offset, range[1] + offset];
+  return {
+    unit, group, contextOffset: offset, range: unitPlan.anchor.char_range,
+    capsules: readerCapsuleRanges(unit.document!)
+      .filter((capsule) => capsule.range[0] >= start && capsule.range[1] <= end)
+      .map((capsule) => ({ key: `${unit.unit_id}:${capsule.id}`, range: globalRange(capsule.range) })),
+    morphology: readerMorphologyHits(
+      [...group.inner_targets.filter((target) => target.decision === "queryable"), ...group.outer_targets], unit.document,
+    ).filter((hit) => hit.range[0] >= start && hit.range[1] <= end)
+      .map((hit) => ({ ...hit, range: globalRange(hit.range) })),
+  };
+}
 
 function resolveImage(source: string) {
   const resource = props.resources.find((item) => resourceKey(item.href) === resourceKey(source));
@@ -268,6 +273,7 @@ function resolveImage(source: string) {
 
 function measureRow(node: unknown, key: string) {
   if (node instanceof HTMLElement) {
+    if (rowElements.get(key) === node) return;
     rowElements.set(key, node);
     virtualizer.value.measureElement(node);
   } else {
@@ -303,7 +309,7 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
   const key = `${sessionId}:${generation}:${unit.unit_id}:${unit.artifact_revision}`;
   if (groups.value.has(key) || pendingTargets.has(key)) return;
   if (unit.lookup) {
-    groups.value = new Map(groups.value).set(key, { unit, contextOffset: unitPlan.context_range[0], group: unit.lookup as LookupGroup });
+    groups.value = new Map(groups.value).set(key, createUnitLookup(unitPlan, unit, unit.lookup as LookupGroup));
     return;
   }
   pendingTargets.add(key);
@@ -319,7 +325,7 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
     });
     if (!matchesSessionGeneration(props.session, sessionId, generation)
       || props.session.units[unit.unit_id]?.artifact_revision !== unit.artifact_revision) return;
-    groups.value = new Map(groups.value).set(key, { unit, contextOffset: unitPlan.context_range[0], group });
+    groups.value = new Map(groups.value).set(key, createUnitLookup(unitPlan, unit, group));
     if (targetErrors.value.has(key)) {
       const errors = new Map(targetErrors.value);
       errors.delete(key);
@@ -336,6 +342,11 @@ async function loadTargets(unitPlan: typeof props.session.plan.units[number], un
 }
 
 async function syncTargets() {
+  const retained = new Map([...groups.value].filter(([, lookup]) => {
+    const current = documentUnit(lookup.unit.unit_id);
+    return current?.document && current.stage === "complete" && current.artifact_revision === lookup.unit.artifact_revision;
+  }));
+  if (retained.size !== groups.value.size) groups.value = retained;
   const tasks = props.session.plan.units
     .map((unitPlan) => [unitPlan, documentUnit(unitPlan.id)] as const)
     .filter((item): item is [typeof props.session.plan.units[number], UnitUpdate] => Boolean(item[1])
@@ -363,9 +374,9 @@ function unitLookups(): UnitLookup[] {
   });
 }
 
-function hitsForBlock(block: ReaderTextBlock): TargetHit[] {
+function hitsForBlock(block: ReaderTextBlock, lookups = unitLookups()): TargetHit[] {
   const hits: TargetHit[] = [];
-  for (const lookup of unitLookups()) {
+  for (const lookup of lookups) {
     for (const target of lookup.group.outer_targets) {
       const range: [number, number] = [
         target.char_range[0] + lookup.contextOffset,
@@ -402,9 +413,9 @@ function hitsForBlock(block: ReaderTextBlock): TargetHit[] {
   return hits.sort((left, right) => left.range[0] - right.range[0] || right.range[1] - left.range[1]);
 }
 
-function partsFor(row: ReaderTextRow): TextPart[] {
+function partsFor(row: ReaderTextRow, lookups: UnitLookup[]): TextPart[] {
   const block = row.paragraph;
-  const outerHits = hitsForBlock(block);
+  const outerHits = hitsForBlock(block, lookups);
   let hits = outerHits;
   const coreHits = hits.flatMap((outer) => outer.children.filter((target) => target.decision === "queryable" &&
     (target.lexical_core_ids.length > 0 || target.source_formation_ids.length > 0))
@@ -420,7 +431,8 @@ function partsFor(row: ReaderTextRow): TextPart[] {
       ];
     }
   }
-  const details = morphologyHits.value.filter((item) => item.range[0] < block.charRange[1] && item.range[1] > block.charRange[0])
+  const details = lookups.flatMap((lookup) => lookup.morphology.map((hit) => ({ ...hit, lookup })))
+    .filter((item) => item.range[0] < block.charRange[1] && item.range[1] > block.charRange[0])
     .map((item) => ({ ...item, hit: hits.find((hit) => hit.unit === item.lookup && hit.target.id === item.targetId)
       ?? hits.find((hit) => hit.unit === item.lookup && hit.target.decision === "grammar"
         && hit.range[0] < item.range[1] && hit.range[1] > item.range[0])
@@ -428,14 +440,14 @@ function partsFor(row: ReaderTextRow): TextPart[] {
     .filter((item) => item.hit)
     .sort((left, right) => (left.range[1] - left.range[0]) - (right.range[1] - right.range[0]));
   const boundaries = new Set<number>([block.charRange[0], block.charRange[1]]);
-  const capsules = capsuleRanges.value.filter((capsule) =>
+  const capsules = lookups.flatMap((lookup) => lookup.capsules).filter((capsule) =>
     capsule.range[0] < block.charRange[1] && capsule.range[1] > block.charRange[0]);
   for (const hit of [...hits, ...details, ...capsules]) {
     if (hit.range[0] >= block.charRange[1] || hit.range[1] <= block.charRange[0]) continue;
     boundaries.add(Math.max(block.charRange[0], hit.range[0]));
     boundaries.add(Math.min(block.charRange[1], hit.range[1]));
   }
-  const annotations = props.session.plan.prepared.annotations.filter((annotation) =>
+  const annotations = prepared.value.annotations.filter((annotation) =>
     annotation.char_range[0] >= block.charRange[0] && annotation.char_range[1] <= block.charRange[1]);
   for (const annotation of annotations) {
     boundaries.add(annotation.char_range[0]);
@@ -470,8 +482,31 @@ function capsulesForParts(parts: TextPart[]): TextCapsule[] {
   return capsules;
 }
 
-const visibleCapsules = computed(() => new Map(visibleRows.value.flatMap(({ row }) =>
-  row.kind === "text" ? [[row.key, capsulesForParts(partsFor(row))] as const] : [])));
+let rowProjectionCache = new Map<ReaderTextRow, {
+  lookups: UnitLookup[];
+  innerId: string | null;
+  prepared: typeof prepared.value;
+  capsules: TextCapsule[];
+}>();
+const visibleCapsules = computed(() => {
+  const lookups = unitLookups();
+  const next: typeof rowProjectionCache = new Map();
+  const result = new Map<string, TextCapsule[]>();
+  for (const { row } of visibleRows.value) {
+    if (row.kind !== "text") continue;
+    const relevant = lookups.filter((lookup) => lookup.range[0] < row.paragraph.charRange[1] && lookup.range[1] > row.paragraph.charRange[0]);
+    const innerId = relevant.some((lookup) => innerOuterId.value?.startsWith(`${lookup.unit.unit_id}:`)) ? innerOuterId.value : null;
+    let entry = rowProjectionCache.get(row);
+    if (!entry || entry.prepared !== prepared.value || entry.innerId !== innerId
+      || entry.lookups.length !== relevant.length || entry.lookups.some((lookup, index) => lookup !== relevant[index])) {
+      entry = { lookups: relevant, innerId, prepared: prepared.value, capsules: capsulesForParts(partsFor(row, relevant)) };
+    }
+    next.set(row, entry);
+    result.set(row.key, entry.capsules);
+  }
+  rowProjectionCache = next;
+  return result;
+});
 
 function selectionOffset(node: Node, offset: number): number | null {
   const element = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;

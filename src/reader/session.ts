@@ -49,6 +49,7 @@ export function mergeSession(state: DocumentSession, update: DocumentUpdate): Do
   if (update.session_id !== state.session_id || update.text_version !== state.text_version || update.generation < state.generation) return state;
   if (update.revision < state.revision) return state;
   if (!update.snapshot && (update.generation !== state.generation || update.base_revision !== state.revision)) return null;
+  if (update.revision === state.revision && update.generation === state.generation) return state;
   return { ...state, generation: update.generation, revision: update.revision, paused: update.paused, progress: update.progress,
     units: { ...(update.snapshot ? {} : state.units), ...Object.fromEntries(update.changes.map(unit => [unit.unit_id, unit])) } };
 }
