@@ -132,8 +132,8 @@ async function revealReader() {
   }
 }
 
-async function loadLibrary() {
-  libraryLoading.value = true;
+async function loadLibrary(blocking = true) {
+  if (blocking) libraryLoading.value = true;
   libraryError.value = "";
   try {
     const result = await readerRequest<{ books: LibraryBookSummary[]; path: string }>("reader_library");
@@ -142,7 +142,7 @@ async function loadLibrary() {
   } catch (error) {
     libraryError.value = error instanceof Error ? error.message : String(error);
   } finally {
-    libraryLoading.value = false;
+    if (blocking) libraryLoading.value = false;
   }
 }
 
@@ -179,6 +179,7 @@ async function openBook(id: string) {
     const book = await readerRequest<LibraryBook>("reader_open_book", { id });
     if (generation !== openGeneration) return;
     currentBook.value = book;
+    void loadLibrary(false);
     const compiled = await compileReaderDocumentAsync(book.markdown);
     if (generation !== openGeneration) return;
     currentDocument.value = compiled;
@@ -408,7 +409,7 @@ async function leaveReader() {
   let closeError = "";
   try { await closeSession(); }
   catch (error) { closeError = error instanceof Error ? error.message : String(error); }
-  await loadLibrary();
+  void loadLibrary(false);
   if (closeError) libraryError.value = closeError;
 }
 
