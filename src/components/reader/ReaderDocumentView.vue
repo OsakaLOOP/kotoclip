@@ -185,6 +185,7 @@ let mergedPointer: { x: number; y: number } | null = null;
 const exposedTargets = new Set<string>();
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
+let pointerPosition: { x: number; y: number } | null = null;
 let lookupPositionObserver: ResizeObserver | null = null;
 let activeCapsule: HTMLElement | null = null;
 let pendingCapsule: HTMLElement | null = null;
@@ -871,9 +872,18 @@ function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphol
 }
 
 function scheduleCloseLookup(event?: PointerEvent) {
+  if (event) pointerPosition = { x: event.clientX, y: event.clientY };
   if (event && insideLookupRegion(event.relatedTarget, event.clientX, event.clientY)) return;
   if (closeTimer !== undefined) return;
-  closeTimer = setTimeout(closeLookup, EXPLANATION_CLOSE_GRACE_MS);
+  closeTimer = setTimeout(() => {
+    if (pointerPosition && insideLookupRegion(
+      document.elementFromPoint(pointerPosition.x, pointerPosition.y), pointerPosition.x, pointerPosition.y,
+    )) {
+      cancelCloseLookup();
+      return;
+    }
+    closeLookup();
+  }, EXPLANATION_CLOSE_GRACE_MS);
 }
 
 function cancelCloseLookup() {
@@ -895,6 +905,11 @@ function pointerInLookupTriangle(x: number, y: number): boolean {
 }
 
 function insideLookupRegion(target: EventTarget | null, x?: number, y?: number): boolean {
+  const part = target instanceof Element ? target.closest<HTMLElement>("[data-lookup-key]") : null;
+  if (part && part.dataset.lookupKey === activeHit.value?.key) {
+    activeCapsule = part.closest<HTMLElement>(".reader-capsule") ?? part;
+    return true;
+  }
   const insideElement = target instanceof Node && Boolean(activeCapsule?.contains(target)
     || document.getElementById("reader-dictionary")?.contains(target)
     || document.getElementById("reader-component-dictionary")?.contains(target)
@@ -903,6 +918,7 @@ function insideLookupRegion(target: EventTarget | null, x?: number, y?: number):
 }
 
 function monitorLookupPointer(event: PointerEvent) {
+  pointerPosition = { x: event.clientX, y: event.clientY };
   if (!activeHit.value) return;
   const target = document.elementFromPoint(event.clientX, event.clientY);
   if (insideLookupRegion(target, event.clientX, event.clientY)) cancelCloseLookup();
@@ -996,6 +1012,7 @@ function closeLookup() {
   lookupCompanion.value = null;
   activeCapsule = null;
   pendingCapsule = null;
+  pointerPosition = null;
   activeHit.value = null;
   activeDetail.value = null;
   componentHit.value = null;
@@ -1255,7 +1272,8 @@ function toggleEinkMode() {
                   :data-part-key="part.key"
                   :data-char-start="part.range[0]"
                   :data-char-end="part.range[1]"
-                  @pointerenter="part.hit ? scheduleLookup(part.hit, $event, part.detail) : scheduleCloseLookup()"
+                  :data-lookup-key="part.hit ? `${part.hit.unit.unit.unit_id}:${part.hit.target.parent_outer_id || part.hit.target.id}` : undefined"
+                  @pointerenter="part.hit ? scheduleLookup(part.hit, $event, part.detail) : scheduleCloseLookup($event)"
                   @pointerleave="leavePart"
                   @pointerdown="startMerge(part, visible.row.paragraph, $event)"
                   @click="clickPart(part, $event)"
