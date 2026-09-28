@@ -1,5 +1,5 @@
 //! 来源分析、查询和快照分别加锁，模型推理期间允许前台查词。
-use crate::{analysis::ResourcePaths, analysis_cache::AnalysisCache, dictionary::lookup::DictionaryEngine, output, providers::ProviderManager, rule_store::{RuleSnapshot, RuleStore}};
+use crate::{analysis::ResourcePaths, analysis_cache::AnalysisCache, dictionary::lookup::DictionaryEngine, document_plan::DocumentPlan, output, providers::ProviderManager, rule_store::{RuleSnapshot, RuleStore}};
 use kotoclip_nlp::{model::{MorphemeToken, QueryForm, Register, RegisterRouting, SourceAnalysis, SourceRun, StageTiming, UnifiedDocument}, prepare::PreparedText, sources::UniDicProvider, syntax::SyntaxArtifact};
 use serde_json::{json, Value};
 use serde::{Deserialize, Serialize};
@@ -118,19 +118,33 @@ impl AnalysisEngine {
         Ok(source)
     }
 
-    pub fn analyze_complete(&self, prepared: &PreparedText, routing: RegisterRouting, range: [usize; 2], generation: u64) -> Result<(Arc<UnifiedDocument>, Value, Vec<Value>, bool, bool), String> {
-        let started = Instant::now();
-        let timing_enabled = self.external.lock().unwrap().analysis_timing_enabled()?;
+    fn complete_cache_digest(&self, prepared: &PreparedText, routing: &RegisterRouting, range: [usize; 2]) -> Result<String, String> {
         let settings = self.external.lock().unwrap().settings()?;
         let resources: Vec<_> = [&self.paths.cwj, &self.paths.csj, &self.paths.provider_script, &settings.ginza.python, &settings.ginza.dictionary]
             .iter().map(|path| resource_identity(path)).collect();
         let mut dictionaries = fs::read_dir(&self.paths.dictionary_sources).ok().into_iter().flatten()
             .filter_map(Result::ok).map(|entry| resource_identity(&entry.path())).collect::<Vec<_>>();
         dictionaries.sort_by_key(Value::to_string);
-        let digest = kotoclip_nlp::external::text_digest(&serde_json::to_string(&(
+        Ok(kotoclip_nlp::external::text_digest(&serde_json::to_string(&(
             "kotoclip.complete-unit.v2", kotoclip_nlp::model::SCHEMA, env!("CARGO_PKG_VERSION"),
-            &prepared.mapping.source_sha256, &routing, range, self.external.lock().unwrap().cache_identity()?, resources, dictionaries,
-        )).map_err(|e| e.to_string())?);
+            &prepared.mapping.source_sha256, routing, range, self.external.lock().unwrap().cache_identity()?, resources, dictionaries,
+        )).map_err(|e| e.to_string())?))
+    }
+
+    pub(crate) fn cached_units(&self, plan: &DocumentPlan) -> Vec<bool> {
+        plan.units.iter().enumerate().map(|(index, unit)| {
+            let (prepared, routing) = plan.unit_input(index);
+            let range = [unit.anchor.char_range[0] - unit.context_range[0], unit.anchor.char_range[1] - unit.context_range[0]];
+            let Ok(digest) = self.complete_cache_digest(&prepared, &routing, range) else { return false; };
+            self.complete_units.lock().unwrap().get(&format!("complete:{digest}")).is_some()
+                || self.complete_cache_path(&digest).is_file()
+        }).collect()
+    }
+
+    pub fn analyze_complete(&self, prepared: &PreparedText, routing: RegisterRouting, range: [usize; 2], generation: u64) -> Result<(Arc<UnifiedDocument>, Value, Vec<Value>, bool, bool), String> {
+        let started = Instant::now();
+        let timing_enabled = self.external.lock().unwrap().analysis_timing_enabled()?;
+        let digest = self.complete_cache_digest(prepared, &routing, range)?;
         let cache_key = format!("complete:{digest}");
         let memory_cached = self.complete_units.lock().unwrap().get(&cache_key);
         let cached = memory_cached.or_else(|| self.read_complete_cache(&digest, prepared));

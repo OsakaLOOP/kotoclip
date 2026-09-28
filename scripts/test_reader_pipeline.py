@@ -38,7 +38,7 @@ class Service:
         self.process.stderr.close()
 
 
-def collect(binary, text, initial_offset=0):
+def collect(binary, text, initial_offset=0, cached=False):
     service = Service(binary)
     try:
         started = time.perf_counter()
@@ -46,6 +46,11 @@ def collect(binary, text, initial_offset=0):
                                  policy="auto", initial_offset=initial_offset)
         update = opened["update"]
         plan = opened["plan"]
+        initial_progress = update["progress"]
+        total = len(plan["units"])
+        analysis_total, cache_total = (0, total) if cached else (total, 0)
+        assert initial_progress["analysis"] == {"complete": 0, "total": analysis_total}, initial_progress
+        assert initial_progress["cache"] == {"complete": 0, "total": cache_total}, initial_progress
         expected = next(unit["id"] for unit in plan["units"]
                         if unit["anchor"]["char_range"][0] <= initial_offset < unit["anchor"]["char_range"][1])
         session = update["session_id"]
@@ -61,6 +66,8 @@ def collect(binary, text, initial_offset=0):
             previous_revision = update["revision"]
             update = service.request("poll_document", session_id=session, text_version=version,
                                      generation=generation, after_revision=previous_revision)
+            assert update["progress"]["analysis"]["total"] == analysis_total, update["progress"]
+            assert update["progress"]["cache"]["total"] == cache_total, update["progress"]
             if update["snapshot"]:
                 known = {unit["unit_id"]: unit for unit in update["changes"]}
             else:
@@ -76,6 +83,8 @@ def collect(binary, text, initial_offset=0):
         else:
             raise TimeoutError("单元完整分析超过 240 秒")
         completed = [unit for unit in known.values() if unit["stage"] == "complete"]
+        assert update["progress"]["analysis"]["complete"] == analysis_total, update["progress"]
+        assert update["progress"]["cache"]["complete"] == cache_total, update["progress"]
         assert first == expected, f"首个完成单元 {first} 与优先单元 {expected} 不同"
         assert len(completed) == len(plan["units"])
         assert all(unit["document"] and unit["document"]["external_sources"] for unit in completed)
@@ -92,6 +101,8 @@ def collect(binary, text, initial_offset=0):
             "query_ms": query_ms,
             "first_unit": first,
             "total": len(completed),
+            "initial_progress": initial_progress,
+            "final_progress": update["progress"],
             "units": [{"unit_id": unit["unit_id"], "stage": unit["stage"],
                        "cache_hit": unit["cache_hit"],
                        "lookup_targets": len(unit["lookup"]["outer_targets"]),
@@ -111,7 +122,7 @@ def main():
                    for index in range(0, len(TEXT), 500))
     cold = collect(args.binary, text, 850)
     assert not any(unit["cache_hit"] for unit in cold["units"]), "新正文应从完整分析开始"
-    warm = collect(args.binary, text, 850)
+    warm = collect(args.binary, text, 850, cached=True)
     assert all(unit["cache_hit"] for unit in warm["units"]), "重启后完整产物未全部命中缓存"
     service = Service(args.binary)
     try:
@@ -119,7 +130,7 @@ def main():
     finally:
         service.close()
     try:
-        disabled = collect(args.binary, text, 850)
+        disabled = collect(args.binary, text, 850, cached=True)
         assert all(unit["timing"] is None and unit["cache_hit"] for unit in disabled["units"])
     finally:
         service = Service(args.binary)

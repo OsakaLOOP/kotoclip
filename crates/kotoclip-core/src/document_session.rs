@@ -46,8 +46,8 @@ struct Session {
     units: Vec<UnitUpdate>,
     history: VecDeque<(u64, Vec<UnitUpdate>)>,
     retained: VecDeque<usize>,
-    load_units: Vec<usize>,
-    load_cache: bool,
+    load_analysis: Vec<usize>,
+    load_cache: Vec<usize>,
 }
 
 impl Session {
@@ -64,17 +64,12 @@ impl Session {
     }
 
     fn progress(&self) -> Value {
-        let load_total = self.load_units.len();
-        let load_complete = self.load_units.iter().filter(|&&index| self.units[index].stage == UnitStage::Complete).count();
-        let (analysis_complete, analysis_total, cache_complete, cache_total) = if self.load_cache {
-            (0, 0, load_complete, load_total)
-        } else {
-            (load_complete, load_total, 0, 0)
-        };
+        let analyzed = self.load_analysis.iter().filter(|&&index| self.units[index].stage == UnitStage::Complete).count();
+        let cached = self.load_cache.iter().filter(|&&index| self.units[index].stage == UnitStage::Complete).count();
         json!({"total": self.units.len(), "basic": self.units.iter().filter(|u| u.document.is_some()).count(),
             "complete": self.units.iter().filter(|u| u.analysis_complete).count(), "failed": self.units.iter().filter(|u| u.stage == UnitStage::Failed).count(),
-            "analysis": {"complete": analysis_complete, "total": analysis_total},
-            "cache": {"complete": cache_complete, "total": cache_total},
+            "analysis": {"complete": analyzed, "total": self.load_analysis.len()},
+            "cache": {"complete": cached, "total": self.load_cache.len()},
             "pending": if self.paused { 0 } else { self.order.iter().filter(|&&i| matches!(self.units[i].stage, UnitStage::Pending | UnitStage::Processing)).count() }})
     }
 
@@ -102,21 +97,20 @@ impl Session {
         }
     }
 
-    fn request_range(&mut self, range: [usize; 2], full_load: bool) -> Result<Vec<usize>, String> {
+    fn start_load(&mut self, cached: &[bool]) {
+        // 批次开始时检查与实际读取相同的缓存键，分类在本批次内保持固定。
+        (self.load_analysis, self.load_cache) = (0..self.units.len())
+            .filter(|&index| self.units[index].stage != UnitStage::Complete)
+            .partition(|&index| !cached[index]);
+    }
+
+    fn request_range(&mut self, range: [usize; 2]) -> Result<Vec<usize>, String> {
         if range[0] > range[1] || range[1] > self.plan.prepared.mapping.origins.len() { return Err("请求范围超出正文".into()); }
         let first = self.plan.units.partition_point(|unit| unit.anchor.char_range[1] <= range[0]).min(self.units.len().saturating_sub(1));
         let last = self.plan.units.partition_point(|unit| unit.anchor.char_range[0] < range[1]).max(first + 1).min(self.units.len());
         let mut priority: Vec<_> = (first..last).collect();
         if first > 0 { priority.push(first - 1); }
         if last < self.units.len() { priority.push(last); }
-        self.load_cache = priority.iter().all(|&index| self.units[index].analysis_complete);
-        self.load_units = if full_load {
-            (0..self.units.len()).collect()
-        } else {
-            priority.iter().copied().filter(|&index| {
-                self.units[index].stage != UnitStage::Complete || self.units[index].document.is_none()
-            }).collect()
-        };
         self.priority_count = priority.len();
         self.order = priority;
         self.order.extend((0..first.saturating_sub(1)).chain((last + 1).min(self.units.len())..self.units.len()));
@@ -128,7 +122,6 @@ impl Session {
                 changed.push(index);
             }
         }
-        self.paused = false;
         Ok(changed)
     }
 }
@@ -249,9 +242,10 @@ impl DocumentSessions {
         let id = format!("session:{}", state.sequence);
         let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending, analysis_complete: false, analysis_runs: 0, cache_reads: 0, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
         let mut session = Session { id: id.clone(), plan: plan.clone(), generation: 1, revision: 0, paused: false,
-            order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new(), load_units: Vec::new(), load_cache: false };
+            order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new(), load_analysis: Vec::new(), load_cache: Vec::new() };
         let start = initial_offset.min(plan.prepared.mapping.origins.len().saturating_sub(1));
-        session.request_range([start, (start + crate::document_plan::UNIT_CHARACTERS).min(plan.prepared.mapping.origins.len())], true)?;
+        session.request_range([start, (start + crate::document_plan::UNIT_CHARACTERS).min(plan.prepared.mapping.origins.len())])?;
+        session.start_load(&self.engine.cached_units(&plan));
         let result = json!({"plan": plan.as_ref(), "update": session.update(None)});
         state.sessions.insert(id.clone(), session);
         state.recent.push_back(id);
@@ -294,8 +288,7 @@ impl DocumentSessions {
                 unit.providers.clear(); unit.cache_hit = false; unit.error = None;
                 unit.timing = None;
             }
-            session.load_units = (0..session.units.len()).collect();
-            session.load_cache = false;
+            session.start_load(&self.engine.cached_units(&session.plan));
             session.publish(&[]);
         }
         drop(state); self.wake();
@@ -329,7 +322,10 @@ impl DocumentSessions {
         if interrupts { session.advance_generation(); }
         let mut changed = Vec::new();
         match action {
-            "range" => changed = session.request_range(range.unwrap(), false)?,
+            "range" => {
+                changed = session.request_range(range.unwrap())?;
+                if !changed.is_empty() { session.start_load(&self.engine.cached_units(&session.plan)); }
+            },
             "continue" => {
                 session.paused = false;
             },
@@ -343,6 +339,7 @@ impl DocumentSessions {
                     }
                 }
                 session.paused = false;
+                session.start_load(&self.engine.cached_units(&session.plan));
             },
             _ => return Err("未知文档操作".into()),
         }
@@ -394,17 +391,24 @@ impl Drop for DocumentSessions {
 mod tests {
     use super::*;
 
-    #[test]
-    fn priority_unit_runs_as_one_job_without_publishing_intermediate_document() {
-        let text = "七日は警察署へ向かった。\n".repeat(100);
+    fn pending_session() -> Session {
+        let text = "七日は警察署へ向かった。\n".repeat(400);
         let plan = Arc::new(DocumentPlan::new(Some("book".into()), &text, RegisterPolicy::Auto));
-        assert!(plan.units.len() >= 2);
+        assert!(plan.units.len() > 4);
         let units = plan.units.iter().map(|unit| UnitUpdate { unit_id: unit.id.clone(), stage: UnitStage::Pending,
             analysis_complete: false, analysis_runs: 0, cache_reads: 0, artifact_revision: 0, document: None, lookup: None, providers: Vec::new(), cache_hit: false, timing: None, error: None }).collect();
         let mut session = Session { id: "session".into(), plan: plan.clone(), generation: 1, revision: 0,
-            paused: false, order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new(), load_units: Vec::new(), load_cache: false };
-        let priority = plan.units[1].anchor.char_range[0];
-        session.request_range([priority, priority + 1], false).unwrap();
+            paused: false, order: Vec::new(), priority_count: 0, units, history: VecDeque::new(), retained: VecDeque::new(), load_analysis: Vec::new(), load_cache: Vec::new() };
+        session.request_range([0, 1]).unwrap();
+        session.start_load(&vec![false; session.units.len()]);
+        session
+    }
+
+    #[test]
+    fn priority_unit_runs_as_one_job_without_publishing_intermediate_document() {
+        let mut session = pending_session();
+        let priority = session.plan.units[1].anchor.char_range[0];
+        session.request_range([priority, priority + 1]).unwrap();
         let mut state = State::default();
         state.recent.push_back("session".into());
         state.sessions.insert("session".into(), session);
@@ -415,5 +419,100 @@ mod tests {
         assert!(active.document.is_none());
         assert_eq!(state.sessions["session"].progress()["basic"], 0);
         assert_eq!(state.sessions["session"].progress()["complete"], 0);
+    }
+
+    #[test]
+    fn visible_range_and_polling_preserve_full_document_batch() {
+        let mut session = pending_session();
+        let total = session.units.len();
+        for unit in &mut session.units[..4] {
+            unit.stage = UnitStage::Complete;
+            unit.analysis_complete = true;
+            unit.cache_hit = true;
+            unit.cache_reads = 1;
+        }
+        let range = session.plan.units[total - 1].anchor.char_range;
+        for _ in 0..3 {
+            assert!(session.request_range(range).unwrap().is_empty());
+            assert_eq!(session.update(None)["progress"]["analysis"], json!({"complete": 4, "total": total}));
+            assert_eq!(session.progress()["cache"], json!({"complete": 0, "total": 0}));
+        }
+        session.paused = true;
+        session.request_range(range).unwrap();
+        assert!(session.paused);
+        assert_eq!(session.progress()["pending"], 0);
+        assert_eq!(session.progress()["analysis"]["total"], total);
+    }
+
+    #[test]
+    fn released_units_start_a_fixed_mixed_batch_with_background_work() {
+        let mut session = pending_session();
+        let total = session.units.len();
+        for unit in &mut session.units[..4] {
+            unit.stage = UnitStage::Complete;
+            unit.analysis_complete = true;
+        }
+        assert_eq!(session.request_range([0, 1]).unwrap(), vec![0, 1]);
+        let mut cached = vec![false; total];
+        cached[..4].fill(true);
+        session.start_load(&cached);
+        let analysis = json!({"complete": 0, "total": total - 4});
+        let cache = json!({"complete": 0, "total": 2});
+        assert_eq!(session.progress()["analysis"], analysis);
+        assert_eq!(session.progress()["cache"], cache);
+        session.units[0].stage = UnitStage::Processing;
+        assert!(session.request_range([0, 1]).unwrap().is_empty());
+        assert_eq!(session.progress()["analysis"], analysis);
+        assert_eq!(session.progress()["cache"], cache);
+        session.units[0].stage = UnitStage::Complete;
+        session.units[0].cache_hit = false;
+        session.units[0].analysis_runs += 1;
+        assert_eq!(session.progress()["cache"], json!({"complete": 1, "total": 2}));
+        assert_eq!(session.progress()["analysis"], analysis);
+    }
+
+    #[test]
+    fn completed_document_can_start_another_cache_batch_and_retry_failure() {
+        let mut session = pending_session();
+        for unit in &mut session.units {
+            unit.stage = UnitStage::Complete;
+            unit.analysis_complete = true;
+        }
+        session.request_range([0, 1]).unwrap();
+        let cached = vec![true; session.units.len()];
+        session.start_load(&cached);
+        assert_eq!(session.progress()["analysis"], json!({"complete": 0, "total": 0}));
+        assert_eq!(session.progress()["cache"], json!({"complete": 0, "total": 2}));
+        session.units[0].stage = UnitStage::Complete;
+        session.units[1].stage = UnitStage::Failed;
+        assert_eq!(session.progress()["cache"], json!({"complete": 1, "total": 2}));
+        assert!(session.request_range([0, 0]).unwrap().contains(&0));
+        assert_eq!(session.units[1].stage, UnitStage::Failed);
+        session.units[1].stage = UnitStage::Pending;
+        session.start_load(&cached);
+        assert_eq!(session.progress()["cache"], json!({"complete": 0, "total": 2}));
+        for unit in &mut session.units {
+            unit.stage = UnitStage::Pending;
+            unit.analysis_complete = false;
+        }
+        session.start_load(&vec![false; session.units.len()]);
+        assert_eq!(session.progress()["analysis"], json!({"complete": 0, "total": session.units.len()}));
+        assert_eq!(session.progress()["cache"], json!({"complete": 0, "total": 0}));
+    }
+
+    #[test]
+    fn reopened_document_classifies_disk_cache_before_any_unit_completes() {
+        let mut session = pending_session();
+        let total = session.units.len();
+        session.start_load(&vec![true; total]);
+        assert_eq!(session.progress()["complete"], 0);
+        assert_eq!(session.progress()["analysis"], json!({"complete": 0, "total": 0}));
+        assert_eq!(session.progress()["cache"], json!({"complete": 0, "total": total}));
+        for index in 0..total {
+            session.units[index].stage = UnitStage::Complete;
+            session.units[index].analysis_complete = true;
+            assert_eq!(session.progress()["analysis"]["total"], 0);
+            assert_eq!(session.progress()["cache"], json!({"complete": index + 1, "total": total}));
+        }
     }
 }

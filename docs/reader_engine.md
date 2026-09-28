@@ -144,13 +144,18 @@ interface ReaderAnalysisProgress {
 }
 ```
 
-后端保留 `progress.total`、`basic`、`complete`、`failed` 和 `pending` 字段；`basic` 表示仍在内存中保留完整产物的数量，`complete` 表示已经完成的数量。前端计算将准备分析计为固定 3 份，每个完整分析单元计为 1 份；界面仍显示简短阶段文字和分析单元数量。
+后端保留 `progress.total`、`basic`、`complete`、`failed` 和 `pending` 字段；`basic` 表示仍在内存中保留完整产物的数量，`complete` 表示全文已完成的数量。`progress.analysis` 和 `progress.cache` 表示当前批次的分析项与缓存恢复项，界面的计数、剩余数量及完成状态均依据当前批次。
+
+首次打开建立全文批次。轮询和视口范围调整保留该批次；已释放的完整单元重新进入队列、用户重试或来源更新时，建立新批次。新批次包含全部待处理单元，按实际读取所用的缓存键检查内存与磁盘缓存；存在对应缓存的单元归为缓存项，其余归为分析项。重启后的磁盘缓存参与首次分类。批次内分类和总数固定，实际缓存命中记录在单元诊断中。
+
+前端计算将准备分析计为固定 3 份，每个分析项计为 1 份，每个缓存恢复项计为 1/4 份。
 
 总进度计算为：
 
 ```text
 preparing: 0%
-processing: (3 + completeUnits) / (3 + totalUnits)
+processing: (3 + analysis.complete + cache.complete / 4)
+          / (3 + analysis.total + cache.total / 4)
 ```
 
 首屏关联单元达到 `complete` 后进入阅读，全文继续按单元完成度更新。取消分析时，已发布产物保持可用；滚动到内存中已释放的范围时，从完整缓存恢复相应单元。
