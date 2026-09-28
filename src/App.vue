@@ -120,8 +120,11 @@ async function loadLibrary() {
 }
 
 async function closeSession() {
-  await session.close();
-  try { await readerRequest("reader_close"); } catch { /* 宿主退出时会话已结束 */ }
+  try {
+    await session.close();
+  } finally {
+    try { await readerRequest("reader_close"); } catch { /* 宿主退出时会话已结束 */ }
+  }
 }
 
 async function openBook(id: string) {
@@ -356,14 +359,17 @@ async function saveProgress(offset: number, chapter: string | null, seconds: num
 async function leaveReader() {
   ++openGeneration;
   await readerViewTransition.finish();
-  await closeSession();
   readerPreparing.value = false;
   openingBookId.value = null;
   currentBook.value = null;
   currentDocument.value = null;
   selections.value = [];
   view.value = "library";
+  let closeError = "";
+  try { await closeSession(); }
+  catch (error) { closeError = error instanceof Error ? error.message : String(error); }
   await loadLibrary();
+  if (closeError) libraryError.value = closeError;
 }
 
 function appearanceUpdated(value: ReaderAppearance) {
