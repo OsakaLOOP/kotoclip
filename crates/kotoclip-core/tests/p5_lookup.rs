@@ -106,10 +106,32 @@ fn p01_p03_full_context_preserves_canonical_queries_and_components() {
             assert!(group.excluded_ranges.iter().all(|range| range[1] <= target.char_range[0] || target.char_range[1] <= range[0]));
         }
         for child in &group.inner_targets {
-            if child.surface == "し" || child.surface == "ぼこり" || child.surface == "者" {
+            if child.surface == "し" || child.surface == "ぼこり" {
                 assert_eq!(child.decision, "component", "{sample} {} 应归属父词", child.surface);
                 assert!(child.matrix_request.is_none());
             }
+        }
+    }
+}
+
+#[test]
+fn compound_and_each_noun_component_have_dictionary_targets() {
+    let service = service();
+    for (word, components) in [("三味線", ["三味", "線"]), ("茶屋酒", ["茶屋", "酒"])] {
+        let (id, document) = analyze(&service, word);
+        let group = targets(&service, &id, &document);
+        let outer = group["outer_targets"].as_array().unwrap().iter()
+            .find(|target| target["surface"] == word).expect("整体词条缺失");
+        assert_eq!(outer["decision"], "accepted");
+        for surface in components {
+            let inner = group["inner_targets"].as_array().unwrap().iter()
+                .find(|target| target["surface"] == surface).expect("内部词条缺失");
+            assert_eq!(inner["decision"], "queryable");
+            assert!(inner["matrix_request"].is_object());
+            let result = service.dispatch(Request::QueryTarget {
+                analysis_id: id.clone(), target_id: inner["id"].as_str().unwrap().into(), selected_form: None,
+            }).result.expect("内部词典查询失败");
+            assert!(result["entries"].as_array().is_some_and(|entries| !entries.is_empty()));
         }
     }
 }

@@ -262,13 +262,14 @@ pub fn build(
             if !tokens[atoms[end].members[0]].query_forms.iter().any(|query| query.kind == "base" && query.form != tokens[atoms[end].members[0]].surface) {
                 forms.push(form(surface(&chars, range), atoms[start..=end].iter().map(|atom| tokens[atom.members[0]].reading.clone())
                     .collect::<Option<Vec<_>>>().map(|parts| parts.join("")), "sequence"));
+                forms.push(form(surface(&chars, range), None, "sequence_exact"));
             }
             let prefix = surface(&chars, [range[0], atoms[end].range[0]]);
             let prefix_reading = atoms[start..end].iter().map(|atom| tokens[atom.members[0]].reading.clone()).collect::<Option<Vec<_>>>().map(|parts| parts.join(""));
             forms.extend(atoms[end].forms.iter().map(|query| form(format!("{prefix}{}", query.form),
                 prefix_reading.as_ref().zip(query.reading.as_ref()).map(|(prefix, reading)| format!("{prefix}{reading}")), "sequence_base")));
             candidates.entry(range).or_insert_with(|| Candidate { range, forms: unique_forms(forms), members: atoms[start..=end].iter().flat_map(|atom| atom.members.clone()).collect(),
-                cores: Vec::new(), formations: Vec::new(), pos: atoms[end].pos.clone(), minimal: false, hints: Vec::new(), reason: String::new() });
+                cores: Vec::new(), formations: Vec::new(), pos: atoms[start].pos.clone(), minimal: false, hints: Vec::new(), reason: String::new() });
         }
     }
     for node in &document.formation.nodes {
@@ -316,9 +317,8 @@ pub fn build(
     for parent in &outer {
         for candidate in candidates.iter().filter(|candidate| candidate.range != parent.char_range && contains(parent.char_range, candidate.range)) {
             if candidate.members.len() > 1 && !candidate.hints.iter().any(lexical) { continue; }
-            let component = candidate.pos.as_ref().is_some_and(|pos| matches!(pos.major.as_str(), "接頭辞" | "接尾辞"))
-                || candidate.members.iter().all(|index| tokens[*index].lemma.as_deref() == Some("為る")) && !parent.lexical_core_ids.is_empty()
-                || !candidate.hints.iter().any(lexical);
+            let component = candidate.members.iter().all(|index| tokens[*index].lemma.as_deref() == Some("為る")) && !parent.lexical_core_ids.is_empty()
+                || !candidate.minimal && !candidate.hints.iter().any(lexical);
             inner.push(target(candidate, &chars, tokens, Some(&parent.id), if component { "component" } else { "queryable" }));
         }
         for hint in &parent.metadata_hints {

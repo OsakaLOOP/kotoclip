@@ -148,13 +148,20 @@ let rangeTimer: ReturnType<typeof setTimeout> | undefined;
 const targetErrors = shallowRef(new Map<string, string>());
 const targetError = computed(() => [...targetErrors.value.values()][0] ?? "");
 const activeHit = shallowRef<TargetHit | null>(null);
+const componentHit = shallowRef<TargetHit | null>(null);
+const componentQuery = shallowRef<DictionaryLookup | null>(null);
+const componentBusy = ref(false);
+const componentError = ref("");
+const componentWord = ref("");
+const componentSearch = shallowRef<QueryOutput | null>(null);
+const componentHistory = ref<{ query: DictionaryLookup; word: string; search: QueryOutput | null }[]>([]);
 const activeDetail = ref<ReaderMorphologyDetail | null>(null);
-const outerHit = shallowRef<TargetHit | null>(null);
 const activeQuery = shallowRef<DictionaryLookup | null>(null);
 const queryBusy = ref(false);
 const queryError = ref("");
 const lookupPosition = ref({ x: 12, y: 72, width: 420, maxHeight: 480 });
 const detailPosition = ref({ x: 12, y: 12, width: 310, maxHeight: 240 });
+const componentPosition = ref({ x: 12, y: 12, width: 420, maxHeight: 480 });
 const relatedWord = ref("");
 const relatedSearch = shallowRef<QueryOutput | null>(null);
 const dictionaryNames = ref<string[]>([]);
@@ -166,9 +173,9 @@ const dictionarySettings = computed<DictionarySettings>(() => ({
 }));
 const lookupHistory = ref<{ query: DictionaryLookup; word: string; search: QueryOutput | null }[]>([]);
 let queryGeneration = 0;
+let componentGeneration = 0;
 let disposed = false;
 const wordState = ref<{ known: boolean; exposures: number } | null>(null);
-const innerOuterId = ref<string | null>(null);
 const pendingSelection = ref<SelectionDraft | null>(null);
 const mergeDrag = shallowRef<MergeDrag | null>(null);
 let suppressPartClick = false;
@@ -260,10 +267,6 @@ const statusLabel = computed(() => {
   if (props.session.progress.complete >= props.session.progress.total && props.session.progress.total > 0) return "分析完成";
   return `已分析 ${readableCount.value}/${props.session.progress.total}`;
 });
-const activeChildren = computed(() => {
-  if (!outerHit.value) return [];
-  return outerHit.value.children.filter((target) => target.decision === "queryable");
-});
 const chainSummaries = computed(() => activeHit.value
   ? readerChains(activeHit.value.target, activeHit.value.unit.unit.document)
   : []);
@@ -288,9 +291,13 @@ function createUnitLookup(unitPlan: AnalysisUnit, unit: UnitUpdate, group: Looku
   return {
     sessionId: props.session.session_id, generation: props.session.generation,
     unit, group, contextOffset: offset, range: unitPlan.anchor.char_range,
-    capsules: readerCapsuleRanges(unit.document!)
-      .filter((capsule) => capsule.range[0] >= start && capsule.range[1] <= end)
-      .map((capsule) => ({ key: `${unit.unit_id}:${capsule.id}`, range: globalRange(capsule.range) })),
+    capsules: [
+      ...group.outer_targets.filter((target) => target.decision === "accepted" && target.morpheme_ids.length > 1)
+        .map((target) => ({ key: `${unit.unit_id}:${target.id}`, range: globalRange(target.char_range) })),
+      ...readerCapsuleRanges(unit.document!)
+        .filter((capsule) => capsule.range[0] >= start && capsule.range[1] <= end)
+        .map((capsule) => ({ key: `${unit.unit_id}:${capsule.id}`, range: globalRange(capsule.range) })),
+    ],
     morphology: readerMorphologyHits(
       [...group.inner_targets.filter((target) => target.decision === "queryable"), ...group.outer_targets], unit.document,
     ).filter((hit) => hit.range[0] >= start && hit.range[1] <= end)
@@ -463,20 +470,7 @@ function hitsForBlock(block: ReaderTextBlock, lookups = unitLookups()): TargetHi
 function partsFor(row: ReaderTextRow, lookups: UnitLookup[]): TextPart[] {
   const block = row.paragraph;
   const outerHits = hitsForBlock(block, lookups);
-  let hits = outerHits;
-  const coreHits = hits.flatMap((outer) => outer.children.filter((target) => target.decision === "queryable" &&
-    (target.lexical_core_ids.length > 0 || target.source_formation_ids.length > 0))
-    .map((target) => ({ key: `${outer.key}:${target.id}`, unit: outer.unit, target, range: target.char_range, children: [] })));
-  hits = [...coreHits, ...hits];
-  let tokenHits: TargetHit[] = [];
-  if (innerOuterId.value) {
-    const outer = outerHits.find((hit) => hit.key === innerOuterId.value);
-    if (outer) {
-      tokenHits = outer.children.filter((target) => target.decision === "queryable" && target.morpheme_ids.length === 1)
-        .map((target) => ({ key: `${outer.key}:${target.id}`, unit: outer.unit, target, range: target.char_range, children: [] }));
-      hits = [...tokenHits, ...hits];
-    }
-  }
+  const hits = outerHits;
   const details = lookups.flatMap((lookup) => lookup.morphology.map((hit) => ({ ...hit, lookup })))
     .filter((item) => item.range[0] < block.charRange[1] && item.range[1] > block.charRange[0])
     .map((item) => ({ ...item, hit: hits.find((hit) => hit.unit === item.lookup && hit.target.id === item.targetId)
@@ -488,7 +482,8 @@ function partsFor(row: ReaderTextRow, lookups: UnitLookup[]): TextPart[] {
   const boundaries = new Set<number>([block.charRange[0], block.charRange[1]]);
   const capsules = lookups.flatMap((lookup) => lookup.capsules).filter((capsule) =>
     capsule.range[0] < block.charRange[1] && capsule.range[1] > block.charRange[0]);
-  for (const hit of [...hits, ...details, ...capsules]) {
+  const componentRanges = outerHits.flatMap((outer) => outer.children.map((child) => ({ range: child.char_range })));
+  for (const hit of [...hits, ...componentRanges, ...details, ...capsules]) {
     if (hit.range[0] >= block.charRange[1] || hit.range[1] <= block.charRange[0]) continue;
     boundaries.add(Math.max(block.charRange[0], hit.range[0]));
     boundaries.add(Math.min(block.charRange[1], hit.range[1]));
@@ -503,8 +498,7 @@ function partsFor(row: ReaderTextRow, lookups: UnitLookup[]): TextPart[] {
   return points.slice(0, -1).map((start, index) => {
     const end = points[index + 1];
     const detail = details.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
-    const candidateHit = tokenHits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1])
-      ?? detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
+    const candidateHit = detail?.hit ?? hits.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]) ?? null;
     const hit = candidateHit?.target.decision === "grammar" && !detail ? null : candidateHit;
     const annotation = annotations.find((annotation) => annotation.char_range[0] <= start && end <= annotation.char_range[1]);
     const capsule = capsules.find((candidate) => candidate.range[0] <= start && end <= candidate.range[1]);
@@ -543,7 +537,6 @@ function runsForParts(parts: TextPart[]): TextRun[] {
 
 let rowProjectionCache = new Map<ReaderTextRow, {
   lookups: UnitLookup[];
-  innerId: string | null;
   prepared: typeof prepared.value;
   runs: TextRun[];
 }>();
@@ -554,11 +547,10 @@ const visibleRuns = computed(() => {
   for (const { row } of visibleRows.value) {
     if (row.kind !== "text") continue;
     const relevant = lookups.filter((lookup) => lookup.range[0] < row.paragraph.charRange[1] && lookup.range[1] > row.paragraph.charRange[0]);
-    const innerId = relevant.some((lookup) => innerOuterId.value?.startsWith(`${lookup.unit.unit_id}:`)) ? innerOuterId.value : null;
     let entry = rowProjectionCache.get(row);
-    if (!entry || entry.prepared !== prepared.value || entry.innerId !== innerId
+    if (!entry || entry.prepared !== prepared.value
       || entry.lookups.length !== relevant.length || entry.lookups.some((lookup, index) => lookup !== relevant[index])) {
-      entry = { lookups: relevant, innerId, prepared: prepared.value, runs: runsForParts(partsFor(row, relevant)) };
+      entry = { lookups: relevant, prepared: prepared.value, runs: runsForParts(partsFor(row, relevant)) };
     }
     next.set(row, entry);
     result.set(row.key, entry.runs);
@@ -585,9 +577,7 @@ function startMerge(part: TextPart, block: ReaderTextBlock, event: PointerEvent)
   suppressPartClick = false;
   if (!part.hit || event.button !== 0 || !event.isPrimary || event.pointerType === "touch" || !lookupIsCurrent(part.hit.unit)) return;
   event.preventDefault();
-  const innerId = innerOuterId.value;
   closeLookup();
-  innerOuterId.value = innerId;
   clearPendingSelection();
   mergedPointer = null;
   const source = event.currentTarget as HTMLElement;
@@ -634,12 +624,15 @@ function finishMerge(event: PointerEvent) {
     surface: preparedCharacters.value.slice(...range).join(""), decision: "selection",
     morpheme_ids: [], lexical_core_ids: [], source_formation_ids: [], lookup_forms: [], reading_evidence: [],
   };
+  componentHit.value = null;
+  componentQuery.value = null;
+  ++componentGeneration;
   void queryTarget({ key: `${hit.unit.unit.unit_id}:${target.id}`, unit: hit.unit, target, range, children: [] });
 }
 
 function clickPart(part: TextPart, event: MouseEvent) {
   if (suppressPartClick) { suppressPartClick = false; return; }
-  if (part.hit && part.hit.target.decision !== "grammar") openChildren(part.hit, event, part.range);
+  if (part.hit && part.hit.target.decision !== "grammar") openLookup(part.hit, event.currentTarget as HTMLElement, part.range, null);
   else if (part.hit && part.detail) scheduleLookup(part.hit, event, part.detail);
 }
 
@@ -710,22 +703,20 @@ function exportSelections() {
   emit("exportSelections");
 }
 
-function positionLookup(event: MouseEvent, paired = false) {
-  const anchor = snapshotRect((event.currentTarget as HTMLElement).getBoundingClientRect());
-  positionLookupAt(anchor, paired);
-}
-
-function positionLookupAt(anchor: ReturnType<typeof snapshotRect>, paired = false) {
-  const width = explanationPanelWidth(window.innerWidth, paired);
+function positionLookupAt(anchor: ReturnType<typeof snapshotRect>, companion: "component" | "detail" | null = null) {
+  const width = explanationPanelWidth(window.innerWidth, Boolean(companion));
+  const dictionaryWidth = companion === "component" ? Math.min(365, width) : width;
   const placement = placeExplanationPanels(anchor, anchor,
-    { width: paired ? Math.min(310, width) : width, height: paired ? 240 : 420 },
+    { width: companion === "component" ? dictionaryWidth : companion === "detail" ? Math.min(310, width) : width,
+      height: companion === "detail" ? 240 : 420 },
     { width: window.innerWidth, height: window.innerHeight },
-    paired ? { width, height: 420 } : undefined);
-  const dictionary = paired ? placement.whole! : placement.component;
+    companion ? { width: dictionaryWidth, height: 420 } : undefined);
+  const dictionary = companion ? placement.whole! : placement.component;
   lookupPosition.value = { x: dictionary.left, y: dictionary.top, width: dictionary.width, maxHeight: dictionary.maxHeight };
-  if (paired) {
+  if (companion) {
     const detail = placement.component;
-    detailPosition.value = { x: detail.left, y: detail.top, width: detail.width, maxHeight: detail.maxHeight };
+    componentPosition.value = { x: detail.left, y: detail.top, width: detail.width, maxHeight: detail.maxHeight };
+    detailPosition.value = componentPosition.value;
   }
 }
 
@@ -742,6 +733,58 @@ function updateDictionaryOrder(order: string[]) {
   dictionaryOrder.value = order;
   localStorage.setItem("kotoclip.reader.dictionaryOrder", JSON.stringify(order));
   if (activeQuery.value) activeQuery.value = orderedLookup(activeQuery.value);
+  if (componentQuery.value) componentQuery.value = orderedLookup(componentQuery.value);
+}
+
+function componentForHit(hit: TargetHit, range: [number, number]): TargetHit | null {
+  const outer = outerForHit(hit);
+  if (outer.target.decision === "selection") return null;
+  const child = outer.children.filter((target) => target.decision === "queryable"
+    && target.char_range[0] <= range[0] && range[1] <= target.char_range[1])
+    .sort((left, right) => (left.char_range[1] - left.char_range[0]) - (right.char_range[1] - right.char_range[0]))[0];
+  return child ? { key: `${outer.key}:${child.id}`, unit: outer.unit, target: child, range: child.char_range, children: [] } : null;
+}
+
+function openLookup(hit: TargetHit, source: HTMLElement, range: [number, number], detail: ReaderMorphologyDetail | null) {
+  const outer = outerForHit(hit);
+  const component = componentForHit(hit, range);
+  activeCapsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
+  positionLookupAt(snapshotRect(source.getBoundingClientRect()), component ? "component" : detail ? "detail" : null);
+  activeDetail.value = detail;
+  if (activeHit.value?.key !== outer.key || relatedWord.value) void queryTarget(outer);
+  if (componentHit.value?.key !== component?.key) {
+    componentHit.value = component;
+    componentQuery.value = null;
+    componentError.value = "";
+    componentWord.value = "";
+    componentSearch.value = null;
+    componentHistory.value = [];
+    if (component) void queryComponent(component);
+    else ++componentGeneration;
+  }
+}
+
+async function queryComponent(hit: TargetHit, selectedForm?: string) {
+  const generation = ++componentGeneration;
+  componentBusy.value = true;
+  componentError.value = "";
+  try {
+    const result = await nlpRequest<DictionaryLookup>({
+      command: "query_lookup_document",
+      session_id: props.session.session_id,
+      text_version: props.session.text_version,
+      generation: props.session.generation,
+      unit_id: hit.unit.unit.unit_id,
+      artifact_revision: hit.unit.unit.artifact_revision,
+      target_id: hit.target.id,
+      selected_form: selectedForm || null,
+    });
+    if (generation === componentGeneration && lookupIsCurrent(hit.unit)) componentQuery.value = orderedLookup(result);
+  } catch (error) {
+    if (generation === componentGeneration) componentError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (generation === componentGeneration) componentBusy.value = false;
+  }
 }
 
 function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphologyDetail | null) {
@@ -754,26 +797,24 @@ function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphol
   const source = event.currentTarget as HTMLElement;
   const capsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
   const anchor = snapshotRect(source.getBoundingClientRect());
-  if (activeHit.value?.key === hit.key && !relatedWord.value) {
+  const range: [number, number] = [Number(source.dataset.charStart), Number(source.dataset.charEnd)];
+  const outer = outerForHit(hit);
+  const component = componentForHit(hit, range);
+  if (activeHit.value?.key === outer.key && componentHit.value?.key === component?.key && !relatedWord.value) {
     activeCapsule = capsule;
     activeDetail.value = detail;
-    positionLookupAt(anchor, Boolean(detail));
+    positionLookupAt(anchor, component ? "component" : detail ? "detail" : null);
     return;
   }
   const open = () => {
     if (!capsule.isConnected || !lookupIsCurrent(hit.unit) || window.getSelection()?.isCollapsed === false) return;
     pendingCapsule = null;
     activeCapsule = capsule;
-    positionLookupAt(anchor, Boolean(detail));
-    activeHit.value = hit;
-    activeDetail.value = detail;
-    activeQuery.value = null;
-    queryError.value = "";
-    queryBusy.value = hit.target.decision !== "grammar";
-    if (hit.target.decision !== "grammar") void queryTarget(hit);
+    if (hit.target.decision !== "grammar") openLookup(hit, source, range, detail);
     else {
       ++queryGeneration;
-      outerHit.value = null;
+      ++componentGeneration;
+      componentHit.value = null;
       wordState.value = null;
       relatedWord.value = "";
       relatedSearch.value = null;
@@ -798,6 +839,7 @@ function insideLookupRegion(target: EventTarget | null): boolean {
   if (!(target instanceof Node)) return false;
   return Boolean(activeCapsule?.contains(target)
     || document.getElementById("reader-dictionary")?.contains(target)
+    || document.getElementById("reader-component-dictionary")?.contains(target)
     || document.querySelector(".reader-explanation")?.contains(target));
 }
 
@@ -826,32 +868,9 @@ function outerForHit(hit: TargetHit): TargetHit {
   };
 }
 
-function openChildren(hit: TargetHit, event: MouseEvent, range: [number, number]) {
-  if (window.getSelection()?.isCollapsed === false || !lookupIsCurrent(hit.unit)) return;
-  cancelCloseLookup();
-  const source = event.currentTarget as HTMLElement;
-  activeCapsule = source.closest<HTMLElement>(".reader-capsule") ?? source;
-  positionLookup(event);
-  clearTimeout(hoverTimer);
-  activeDetail.value = null;
-  const outer = outerForHit(hit);
-  if (outer.children.some((child) => child.decision === "queryable" && child.morpheme_ids.length === 1)
-    && outer.target.source_formation_ids.length === 0) {
-    innerOuterId.value = outer.key;
-    outerHit.value = outer;
-    const child = outer.children.find((child) => child.decision === "queryable" && child.morpheme_ids.length === 1
-      && child.char_range[0] <= range[0] && range[1] <= child.char_range[1]);
-    if (child) selectChild(child);
-    else void queryTarget(hit);
-    return;
-  }
-  void queryTarget(hit);
-}
-
 async function queryTarget(hit: TargetHit, selectedForm?: string) {
   if (!lookupIsCurrent(hit.unit)) return;
   const generation = ++queryGeneration;
-  outerHit.value = outerForHit(hit);
   activeHit.value = hit;
   activeQuery.value = null;
   wordState.value = null;
@@ -902,6 +921,7 @@ async function queryTarget(hit: TargetHit, selectedForm?: string) {
 
 function closeLookup() {
   ++queryGeneration;
+  ++componentGeneration;
   clearTimeout(hoverTimer);
   clearTimeout(closeTimer);
   closeTimer = undefined;
@@ -909,9 +929,14 @@ function closeLookup() {
   pendingCapsule = null;
   activeHit.value = null;
   activeDetail.value = null;
-  outerHit.value = null;
+  componentHit.value = null;
+  componentQuery.value = null;
+  componentBusy.value = false;
+  componentError.value = "";
+  componentWord.value = "";
+  componentSearch.value = null;
+  componentHistory.value = [];
   activeQuery.value = null;
-  innerOuterId.value = null;
   relatedSearch.value = null;
   relatedWord.value = "";
   lookupHistory.value = [];
@@ -919,19 +944,50 @@ function closeLookup() {
   wordState.value = null;
 }
 
-function returnToOuter() {
-  const outer = outerHit.value;
-  if (!outer) return;
-  innerOuterId.value = null;
-  activeDetail.value = null;
-  void queryTarget(outer);
-}
-
 function selectLookupForm(formId: string) {
   const form = activeQuery.value?.forms.find((item) => item.form_id === formId);
   if (!form || !activeHit.value) return;
   if (relatedSearch.value) activeQuery.value = orderedLookup(dictionaryLookupFromSearch(relatedSearch.value, relatedWord.value, formId));
   else void queryTarget(activeHit.value, form.display_form);
+}
+
+function selectComponentForm(formId: string) {
+  const form = componentQuery.value?.forms.find((item) => item.form_id === formId);
+  if (!form || !componentHit.value) return;
+  if (componentSearch.value) componentQuery.value = orderedLookup(dictionaryLookupFromSearch(componentSearch.value, componentWord.value, formId));
+  else void queryComponent(componentHit.value, form.display_form);
+}
+
+async function navigateComponent(word: string) {
+  if (!componentQuery.value) return;
+  const previous = { query: componentQuery.value, word: componentWord.value, search: componentSearch.value };
+  const generation = ++componentGeneration;
+  componentBusy.value = true;
+  componentError.value = "";
+  try {
+    const result = await nlpRequest<QueryOutput>({ command: "search", word });
+    if (generation !== componentGeneration) return;
+    componentHistory.value = [...componentHistory.value, previous];
+    componentWord.value = word;
+    componentSearch.value = result;
+    componentQuery.value = orderedLookup(dictionaryLookupFromSearch(result, word));
+  } catch (error) {
+    if (generation === componentGeneration) componentError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (generation === componentGeneration) componentBusy.value = false;
+  }
+}
+
+function backComponent() {
+  const previous = componentHistory.value[componentHistory.value.length - 1];
+  if (!previous) return;
+  ++componentGeneration;
+  componentHistory.value = componentHistory.value.slice(0, -1);
+  componentQuery.value = orderedLookup(previous.query);
+  componentWord.value = previous.word;
+  componentSearch.value = previous.search;
+  componentError.value = "";
+  componentBusy.value = false;
 }
 
 async function navigateLookup(word: string) {
@@ -964,18 +1020,6 @@ function backLookup() {
   relatedSearch.value = previous.search;
   queryError.value = "";
   queryBusy.value = false;
-}
-
-function selectChild(child: LookupTarget) {
-  if (!outerHit.value) return;
-  activeDetail.value = null;
-  void queryTarget({
-    ...outerHit.value,
-    key: `${outerHit.value.key}:${child.id}`,
-    target: child,
-    range: child.char_range,
-    children: [],
-  });
 }
 
 async function refreshWord(baseForm: string, reading: string, generation: number) {
@@ -1152,7 +1196,7 @@ function toggleEinkMode() {
 
     </div>
 
-    <TooltipPanel :show="Boolean(activeHit) && activeHit?.target.decision !== 'grammar'" :x="lookupPosition.x" :y="lookupPosition.y" :width="lookupPosition.width" :max-height="lookupPosition.maxHeight" :token="null" :headword="relatedWord || activeHit?.target.surface" :lookup="activeQuery" :loading="queryBusy" :can-go-back="lookupHistory.length > 0" :summary-visible="!relatedWord && Boolean(chainOverview)" panel-id="reader-dictionary" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="closeLookup" @back="backLookup" @select-form="selectLookupForm" @navigate="void navigateLookup($event)">
+    <TooltipPanel :show="Boolean(activeHit) && activeHit?.target.decision !== 'grammar'" :x="lookupPosition.x" :y="lookupPosition.y" :width="lookupPosition.width" :max-height="lookupPosition.maxHeight" :token="null" :headword="relatedWord || activeHit?.target.surface" :lookup="activeQuery" :loading="queryBusy" :can-go-back="lookupHistory.length > 0" :summary-visible="!relatedWord && Boolean(chainOverview)" :kind-label="componentHit ? '整体' : undefined" panel-id="reader-dictionary" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="closeLookup" @back="backLookup" @select-form="selectLookupForm" @navigate="void navigateLookup($event)">
       <template #summary>
         <div v-if="!relatedWord && chainOverview" class="reader-lookup__summary">
           <strong>{{ chainOverview.name }}</strong>
@@ -1163,10 +1207,6 @@ function toggleEinkMode() {
       </template>
       <template #context>
         <div v-if="activeHit" class="reader-lookup__context">
-          <div v-if="activeChildren.length" class="reader-lookup__children">
-            <button type="button" :aria-pressed="!relatedWord && activeHit.key === outerHit?.key" @click="returnToOuter">外围整体</button>
-            <button v-for="child in activeChildren" :key="child.id" type="button" :aria-pressed="!relatedWord && activeHit.target.id === child.id" @click="selectChild(child)">{{ child.surface }}</button>
-          </div>
           <div v-if="wordState && !relatedWord" class="reader-lookup__state">
             <span>{{ wordState.known ? '已知' : '未标记' }} · 曝光 {{ wordState.exposures }}</span>
             <button v-if="!wordState.known" type="button" @click="void markWord(true)">标为已知</button>
@@ -1176,7 +1216,17 @@ function toggleEinkMode() {
         </div>
       </template>
     </TooltipPanel>
-    <ReaderExplanationBubble v-if="activeDetail && !relatedWord" :show="Boolean(activeHit) && Boolean(activeDetail)" :x="detailPosition.x" :y="detailPosition.y" :width="detailPosition.width" :max-height="detailPosition.maxHeight" :title="activeDetail.title" :surface="activeDetail.surface" @enter="cancelCloseLookup" @leave="scheduleCloseLookup">
+    <TooltipPanel v-if="componentHit" :show="Boolean(activeHit)" :x="componentPosition.x" :y="componentPosition.y" :width="componentPosition.width" :max-height="componentPosition.maxHeight" :token="null" :headword="componentWord || componentHit.target.surface" :lookup="componentQuery" :loading="componentBusy" :can-go-back="componentHistory.length > 0" kind-label="组分" panel-id="reader-component-dictionary" @enter="cancelCloseLookup" @leave="scheduleCloseLookup" @close="closeLookup" @back="backComponent" @select-form="selectComponentForm" @navigate="void navigateComponent($event)">
+      <template #context>
+        <div v-if="activeDetail && !componentWord" class="reader-lookup__detail">
+          <strong>{{ activeDetail.title }}</strong>
+          <span v-if="activeDetail.description">{{ activeDetail.description }}</span>
+          <span v-if="activeDetail.normalizedForm">{{ activeDetail.normalizedForm }}</span>
+        </div>
+        <p v-if="componentError" class="reader-lookup__error">{{ componentError }}</p>
+      </template>
+    </TooltipPanel>
+    <ReaderExplanationBubble v-if="activeDetail && !relatedWord && !componentHit" :show="Boolean(activeHit) && Boolean(activeDetail)" :x="detailPosition.x" :y="detailPosition.y" :width="detailPosition.width" :max-height="detailPosition.maxHeight" :title="activeDetail.title" :surface="activeDetail.surface" @enter="cancelCloseLookup" @leave="scheduleCloseLookup">
       <p v-if="activeDetail.description">{{ activeDetail.description }}</p>
       <p v-if="activeDetail.normalizedForm">完整形式：{{ activeDetail.normalizedForm }}</p>
       <p v-if="activeDetail.candidates.length">可能含义：{{ activeDetail.candidates.join('、') }}</p>
@@ -1223,13 +1273,15 @@ function toggleEinkMode() {
 .reader-selection-action { position: fixed; z-index: 42; bottom: 56px; left: 50%; display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 13px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-primary); box-shadow: var(--shadow-sm); transform: translateX(-50%); color: var(--text-secondary); font-size: .75rem; }
 .reader-selection-action button { padding: 5px 9px; border: 0; border-radius: 999px; background: var(--accent-color); color: #fff; cursor: pointer; font-size: .74rem; }
 .reader-selection-action__cancel { background: transparent !important; color: var(--text-secondary) !important; }
-.reader-lookup__context { padding-bottom: 6px; border-bottom: 1px solid var(--border-color); }
+.reader-lookup__context { padding-bottom: 6px; }
 .reader-lookup__summary { display: grid; min-width: 0; gap: 2px; font-size: .75rem; }
 .reader-lookup__summary strong { color: var(--accent-color); }
 .reader-lookup__summary span, .reader-lookup__summary small { overflow-wrap: anywhere; color: var(--text-secondary); font-family: var(--font-ja); }
-.reader-lookup__children, .reader-lookup__state { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
-.reader-lookup__children button, .reader-lookup__state button { padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: .75rem; }
-.reader-lookup__children button:hover, .reader-lookup__children button[aria-pressed="true"], .reader-lookup__state button:hover { border-color: var(--accent-color); color: var(--accent-color); }
+.reader-lookup__detail { display: grid; gap: 2px; color: var(--text-secondary); font-size: .75rem; }
+.reader-lookup__detail strong { color: var(--accent-color); }
+.reader-lookup__state { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+.reader-lookup__state button { padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: .75rem; }
+.reader-lookup__state button:hover { border-color: var(--accent-color); color: var(--accent-color); }
 .reader-lookup__state { align-items: center; justify-content: space-between; color: var(--text-muted); font-size: .72rem; }
 .reader-lookup__error { margin: 8px 0; color: var(--novelty-high-text); font-size: .8rem; }
 @media (max-width: 700px) { .reader-view__chapter { display: none; } .reader-view__scroll { padding-inline: 16px; } }
