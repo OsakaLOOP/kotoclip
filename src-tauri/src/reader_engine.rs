@@ -26,6 +26,7 @@ impl ReaderEngine {
 
     pub fn library_path(&self) -> String { self.library.root().to_string_lossy().into_owned() }
     pub fn books(&self) -> Result<Vec<LibraryBookSummary>, String> { self.library.list_books().map_err(|error| error.to_string()) }
+    pub fn book_summary(&self, id: &str) -> Result<LibraryBookSummary, String> { self.library.book_summary(id).map_err(|error| error.to_string()) }
     pub fn backfill_resource_dimensions(&self) -> Result<(), String> { self.library.backfill_resource_dimensions().map_err(|error| error.to_string()) }
     pub fn import(&self, path: &str) -> Result<LibraryBook, String> { self.library.import_epub(path).map_err(|error| error.to_string()) }
 

@@ -30,6 +30,7 @@ const libraryLoading = ref(true);
 const libraryError = ref("");
 const importing = ref(false);
 const openingBookId = ref<string | null>(null);
+const openingSummary = ref<LibraryBookSummary | null>(null);
 const currentBook = ref<LibraryBook | null>(null);
 const currentDocument = ref<ReaderDocument | null>(null);
 const readerPreparing = ref(false);
@@ -42,6 +43,8 @@ const session = useDocumentSession();
 const sessionState = session.state;
 const readerProgress = computed(() => readerAnalysisProgress(sessionState.value, readerPreparing.value));
 const readerEntered = ref(false);
+const readerVisible = ref(false);
+const progressTransitioning = ref(false);
 const timingEnabled = ref(true);
 const timingSaving = ref(false);
 const readerReady = computed(() => {
@@ -51,8 +54,13 @@ const readerReady = computed(() => {
     unit.anchor.char_range[0] <= offset && offset < unit.anchor.char_range[1]
       && state.units[unit.id]?.stage === "complete" && state.units[unit.id]?.document)));
 });
-watch(readerReady, (ready) => { if (ready) readerEntered.value = true; });
-const readerAnalysisActive = computed(() => view.value === "reader" && (!readerReady.value || readerProgress.value.phase !== "completed"));
+watch(readerReady, (ready) => {
+  if (ready) {
+    readerEntered.value = true;
+    void revealReader();
+  }
+});
+const readerAnalysisActive = computed(() => view.value === "reader" && (!readerVisible.value || progressTransitioning.value || readerProgress.value.phase !== "completed"));
 const readerViewTransition = createViewTransitionGuard();
 let openGeneration = 0;
 
@@ -84,12 +92,6 @@ function exportTiming() {
   window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-function waitForOpening(milliseconds: number): Promise<void> {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ? Promise.resolve()
-    : new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-}
-
 async function transitionToReader() {
   const transitionDocument = document as Document & { startViewTransition?: (update: () => Promise<void>) => ManagedViewTransition };
   if (!transitionDocument.startViewTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -103,6 +105,31 @@ async function transitionToReader() {
   });
   readerViewTransition.track(transition);
   await transition.updateCallbackDone;
+}
+
+async function revealReader() {
+  if (readerVisible.value) return;
+  const generation = openGeneration;
+  await readerViewTransition.settled();
+  if (generation !== openGeneration || view.value !== "reader" || !readerReady.value) return;
+  const transitionDocument = document as Document & { startViewTransition?: (update: () => Promise<void>) => ManagedViewTransition };
+  if (!transitionDocument.startViewTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    readerVisible.value = true;
+    return;
+  }
+  progressTransitioning.value = true;
+  try {
+    const transition = transitionDocument.startViewTransition(async () => {
+      readerVisible.value = true;
+      await nextTick();
+    });
+    readerViewTransition.track(transition);
+    await transition.finished;
+  } catch {
+    if (generation === openGeneration && view.value === "reader") readerVisible.value = true;
+  } finally {
+    progressTransitioning.value = false;
+  }
 }
 
 async function loadLibrary() {
@@ -130,20 +157,29 @@ async function closeSession() {
 async function openBook(id: string) {
   const generation = ++openGeneration;
   openingBookId.value = id;
+  openingSummary.value = null;
+  readerVisible.value = false;
   libraryError.value = "";
+  const openingAnimation = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => window.setTimeout(resolve, 200));
   try {
-    await session.close();
-    readerEntered.value = false;
-    const [book] = await Promise.all([
-      readerRequest<LibraryBook>("reader_open_book", { id }),
-      waitForOpening(300),
+    const [summary] = await Promise.all([
+      readerRequest<LibraryBookSummary>("reader_book_summary", { id }),
+      session.close(),
+      openingAnimation,
     ]);
     if (generation !== openGeneration) return;
-    currentBook.value = book;
+    readerEntered.value = false;
+    openingSummary.value = summary;
     currentDocument.value = null;
     readerPreparing.value = true;
     await transitionToReader();
-    const [compiled] = await Promise.all([compileReaderDocumentAsync(book.markdown), waitForOpening(320)]);
+    if (generation !== openGeneration) return;
+    const book = await readerRequest<LibraryBook>("reader_open_book", { id });
+    if (generation !== openGeneration) return;
+    currentBook.value = book;
+    const compiled = await compileReaderDocumentAsync(book.markdown);
     if (generation !== openGeneration) return;
     currentDocument.value = compiled;
     await session.open(currentDocument.value.analysisText, "auto", book.id, book.progressOffset);
@@ -155,6 +191,7 @@ async function openBook(id: string) {
   } catch (error) {
     if (generation === openGeneration) {
       readerPreparing.value = false;
+      openingSummary.value = null;
       view.value = "library";
       libraryError.value = error instanceof Error ? error.message : String(error);
     }
@@ -360,7 +397,10 @@ async function leaveReader() {
   ++openGeneration;
   await readerViewTransition.finish();
   readerPreparing.value = false;
+  readerVisible.value = false;
+  progressTransitioning.value = false;
   openingBookId.value = null;
+  openingSummary.value = null;
   currentBook.value = null;
   currentDocument.value = null;
   selections.value = [];
@@ -394,7 +434,7 @@ onBeforeUnmount(() => { readerViewTransition.dispose(); void closeSession(); });
 <template>
   <div class="reader-app">
     <AppHeader v-if="view === 'library'" description="日语生肉阅读助手" />
-    <AppHeader v-else-if="!readerReady" show-back collapse-brand back-label="返回书架" :title="currentBook?.title || '文本阅读'" :description="currentDocument?.metadata.author || ''" @back="void leaveReader()" />
+    <AppHeader v-else-if="!readerVisible" show-back collapse-brand back-label="返回书架" :title="openingSummary?.title || currentBook?.title || '文本阅读'" :description="currentDocument?.metadata.author || ''" @back="void leaveReader()" />
     <LibraryHome
       v-if="view === 'library'"
       :books="books"
@@ -414,9 +454,9 @@ onBeforeUnmount(() => { readerViewTransition.dispose(); void closeSession(); });
       @reset-progress="void resetProgress($event)"
     />
 
-    <Transition name="analysis-view">
+    <Transition name="analysis-view" :css="!progressTransitioning">
     <ReaderDocumentView
-      v-if="view === 'reader' && currentDocument && sessionState && readerReady"
+      v-if="view === 'reader' && currentDocument && sessionState && readerVisible"
       :reader-document="currentDocument"
       :session="sessionState"
       :book="currentBook"
@@ -439,17 +479,17 @@ onBeforeUnmount(() => { readerViewTransition.dispose(); void closeSession(); });
     />
     </Transition>
 
-    <main v-if="view === 'reader'" class="reader-progress" :class="{ 'reader-progress--blocking': !readerReady }">
-      <div v-if="!readerReady" class="reader-progress__identity">
-        <div v-if="currentBook" class="reader-progress__cover">
-          <img v-if="coverUrl(currentBook)" :src="coverUrl(currentBook)" alt="" />
+    <main v-if="view === 'reader'" class="reader-progress" :class="{ 'reader-progress--blocking': !readerVisible }">
+      <div v-if="!readerVisible" class="reader-progress__identity">
+        <div v-if="openingSummary || currentBook" class="reader-progress__cover">
+          <img v-if="coverUrl((openingSummary || currentBook)!)" :src="coverUrl((openingSummary || currentBook)!)" alt="" />
           <BookMarked v-else :size="34" aria-hidden="true" />
         </div>
         <ReaderOpeningMark v-else />
         <div class="reader-progress__copy">
-          <strong>{{ currentBook?.title || currentDocument?.metadata.title || "文本阅读" }}</strong>
-          <span v-if="currentBook?.author">{{ currentBook.author }}</span>
-          <small v-if="currentBook">{{ currentBook.chapterCount }} 章 · {{ currentBook.totalCharacters.toLocaleString("zh-CN") }} 字</small>
+          <strong>{{ openingSummary?.title || currentBook?.title || currentDocument?.metadata.title || "文本阅读" }}</strong>
+          <span v-if="openingSummary?.author || currentBook?.author">{{ openingSummary?.author || currentBook?.author }}</span>
+          <small v-if="openingSummary || currentBook">{{ (openingSummary || currentBook)!.chapterCount }} 章 · {{ (openingSummary || currentBook)!.totalCharacters.toLocaleString("zh-CN") }} 字</small>
         </div>
       </div>
       <AnalysisProgressPanel :progress="readerProgress" :active="readerAnalysisActive" />
@@ -457,7 +497,7 @@ onBeforeUnmount(() => { readerViewTransition.dispose(); void closeSession(); });
         <button type="button" :disabled="timingSaving" @click="void toggleTiming()">{{ timingEnabled ? '关闭耗时记录' : '开启耗时记录' }}</button>
         <button type="button" @click="exportTiming">导出耗时</button>
       </div>
-      <button v-if="!readerReady && sessionState?.progress.failed" class="reader-progress__retry" type="button" @click="void session.control('retry_document', { unit_id: null })">重试分析</button>
+      <button v-if="!readerVisible && sessionState?.progress.failed" class="reader-progress__retry" type="button" @click="void session.control('retry_document', { unit_id: null })">重试分析</button>
     </main>
 
     <ReaderSurface :show="textInputOpen" variant="modal" title="打开文本" @close="textInputOpen = false">
@@ -488,7 +528,7 @@ onBeforeUnmount(() => { readerViewTransition.dispose(); void closeSession(); });
 .reader-progress__copy span { color: var(--text-secondary); font-size: .82rem; }
 .reader-progress__copy small { color: var(--text-muted); font-size: .72rem; }
 .reader-progress__retry { align-self: center; max-width: max-content; padding: 7px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
-.analysis-view-enter-active { transition: opacity 220ms ease, transform 260ms cubic-bezier(0, 0, .2, 1); }
+.analysis-view-enter-active { transition: opacity 200ms ease, transform 200ms cubic-bezier(0, 0, .2, 1); }
 .analysis-view-enter-from { opacity: 0; transform: translateY(12px); }
 @keyframes analysis-cover-halo { from { opacity: .7; transform: scale(.55); } to { opacity: 0; transform: scale(1); } }
 @keyframes analysis-content-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -501,6 +541,8 @@ onBeforeUnmount(() => { readerViewTransition.dispose(); void closeSession(); });
 </style>
 
 <style>
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 200ms; }
 ::view-transition-group(book-cover) { z-index: 40; animation-duration: 300ms; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
 ::view-transition-old(book-cover), ::view-transition-new(book-cover) { height: 100%; overflow: clip; border-radius: 4px; mix-blend-mode: normal; }
+::view-transition-group(reader-analysis-progress) { z-index: 50; animation-duration: 300ms; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
 </style>

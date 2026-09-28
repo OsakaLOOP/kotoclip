@@ -53,6 +53,12 @@ fn reader_library(state: State<'_, AppState>) -> Result<serde_json::Value, Strin
 }
 
 #[tauri::command]
+async fn reader_book_summary(state: State<'_, AppState>, id: String) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.book_summary(&id)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
 async fn reader_import(state: State<'_, AppState>, path: String) -> Result<kotoclip_core::library::LibraryBook, String> {
     let reader = state.reader.clone();
     tauri::async_runtime::spawn_blocking(move || reader.import(&path)).await.map_err(|error| error.to_string())?
@@ -176,7 +182,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept, cancel_external,
-            reader_library, reader_import, reader_open_book, reader_open_text, reader_close, reader_progress,
+            reader_library, reader_book_summary, reader_import, reader_open_book, reader_open_text, reader_close, reader_progress,
             reader_organize, reader_reset, reader_remove, reader_word, reader_mark, reader_expose,
             reader_selections, reader_save_selection, reader_delete_selection, reader_clear_selections])
         .run(tauri::generate_context!())

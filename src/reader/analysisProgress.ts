@@ -69,5 +69,5 @@ export function progressCurrentLabel(progress: AnalysisProgress): string {
 }
 
 export function isProgressIndeterminate(progress: AnalysisProgress): boolean {
-  return progress.mode === "starting" || progress.mode === "cache" || (progress.mode === "analysis" && progress.phase === "preparing");
+  return progress.mode === "starting" || progress.mode === "cache";
 }

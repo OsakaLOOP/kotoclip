@@ -144,13 +144,13 @@ interface ReaderAnalysisProgress {
 }
 ```
 
-后端保留 `progress.total`、`basic`、`complete`、`failed` 和 `pending` 字段；`basic` 表示仍在内存中保留完整产物的数量，`complete` 表示已经完成的数量。界面使用 `complete / total`，失败数量单独提示。
+后端保留 `progress.total`、`basic`、`complete`、`failed` 和 `pending` 字段；`basic` 表示仍在内存中保留完整产物的数量，`complete` 表示已经完成的数量。前端计算将准备分析计为固定 3 份，每个完整分析单元计为 1 份；界面仍显示简短阶段文字和分析单元数量。
 
-推荐的总进度计算为：
+总进度计算为：
 
 ```text
-preparing: 不定进度
-processing: completeUnits / totalUnits
+preparing: 0%
+processing: (3 + completeUnits) / (3 + totalUnits)
 ```
 
 首屏关联单元达到 `complete` 后进入阅读，全文继续按单元完成度更新。取消分析时，已发布产物保持可用；滚动到内存中已释放的范围时，从完整缓存恢复相应单元。

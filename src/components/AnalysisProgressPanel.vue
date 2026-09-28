@@ -93,6 +93,7 @@ const countText = computed(() => {
 .progress-work > span { white-space: nowrap; }
 .progress-work .progress-percent { margin-left: auto; }
 .analysis-progress-panel {
+  view-transition-name: reader-analysis-progress;
   width: 100%;
   padding: 14px 16px 12px;
   border: 1px solid var(--border-color);

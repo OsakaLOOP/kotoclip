@@ -215,7 +215,7 @@ function startCoverRipple(
   rippleTimer = window.setTimeout(() => {
     coverRipple.value = null;
     rippleTimer = undefined;
-  }, 320);
+  }, 170);
 }
 
 function openBook(event: MouseEvent, bookId: string, surface: BookSurface) {
@@ -1237,18 +1237,7 @@ h1 {
   opacity: 0;
   pointer-events: none;
   transform: scale(0);
-  animation: cover-ripple 300ms cubic-bezier(.4, 0, .2, 1);
-}
-
-.cover-opening::before {
-  position: absolute;
-  z-index: 0;
-  width: 22%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--accent-color) 18%, transparent);
-  content: "";
-  animation: cover-opening-wave 280ms cubic-bezier(0, 0, .2, 1) both;
+  animation: cover-ripple 150ms cubic-bezier(.4, 0, .2, 1);
 }
 
 .cover-opening :deep(.reader-opening-mark::before) { display: none; }
@@ -1488,12 +1477,6 @@ h1 {
   0% { opacity: 0.85; transform: scale(0); }
   70% { opacity: 0.25; }
   100% { opacity: 0; transform: scale(1); }
-}
-
-@keyframes cover-opening-wave {
-  0% { opacity: 0; transform: scale(0.25); }
-  28% { opacity: 0.42; }
-  100% { opacity: 0; transform: scale(7.5); }
 }
 
 @media (prefers-reduced-motion: reduce) {

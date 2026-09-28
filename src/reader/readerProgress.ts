@@ -13,17 +13,17 @@ export function readerAnalysisProgress(
       completed: 0,
       total: 0,
       percent: 0,
-      message: "准备正文",
+      message: "准备分析",
     };
   }
 
   const { analysis, cache, failed } = session.progress;
-  const completed = analysis.complete + cache.complete;
-  const total = analysis.total + cache.total;
-  const remaining = total - completed;
-  const weightedComplete = analysis.complete + cache.complete / 4;
-  const weightedTotal = analysis.total + cache.total / 4;
-  const phase = completed + failed < total ? "processing" : "completed";
+  const completedUnits = session.progress.complete;
+  const totalUnits = session.progress.total;
+  const completed = 3 + completedUnits;
+  const total = 3 + totalUnits;
+  const remaining = totalUnits - completedUnits;
+  const phase = completedUnits + failed < totalUnits ? "processing" : "completed";
   const message = failed > 0
     ? "部分单元失败"
     : session.paused
@@ -38,7 +38,7 @@ export function readerAnalysisProgress(
     phase,
     completed,
     total,
-    percent: weightedTotal > 0 ? Math.floor((weightedComplete / weightedTotal) * 1000) / 10 : 0,
+    percent: Math.floor((completed / total) * 1000) / 10,
     message,
     work: { analysis, cache },
   };

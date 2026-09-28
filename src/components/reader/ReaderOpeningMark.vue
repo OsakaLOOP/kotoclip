@@ -22,7 +22,7 @@ withDefaults(defineProps<{ size?: "small" | "large" }>(), { size: "large" });
   background: var(--accent-color);
   box-shadow: 0 4px 14px color-mix(in srgb, var(--text-primary) 20%, transparent);
   color: #fff;
-  animation: reader-opening-mark 280ms cubic-bezier(.4, 0, .2, 1) both;
+  animation: reader-opening-mark 200ms cubic-bezier(.4, 0, .2, 1) both;
 }
 
 .reader-opening-mark::before {
