@@ -200,7 +200,9 @@ const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
 
 const unavailableFormIds = computed(() => (
   (props.lookup?.forms ?? [])
-    .filter((form) => !formSupportsDictionary(form, activeDictionaryName.value))
+    .filter((form) => activeDictionaryName.value
+      ? !formSupportsDictionary(form, activeDictionaryName.value)
+      : !form.dictionaries.some((dictionary) => dictionary.available))
     .map((form) => form.form_id)
 ));
 
@@ -322,7 +324,11 @@ const showContextSummary = computed(() => Boolean(
 const matchHint = computed(() => {
   const evidence = activeEntry.value?.match_evidence;
   if (!evidence) return "";
-  return ({ explicit_alias: "词典别名", compatibility_alias: "兼容表记", reading_fallback: "读音回退", fuzzy: "模糊命中" } as Record<string, string>)[evidence.kind] ?? "";
+  if (evidence.reading_match === "conflict") {
+    const match = evidence.kind === "form_fallback" ? "表记匹配" : "其他读音";
+    return `${match} · 查询读音 ${props.lookup?.reading ?? ""}`;
+  }
+  return ({ explicit_alias: "词典别名", compatibility_alias: "兼容表记", reading_fallback: "同读音候选", fuzzy: "模糊命中" } as Record<string, string>)[evidence.kind] ?? "";
 });
 
 function relationLabel(relation: string) {
@@ -496,7 +502,7 @@ function handleDefinitionClick(event: MouseEvent) {
                   </div>
                 </article>
               </section>
-              <div v-else class="empty-state">当前表记在该词典中不可用。</div>
+              <div v-else class="empty-state">未找到「{{ activeForm?.display_form || sourceQuery }}」的词条。</div>
             </template>
           </div>
         </div>

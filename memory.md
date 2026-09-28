@@ -1,5 +1,7 @@
 # 开发入口记忆
 
+- 胶囊的词汇范围与作者注音查询由 `crates/kotoclip-core/src/dictionary/targets.rs` 生成；`src/reader/lookupPresentation.ts` 提供活用投影，`ReaderDocumentView.vue` 组合两者。问题样本的实测入口为 `scripts/inspect_lookup_cases.py`，通过本机词典索引和 CLI 查询保存证据。
+
 - 正文窗口划分入口位于 `crates/kotoclip-core/src/document_plan.rs`；P4 小说性能采集入口位于 `scripts/benchmark_p4_novel.py`，十段测量结果默认保存在 `.agents/analysis/p4-novel-10.json`。
 - 当前本机结构来源由 `crates/kotoclip-core/src/providers.rs` 与 `scripts/nlp_provider.py` 调度 GiNZA；KWJA 的离线适配器位于 `scripts/kwja_adapter.py`，不进入桌面来源配置。
 - P4 活用链与整体构词的实现契约位于 `docs/p4_morphology_formation.md`。

@@ -126,7 +126,7 @@ impl AnalysisEngine {
             .filter_map(Result::ok).map(|entry| resource_identity(&entry.path())).collect::<Vec<_>>();
         dictionaries.sort_by_key(Value::to_string);
         Ok(kotoclip_nlp::external::text_digest(&serde_json::to_string(&(
-            "kotoclip.complete-unit.v2", kotoclip_nlp::model::SCHEMA, env!("CARGO_PKG_VERSION"),
+            "kotoclip.complete-unit.v4", kotoclip_nlp::model::SCHEMA, env!("CARGO_PKG_VERSION"),
             &prepared.mapping.source_sha256, routing, range, self.external.lock().unwrap().cache_identity()?, resources, dictionaries,
         )).map_err(|e| e.to_string())?))
     }

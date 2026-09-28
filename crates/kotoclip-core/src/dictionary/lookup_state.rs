@@ -28,7 +28,7 @@ pub struct DictionaryFormSeed {
 }
 
 /// 从发现阶段的 occurrence 提取全局表记行。
-/// alias 与读音回退只提供发现证据；没有兼容读音的非精确表记不会进入矩阵。
+/// 精确表记保留异读记录；其他表记须有读音或显式别名依据。
 pub fn collect_form_seeds(
     query: &str,
     observed_form: Option<&str>,
@@ -57,9 +57,6 @@ pub fn collect_form_seeds(
             (Some(_), None) => true,
             (None, _) => true,
         };
-        if !reading_compatible {
-            continue;
-        }
         let base_score = entry
             .match_evidence
             .as_ref()
@@ -73,6 +70,7 @@ pub fn collect_form_seeds(
             }
             let query_exact = normalized == query_key;
             let observed_exact = observed_key.as_deref() == Some(normalized.as_str());
+            if !reading_compatible && !query_exact && !observed_exact { continue; }
             let surface_key = original_surface_identity(&form);
             let query_surface_exact = surface_key == query_surface_key;
             let observed_surface_exact =
@@ -144,19 +142,22 @@ pub fn collect_form_seeds(
         }
     }
 
-    let mut context_forms = vec![(query, "context:query", 2_000)];
+    let mut context_forms = vec![(query, "context:query", 3_000)];
     if let Some(observed) = observed_form {
-        context_forms.push((observed, "context:observed", 3_000));
+        context_forms.push((observed, "context:observed", 2_000));
     }
     for (surface_form, evidence, score) in context_forms {
         let normalized = normalize_form_identity(surface_form);
         let surface_key = original_surface_identity(surface_form);
-        let Some(seed) = seeds
-            .iter_mut()
-            .find(|seed| seed.normalized_form == normalized)
-        else {
-            continue;
-        };
+        if !seeds.iter().any(|seed| seed.normalized_form == normalized) {
+            seeds.push(DictionaryFormSeed {
+                display_form: surface_form.to_string(), normalized_form: normalized.clone(),
+                readings: Vec::new(), evidence: Vec::new(), score,
+                variants: Vec::new(), available_dictionary_names: Vec::new(),
+                order: seeds.len(), admissible: true,
+            });
+        }
+        let seed = seeds.iter_mut().find(|seed| seed.normalized_form == normalized).unwrap();
         push_unique(&mut seed.evidence, evidence.to_string());
         seed.score = seed.score.max(score);
         seed.admissible = true;
@@ -350,7 +351,9 @@ pub fn normalize_surface_identity(value: &str) -> String {
             _ => character,
         })
         .filter(|character| !character.is_whitespace())
-        .collect()
+        .collect::<String>()
+        .trim_matches(['-', '‐', '‑', '‒', '–', '—', '―'])
+        .to_string()
 }
 
 fn original_surface_identity(value: &str) -> String {

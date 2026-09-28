@@ -236,12 +236,13 @@ impl DictionaryEngine {
         self.complete_form_availability(
             &mut seeds,
             &discovery_entries,
-            effective_reading,
             &mut timing,
         );
-        seeds.retain(|seed| !seed.available_dictionary_names.is_empty());
         let forms = lookup_state::build_form_groups(seeds, &dictionary_names);
-        let selected_form_id = lookup_state::selected_form_id(&forms, selected_form);
+        let preferred = selected_form.or_else(|| is_kana_query(query).then(|| forms.iter()
+            .find(|form| form.dictionaries.iter().any(|dictionary| dictionary.available))
+            .map(|form| form.form_id.as_str())).flatten());
+        let selected_form_id = lookup_state::selected_form_id(&forms, preferred);
         let mut entries = Vec::new();
         if let Some(active_form) = lookup_state::selected_form(&forms, selected_form_id.as_deref())
         {
@@ -262,7 +263,6 @@ impl DictionaryEngine {
                 .filter(|entry| {
                     is_substantive(entry)
                         && lookup_state::entry_matches_form(entry, &active_form.display_form)
-                        && lookup_state::entry_matches_reading(entry, effective_reading)
                 })
             {
                 if seen.insert(entry.occurrence_id.clone()) {
@@ -272,7 +272,7 @@ impl DictionaryEngine {
             let normalized_reading = effective_reading.map(normalize_reading);
             rank_entries(
                 &mut entries,
-                &active_form.display_form,
+                query,
                 normalized_reading.as_deref(),
                 pos,
             );
@@ -547,10 +547,8 @@ impl DictionaryEngine {
         for database_index in 0..self.databases.len() {
             let direct_in_database =
                 self.lookup_exact_in_database(database_index, headword, "exact_form", &mut timing);
-            let has_content = direct_in_database.iter().any(|entry| {
-                !matches!(entry.entry_kind.as_str(), "navigation" | "redirect")
-                    && (!entry.senses.is_empty() || !entry.sections.is_empty())
-            });
+            let has_content = direct_in_database.iter().any(|entry|
+                is_substantive(entry) && lookup_state::entry_matches_reading(entry, effective_reading));
             for entry in direct_in_database.iter().cloned() {
                 if seen.insert(entry.occurrence_id.clone()) {
                     direct.push(entry);
@@ -578,11 +576,7 @@ impl DictionaryEngine {
                 ));
             }
             let has_compatible_alias = alias_entries.iter().any(|entry| {
-                is_substantive(entry)
-                    && normalized_reading.as_deref().is_none_or(|requested| {
-                        entry.reading.as_deref().map(normalize_reading).as_deref()
-                            == Some(requested)
-                    })
+                is_substantive(entry) && lookup_state::entry_matches_reading(entry, effective_reading)
             });
             for entry in alias_entries {
                 if seen.insert(entry.occurrence_id.clone()) {
@@ -594,17 +588,13 @@ impl DictionaryEngine {
             }
             if let Some(reading) = effective_reading {
                 for candidate in reading_candidates(headword, reading) {
-                    let mut reading_entries = self.query_key_in_database(
+                    let reading_entries = self.query_key_in_database(
                         database_index,
                         READING_KEY,
                         &candidate,
                         "reading_fallback",
                         &mut timing,
                     );
-                    reading_entries.retain(|entry| {
-                        is_kana_query(headword)
-                            || crate::dictionary::lookup_state::entry_matches_form(entry, headword)
-                    });
                     let found = !reading_entries.is_empty();
                     for entry in reading_entries {
                         if seen.insert(entry.occurrence_id.clone()) {
@@ -629,22 +619,6 @@ impl DictionaryEngine {
             if !direct.is_empty() {
                 for entry in &mut direct {
                     entry.match_type = "compatibility_alias".to_string();
-                }
-            }
-        }
-        if direct.is_empty() {
-            if let Some(reading) = effective_reading {
-                for candidate in reading_candidates(headword, reading) {
-                    direct =
-                        self.query_key(READING_KEY, &candidate, "reading_fallback", &mut timing);
-                    if !is_kana_query(headword) {
-                        direct.retain(|entry| {
-                            crate::dictionary::lookup_state::entry_matches_form(entry, headword)
-                        });
-                    }
-                    if !direct.is_empty() {
-                        break;
-                    }
                 }
             }
         }
@@ -686,7 +660,6 @@ impl DictionaryEngine {
         &self,
         seeds: &mut [lookup_state::DictionaryFormSeed],
         discovery_entries: &[DictEntry],
-        reading: Option<&str>,
         timing: &mut DictionaryLookupTiming,
     ) {
         for seed in seeds {
@@ -696,7 +669,6 @@ impl DictionaryEngine {
                     entry.dict_name == database.name
                         && is_substantive(entry)
                         && lookup_state::entry_matches_form(entry, &seed.display_form)
-                        && lookup_state::entry_matches_reading(entry, reading)
                 });
                 let mut available = discovered;
                 for variant in &seed.variants {
@@ -714,7 +686,6 @@ impl DictionaryEngine {
                         .any(|entry| {
                             is_substantive(&entry)
                                 && lookup_state::entry_matches_form(&entry, &seed.display_form)
-                                && lookup_state::entry_matches_reading(&entry, reading)
                         });
                 }
                 if available && !seed.available_dictionary_names.contains(&database.name) {
@@ -799,7 +770,7 @@ impl DictionaryEngine {
                            ORDER BY r.rank LIMIT 1) \
                    FROM entry_keys k JOIN entries e ON e.id = k.entry_id \
                    WHERE k.kind = ?1 AND k.normalized_value = ?2 \
-                   ORDER BY k.rank, e.id LIMIT 10";
+                   ORDER BY k.rank, e.id";
         let database = &self.databases[database_index];
         let Ok(mut statement) = database.connection.prepare(sql) else {
             return Vec::new();
@@ -848,7 +819,7 @@ impl DictionaryEngine {
                        FROM entry_keys r \
                        WHERE r.entry_id = e.id AND r.kind = 1 \
                        ORDER BY r.rank LIMIT 1) \
-                   FROM entries e WHERE e.headword = ?1 ORDER BY e.id LIMIT 10";
+                   FROM entries e WHERE e.headword = ?1 ORDER BY e.id";
         let database = &self.databases[database_index];
         let Ok(mut statement) = database.connection.prepare(sql) else {
             return Vec::new();
@@ -1095,7 +1066,7 @@ fn compatibility_redirect_target(headword: &str) -> Option<&'static str> {
     }
 }
 
-fn rank_entries(
+pub(super) fn rank_entries(
     entries: &mut [DictEntry],
     query: &str,
     requested: Option<&str>,
@@ -1175,7 +1146,11 @@ fn rank_entries(
             }
         }
         entry.is_preferred = false;
+        let matches_form = lookup_state::entry_matches_form(entry, query);
         if let Some(evidence) = entry.match_evidence.as_mut() {
+            evidence.kind = if matches_form && reading_match == "conflict" { "form_fallback" }
+                else if !matches_form && reading_match == "exact" { "reading_fallback" }
+                else { &entry.match_type }.to_string();
             evidence.query_form = query.to_string();
             evidence.requested_reading = requested.map(str::to_string);
             evidence.reading_match = reading_match.to_string();
@@ -1185,10 +1160,13 @@ fn rank_entries(
         }
     }
     entries.sort_by(|left, right| {
+        let reading_order = |entry: &DictEntry| match entry.match_evidence.as_ref().map(|evidence| evidence.reading_match.as_str()) {
+            Some("exact") => 0, Some("conflict") => 2, _ => 1,
+        };
         let left_score = left.match_evidence.as_ref().map_or(0, |value| value.score);
         let right_score = right.match_evidence.as_ref().map_or(0, |value| value.score);
-        right_score
-            .cmp(&left_score)
+        reading_order(left).cmp(&reading_order(right))
+            .then_with(|| right_score.cmp(&left_score))
             .then_with(|| left.dict_name.cmp(&right.dict_name))
             .then_with(|| left.source_record_index.cmp(&right.source_record_index))
     });
@@ -1303,7 +1281,7 @@ fn dictionary_sense_tags(
     )
 }
 
-fn normalize_reading(value: &str) -> String {
+pub(super) fn normalize_reading(value: &str) -> String {
     normalize_form(value)
         .chars()
         .flat_map(|character| {
@@ -1335,7 +1313,7 @@ fn normalize_form(value: &str) -> String {
         .collect()
 }
 
-fn is_kana_query(value: &str) -> bool {
+pub(super) fn is_kana_query(value: &str) -> bool {
     let mut has_kana = false;
     for character in normalize_form(value).chars() {
         if ('\u{3041}'..='\u{30ff}').contains(&character) || character == 'ー' {

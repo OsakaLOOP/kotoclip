@@ -135,6 +135,10 @@ pub fn run() {
                 let data = std::env::var_os("KOTOCLIP_DATA_DIR")
                     .map(PathBuf::from)
                     .unwrap_or(app.path().app_data_dir()?);
+                let bundled = |relative: &str| {
+                    let local = portable.join(relative);
+                    if local.exists() { local } else { resources.join("_up_").join(relative) }
+                };
                 let dictionary = |name: &str| {
                     let override_name = format!("KOTOCLIP_UNIDIC_{}", name.to_uppercase());
                     std::env::var_os(override_name)
@@ -144,9 +148,7 @@ pub fn run() {
                             if local.is_file() {
                                 local
                             } else {
-                                resources
-                                    .join("_up_/experiments/unidic-source")
-                                    .join(format!("unidic-{name}-202512.vibrato.dic"))
+                                bundled(&format!("experiments/unidic-source/unidic-{name}-202512.vibrato.dic"))
                             }
                         })
                 };
@@ -164,8 +166,8 @@ pub fn run() {
                     dictionary_sources: sources,
                     dictionaries: data.join("dicts"),
                     provider_config: data.join("providers.local.json"),
-                    provider_script: resources.join("_up_/scripts/nlp_provider.py"),
-                    provider_defaults: kotoclip_core::providers::ProviderSettings::development(&portable),
+                    provider_script: bundled("scripts/nlp_provider.py"),
+                    provider_defaults: kotoclip_core::providers::ProviderSettings::portable(&portable),
                 }
             };
             let data = std::env::var_os("KOTOCLIP_DATA_DIR").map(PathBuf::from).unwrap_or(app.path().app_data_dir()?);

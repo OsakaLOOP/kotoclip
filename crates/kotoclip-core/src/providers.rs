@@ -40,6 +40,16 @@ impl ProviderSettings {
             analysis_timing_enabled: true,
         }
     }
+
+    /// 便携包默认值：随程序分发的 Python 运行时位于 `python/python.exe`。
+    pub fn portable(root: &Path) -> Self {
+        let mut settings = Self::development(root);
+        let bundled = root.join("python/python.exe");
+        if bundled.is_file() {
+            settings.ginza.python = bundled;
+        }
+        settings
+    }
 }
 
 struct Worker {

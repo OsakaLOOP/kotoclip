@@ -114,7 +114,8 @@ fn unique_forms(forms: impl IntoIterator<Item = QueryForm>) -> Vec<QueryForm> {
     result
 }
 fn form(value: String, reading: Option<String>, kind: &str) -> QueryForm {
-    QueryForm { kind: kind.into(), form: value, reading_field: reading.as_ref().map(|_| "lookup_evidence".into()), reading }
+    QueryForm { kind: kind.into(), form: value, reading_field: reading.as_ref().map(|_|
+        if kind == "author_ruby" { "author_ruby" } else { "lookup_evidence" }.into()), reading }
 }
 fn lexical(hint: &DictionaryMetadataHint) -> bool {
     hint.lexical_role == "independent" && hint.compatibility != "incompatible" && hint.grammar_functions.is_empty()
@@ -138,9 +139,38 @@ fn token_forms(token: &MorphemeToken) -> Vec<QueryForm> {
         .filter(|query| inflected || query.reading.as_ref().zip(token.reading.as_ref()).is_none_or(|(reading, observed)|
             lookup_state::normalize_reading_identity(reading) == lookup_state::normalize_reading_identity(observed)))
         .cloned().collect::<Vec<_>>();
-    forms.sort_by_key(|query| match query.kind.as_str() { "base" => 0, "lemma" => 1, _ => 2 });
+    forms.sort_by_key(|query| if !inflected && query.kind == "observed" { 0 }
+        else { match query.kind.as_str() { "base" => 1, "lemma" => 2, _ => 3 } });
     if forms.is_empty() { forms.push(form(token.surface.clone(), token.reading.clone(), "observed")); }
     unique_forms(forms)
+}
+
+// 作者注音覆盖完整范围，间隙沿用假名正文或完整 token 的读音。
+fn annotated_reading(document: &UnifiedDocument, chars: &[char], range: [usize; 2]) -> Option<String> {
+    let annotations = document.ruby_validations.iter().filter(|ruby| overlaps(range, ruby.char_range)).collect::<Vec<_>>();
+    if annotations.is_empty() || annotations.iter().any(|ruby| !contains(range, ruby.char_range)) { return None; }
+    let gap_reading = |gap: [usize; 2]| -> Option<String> {
+        if chars[gap[0]..gap[1]].iter().all(|c| matches!(c, 'ぁ'..='ゖ' | 'ァ'..='ヺ' | 'ー')) {
+            return Some(surface(chars, gap));
+        }
+        let mut cursor = gap[0];
+        let mut reading = String::new();
+        for token in document.morphemes.iter().filter(|token| overlaps(gap, token.char_range)) {
+            if token.char_range[0] != cursor || token.char_range[1] > gap[1] { return None; }
+            reading.push_str(token.reading.as_deref()?);
+            cursor = token.char_range[1];
+        }
+        (cursor == gap[1]).then_some(reading)
+    };
+    let mut cursor = range[0];
+    let mut reading = String::new();
+    for ruby in annotations {
+        reading.push_str(&gap_reading([cursor, ruby.char_range[0]])?);
+        reading.push_str(&ruby.ruby_reading);
+        cursor = ruby.char_range[1];
+    }
+    reading.push_str(&gap_reading([cursor, range[1]])?);
+    Some(kotoclip_nlp::prepare::normalize_reading(&reading))
 }
 
 pub fn metadata(entry: &DictEntry) -> DictionaryMetadataHint {
@@ -185,7 +215,9 @@ pub fn build(
     let lexical_chains = document.morphology.chains.iter().filter(|chain| chain.role == MorphologyRole::Lexical).collect::<Vec<_>>();
     let root_cores = lexical_chains.iter().flat_map(|chain| projected_core_indices(chain, tokens)).collect::<HashSet<_>>();
     let mut functional_members = document.morphology.chains.iter().flat_map(|chain| chain.morpheme_indices.iter().copied()
-        .filter(|index| chain.role == MorphologyRole::Functional || !chain.core_morpheme_indices.contains(index)))
+        .filter(|index| (chain.role == MorphologyRole::Functional
+            && (chain.parent_chain_id.is_some() || chain.morpheme_indices.len() > 1 || !chain.operators.is_empty()))
+            || !chain.core_morpheme_indices.contains(index)))
         .filter(|index| !root_cores.contains(index)).collect::<HashSet<_>>();
     for chain in &lexical_chains {
         let projected = projected_core_indices(chain, tokens).into_iter().collect::<HashSet<_>>();
@@ -204,7 +236,7 @@ pub fn build(
     let mut grammar = Vec::new();
     for (index, token) in tokens.iter().enumerate() {
         if !overlaps(anchor_range, token.char_range) { continue; }
-        let functional = functional_members.contains(&index) || (matches!(token.pos[0].as_deref(), Some("助詞" | "助動詞")) && !root_cores.contains(&index));
+        let functional = functional_members.contains(&index);
         if functional || matches!(token.pos[0].as_deref(), Some("記号" | "補助記号" | "空白")) || token.surface.chars().any(char::is_whitespace) {
             excluded.push(token.char_range);
             if functional {
@@ -253,7 +285,9 @@ pub fn build(
         candidate.cores.push(chain.chain_id.clone());
         if chain.lookup_form.ends_with("する") || first.pos[0].as_deref() == Some("動詞") { candidate.pos.as_mut().unwrap().major = "動詞".into(); }
     }
-    let atoms = candidates.values().filter(|candidate| candidate.members.len() == 1).cloned().collect::<Vec<_>>();
+    let atoms = candidates.values().filter(|candidate| candidate.members.len() == 1
+        && !matches!(candidate.pos.as_ref().map(|pos| pos.major.as_str()), Some("助詞" | "助動詞")))
+        .cloned().collect::<Vec<_>>();
     for start in 0..atoms.len() {
         for end in start + 1..atoms.len() {
             if atoms[end - 1].range[1] != atoms[end].range[0] { break; }
@@ -272,6 +306,32 @@ pub fn build(
                 cores: Vec::new(), formations: Vec::new(), pos: atoms[start].pos.clone(), minimal: false, hints: Vec::new(), reason: String::new() });
         }
     }
+    for ruby in &document.ruby_validations {
+        let mut range = ruby.char_range;
+        // 注音止于汉字时，保留同一名词 token 内的送假名，如本卦返《ほんけがえ》り。
+        if let Some(last) = tokens.iter().find(|token| token.char_range[0] < range[1] && range[1] < token.char_range[1]
+            && matches!(token.pos[0].as_deref(), Some("名詞" | "接尾辞"))
+            && chars[range[1]..token.char_range[1]].iter().all(|c| matches!(c, 'ぁ'..='ゖ' | 'ァ'..='ヺ' | 'ー'))) {
+            range[1] = last.char_range[1];
+        }
+        if !valid(range) { continue; }
+        let members = tokens.iter().enumerate().filter(|(_, token)| overlaps(range, token.char_range))
+            .map(|(index, _)| index).collect::<Vec<_>>();
+        if members.is_empty() || members.iter().any(|index| matches!(tokens[*index].pos[0].as_deref(), Some("動詞" | "形容詞" | "助動詞" | "助詞"))) { continue; }
+        let Some(reading) = annotated_reading(document, &chars, range) else { continue; };
+        let candidate = candidates.entry(range).or_insert_with(|| Candidate { range, forms: Vec::new(), members,
+            cores: Vec::new(), formations: Vec::new(), pos: None, minimal: true, hints: Vec::new(), reason: String::new() });
+        candidate.forms.insert(0, form(surface(&chars, range), Some(reading), "author_ruby"));
+        candidate.minimal = true;
+    }
+    for candidate in candidates.values_mut() {
+        if candidate.forms.iter().any(|query| query.form == surface(&chars, candidate.range)) {
+            if let Some(reading) = annotated_reading(document, &chars, candidate.range) {
+                candidate.forms.insert(0, form(surface(&chars, candidate.range), Some(reading), "author_ruby"));
+                candidate.forms = unique_forms(std::mem::take(&mut candidate.forms));
+            }
+        }
+    }
     for node in &document.formation.nodes {
         if let Some(candidate) = candidates.get_mut(&node.char_range) {
             candidate.formations.push(node.id.clone());
@@ -286,17 +346,18 @@ pub fn build(
             if !exact.contains(&query.form) && !candidate.minimal { continue; }
             let key = (query.form.clone(), query.reading.clone(), candidate.pos.clone());
             let entries = lookup_cache.entry(key).or_insert_with(||
-                dictionary.lookup_profiled_with_pos(&query.form, query.reading.as_deref(), candidate.pos.as_ref()).0);
+                dictionary.lookup_exact_form_profiled_with_pos(&query.form, query.reading.as_deref(), candidate.pos.as_ref()).0);
             for entry in entries {
                 let hint = supplied_metadata.iter().find(|hint| hint.entry_id == entry.occurrence_id).cloned().unwrap_or_else(|| metadata(entry));
-                if !candidate.minimal && !lookup_state::entry_matches_form(entry, &query.form) { continue; }
+                if !lookup_state::entry_matches_form(entry, &query.form) { continue; }
                 if hint.compatibility == "incompatible" { continue; }
                 if !seen.insert(entry.occurrence_id.clone()) { continue; }
                 if scope_matches(&hint, &chars, candidate.range) { candidate.hints.push(hint); }
             }
         }
         candidate.hints.sort_by_key(|hint| (!lexical(hint), hint.compatibility != "compatible", hint.entry_kind != "proper_name", !hint.usage_tags.is_empty()));
-        candidate.reason = if candidate.hints.iter().any(lexical) { "dictionary_lexical_entry" }
+        candidate.reason = if candidate.forms.first().is_some_and(|query| query.kind == "author_ruby") { "author_ruby" }
+            else if candidate.hints.iter().any(lexical) { "dictionary_lexical_entry" }
             else if candidate.hints.iter().any(|hint| hint.compatibility == "incompatible") { "incompatible" }
             else if !candidate.hints.is_empty() { "nonlexical_entry" } else { "no_entry" }.into();
     }
@@ -304,8 +365,10 @@ pub fn build(
     let mut outer = Vec::new();
     let mut cursor = anchor_range[0];
     while cursor < anchor_range[1] {
-        let next = candidates.iter().filter(|candidate| candidate.range[0] == cursor && candidate.hints.iter().any(lexical))
-            .max_by_key(|candidate| (candidate.range[1], !candidate.cores.is_empty(), !candidate.formations.is_empty()))
+        let next = candidates.iter().filter(|candidate| candidate.range[0] == cursor && candidate.minimal && candidate.reason == "author_ruby")
+            .max_by_key(|candidate| candidate.range[1])
+            .or_else(|| candidates.iter().filter(|candidate| candidate.range[0] == cursor && candidate.hints.iter().any(lexical))
+            .max_by_key(|candidate| (candidate.range[1], !candidate.cores.is_empty(), !candidate.formations.is_empty())))
             .or_else(|| candidates.iter().filter(|candidate| candidate.range[0] == cursor && candidate.minimal)
                 .max_by_key(|candidate| (!candidate.cores.is_empty(), candidate.range[1])));
         if let Some(candidate) = next {
@@ -337,7 +400,7 @@ pub fn build(
     let default_target_id = outer.iter().max_by_key(|target| (target.decision == "accepted", target.char_range[1] - target.char_range[0], std::cmp::Reverse(target.char_range[0])))
         .map(|target| target.id.clone());
     Ok(LookupTargetGroup { schema: "kotoclip.lookup-targets.v1".into(), source_revision: kotoclip_nlp::external::text_digest(
-        &serde_json::to_string(&(&document.id, &document.morphology, &document.formation)).map_err(|error| error.to_string())?),
+        &serde_json::to_string(&(&document.id, &document.morphology, &document.formation, &document.ruby_validations)).map_err(|error| error.to_string())?),
         anchor_range, outer_targets: outer, inner_targets: inner, candidate_targets: pending, grammar_targets: grammar, excluded_ranges: excluded,
         coverage_status: "complete".into(), default_target_id })
 }
@@ -364,37 +427,52 @@ pub fn query(dictionary: &DictionaryEngine, request: &MatrixRequest, selected_fo
         reading: request.lookup_forms.first().and_then(|form| form.reading.clone()), pos: request.pos_constraints.clone(), selected_form_id: None,
         mode: "lookup_target".into(), forms: Vec::new(), dictionary_names: dictionary.names(), entries: Vec::new(), timing: None };
     let mut entries = Vec::new();
+    let mut selected_by_reading = false;
     for form in &request.lookup_forms {
         let matrix = dictionary.lookup_matrix_profiled(&form.form, Some(&request.observed_form), form.reading.as_deref(), request.pos_constraints.as_ref(), selected_form, &request.dictionary_order);
-        if merged.selected_form_id.is_none() && !matrix.entries.is_empty() {
-            merged.selected_form_id = matrix.forms.iter().find(|group| group.normalized_form == lookup_state::normalize_form_identity(&form.form))
-                .map(|group| group.form_id.clone()).or(matrix.selected_form_id.clone());
+        let explicit_match = matrix.forms.iter().find(|group| group.normalized_form == lookup_state::normalize_form_identity(&form.form)
+            && group.dictionaries.iter().any(|dictionary| dictionary.available)
+            && form.reading.as_ref().is_none_or(|reading| group.readings.iter().any(|actual|
+                lookup_state::normalize_reading_identity(actual) == lookup_state::normalize_reading_identity(reading))));
+        if merged.selected_form_id.is_none() {
+            merged.selected_form_id = matrix.selected_form_id.clone();
             merged.reading = form.reading.clone();
+            selected_by_reading = super::lookup::is_kana_query(&form.form) && explicit_match.is_none();
+        }
+        // 同音发现之后仍须考虑来源明确提供的词元，如ある → 有る。
+        if selected_by_reading {
+            if let Some(group) = explicit_match {
+                if selected_form.is_none() { merged.selected_form_id = Some(group.form_id.clone()); }
+                merged.query = form.form.clone();
+                merged.reading = form.reading.clone();
+                selected_by_reading = false;
+            }
         }
         for group in matrix.forms {
             if let Some(existing) = merged.forms.iter_mut().find(|existing| existing.form_id == group.form_id) {
                 for reading in group.readings { if !existing.readings.contains(&reading) { existing.readings.push(reading); } }
+                for evidence in group.evidence { if !existing.evidence.contains(&evidence) { existing.evidence.push(evidence); } }
                 for variant in group.variants { if !existing.variants.contains(&variant) { existing.variants.push(variant); } }
                 for availability in group.dictionaries { if let Some(current) = existing.dictionaries.iter_mut().find(|current| current.dictionary_name == availability.dictionary_name) { current.available |= availability.available; } }
             } else { merged.forms.push(group); }
         }
         for entry in matrix.entries {
-            if (request.metadata_entry_ids.is_empty() || request.metadata_entry_ids.contains(&entry.occurrence_id))
-                && !entries.iter().any(|existing: &DictEntry| existing.occurrence_id == entry.occurrence_id) { entries.push(entry); }
+            if !entries.iter().any(|existing: &DictEntry| existing.occurrence_id == entry.occurrence_id) { entries.push(entry); }
         }
     }
     if let Some(selected) = selected_form { merged.selected_form_id = merged.forms.iter().find(|form| form.form_id == selected || form.display_form == selected).map(|form| form.form_id.clone()); }
     if let Some(active) = merged.forms.iter().find(|form| Some(&form.form_id) == merged.selected_form_id.as_ref()) {
         for variant in &active.variants {
-            for entry in dictionary.lookup_exact_form_profiled_with_pos(&variant.surface_form, None, request.pos_constraints.as_ref()).0 {
-                if !entries.iter().any(|existing| existing.occurrence_id == entry.occurrence_id)
-                    && request.lookup_forms.iter().any(|form| lookup_state::entry_matches_reading(&entry, form.reading.as_deref()))
-                    && (request.metadata_entry_ids.is_empty() || request.metadata_entry_ids.contains(&entry.occurrence_id)) {
+            for entry in dictionary.lookup_exact_form_profiled_with_pos(&variant.surface_form, merged.reading.as_deref(), request.pos_constraints.as_ref()).0 {
+                if !entries.iter().any(|existing| existing.occurrence_id == entry.occurrence_id) {
                     entries.push(entry);
                 }
             }
         }
         merged.entries = entries.into_iter().filter(|entry| lookup_state::entry_matches_form(entry, &active.display_form)).collect();
+        let normalized_reading = merged.reading.as_deref().map(super::lookup::normalize_reading);
+        super::lookup::rank_entries(&mut merged.entries, &merged.query, normalized_reading.as_deref(), request.pos_constraints.as_ref());
+        merged.entries = super::aggregate::sort_definitions(merged.entries, &request.dictionary_order);
     }
     merged
 }

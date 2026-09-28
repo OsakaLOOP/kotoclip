@@ -292,7 +292,9 @@ function createUnitLookup(unitPlan: AnalysisUnit, unit: UnitUpdate, group: Looku
     sessionId: props.session.session_id, generation: props.session.generation,
     unit, group, contextOffset: offset, range: unitPlan.anchor.char_range,
     capsules: [
-      ...group.outer_targets.filter((target) => target.decision === "accepted" && target.morpheme_ids.length > 1)
+      ...group.outer_targets.filter((target) => target.decision === "accepted" && target.morpheme_ids.length > 1
+        || target.reason === "author_ruby"
+        || !target.lexical_core_ids.length && target.morpheme_ids.length === 1)
         .map((target) => ({ key: `${unit.unit_id}:${target.id}`, range: globalRange(target.char_range) })),
       ...readerCapsuleRanges(unit.document!)
         .filter((capsule) => capsule.range[0] >= start && capsule.range[1] <= end)
