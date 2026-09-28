@@ -315,20 +315,9 @@ const activeHeaderTags = computed(() => [
   ...(activeEntry.value?.header.usage_tags ?? []),
 ]);
 
-const activeHeaderFacts = computed(() => {
-  const header = activeEntry.value?.header;
-  if (!header) return [];
-  const facts = header.pronunciations.map((item) => `${item.label} ${item.value}`);
-  if (header.origin) facts.push(`词源 ${header.origin}`);
-  if (header.historical_reading) facts.push(`历史读音 ${header.historical_reading}`);
-  for (const form of header.scoped_forms) {
-    if (form.form !== header.display_form) {
-      facts.push(`${form.kind === "original" ? "原綴" : "异表记"} ${form.form}`);
-    }
-  }
-  if (header.short_note) facts.push(header.short_note);
-  return facts;
-});
+const showContextSummary = computed(() => Boolean(
+  showMorphologySummary.value && morphologyChain.value && isSourceQuery.value || props.summaryVisible,
+));
 
 const matchHint = computed(() => {
   const evidence = activeEntry.value?.match_evidence;
@@ -426,7 +415,7 @@ function handleDefinitionClick(event: MouseEvent) {
       <div class="tooltip-content" :data-explanation-content="panelId">
         <header class="tooltip-header">
           <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')"><ChevronLeft :size="20" aria-hidden="true" /></button>
-          <div class="header-grid">
+          <div class="header-grid" :class="{ 'header-grid--single': !showContextSummary }">
             <div class="headword-block">
               <div class="headword-line">
                 <span class="base-form">{{ activeHeadword }}</span>
@@ -440,8 +429,7 @@ function handleDefinitionClick(event: MouseEvent) {
                 <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
               </div>
             </div>
-            <div v-if="activeHeaderFacts.length || showMorphologySummary && morphologyChain && isSourceQuery || summaryVisible" class="header-morphology" aria-label="当前词条与本句信息">
-              <div v-for="fact in activeHeaderFacts" :key="fact" class="header-fact">{{ fact }}</div>
+            <div v-if="showContextSummary" class="header-morphology" aria-label="本句形态信息">
               <slot name="summary" />
               <template v-if="showMorphologySummary && morphologyChain && isSourceQuery">
                 <strong v-if="morphologyChain.surface_form !== sourceLemma" class="current-form">{{ morphologyChain.surface_form }}</strong>
@@ -521,6 +509,7 @@ function handleDefinitionClick(event: MouseEvent) {
 .tooltip-panel { position: fixed; z-index: 1000; box-sizing: border-box; width: min(480px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ui); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
 .tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: flex-start; margin: -14px -14px 6px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 76%, transparent 100%); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent); backdrop-filter: blur(18px); }
 .header-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, .9fr) minmax(160px, 1.1fr); gap: 12px; align-items: start; }
+.header-grid--single { grid-template-columns: minmax(0, 1fr); }
 .headword-block { min-width: 0; }
 .headword-line { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: baseline; }
 .headword-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
@@ -532,7 +521,6 @@ function handleDefinitionClick(event: MouseEvent) {
 .header-tag, .match-hint { display: inline-flex; align-items: center; border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent); border-radius: 4px; padding: 0 5px; color: var(--text-secondary); font: 700 .66rem/1.55 var(--font-ui); }
 .header-tag[data-kind="usage"], .header-tag[data-kind="entry-kind"], .match-hint { background: var(--accent-light); color: var(--accent-color); }
 .header-morphology { min-width: 0; display: grid; gap: 4px; padding-left: 11px; border-left: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent); }
-.header-fact { color: var(--text-secondary); font: .7rem/1.4 var(--font-ui); }
 .current-form { color: var(--text-primary); font-size: .88rem; line-height: 1.35; }
 .morphology-step { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px; align-items: baseline; font-size: .68rem; line-height: 1.35; }
 .morphology-step b { color: #6c5ab0; font: 700 .66rem var(--font-ui); }
