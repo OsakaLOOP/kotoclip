@@ -48,6 +48,27 @@ pub struct DictEntry {
     pub match_evidence: Option<DictionaryMatchEvidence>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw_definition: Option<String>,
+    #[serde(default)]
+    pub content_loaded: bool,
+    #[serde(default)]
+    pub has_definition: bool,
+    #[serde(default)]
+    pub metadata_pos_tags: Vec<DictionaryTag>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DictionaryEntryPreview {
+    pub occurrence_suffix: String,
+    pub source_record_index: usize,
+    pub entry_kind: String,
+    pub header: DictionaryOccurrenceHeader,
+    pub links: Vec<DictionaryLink>,
+    #[serde(default)]
+    pub style_profile: String,
+    #[serde(default)]
+    pub adapter_diagnostics: DictionaryAdapterDiagnostics,
+    pub has_definition: bool,
+    pub metadata_pos_tags: Vec<DictionaryTag>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]

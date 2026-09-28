@@ -286,6 +286,12 @@ impl AnalysisEngine {
         if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|error| error.to_string())?); }
         serde_json::to_value(crate::dictionary::targets::query(dictionary.as_ref().unwrap(), request, selected_form)).map_err(|error| error.to_string())
     }
+
+    pub fn query_entry(&self, entry_key: &str) -> Result<Value, String> {
+        let mut dictionary = self.dictionary.lock().unwrap();
+        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|error| error.to_string())?); }
+        serde_json::to_value(dictionary.as_ref().unwrap().load_entry(entry_key)?).map_err(|error| error.to_string())
+    }
 }
 
 fn resource_identity(path: &Path) -> Value {

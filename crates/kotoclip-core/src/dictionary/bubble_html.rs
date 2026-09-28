@@ -866,6 +866,9 @@ mod tests {
             adapter_diagnostics: DictionaryAdapterDiagnostics::default(),
             match_evidence: None,
             raw_definition: None,
+            content_loaded: true,
+            has_definition: true,
+            metadata_pos_tags: Vec::new(),
         }
     }
 

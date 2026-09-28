@@ -9,7 +9,7 @@ defineProps<{
   surface: string;
 }>();
 
-const emit = defineEmits<{ enter: []; leave: [] }>();
+const emit = defineEmits<{ enter: [event: PointerEvent]; leave: [event: PointerEvent] }>();
 </script>
 
 <template>
@@ -20,8 +20,8 @@ const emit = defineEmits<{ enter: []; leave: [] }>();
       :style="{ left: `${x}px`, top: `${y}px`, width: `${width}px`, maxHeight: `${maxHeight}px` }"
       role="dialog"
       :aria-label="title"
-      @pointerenter="emit('enter')"
-      @pointerleave="emit('leave')"
+      @pointerenter="emit('enter', $event)"
+      @pointerleave="emit('leave', $event)"
       @wheel.stop
     >
       <header>

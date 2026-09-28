@@ -104,6 +104,7 @@ pub enum Request {
     LookupDocument { session_id: String, text_version: String, generation: u64, unit_id: String, artifact_revision: u64, range: [usize; 2] },
     QueryLookupDocument { session_id: String, text_version: String, generation: u64, unit_id: String, artifact_revision: u64, target_id: String, #[serde(default)] selected_form: Option<String> },
     QueryTarget { analysis_id: String, target_id: String, #[serde(default)] selected_form: Option<String> },
+    QueryEntry { entry_key: String },
     Search {
         word: String,
     },
@@ -256,6 +257,7 @@ impl AnalysisService {
                 let document = self.engine.document(&analysis_id)?;
                 self.engine.query_target(&document, &target_id, selected_form.as_deref())
             }
+            Request::QueryEntry { entry_key } => self.engine.query_entry(&entry_key),
             Request::Search { word } => {
                 let word = word.trim();
                 if word.is_empty() || word.chars().count() > 100 {

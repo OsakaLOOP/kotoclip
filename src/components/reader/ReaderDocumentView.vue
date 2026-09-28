@@ -20,7 +20,7 @@ import { buildReaderRows, rowCharacterOffset, rowIndexForOffset, type ReaderRow,
 import { readingEstimate, type ReaderAppearance } from "../../reader/reading";
 import { estimateReaderRow, resolveReaderRowMeasurement } from "../../reader/virtualization";
 import { dictionaryLookupFromSearch, readerCapsuleRanges, readerChains, readerMorphologyHits, type ReaderMorphologyDetail, type ReaderMorphologyHit } from "../../reader/lookupPresentation";
-import { explanationPanelWidth, placeExplanationPanels, snapshotRect } from "../../explanation/geometry";
+import { explanationPanelWidth, isWithinPanelGroupTriangle, measureIntrinsicPanel, placeExplanationPanels, snapshotRect, type Size } from "../../explanation/geometry";
 import { EXPLANATION_CLOSE_GRACE_MS } from "../../explanation/closeGrace";
 import { resourceKey, type LibraryBook, type LibraryResource } from "../../reader/library";
 import type { ReaderDocument, ReaderTextBlock } from "../../reader/document";
@@ -159,6 +159,8 @@ const activeDetail = ref<ReaderMorphologyDetail | null>(null);
 const activeQuery = shallowRef<DictionaryLookup | null>(null);
 const queryBusy = ref(false);
 const queryError = ref("");
+const lookupAnchor = shallowRef<ReturnType<typeof snapshotRect> | null>(null);
+const lookupCompanion = ref<"component" | "detail" | null>(null);
 const lookupPosition = ref({ x: 12, y: 72, width: 420, maxHeight: 480 });
 const detailPosition = ref({ x: 12, y: 12, width: 310, maxHeight: 240 });
 const componentPosition = ref({ x: 12, y: 12, width: 420, maxHeight: 480 });
@@ -183,6 +185,7 @@ let mergedPointer: { x: number; y: number } | null = null;
 const exposedTargets = new Set<string>();
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
+let lookupPositionObserver: ResizeObserver | null = null;
 let activeCapsule: HTMLElement | null = null;
 let pendingCapsule: HTMLElement | null = null;
 let progressTimer: ReturnType<typeof setTimeout> | undefined;
@@ -705,14 +708,30 @@ function exportSelections() {
   emit("exportSelections");
 }
 
-function positionLookupAt(anchor: ReturnType<typeof snapshotRect>, companion: "component" | "detail" | null = null) {
+function intrinsicLookupPanelSize(panelId: string, fallback: Size): Size {
+  const panel = document.getElementById(panelId);
+  return panel ? measureIntrinsicPanel(panel) : fallback;
+}
+
+function refreshLookupPosition() {
+  const anchor = lookupAnchor.value;
+  if (!anchor) return;
+  const companion = lookupCompanion.value;
   const width = explanationPanelWidth(window.innerWidth, Boolean(companion));
   const dictionaryWidth = companion === "component" ? Math.min(365, width) : width;
-  const placement = placeExplanationPanels(anchor, anchor,
-    { width: companion === "component" ? dictionaryWidth : companion === "detail" ? Math.min(310, width) : width,
-      height: companion === "detail" ? 240 : 420 },
+  const dictionarySize = intrinsicLookupPanelSize("reader-dictionary", { width: dictionaryWidth, height: 420 });
+  const companionSize = companion === "component"
+    ? intrinsicLookupPanelSize("reader-component-dictionary", { width: dictionaryWidth, height: 420 })
+    : companion === "detail"
+      ? intrinsicLookupPanelSize("reader-morphology-detail", { width: Math.min(310, width), height: 240 })
+      : undefined;
+  const placement = placeExplanationPanels(
+    anchor,
+    anchor,
+    companionSize ?? dictionarySize,
     { width: window.innerWidth, height: window.innerHeight },
-    companion ? { width: dictionaryWidth, height: 420 } : undefined);
+    companion ? dictionarySize : undefined,
+  );
   const dictionary = companion ? placement.whole! : placement.component;
   lookupPosition.value = { x: dictionary.left, y: dictionary.top, width: dictionary.width, maxHeight: dictionary.maxHeight };
   if (companion) {
@@ -720,6 +739,30 @@ function positionLookupAt(anchor: ReturnType<typeof snapshotRect>, companion: "c
     componentPosition.value = { x: detail.left, y: detail.top, width: detail.width, maxHeight: detail.maxHeight };
     detailPosition.value = componentPosition.value;
   }
+}
+
+function observeLookupPosition() {
+  lookupPositionObserver?.disconnect();
+  const elements = [
+    document.getElementById("reader-dictionary"),
+    document.getElementById("reader-component-dictionary"),
+    document.getElementById("reader-morphology-detail"),
+    document.querySelector('[data-explanation-content="reader-dictionary"]'),
+    document.querySelector('[data-explanation-content="reader-component-dictionary"]'),
+  ].filter((element): element is Element => Boolean(element));
+  if (!elements.length) return;
+  lookupPositionObserver = new ResizeObserver(refreshLookupPosition);
+  elements.forEach((element) => lookupPositionObserver?.observe(element));
+}
+
+function positionLookupAt(anchor: ReturnType<typeof snapshotRect>, companion: "component" | "detail" | null = null) {
+  lookupAnchor.value = anchor;
+  lookupCompanion.value = companion;
+  refreshLookupPosition();
+  void nextTick().then(() => {
+    refreshLookupPosition();
+    observeLookupPosition();
+  });
 }
 
 function orderedLookup(lookup: DictionaryLookup): DictionaryLookup {
@@ -827,7 +870,8 @@ function scheduleLookup(hit: TargetHit, event: MouseEvent, detail: ReaderMorphol
   hoverTimer = setTimeout(open, 60);
 }
 
-function scheduleCloseLookup() {
+function scheduleCloseLookup(event?: PointerEvent) {
+  if (event && insideLookupRegion(event.relatedTarget, event.clientX, event.clientY)) return;
   if (closeTimer !== undefined) return;
   closeTimer = setTimeout(closeLookup, EXPLANATION_CLOSE_GRACE_MS);
 }
@@ -837,12 +881,32 @@ function cancelCloseLookup() {
   closeTimer = undefined;
 }
 
-function insideLookupRegion(target: EventTarget | null): boolean {
-  if (!(target instanceof Node)) return false;
-  return Boolean(activeCapsule?.contains(target)
+function pointerInLookupTriangle(x: number, y: number): boolean {
+  const panels = [
+    ...document.querySelectorAll<HTMLElement>('[data-explanation-panel^="reader-"]'),
+    document.getElementById("reader-morphology-detail"),
+  ].filter((panel): panel is HTMLElement => Boolean(panel));
+  return panels.some((panel, index) => panels.slice(index + 1).some((other) => isWithinPanelGroupTriangle(
+    x,
+    y,
+    snapshotRect(panel.getBoundingClientRect()),
+    snapshotRect(other.getBoundingClientRect()),
+  )));
+}
+
+function insideLookupRegion(target: EventTarget | null, x?: number, y?: number): boolean {
+  const insideElement = target instanceof Node && Boolean(activeCapsule?.contains(target)
     || document.getElementById("reader-dictionary")?.contains(target)
     || document.getElementById("reader-component-dictionary")?.contains(target)
-    || document.querySelector(".reader-explanation")?.contains(target));
+    || document.getElementById("reader-morphology-detail")?.contains(target));
+  return insideElement || (x !== undefined && y !== undefined && pointerInLookupTriangle(x, y));
+}
+
+function monitorLookupPointer(event: PointerEvent) {
+  if (!activeHit.value) return;
+  const target = document.elementFromPoint(event.clientX, event.clientY);
+  if (insideLookupRegion(target, event.clientX, event.clientY)) cancelCloseLookup();
+  else scheduleCloseLookup(event);
 }
 
 function leaveCapsule(event: PointerEvent) {
@@ -850,7 +914,7 @@ function leaveCapsule(event: PointerEvent) {
     clearTimeout(hoverTimer);
     pendingCapsule = null;
   }
-  if (activeHit.value && !insideLookupRegion(event.relatedTarget)) scheduleCloseLookup();
+  if (activeHit.value && !insideLookupRegion(event.relatedTarget, event.clientX, event.clientY)) scheduleCloseLookup(event);
 }
 
 function leavePart() {
@@ -927,6 +991,9 @@ function closeLookup() {
   clearTimeout(hoverTimer);
   clearTimeout(closeTimer);
   closeTimer = undefined;
+  lookupPositionObserver?.disconnect();
+  lookupAnchor.value = null;
+  lookupCompanion.value = null;
   activeCapsule = null;
   pendingCapsule = null;
   activeHit.value = null;
@@ -1109,6 +1176,7 @@ onMounted(() => {
   document.addEventListener("pointermove", moveMerge);
   document.addEventListener("pointerup", finishMerge);
   document.addEventListener("pointercancel", cancelMerge);
+  document.addEventListener("pointermove", monitorLookupPointer);
   document.addEventListener("pointerdown", dismissLookup);
   document.addEventListener("keydown", handleEscape);
   window.addEventListener("resize", closeLookup);
@@ -1121,11 +1189,13 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   disposed = true;
+  lookupPositionObserver?.disconnect();
   window.removeEventListener("blur", cancelMerge);
   cancelMerge();
   document.removeEventListener("pointermove", moveMerge);
   document.removeEventListener("pointerup", finishMerge);
   document.removeEventListener("pointercancel", cancelMerge);
+  document.removeEventListener("pointermove", monitorLookupPointer);
   closeLookup();
   document.removeEventListener("pointerdown", dismissLookup);
   document.removeEventListener("keydown", handleEscape);
@@ -1228,7 +1298,7 @@ function toggleEinkMode() {
         <p v-if="componentError" class="reader-lookup__error">{{ componentError }}</p>
       </template>
     </TooltipPanel>
-    <ReaderExplanationBubble v-if="activeDetail && !relatedWord && !componentHit" :show="Boolean(activeHit) && Boolean(activeDetail)" :x="detailPosition.x" :y="detailPosition.y" :width="detailPosition.width" :max-height="detailPosition.maxHeight" :title="activeDetail.title" :surface="activeDetail.surface" @enter="cancelCloseLookup" @leave="scheduleCloseLookup">
+    <ReaderExplanationBubble v-if="activeDetail && !relatedWord && !componentHit" id="reader-morphology-detail" :show="Boolean(activeHit) && Boolean(activeDetail)" :x="detailPosition.x" :y="detailPosition.y" :width="detailPosition.width" :max-height="detailPosition.maxHeight" :title="activeDetail.title" :surface="activeDetail.surface" @enter="cancelCloseLookup" @leave="scheduleCloseLookup">
       <p v-if="activeDetail.description">{{ activeDetail.description }}</p>
       <p v-if="activeDetail.normalizedForm">完整形式：{{ activeDetail.normalizedForm }}</p>
       <p v-if="activeDetail.candidates.length">可能含义：{{ activeDetail.candidates.join('、') }}</p>

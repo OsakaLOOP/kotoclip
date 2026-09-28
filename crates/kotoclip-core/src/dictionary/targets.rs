@@ -174,14 +174,14 @@ fn annotated_reading(document: &UnifiedDocument, chars: &[char], range: [usize; 
 }
 
 pub fn metadata(entry: &DictEntry) -> DictionaryMetadataHint {
-    let tags = entry.header.pos_tags.iter().map(|tag| tag.label.clone())
+    let tags = entry.header.pos_tags.iter().chain(entry.metadata_pos_tags.iter()).map(|tag| tag.label.clone())
         .chain(entry.senses.iter().flat_map(|sense| sense.tags.iter().filter(|tag| tag.kind == "pos").map(|tag| tag.label.clone())))
         .collect::<Vec<_>>();
     let functional = tags.iter().any(|tag| tag.contains("助動") || tag.contains("助詞"));
     let component = tags.iter().any(|tag| tag.contains("接尾") || tag.contains("接頭"))
         || matches!(entry.entry_kind.as_str(), "prefix" | "suffix" | "bound_morpheme" | "kanji");
     let substantive = !matches!(entry.entry_kind.as_str(), "navigation" | "redirect")
-        && (!entry.senses.is_empty() || !entry.sections.is_empty() || !entry.content_blocks.is_empty());
+        && (entry.has_definition || !entry.senses.is_empty() || !entry.sections.is_empty() || !entry.content_blocks.is_empty());
     DictionaryMetadataHint {
         entry_id: entry.occurrence_id.clone(), headword: entry.headword.clone(),
         matched_forms: std::iter::once(entry.header.display_form.clone()).chain(entry.header.canonical_form.clone())

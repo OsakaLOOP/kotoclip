@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { ChevronLeft } from "@lucide/vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
+import { nlpRequest } from "../services/nlp";
 import {
   dictionaryShortcutSettings,
   matchesDictionaryShortcut,
@@ -88,7 +89,7 @@ const displayableEntries = computed(() => {
     const hasManagedRelation = entry.links.some((link) => !["candidate", "redirect"].includes(link.relation));
     return entry.entry_kind !== "navigation"
       && entry.entry_kind !== "redirect"
-      && (entry.senses.length || entry.sections.length || entry.content_blocks.length || hasManagedRelation);
+      && (entry.has_definition || entry.senses.length || entry.sections.length || entry.content_blocks.length || hasManagedRelation);
   });
 });
 
@@ -125,7 +126,7 @@ function meaningfulEntries(entries: DictEntry[]) {
   const withContent = entries.filter((entry) => (
     entry.entry_kind !== "navigation"
     && entry.entry_kind !== "redirect"
-    && (entry.senses.length || entry.sections.length || entry.content_blocks.length)
+    && (entry.has_definition || entry.senses.length || entry.sections.length || entry.content_blocks.length)
   ));
   return withContent.length ? withContent : entries;
 }
@@ -220,6 +221,43 @@ const activeEntry = computed(() => {
     ?? undefined;
 });
 
+const loadedEntries = shallowRef(new Map<string, DictEntry[]>());
+const entryLoading = ref(false);
+const entryError = ref("");
+const displayedEntry = computed(() => {
+  const entry = activeEntry.value;
+  if (!entry) return undefined;
+  const loaded = loadedEntries.value.get(entry.entry_key);
+  return loaded?.find((candidate) => candidate.occurrence_id === entry.occurrence_id)
+    ?? loaded?.find((candidate) => candidate.headword === entry.headword && candidate.reading === entry.reading)
+    ?? loaded?.[0]
+    ?? entry;
+});
+
+watch([activeEntry, () => props.show], async ([entry, show], _previous, onCleanup) => {
+  if (!show || !entry || entry.content_loaded || loadedEntries.value.has(entry.entry_key)) {
+    entryLoading.value = false;
+    if (!entry || !show) entryError.value = "";
+    return;
+  }
+  let cancelled = false;
+  onCleanup(() => { cancelled = true; });
+  entryLoading.value = true;
+  entryError.value = "";
+  try {
+    const result = await nlpRequest<DictEntry[]>({ command: "query_entry", entry_key: entry.entry_key });
+    if (!cancelled) {
+      const nextEntries = new Map(loadedEntries.value);
+      nextEntries.set(entry.entry_key, result);
+      loadedEntries.value = nextEntries;
+    }
+  } catch (error) {
+    if (!cancelled) entryError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (!cancelled) entryLoading.value = false;
+  }
+}, { immediate: true });
+
 function entryKindLabel(kind: string) {
   return ({ lexical: "词汇", phrase: "短语", surname: "姓氏", kanji: "汉字条", prefix: "接头成分", suffix: "接尾成分", bound_morpheme: "拘束成分", onomatopoeia: "拟声", navigation: "导航", redirect: "跳转" } as Record<string, string>)[kind] ?? "词条";
 }
@@ -293,16 +331,16 @@ const showsSourceIdentity = computed(() => isSourceQuery.value && (
 ));
 
 const activeHeadword = computed(() => {
-  return (activeEntry.value?.header.display_form
-    || activeEntry.value?.headword)
+  return (displayedEntry.value?.header.display_form
+    || displayedEntry.value?.headword)
     ?? activeForm.value?.display_form
     ?? props.lookup?.query
     ?? sourceLemma.value;
 });
 
 const activeReading = computed(() => {
-  const reading = activeEntry.value?.header.reading
-    || activeEntry.value?.reading
+  const reading = displayedEntry.value?.header.reading
+    || displayedEntry.value?.reading
     || (activeForm.value?.readings.length === 1 ? activeForm.value.readings[0] : "")
     || (showsSourceIdentity.value
       ? props.token?.bunsetsu.head_word.reading
@@ -313,8 +351,8 @@ const activeReading = computed(() => {
 });
 
 const activeHeaderTags = computed(() => [
-  ...(activeEntry.value?.header.pos_tags ?? []),
-  ...(activeEntry.value?.header.usage_tags ?? []),
+  ...(displayedEntry.value?.header.pos_tags ?? []),
+  ...(displayedEntry.value?.header.usage_tags ?? []),
 ]);
 
 const showContextSummary = computed(() => Boolean(
@@ -430,7 +468,7 @@ function handleDefinitionClick(event: MouseEvent) {
               <div class="headword-meta">
                 <span v-for="tag in activeHeaderTags" :key="`${tag.kind}:${tag.label}`" class="header-tag" :data-kind="tag.kind">{{ tag.label }}</span>
                 <span v-if="!activeHeaderTags.length && isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
-                <span v-if="activeEntry && activeEntry.entry_kind !== 'lexical'" class="header-tag" data-kind="entry-kind">{{ entryKindLabel(activeEntry.entry_kind) }}</span>
+                <span v-if="displayedEntry && displayedEntry.entry_kind !== 'lexical'" class="header-tag" data-kind="entry-kind">{{ entryKindLabel(displayedEntry.entry_kind) }}</span>
                 <span v-if="matchHint" class="match-hint">{{ matchHint }}</span>
                 <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
               </div>
@@ -485,14 +523,15 @@ function handleDefinitionClick(event: MouseEvent) {
             :class="{ 'is-loading': loading }"
             :style="loading ? { height: loadingContentHeight } : undefined"
           >
-            <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
+            <LoadingSkeleton v-if="loading || entryLoading" class="definition-skeleton" variant="dictionary" />
+            <div v-else-if="entryError" class="empty-state">{{ entryError }}</div>
             <template v-else>
-              <section v-if="activeEntry" class="dictionary-group">
-                <article :key="activeEntry.occurrence_id" class="dictionary-entry">
+              <section v-if="displayedEntry" class="dictionary-group">
+                <article :key="displayedEntry.occurrence_id" class="dictionary-entry">
                   <div class="entry-body">
-                    <DictionaryContent :entry="activeEntry" @navigate="emit('navigate', $event)" />
-                    <div v-if="managedLinkGroups(activeEntry).length" class="managed-relations">
-                      <details v-for="relationGroup in managedLinkGroups(activeEntry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
+                    <DictionaryContent :entry="displayedEntry" @navigate="emit('navigate', $event)" />
+                    <div v-if="managedLinkGroups(displayedEntry).length" class="managed-relations">
+                      <details v-for="relationGroup in managedLinkGroups(displayedEntry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
                         <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
                         <div class="relation-list">
                           <button v-for="link in relationGroup.links" :key="`${link.relation}:${link.target}`" type="button" :data-relation="link.relation" @click="emit('navigate', link.target)">{{ link.label || link.target }}</button>

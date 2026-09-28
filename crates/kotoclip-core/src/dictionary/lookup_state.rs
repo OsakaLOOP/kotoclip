@@ -57,6 +57,9 @@ pub fn collect_form_seeds(
             (Some(_), None) => true,
             (None, _) => true,
         };
+        if reading_key.is_some() && !reading_compatible {
+            continue;
+        }
         let base_score = entry
             .match_evidence
             .as_ref()
@@ -70,7 +73,6 @@ pub fn collect_form_seeds(
             }
             let query_exact = normalized == query_key;
             let observed_exact = observed_key.as_deref() == Some(normalized.as_str());
-            if !reading_compatible && !query_exact && !observed_exact { continue; }
             let surface_key = original_surface_identity(&form);
             let query_surface_exact = surface_key == query_surface_key;
             let observed_surface_exact =
@@ -148,6 +150,9 @@ pub fn collect_form_seeds(
     }
     for (surface_form, evidence, score) in context_forms {
         let normalized = normalize_form_identity(surface_form);
+        if !seeds.is_empty() && !seeds.iter().any(|seed| seed.normalized_form == normalized) {
+            continue;
+        }
         let surface_key = original_surface_identity(surface_form);
         if !seeds.iter().any(|seed| seed.normalized_form == normalized) {
             seeds.push(DictionaryFormSeed {
@@ -167,7 +172,9 @@ pub fn collect_form_seeds(
             .find(|variant| original_surface_identity(&variant.surface_form) == surface_key)
         {
             push_unique(&mut variant.evidence, evidence.to_string());
-            variant.score = variant.score.max(score);
+            if evidence == "context:observed" {
+                variant.score = variant.score.max(score);
+            }
             if let Some(reading) = reading_key.as_ref() {
                 push_unique(&mut variant.readings, reading.clone());
             }
@@ -506,6 +513,9 @@ mod tests {
                 ..Default::default()
             }),
             raw_definition: None,
+            content_loaded: true,
+            has_definition: true,
+            metadata_pos_tags: Vec::new(),
         }
     }
 
