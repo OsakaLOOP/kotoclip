@@ -41,12 +41,14 @@ impl ProviderSettings {
         }
     }
 
-    /// 便携包默认值：随程序分发的 Python 运行时位于 `python/python.exe`。
+    /// 便携包默认值：随程序分发的 Python 运行时位于 `python` 目录。
     pub fn portable(root: &Path) -> Self {
         let mut settings = Self::development(root);
-        let bundled = root.join("python/python.exe");
-        if bundled.is_file() {
-            settings.ginza.python = bundled;
+        for bundled in [root.join("python/python.exe"), root.join("python/Scripts/python.exe")] {
+            if bundled.is_file() {
+                settings.ginza.python = bundled;
+                break;
+            }
         }
         settings
     }

@@ -115,12 +115,28 @@ function Create-InsiderPackage {
         }
     }
 
+    $minimalGinza = Join-Path $workspace "experiments\ginza-minimal"
+    $minimalPython = Join-Path $minimalGinza "Scripts\python.exe"
+    $minimalManifest = Join-Path $workspace "experiments\ginza-minimal-manifest.json"
+    if (-not (Test-Path -LiteralPath $minimalPython) -or -not (Test-Path -LiteralPath $minimalManifest)) {
+        & python "scripts\build_ginza_minimal_env.py" --source "experiments\ginza311" --output "experiments\ginza-minimal"
+        if ($LASTEXITCODE -ne 0) {
+            throw "minimal GiNZA environment build failed with exit code $LASTEXITCODE"
+        }
+    }
+
     $packagedExecutable = Join-Path $packageDir "Kotoclip.exe"
     Stop-PackagedExecutable $packagedExecutable
-    New-Item -ItemType Directory -Force -Path (Join-Path $packageDir "nlp"), (Join-Path $packageDir "dict-sources") | Out-Null
+    if (Test-Path -LiteralPath $packageDir) {
+        Remove-Item -LiteralPath $packageDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Force -Path $packageDir, (Join-Path $packageDir "nlp"), (Join-Path $packageDir "dict-sources"), (Join-Path $packageDir "python"), (Join-Path $packageDir "scripts") | Out-Null
     Copy-Item -LiteralPath "target\release\tauri-app.exe" -Destination $packagedExecutable -Force
     Copy-Item -LiteralPath "experiments\unidic-source\unidic-cwj-202512.vibrato.dic" -Destination (Join-Path $packageDir "nlp\cwj.dic") -Force
     Copy-Item -LiteralPath "experiments\unidic-source\unidic-csj-202512.vibrato.dic" -Destination (Join-Path $packageDir "nlp\csj.dic") -Force
+    Copy-Item -Path (Join-Path $minimalGinza "*") -Destination (Join-Path $packageDir "python") -Recurse -Force
+    Copy-Item -LiteralPath "scripts\nlp_provider.py", "scripts\nlp_adapters.py", "scripts\nlp_resources.py" -Destination (Join-Path $packageDir "scripts") -Force
+    Copy-Item -LiteralPath $minimalManifest -Destination (Join-Path $packageDir "manifest.json") -Force
     $dictionaryBundles = Get-ChildItem -LiteralPath $bundleDirectory -File -Filter "*.kdict" | Sort-Object Name
     if (-not $dictionaryBundles) {
         throw "no .kdict dictionary bundles found in $bundleDirectory"

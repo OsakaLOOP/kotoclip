@@ -2,7 +2,7 @@
 
 ## 运行组成
 
-交付物包括 Windows 桌面程序、前端、UniDic 资源、词典源包、规则与讲解目录，以及本机 GiNZA 分析器配置。GiNZA 使用已安装的 Python 环境和模型。
+交付物包括 Windows 桌面程序、前端、现代语 UniDic 资源、词典源包、规则与讲解目录，以及随包交付的最小 GiNZA Python 运行环境。开发渠道仍可使用本机 Python 环境，发行渠道使用包内解释器和模型。
 
 本机配置记录解释器绝对路径、适配器入口、模型与词典位置、版本及任务选项。资源检查从应用启动入口执行，成功后复用已加载服务。配置完成的环境支持离线分析。
 
@@ -24,7 +24,7 @@ cargo run -p kotoclip-core --bin kotoclip-nlp -- stdio
 
 `stdio` 接收逐行 JSON 请求，使用与桌面端相同的 `AnalysisService`。网页开发由 Vite 提供，通过开发 bridge 调用 Rust；Tauri 窗口承担桌面 IPC 与资源定位验收。
 
-本机模型入口为 `scripts/nlp_provider.py`，由 Rust 使用 `-X utf8 -u` 启动。桌面先显示 UniDic 结果，再以 `enrich` 请求追加 GiNZA 结构。设置位于“结构分析 → 本机模型设置”，可指定 GiNZA 解释器、模型和 Sudachi 词典文件。词典路径留空时使用随 Python 包安装的资源。配置写入数据目录的 `providers.local.json`，日志位于同目录 `provider-logs`。旧配置中的 KWJA 字段可读取，但不进入当前配置对象、状态响应或分析任务；本机依赖原样保留。
+本机模型入口为 `scripts/nlp_provider.py`，由 Rust 使用 `-X utf8 -u` 启动。桌面先显示 UniDic 结果，再以 `enrich` 请求追加 GiNZA 结构。设置位于“结构分析 → 本机模型设置”，开发环境可指定 GiNZA 解释器、模型和 Sudachi 词典文件；发行包默认使用 `python/Scripts/python.exe`。词典路径留空时使用随 Python 包安装的资源。配置写入数据目录的 `providers.local.json`，日志位于同目录 `provider-logs`。旧配置中的 KWJA 字段可读取，但不进入当前配置对象、状态响应或分析任务；发行版运行时不依赖系统 Python。
 
 GiNZA 模型支持已安装模型名或 spaCy 模型目录。“保存并检查”执行 `check_providers`，重新初始化已启用模型，报告资源缺失、加载错误及完整清单；检查成功后复用模型进行分析。开发默认路径对应下表已准备的环境；实际任务清单由加载的模型返回。
 
@@ -42,8 +42,9 @@ GiNZA 模型支持已安装模型名或 spaCy 模型目录。“保存并检查�
 | 词典查询缓存 | `data/dicts` |
 | 词典数据根目录 | `KOTOCLIP_DATA_DIR` |
 | GiNZA 实验环境 | `experiments/ginza311`，由本机配置选择解释器 |
+| GiNZA 最小环境 | `experiments/ginza-minimal`，由 `scripts/build_ginza_minimal_env.py` 生成 |
 
-桌面 release 已有便携目录 `nlp/cwj.dic`、`nlp/csj.dic` 和 `dict-sources` 的定位基础，查询缓存使用应用数据目录。外部模型目录通过配置选择，清单记录实际位置与版本。
+桌面 release 使用便携目录中的 `nlp/cwj.dic`、`nlp/csj.dic`、`dict-sources`、`python` 和 `scripts`，查询缓存使用应用数据目录。发行版默认路径支持 `python/python.exe` 和 Python 虚拟环境标准路径 `python/Scripts/python.exe`。
 
 ## 资源与用户数据
 
@@ -70,7 +71,7 @@ python scripts/test_dictionary_schema.py
 
 ## 桌面交付验收
 
-生成可执行程序及资源包，保存程序版本、资源清单、本机依赖清单和验收记录。应用从仓库以外的目录启动，在配置的本机环境内实际调用 UniDic 和 GiNZA。
+生成可执行程序及资源包，保存程序版本、资源清单、运行时依赖清单和验收记录。应用从仓库以外的目录启动，直接调用发行包内的 UniDic 和 GiNZA 运行环境。
 
 完整验收执行导入、继续阅读、结构展示、词典与语法查询、表达解释、个人状态、收藏、导出和质量审计，再重启验证持久状态。记录模型首次加载和复用效果，检查缺失依赖的提示与配置恢复。
 

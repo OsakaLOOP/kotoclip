@@ -24,6 +24,7 @@
 | [用户状态与输出](user_state.md)                   | 画像、选择、收藏、导出和词典助手                           |
 | [质量验收](quality.md)                            | 功能覆盖、语言质量、差分审计与性能测量                     |
 | [开发与交付](development.md)                      | 运行入口、依赖、资源、配置及桌面产物                       |
+| [独立桌面发行版](standalone_distribution.md)      | 最小资源、完整环境打包、性能优化与 Rust 替换计划           |
 | [实施 TODO](TODO.md)                              | 工作区差距、开发顺序与完成条件                             |
 | [实施记录](implementation_progress.md)            | 阶段状态、实际调用与检查证据                               |
 | [验收清单](acceptance.md)                         | 桌面场景、操作步骤、期望与异常恢复                         |
