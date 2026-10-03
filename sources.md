@@ -27,8 +27,11 @@
 | 来源 | 链接 | 用途 |
 | --- | --- | --- |
 | UniDic | <https://clrd.ninjal.ac.jp/unidic/> | CWJ／CSJ 资源、字段和版本入口 |
+| UniDic 2025.12 archive | <https://clrd.ninjal.ac.jp/unidic_archive/2512/> | Actions 下载 `unidic-cwj-202512_full.zip`、`unidic-csj-202512_full.zip` 并按清单校验 SHA-256 |
 | Vibrato | <https://github.com/daac-tools/vibrato> | Rust 形态分析引擎；仓库实现位于 `vendor/vibrato` |
 | GiNZA | <https://github.com/megagonlabs/ginza> | spaCy／Sudachi 分析流程、任务和部署依赖 |
+| GiNZA PyPI | <https://pypi.org/project/ginza/5.2.1/>；<https://pypi.org/project/ja-ginza/5.2.0/> | Actions 安装固定的 GiNZA 与 `ja-ginza` 版本 |
+| Python standalone | <https://github.com/astral-sh/python-build-standalone/releases> | Actions 下载 Windows x64 与 macOS arm64 的 Python 3.11 运行时 |
 | GiNZA 文节 API | <https://megagonlabs.github.io/ginza/bunsetu_api.html> | 文节、主辞和小句结果的适配依据 |
 | GiNZA 模型 | <https://github.com/megagonlabs/ginza/releases> | 模型包和版本入口 |
 | KWJA | <https://github.com/ku-nlp/kwja> | 现有模型任务、执行流程和资源入口 |

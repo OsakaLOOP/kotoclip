@@ -28,27 +28,6 @@
     }
   },
   "bundle": {
-    "active": true,
-    "targets": "all",
-    "resources": {
-      "../data/dict-sources/starter.kdict": "dict-sources/starter.kdict",
-      "../data/dict-sources/daijirin.kdict": "dict-sources/daijirin.kdict",
-      "../data/dict-sources/shogakukan.kdict": "dict-sources/shogakukan.kdict",
-      "../data/dict-sources/crown.kdict": "dict-sources/crown.kdict",
-      "../release-resources/nlp/cwj.dic": "nlp/cwj.dic",
-      "../release-resources/nlp/csj.dic": "nlp/csj.dic",
-      "../release-resources/python": "python",
-      "../scripts/nlp_provider.py": "scripts/nlp_provider.py",
-      "../scripts/nlp_adapters.py": "scripts/nlp_adapters.py",
-      "../scripts/nlp_resources.py": "scripts/nlp_resources.py",
-      "../src/version/changelog.json": "changelog.json"
-    },
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
+    "active": false
   }
 }

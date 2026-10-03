@@ -23,8 +23,6 @@ for (const relativePath of requiredBundles) {
   } catch {
     throw new Error(`发行资源未被 Git 跟踪：${relativePath}`);
   }
-  const bundlePath = `../${relativePath}`;
-  if (!resourceSources.includes(bundlePath)) throw new Error(`Tauri 配置未声明发行资源：${bundlePath}`);
 }
 
 const dictionaryResources = resourceSources.filter((resource) => resource.includes("../data/dict-sources/") && /\.dic$/i.test(resource));

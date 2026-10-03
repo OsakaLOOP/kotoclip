@@ -114,6 +114,20 @@ def prepare_python(workspace: Path, output: Path) -> None:
     subprocess.run([str(python), "-m", "pip", "install", "--no-cache-dir", *GINZA_PACKAGES], check=True)
 
 
+def minimize_python(output: Path) -> None:
+    full = output.with_name(f"{output.name}-full")
+    if full.exists():
+        shutil.rmtree(full)
+    output.rename(full)
+    subprocess.run([
+        os.fspath(Path(os.environ.get("PYTHON", "python"))),
+        str(ROOT / "scripts/build_ginza_minimal_env.py"),
+        "--source", str(full),
+        "--output", str(output),
+    ], check=True)
+    shutil.rmtree(full)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=ROOT / "release-resources")
@@ -124,6 +138,7 @@ def main() -> int:
     output.mkdir(parents=True, exist_ok=True)
     prepare_unidic(workspace, output, args.builder.resolve())
     prepare_python(workspace, output / "python")
+    minimize_python(output / "python")
     print(json.dumps({"output": str(output), "python": str(output / "python"), "unidic": [str(output / "nlp" / "cwj.dic"), str(output / "nlp" / "csj.dic")]}, ensure_ascii=False))
     return 0
 

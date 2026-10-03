@@ -97,7 +97,7 @@ def main() -> int:
     workspace = ROOT.resolve()
     if not source.is_dir():
         raise SystemExit(f"source environment not found: {source}")
-    if output == workspace or not str(output).startswith(str(workspace) + "\\"):
+    if output == workspace or workspace not in output.parents:
         raise SystemExit(f"output must remain inside workspace: {output}")
     if output == source:
         raise SystemExit("output must differ from source")
@@ -109,13 +109,24 @@ def main() -> int:
     shutil.copytree(source, output, symlinks=True)
     removed: list[dict[str, object]] = []
     site_packages = output / "Lib" / "site-packages"
+    if not site_packages.is_dir():
+        candidates = sorted((output / "lib").glob("python*/site-packages"))
+        if candidates:
+            site_packages = candidates[0]
+    if not site_packages.is_dir():
+        raise SystemExit(f"site-packages not found: {output}")
     for path in sorted(site_packages.iterdir()):
         if is_removable_package(path.name):
             remove_tree(path, output, removed)
     for name in OPTIONAL_STANDARD_LIBRARY:
         remove_tree(output / "Lib" / name, output, removed)
+        remove_tree(output / "lib" / name, output, removed)
     for relative in OPTIONAL_RUNTIME_FILES:
         remove_tree(output / relative, output, removed)
+        if relative.parts[:2] == ("Lib", "site-packages"):
+            suffix = Path(*relative.parts[2:])
+            for candidate in (output / "lib").glob("python*/site-packages"):
+                remove_tree(candidate / suffix, output, removed)
     remove_generated_bytecode(output, removed)
 
     manifest_path = output.parent / f"{output.name}-manifest.json"

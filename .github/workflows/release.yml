@@ -19,9 +19,13 @@ jobs:
           - name: windows-x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
+            binary: tauri-app.exe
+            builder: unidic-vibrato-build.exe
           - name: macos-arm64
             os: macos-14
             target: aarch64-apple-darwin
+            binary: tauri-app
+            builder: unidic-vibrato-build
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out source
@@ -55,19 +59,27 @@ jobs:
       - name: Download and prepare NLP runtime resources
         run: >-
           python scripts/prepare_release_resources.py
-          --builder target/${{ matrix.target }}/release/unidic-vibrato-build${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          --builder target/${{ matrix.target }}/release/${{ matrix.builder }}
 
       - name: Verify generated release dependencies
         run: npm run verify:release-resources -- --require-generated
 
-      - name: Build desktop bundle
-        run: npm run tauri -- build --target ${{ matrix.target }} --config src-tauri/tauri.github-release.conf.json
+      - name: Build desktop executable
+        run: npm run tauri -- build --target ${{ matrix.target }} --config src-tauri/tauri.github-release.conf.json --no-bundle
 
-      - name: Upload bundle
+      - name: Create portable ZIP
+        run: >-
+          python scripts/package_portable.py
+          --target ${{ matrix.name }}
+          --binary target/${{ matrix.target }}/release/${{ matrix.binary }}
+          --output release-packages
+          --name Kotoclip-${{ matrix.name }}
+
+      - name: Upload portable ZIP
         uses: actions/upload-artifact@v4
         with:
           name: kotoclip-${{ matrix.name }}
-          path: target/${{ matrix.target }}/release/bundle/**/*
+          path: release-packages/Kotoclip-${{ matrix.name }}.zip
           if-no-files-found: error
           retention-days: 14
 
@@ -77,7 +89,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download bundles
+      - name: Download portable ZIPs
         uses: actions/download-artifact@v4
         with:
           path: release-assets
