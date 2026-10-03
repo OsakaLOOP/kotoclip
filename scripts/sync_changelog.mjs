@@ -7,16 +7,17 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = resolve(root, process.env.KOTOCLIP_CHANGELOG_SOURCE ?? "src/version/changelog.source.json");
 const outputPath = resolve(root, process.env.KOTOCLIP_CHANGELOG_OUTPUT ?? "src/version/changelog.json");
 const refreshVersion = process.env.KOTOCLIP_REFRESH_VERSION ?? "";
+const readJson = (path) => JSON.parse(readFileSync(path, "utf8").replace(/^\uFEFF/, ""));
 
 const existingReleases = new Map();
 try {
-  const existingDocument = JSON.parse(readFileSync(outputPath, "utf8"));
+  const existingDocument = readJson(outputPath);
   for (const release of existingDocument.releases ?? []) existingReleases.set(release.version, release);
 } catch (error) {
   if (error.code !== "ENOENT") throw error;
 }
 
-const document = JSON.parse(readFileSync(sourcePath, "utf8"));
+const document = readJson(sourcePath);
 const head = execFileSync("git", ["-C", root, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 for (const release of document.releases ?? []) {
   if (release.source.kind === "commit" && release.source.ref === "HEAD") {

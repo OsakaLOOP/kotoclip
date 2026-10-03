@@ -3,19 +3,22 @@ import { ArrowLeft, BadgeInfo, BookOpen, X } from "@lucide/vue";
 import { ref } from "vue";
 import { CURRENT_VERSION } from "../../version/changelog";
 
-withDefaults(defineProps<{
-  showBack?: boolean;
-  backLabel?: string;
-  collapseBrand?: boolean;
-  title?: string;
-  description?: string;
-}>(), {
-  showBack: false,
-  backLabel: "返回",
-  collapseBrand: false,
-  title: "",
-  description: "",
-});
+withDefaults(
+  defineProps<{
+    showBack?: boolean;
+    backLabel?: string;
+    collapseBrand?: boolean;
+    title?: string;
+    description?: string;
+  }>(),
+  {
+    showBack: false,
+    backLabel: "返回",
+    collapseBrand: false,
+    title: "",
+    description: "",
+  },
+);
 
 const emit = defineEmits<{ back: [] }>();
 const showAbout = ref(false);
@@ -40,7 +43,12 @@ const showAbout = ref(false);
       >
         <ArrowLeft :size="19" aria-hidden="true" />
       </button>
-      <BookOpen class="app-header__brand-icon" :size="24" stroke-width="1.8" aria-hidden="true" />
+      <BookOpen
+        class="app-header__brand-icon"
+        :size="24"
+        stroke-width="1.8"
+        aria-hidden="true"
+      />
       <svg
         class="app-header__brand-name"
         viewBox="275 65 507 130"
@@ -48,7 +56,12 @@ const showAbout = ref(false);
         aria-label="Kotoclip"
         focusable="false"
       >
-        <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="14">
+        <g
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="14"
+        >
           <g stroke="currentColor">
             <path d="M282 72v88m0-28 40-36m-21 20 27 44" />
             <circle cx="368" cy="128" r="32" />
@@ -56,10 +69,14 @@ const showAbout = ref(false);
             <circle cx="489" cy="128" r="32" />
           </g>
           <g stroke="#39c5bb">
-            <path d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12" />
+            <path
+              d="M580 105c-8-8-18-12-29-12-21 0-35 15-35 35s14 35 35 35c11 0 21-4 29-12"
+            />
             <path d="M619 72v73q0 15 15 15" />
             <path d="M665 103v57" />
-            <path d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17" />
+            <path
+              d="M713 101v87m0-77c9-12 22-17 34-15 18 3 28 16 28 32 0 18-12 32-30 32-13 0-24-6-32-17"
+            />
           </g>
           <circle cx="665" cy="78" r="7" fill="#f5d547" stroke="none" />
         </g>
@@ -68,39 +85,94 @@ const showAbout = ref(false);
         <strong>{{ title }}</strong>
         <span v-if="description">{{ description }}</span>
       </div>
-      <span v-else-if="description" class="app-header__brand-description">{{ description }}</span>
+      <span v-else-if="description" class="app-header__brand-description">{{
+        description
+      }}</span>
       <slot name="version" />
     </div>
     <div class="app-header__actions">
       <slot name="actions" />
-      <button class="app-header__about" type="button" title="关于 Kotoclip" aria-label="关于 Kotoclip" @click="showAbout = true">
+      <button
+        class="app-header__about"
+        type="button"
+        title="关于 Kotoclip"
+        aria-label="关于 Kotoclip"
+        @click="showAbout = true"
+      >
         <BadgeInfo :size="18" stroke-width="1.8" aria-hidden="true" />
       </button>
     </div>
   </header>
   <Teleport to="body">
-    <div v-if="showAbout" class="about-dialog-backdrop" role="presentation" @click.self="showAbout = false" @keydown.esc="showAbout = false">
-      <section class="about-dialog" role="dialog" aria-modal="true" aria-labelledby="about-dialog-title">
+    <div
+      v-if="showAbout"
+      class="about-dialog-backdrop"
+      role="presentation"
+      @click.self="showAbout = false"
+      @keydown.esc="showAbout = false"
+    >
+      <section
+        class="about-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="about-dialog-title"
+      >
         <header class="about-dialog__header">
           <div>
             <h2 id="about-dialog-title">关于 Kotoclip</h2>
             <p>版本 {{ CURRENT_VERSION }}</p>
           </div>
-          <button class="about-dialog__close" type="button" title="关闭" aria-label="关闭关于窗口" @click="showAbout = false">
+          <button
+            class="about-dialog__close"
+            type="button"
+            title="关闭"
+            aria-label="关闭关于窗口"
+            @click="showAbout = false"
+          >
             <X :size="18" aria-hidden="true" />
           </button>
         </header>
         <div class="about-dialog__body">
-          <p>Kotoclip 是面向日语原文阅读与语言分析的本地桌面应用。</p>
+          <p>
+            Kotoclip 是面向日语原文沉浸式阅读与快捷语言语法分析的本地桌面应用。
+          </p>
           <h3>许可证</h3>
-          <p>项目代码采用 MIT License。许可证文本见发行包中的 <code>LICENSE</code> 文件。</p>
+          <p>
+            项目代码采用 MIT License, 文本见发行包中的
+            <code>LICENSE</code> 文件。
+          </p>
           <h3>致谢</h3>
           <ul>
-            <li><a href="https://clrd.ninjal.ac.jp/unidic/" target="_blank" rel="noreferrer">UniDic</a>：感谢国立国语研究所及相关维护团队提供日语词法资源。UniDic 资源遵循其官方发布的 GPL v2.0、LGPL v2.1 与 BSD 许可条件。</li>
-            <li><a href="https://github.com/megagonlabs/ginza" target="_blank" rel="noreferrer">GiNZA</a>：感谢 Megagon Labs 提供基于 spaCy 与 Sudachi 的日语依存分析工具，GiNZA 项目采用 MIT License。</li>
-            <li><a href="https://forum.freemdict.com/" target="_blank" rel="noreferrer">FreeMdict 论坛</a>：感谢 MDict 词典制作与交流社区提供的资料整理和技术讨论。</li>
+            <li>
+              <a
+                href="https://clrd.ninjal.ac.jp/unidic/"
+                target="_blank"
+                rel="noreferrer"
+                >UniDic</a
+              >：感谢国立国语研究所及相关维护团队提供日语词法资源。UniDic
+              资源遵循官方的 GPL v2.0、LGPL v2.1 与 BSD 许可条件。
+            </li>
+            <li>
+              <a
+                href="https://github.com/megagonlabs/ginza"
+                target="_blank"
+                rel="noreferrer"
+                >GiNZA</a
+              >：感谢 Megagon Labs 提供基于 spaCy 与 Sudachi
+              的日语依存分析工具，GiNZA 项目采用 MIT License。
+            </li>
+            <li>
+              <a
+                href="https://forum.freemdict.com/"
+                target="_blank"
+                rel="noreferrer"
+                >FreeMdict 论坛</a
+              >：感谢论坛及其用户制作的 MDict 词典与分享的技术讨论。
+            </li>
           </ul>
-          <p class="about-dialog__note">第三方程序、模型、词典资源及其派生文件遵循各自的许可和分发条件，项目 MIT License 不覆盖这些内容。</p>
+          <p class="about-dialog__note">
+            第三方程序、模型、词典资源及其派生文件不属于本项目 MIT 许可范围.
+          </p>
         </div>
       </section>
     </div>
@@ -168,7 +240,7 @@ const showAbout = ref(false);
   padding-left: 8px;
   border-left: 1px solid var(--border-color);
   color: var(--text-muted);
-  font-size: .75rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -192,12 +264,12 @@ const showAbout = ref(false);
 
 .app-header__page-identity strong {
   color: var(--text-primary);
-  font-size: .86rem;
+  font-size: 0.86rem;
 }
 
 .app-header__page-identity span {
   color: var(--text-muted);
-  font-size: .72rem;
+  font-size: 0.72rem;
 }
 
 .app-header__actions {
@@ -268,19 +340,60 @@ const showAbout = ref(false);
   margin: 0;
 }
 
-.about-dialog__header h2 { color: var(--text-primary); font-size: 1rem; }
-.about-dialog__header p { margin-top: 4px; color: var(--text-muted); font-size: .72rem; }
-.about-dialog__body { max-height: calc(min(720px, 100vh - 40px) - 82px); overflow: auto; padding: 18px 20px 20px; color: var(--text-secondary); font-size: .8rem; line-height: 1.65; }
-.about-dialog__body h3 { margin-top: 18px; margin-bottom: 6px; color: var(--text-primary); font-size: .82rem; }
-.about-dialog__body ul { display: grid; gap: 9px; margin: 8px 0 0; padding-left: 20px; }
-.about-dialog__body a { color: var(--accent-color); }
-.about-dialog__body code { padding: 1px 4px; border-radius: 3px; background: var(--bg-secondary); font-size: .75rem; }
-.about-dialog__note { margin-top: 18px !important; color: var(--text-muted); font-size: .72rem; }
+.about-dialog__header h2 {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+.about-dialog__header p {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.about-dialog__body {
+  max-height: calc(min(720px, 100vh - 40px) - 82px);
+  overflow: auto;
+  padding: 18px 20px 20px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+.about-dialog__body h3 {
+  margin-top: 18px;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+.about-dialog__body ul {
+  display: grid;
+  gap: 9px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.about-dialog__body a {
+  color: var(--accent-color);
+}
+.about-dialog__body code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  font-size: 0.75rem;
+}
+.about-dialog__note {
+  margin-top: 18px !important;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
 
 @media (max-width: 520px) {
-  .about-dialog-backdrop { padding: 10px; }
-  .about-dialog { max-height: calc(100vh - 20px); }
-  .about-dialog__body { max-height: calc(100vh - 102px); }
+  .about-dialog-backdrop {
+    padding: 10px;
+  }
+  .about-dialog {
+    max-height: calc(100vh - 20px);
+  }
+  .about-dialog__body {
+    max-height: calc(100vh - 102px);
+  }
 }
 
 @media (max-width: 820px) {
