@@ -131,15 +131,19 @@ def minimize_python(output: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=ROOT / "release-resources")
-    parser.add_argument("--builder", type=Path, required=True)
+    parser.add_argument("--builder", type=Path)
+    parser.add_argument("--python-only", action="store_true")
     args = parser.parse_args()
+    if not args.python_only and args.builder is None:
+        parser.error("--builder is required unless --python-only is set")
     output = args.output.resolve()
     workspace = output / "downloads"
     output.mkdir(parents=True, exist_ok=True)
-    prepare_unidic(workspace, output, args.builder.resolve())
+    if not args.python_only:
+        prepare_unidic(workspace, output, args.builder.resolve())
     prepare_python(workspace, output / "python")
     minimize_python(output / "python")
-    print(json.dumps({"output": str(output), "python": str(output / "python"), "unidic": [str(output / "nlp" / "cwj.dic"), str(output / "nlp" / "csj.dic")]}, ensure_ascii=False))
+    print(json.dumps({"output": str(output), "python": str(output / "python")}, ensure_ascii=False))
     return 0
 
 

@@ -71,6 +71,8 @@ python scripts/test_dictionary_schema.py
 
 GitHub Actions 使用 `src-tauri/tauri.github-release.conf.json` 构建发行包。`.kdict` 是发行包的词典源格式，四个源包已被 Git 跟踪；UniDic 运行文件和 GiNZA 运行环境由 `scripts/prepare_release_resources.py` 下载、校验并打入便携目录。`scripts/package_portable.py` 将 no-bundle 可执行文件和资源压缩为 ZIP，不生成 MSI、NSIS、DMG 或其他安装包。本地 `tauri.conf.json` 继续使用开发环境中的 `.dic` 资源。推送 `v*` 标签后，Actions 在 Windows x64 和 macOS arm64 runner 上构建并创建 GitHub Release，手动运行工作流只生成构建产物。
 
+缺少 macOS Python 资源时，在 Actions 的 `Build and release desktop packages` 中选择 `1` 分支与 `macos-python-resource` 模式。该任务只生成 `Kotoclip-insider-portable-macos-arm64-python.zip` artifact，之后将 ZIP 上传到 `resources-v1` Release；`full-build` 模式仍构建两个平台的完整便携包。
+
 ## 桌面交付验收
 
 生成可执行程序及资源包，保存程序版本、资源清单、运行时依赖清单和验收记录。应用从仓库以外的目录启动，直接调用发行包内的 UniDic 和 GiNZA 运行环境。
