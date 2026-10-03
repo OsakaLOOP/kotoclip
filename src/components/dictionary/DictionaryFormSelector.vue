@@ -23,6 +23,12 @@ function formTitle(form: DictionaryFormGroup) {
   return [variants, readings].filter(Boolean).join("；");
 }
 
+function formLabel(form: DictionaryFormGroup) {
+  const reading = form.readings.length === 1 ? form.readings[0] : form.readings.length > 1 ? "多读音" : "";
+  const availability = form.dictionaries.some((dictionary) => dictionary.available) ? "" : "未收录";
+  return [form.display_form, reading, availability].filter(Boolean).join(" · ");
+}
+
 function handleSelect(event: Event) {
   const formId = (event.target as HTMLSelectElement).value;
   if (formId && formId !== activeFormId.value) emit("select", formId);
@@ -46,7 +52,7 @@ function handleSelect(event: Event) {
         :value="form.form_id"
         :class="{ unavailable: isUnavailable(form.form_id) }"
       >
-        {{ form.display_form }}
+        {{ formLabel(form) }}
       </option>
     </select>
     <div v-else class="form-options">
@@ -60,7 +66,7 @@ function handleSelect(event: Event) {
         :disabled="disabled"
         @click="emit('select', form.form_id)"
       >
-        {{ form.display_form }}
+        {{ formLabel(form) }}
       </button>
     </div>
   </section>

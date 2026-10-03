@@ -7,6 +7,8 @@ export interface ReaderRowEstimateInput {
   fontSize: number;
   lineHeight: number;
   contentWidth: number;
+  text?: string;
+  paragraphGap?: number;
   imageWidth?: number;
   imageHeight?: number;
   imageLayout?: "single" | "pair" | "symbols";
@@ -34,8 +36,11 @@ export function estimateReaderRow(input: ReaderRowEstimateInput): number {
     }
     return Math.round(Math.min(760, Math.max(420, input.viewportHeight * 0.72)));
   }
-  const textHeight = input.fontSize * input.lineHeight * 2;
-  return Math.round(textHeight + (input.heading ? 42 : 0));
+  const fontSize = input.fontSize * (input.heading ? 1.25 : 1);
+  const columns = Math.max(1, Math.floor(input.contentWidth / fontSize));
+  const lines = input.text === undefined ? 2 : input.text.split("\n")
+    .reduce((total, line) => total + Math.max(1, Math.ceil(Array.from(line).length / columns)), 0);
+  return Math.round(fontSize * input.lineHeight * lines + (input.paragraphGap ?? 0) + (input.heading ? 52 : 0));
 }
 
 /** 图片解码完成前保留已有尺寸或估算值，不能用接近 0 的占位 DOM 覆盖缓存。 */

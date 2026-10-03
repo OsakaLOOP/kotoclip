@@ -1,0 +1,107 @@
+{
+  "schema": "kotoclip.provider-integration-check.v1",
+  "cases": [
+    {
+      "id": "contraction",
+      "characters": 40,
+      "elapsed_ms": 25986.529299989343,
+      "providers": [
+        {
+          "elapsed_ms": 8627,
+          "id": "ginza",
+          "request_id": "ginza-1",
+          "status": "ready"
+        },
+        {
+          "elapsed_ms": 10301,
+          "id": "kwja",
+          "request_id": "kwja-2",
+          "status": "ready"
+        }
+      ],
+      "sources": [
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "compound",
+              "bunsetsu",
+              "sentence",
+              "clause",
+              "dependency",
+              "entity"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "ginza",
+            "model": "ja_ginza",
+            "model_version": "5.2.0",
+            "tasks": [
+              "tok2vec",
+              "parser",
+              "ner",
+              "morphologizer",
+              "compound_splitter",
+              "bunsetu_recognizer"
+            ],
+            "version": "5.2.1",
+            "versions": {
+              "spacy": "3.8.16",
+              "sudachidict-core": "20260723",
+              "sudachipy": "0.6.11"
+            }
+          },
+          "nodes": 34,
+          "relations": 21,
+          "deleted_ranges": []
+        },
+        {
+          "provider": {
+            "capabilities": [
+              "token",
+              "bunsetsu",
+              "basic_phrase",
+              "sentence",
+              "clause",
+              "predicate",
+              "dependency",
+              "entity",
+              "cohesion",
+              "discourse"
+            ],
+            "coordinate_system": "unicode_scalar",
+            "id": "kwja",
+            "model": "tiny",
+            "model_version": "v2.1",
+            "tasks": [
+              "reading_prediction",
+              "morphological_analysis",
+              "word_feature_tagging",
+              "ner",
+              "base_phrase_feature_tagging",
+              "dependency_parsing",
+              "cohesion_analysis",
+              "discourse_parsing"
+            ],
+            "version": "2.1.3",
+            "versions": {
+              "rhoknp": "1.3.2",
+              "torch": "2.1.2",
+              "transformers": "4.29.2"
+            }
+          },
+          "nodes": 45,
+          "relations": 23,
+          "deleted_ranges": []
+        }
+      ]
+    }
+  ],
+  "pids": {
+    "ginza": 36668,
+    "kwja": 14184
+  },
+  "missing_interpreter_recovery": true,
+  "cancellation_recovery": true,
+  "timeout_recovery": true,
+  "unexpected_exit_recovery": true
+}

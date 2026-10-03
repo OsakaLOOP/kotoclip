@@ -1,0 +1,24 @@
+{
+  "schema_version": "kotoclip.unidic-resource-manifest.v1",
+  "official_index": "https://clrd.ninjal.ac.jp/unidic_archive/2512/",
+  "resources": [
+    {
+      "provider_id": "unidic-cwj-202512",
+      "domain": "modern_written",
+      "archive": "unidic-cwj-202512_full.zip",
+      "archive_sha256": "CA02AD51C8AE238373DCB150EEC014F1AD9F05F54C7416A16C2FE444FD4921B3",
+      "vibrato_dictionary": "unidic-cwj-202512.vibrato.dic",
+      "vibrato_dictionary_sha256": "4ADD7EB2DE073611FF9A01F62B1CA07E157A559381D7DE9AB0D060F786FCC5E7",
+      "feature_schema": "unidic-2025.12-feature.v1"
+    },
+    {
+      "provider_id": "unidic-csj-202512",
+      "domain": "modern_spoken",
+      "archive": "unidic-csj-202512_full.zip",
+      "archive_sha256": "F737D26CE9DAF96347E1CCAF34896A36651FFB7CEFF91D4D8041591FF7A387E4",
+      "vibrato_dictionary": "unidic-csj-202512.vibrato.dic",
+      "vibrato_dictionary_sha256": "24ED4E27613479AC9A45EC8669DFBF1DADFC75679DD5689DB36B8783DA3F7330",
+      "feature_schema": "unidic-2025.12-feature.v1"
+    }
+  ]
+}

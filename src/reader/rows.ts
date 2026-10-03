@@ -1,5 +1,6 @@
-import type { Paragraph } from "../composables/useTokenization.ts";
-import type { ReaderChapter, ReaderDocument, ReaderImageBlock } from "./document.ts";
+import type { ReaderChapter, ReaderDocument, ReaderImageBlock, ReaderTextBlock } from "./document.ts";
+
+export type Paragraph = ReaderTextBlock;
 
 export interface ReaderTextRow {
   key: string;
@@ -129,7 +130,7 @@ export function buildReaderRows(
       chapterIndex++;
     }
     const chapter = chapters[chapterIndex];
-    const heading = chapter?.charOffset < paragraph.charRange[1] ? chapter : undefined;
+    const heading = paragraph.kind === "heading" && chapter?.charOffset === paragraph.charRange[0] ? chapter : undefined;
     if (heading) chapterIndex++;
     rows.push({
       key: paragraphKey(paragraph),

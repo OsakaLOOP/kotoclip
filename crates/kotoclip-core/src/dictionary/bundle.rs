@@ -1,11 +1,14 @@
 use flate2::read::ZlibDecoder;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Deserialize;
+use crate::dictionary::model::{DictionaryEntryPreview, DictionaryTag};
+use crate::dictionary::presentation;
 use std::fs::{self, File};
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 
 pub const SCHEMA_VERSION: u32 = 4;
+const PREVIEW_SCHEMA_VERSION: u32 = 2;
 const MAGIC: &[u8; 8] = b"KDICT\0\x01\0";
 const CANONICAL_ENTRY: u8 = 0;
 const ALIAS_ENTRY: u8 = 1;
@@ -54,6 +57,13 @@ CREATE TABLE entry_keys (
     rank INTEGER NOT NULL,
     PRIMARY KEY(entry_id, kind, normalized_value)
 ) WITHOUT ROWID;
+CREATE TABLE entry_previews (
+    entry_id INTEGER PRIMARY KEY,
+    data BLOB NOT NULL
+);
+CREATE TABLE entry_preview_meta (
+    version INTEGER NOT NULL
+);
 "#;
 
 pub(crate) const SEARCH_SCHEMA: &str = r#"
@@ -190,8 +200,10 @@ fn database_bundle_id(path: &Path) -> Option<String> {
     let connection = Connection::open(path).ok()?;
     connection
         .query_row(
-            "SELECT bundle_id FROM metadata WHERE id = 1 AND schema_version = ?1",
-            [SCHEMA_VERSION],
+            "SELECT bundle_id FROM metadata
+             WHERE id = 1 AND schema_version = ?1
+               AND (SELECT version FROM entry_preview_meta LIMIT 1) = ?2",
+            (SCHEMA_VERSION, PREVIEW_SCHEMA_VERSION),
             |row| row.get(0),
         )
         .optional()
@@ -318,6 +330,12 @@ pub fn build_database(source: &Path, target: &Path) -> Result<(), Box<dyn std::e
         transaction.commit()?;
     }
 
+    build_entry_previews(&mut connection, &bundle.header.source_name)?;
+    connection.execute(
+        "INSERT INTO entry_preview_meta(version) VALUES(?1)",
+        [PREVIEW_SCHEMA_VERSION],
+    )?;
+
     connection.execute_batch(SEARCH_SCHEMA)?;
     connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     connection.execute_batch("ANALYZE; VACUUM;")?;
@@ -331,6 +349,80 @@ pub fn build_database(source: &Path, target: &Path) -> Result<(), Box<dyn std::e
         fs::remove_file(target)?;
     }
     fs::rename(&temporary, target)?;
+    Ok(())
+}
+
+fn build_entry_previews(
+    connection: &mut Connection,
+    dict_name: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut cursor = 0i64;
+    let transaction = connection.transaction()?;
+    let mut statement = transaction.prepare(
+        "INSERT INTO entry_previews(entry_id, data) VALUES(?1, ?2)",
+    )?;
+    let mut block_cache = std::collections::HashMap::<i64, Vec<u8>>::new();
+    loop {
+        let record = transaction.query_row(
+            "SELECT e.id,
+                    COALESCE((SELECT COALESCE(k.display_value, k.normalized_value)
+                              FROM entry_keys k WHERE k.entry_id = e.id AND k.kind = 0
+                              ORDER BY k.rank LIMIT 1), e.headword),
+                    e.headword, e.definition_block_id, e.definition_offset,
+                    e.definition_length,
+                    (SELECT COALESCE(r.display_value, r.normalized_value)
+                     FROM entry_keys r WHERE r.entry_id = e.id AND r.kind = 1
+                     ORDER BY r.rank LIMIT 1),
+                    b.uncompressed_size, b.data
+             FROM entries e JOIN definition_blocks b ON b.id = e.definition_block_id
+             WHERE e.id > ?1 ORDER BY e.id LIMIT 1",
+            [cursor], |row| Ok((
+                row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?,
+                row.get::<_, i64>(3)?, row.get::<_, usize>(4)?, row.get::<_, usize>(5)?,
+                row.get::<_, Option<String>>(6)?, row.get::<_, usize>(7)?, row.get::<_, Vec<u8>>(8)?,
+            )),
+        ).optional()?;
+        let Some((entry_id, indexed_headword, raw_headword, block_id, offset, length, reading, expected_size, compressed)) = record else { break; };
+        cursor = entry_id;
+        let block = if let Some(block) = block_cache.get(&block_id) {
+            block
+        } else {
+            let mut decoder = ZlibDecoder::new(compressed.as_slice());
+            let mut decoded = Vec::with_capacity(expected_size);
+            decoder.read_to_end(&mut decoded)?;
+            if decoded.len() != expected_size {
+                return Err(format!("词典 definition block {block_id} 解压长度不一致").into());
+            }
+            block_cache.insert(block_id, decoded.clone());
+            block_cache.get(&block_id).expect("刚解压的词典块已缓存")
+        };
+        let end = offset.checked_add(length).ok_or("词典 definition 范围溢出")?;
+        let definition = std::str::from_utf8(block.get(offset..end).ok_or("词典 definition 范围无效")?)?;
+        let presentations = presentation::present(
+            dict_name, &indexed_headword, &raw_headword, reading.as_deref(), definition,
+        );
+        let previews = presentations.into_iter().map(|occurrence| {
+            let metadata_pos_tags = occurrence.senses.iter()
+                .flat_map(|sense| sense.tags.iter())
+                .filter(|tag| tag.kind == "pos")
+                .cloned()
+                .collect::<Vec<DictionaryTag>>();
+            DictionaryEntryPreview {
+                occurrence_suffix: occurrence.occurrence_suffix,
+                source_record_index: occurrence.source_record_index,
+                entry_kind: occurrence.entry_kind,
+                header: occurrence.header,
+                links: occurrence.links,
+                style_profile: occurrence.style_profile,
+                adapter_diagnostics: occurrence.diagnostics,
+                has_definition: !occurrence.definition_html.trim().is_empty(),
+                metadata_pos_tags,
+            }
+        }).collect::<Vec<_>>();
+        statement.execute(params![entry_id, serde_json::to_vec(&previews)?])?;
+    }
+    drop(statement);
+    transaction.commit()?;
     Ok(())
 }
 

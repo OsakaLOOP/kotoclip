@@ -1,0 +1,305 @@
+"""导出单个 P4 样本的紧凑逐层 Markdown 报告。"""
+from __future__ import annotations
+import argparse, json, os, subprocess, tempfile, sys
+from html.parser import HTMLParser
+from collections import Counter
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = ROOT / "data/validation/p4-sample-review.json"
+BINARY = ROOT / "target/debug/kotoclip-nlp.exe"
+
+def c(value):
+    if value is None: return "o"
+    if isinstance(value, dict): return ",".join(f"{k}:{c(v)}" for k,v in sorted(value.items()))
+    if isinstance(value, (list, tuple)): return ",".join(c(v) for v in value)
+    return str(value).replace("\n", " ").replace("|", "¦") or "o"
+
+def surf(text, r): return "" if not r else text[r[0]:r[1]]
+def count(values): return ",".join(f"{k}={v}" for k,v in sorted(Counter(c(x) or "-" for x in values).items()))
+def joined(values):
+    """逐项拼接一行的全部条目，不做长度截断；空值由 c() 记为 o。"""
+    return " | ".join(c(value) for value in values)
+def nodes(doc,key): return doc.get(key,{}).get("nodes", doc.get(key,{}).get("clauses",[]))
+def provider_clauses(doc): return [x for x in nodes(doc,"clause") if x.get("provider")!="local"]
+
+def table(lines, title, headers, rows):
+    lines += ["", f"## {title}", ""]
+    if not rows:
+        lines.append("无。")
+        return
+    lines += ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
+    lines.extend("| " + " | ".join(str(cell).replace("|", "／").replace("\n", " ") for cell in row) + " |" for row in rows)
+    lines.append("")
+
+class EntryText(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.parts = []
+
+    def handle_data(self, data):
+        self.parts.append(data)
+
+def entry_summary(entry):
+    fragments = []
+    def collect(senses):
+        for sense in senses:
+            for field in ("definitions", "glosses"):
+                fragments.extend(value.get("html", "") for value in sense.get(field, []))
+            for group in sense.get("gloss_groups", []):
+                fragments.extend(clause.get("text", {}).get("html", "") for clause in group.get("clauses", []))
+            collect(sense.get("children", []))
+    collect(entry.get("senses", []))
+    parser = EntryText()
+    parser.feed(" ".join(fragments) or entry.get("definition_html", ""))
+    text = " ".join("".join(parser.parts).split())
+    return text[:78] + ("…" if len(text) > 78 else "")
+
+def lookup_tables(lines, doc):
+    lookup = doc.get("lookup_targets")
+    if not lookup:
+        return
+    text = doc["text"]
+    outer = lookup["outer_targets"]
+    inner = lookup["inner_targets"]
+    def bracket(target):
+        start, end = target["char_range"]
+        members = [token for token in doc["morphemes"] if token["id"] in target["morpheme_ids"]]
+        if any(token["pos"][0] in {"動詞", "形容詞"} for token in members):
+            return "[" + text[start:end] + "]"
+        cuts = {start, end}
+        for child in inner:
+            if child["parent_outer_id"] == target["id"] and child["decision"] == "queryable":
+                cuts.update(child["char_range"])
+        cuts = sorted(cuts)
+        return "[" + "-".join(text[left:right] for left, right in zip(cuts, cuts[1:])) + "]"
+    pieces = []
+    cursor = 0
+    for target in outer:
+        start, end = target["char_range"]
+        pieces.extend((text[cursor:start], bracket(target)))
+        cursor = end
+    pieces.append(text[cursor:])
+    lines += ["", "## 词典查询对象", "", "`[]` 表示最大查询范围，`-` 表示可独立查词的内部边界；构件和活用连接不加分隔符。", "",
+              "正文查询分布：", "", "```text", "".join(pieces), "```", "",
+              "| 最大范围 | 规范查询形 | 真实词典词条与释义摘要 |", "| --- | --- | --- |"]
+    names = {"三省堂Super大辞林3.1": "大辞林", "小学馆日中辞典": "小学馆", "Crown日中辞典": "Crown"}
+    for target in outer:
+        forms = "／".join(dict.fromkeys(form["form"] for form in target["lookup_forms"]))
+        entries = []
+        for entry in target["entries"]:
+            headword = entry.get("header", {}).get("display_form") or entry["headword"]
+            reading = f"〈{entry['reading']}〉" if entry.get("reading") else ""
+            entries.append(f"{names.get(entry['dict_name'], entry['dict_name'])}：{headword}{reading} — {entry_summary(entry)}")
+        cells = (bracket(target), forms, "<br>".join(entries) or "未收录；保留基本形查询")
+        lines.append("| " + " | ".join(cell.replace("\n", " ") for cell in cells) + " |")
+    lines.append("")
+
+FORM_NAMES = {
+    "causative": "使役", "passive_potential": "受身等候选", "negative": "否定",
+    "past": "过去", "politeness_masu": "敬体", "politeness_desu": "敬体",
+    "conditional": "假定形", "ba_connection": "ば接续", "tara_condition": "たら条件",
+    "volitional": "意志形", "imperative": "命令形", "prohibitive": "禁止",
+    "copula": "判断", "copula_aru": "である", "nominalization": "名词化",
+    "te_connection": "て／で接续", "te_form": "て接续", "de_form": "で接续",
+    "concessive_connection": "逆接", "nagara_connection": "ながら接续",
+    "you_modality": "よう", "sou_modality": "そう", "mitai_modality": "みたい",
+    "rashii_modality": "らしい", "obligation": "当为", "negative_volitional": "否定意志",
+    "desire": "愿望", "desire_outward": "愿望表现", "ease": "容易", "difficulty": "困难",
+    "enumerative": "列举", "excessive": "过度", "inceptive": "开始",
+    "continuative_aspect": "持续", "terminative": "结束", "auxiliary": "助动词连接",
+}
+SUPPORT_FORMS = {
+    "te_iru": "ている", "te_aru": "てある", "te_shimau": "てしまう", "te_oku": "ておく",
+    "te_iku": "ていく", "te_kuru": "てくる", "te_miru": "てみる", "te_kudasaru": "てくださる",
+    "te_morau": "てもらう", "te_ageru": "てあげる", "te_kureru": "てくれる", "te_hoshii": "てほしい",
+    "contracted_te_iru": "ている缩约", "contracted_te_shimau": "てしまう缩约", "contracted_te_oku": "ておく缩约",
+}
+
+def language_tables(lines, doc):
+    """按正文顺序呈现组成、形态和结果，内部引用保留在机器报告。"""
+    tokens = doc["morphemes"]
+    chains = doc["morphology"]["chains"]
+    by_id = {chain["chain_id"]: chain for chain in chains}
+    rows = []
+    for chain in chains:
+        operators = [op for op in chain["operators"] if op["kind"] not in {"conjugation", "initial_alternation", "final_alternation"}]
+        form = chain["final_state"]["conjugation_form"]
+        if not operators and not form:
+            continue
+        composition = " ＋ ".join(tokens[i]["surface"] for i in chain["morpheme_indices"])
+        if chain["parent_chain_id"]:
+            parent = by_id[chain["parent_chain_id"]]
+            composition = f"（接「{parent['surface_form']}」）{composition}"
+        names = [SUPPORT_FORMS.get(op["kind"], FORM_NAMES.get(op["kind"], op["label"])) for op in operators]
+        shape = " ＋ ".join(names) if names else form.replace("-一般", "")
+        result = f"{chain['surface_form']}（基本形：{chain['display_form']}）"
+        if chain["lookup_form"] != chain["display_form"]:
+            result += f"；查词：{chain['lookup_form']}"
+        if chain["status"] != "resolved":
+            result += "；待确认"
+        rows.append((composition, shape, result))
+    table(lines, "活用链", ("原始组成", "构成形态", "最终对象"), rows)
+    rows = []
+    reasons = {"discontinuous_dependency": "范围不连续", "incomplete_coverage": "覆盖不完整",
+               "nonlexical_members": "含功能成分或标点", "morphology_core_candidate": "词性待确认"}
+    for node in sorted(doc["formation"]["nodes"], key=lambda n: n["char_range"]):
+        word = node["word"]
+        composition = " ＋ ".join(tokens[i]["surface"] for i in node["morpheme_indices"])
+        kind = "整体词"
+        if node["status"] == "pending":
+            kind = reasons.get(word["reason"], "待确认")
+        elif node["status"] == "candidate":
+            kind = reasons.get(word["reason"], "依存候选（实验）")
+        forms = list(dict.fromkeys(q["form"] for q in word["query_forms"]))
+        rows.append((composition, kind, "／".join(forms)))
+    table(lines, "整体构词", ("原始组成", "构成形态", "最终对象／查询形"), rows)
+def counts(doc):
+    graph=doc.get("structure_graph",{})
+    observed_formations=[x for x in doc.get("formation",{}).get("nodes",[]) if x.get("status")=="observed"]
+    return {"chars":doc.get("characters",len(doc.get("text",""))),"tokens":len(doc.get("morphemes",[])),"formations_observed":len(observed_formations),"bunsetsu":len(doc.get("bunsetsu",{}).get("nodes",[])),"clauses":len(provider_clauses(doc)),"query_targets":len(doc.get("dictionary_candidates",{}).get("candidates",[])),"entities":len(graph.get("entities",[])),"relations":len(graph.get("relations",[]))}
+
+def timing_lines(doc):
+    """按本地阶段与外部阶段分别汇总观测耗时，单位为毫秒。"""
+    items=[(x.get("stage",""), x.get("elapsed_ms",0.0)) for x in doc.get("stage_timings",[])]
+    base=[(name,value) for name,value in items if not name.startswith(("enrich.","refresh."))]
+    enrich=[(name,value) for name,value in items if name.startswith("enrich.")]
+    lines=[]
+    if base: lines.append(" | ".join(f"{name}={value:.1f}ms" for name,value in base) + f" | analyze_total={sum(value for _,value in base):.1f}ms")
+    if enrich: lines.append(" | ".join(f"{name}={value:.1f}ms" for name,value in enrich) + f" | enrich_total={sum(value for _,value in enrich):.1f}ms")
+    return lines
+
+def request(p, value):
+    p.stdin.write(json.dumps(value,ensure_ascii=False,separators=(",",":"))+"\n"); p.stdin.flush()
+    response=json.loads(p.stdout.readline())
+    if response["error"]: raise RuntimeError(response["error"])
+    return response["result"]
+
+def live(text):
+    with tempfile.TemporaryDirectory(prefix="p4-md-",dir=ROOT/"experiments") as d:
+        data=Path(d); (data/"dict-sources").mkdir()
+        for source in (ROOT/"data/dict-sources").glob("*.kdict"): os.link(source,data/"dict-sources"/source.name)
+        p=subprocess.Popen([str(BINARY),"stdio"],cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",env={**os.environ,"KOTOCLIP_DATA_DIR":str(data)})
+        try:
+            base=request(p,{"command":"analyze","text":text,"register":"cwj"})
+            result=request(p,{"command":"enrich","analysis_id":base["id"]})
+            return result["document"],result["providers"]
+        finally:
+            p.stdin.close()
+            try:p.wait(30)
+            except subprocess.TimeoutExpired:p.kill();p.wait()
+
+def append(lines, doc):
+    """向 lines 追加单个文档的紧凑整合报告（仅 live 结果，无层级标题）。"""
+    text=doc["text"]
+    lines += ["数量", " | ".join(f"{k}={v}" for k,v in counts(doc).items())]
+    # 词语：五个字段位置固定，与 surface 相同的 lemma、kana 记 -，空值记 o
+    source=doc.get("source",{}).get("tokens",[])
+    if not source: source=[{"surface":x["surface"],"fields":[]} for x in doc.get("morphemes",[])]
+    words=[]
+    for token in source:
+        fs={x["name"]:x.get("value") for x in token.get("fields",[])}
+        if fs.get("pos1") in {"助詞","助動詞","記号","補助記号"}: continue
+        surf_val=token.get("surface","")
+        lemma=fs.get("lemma"); kana=fs.get("kana"); cform=fs.get("cForm")
+        parts=[surf_val, fs.get("pos1"),
+               "-" if lemma==surf_val else lemma,
+               "-" if kana==surf_val else kana,
+               cform]
+        words.append(";".join(c(part) for part in parts))
+    lines += ["词语", joined(words)]
+    language_tables(lines, doc)
+    lookup_tables(lines, doc)
+    lines += ["<details>", "<summary>实验与来源统计</summary>", ""]
+    # 文节：provider 字段若全部相同则在摘要注明，逐项省略
+    bs=doc.get("bunsetsu",{}).get("nodes",[])
+    bs_filtered=[x for x in bs if x.get("status")=="observed" or not any(y.get("status")=="observed" for y in bs)]
+    bs_providers={x.get("provider") for x in bs_filtered}
+    if len(bs_providers)==1:
+        bs_prov=next(iter(bs_providers))
+        lines += ["文节", f"provider={bs_prov}", joined([f"{surf(text,x.get('char_range'))};{x.get('status')}" for x in bs_filtered])]
+    else:
+        lines += ["文节", joined([f"{surf(text,x.get('char_range'))};{x.get('provider')};{x.get('status')}" for x in bs_filtered])]
+    # 小句：provider 字段若全部相同则在摘要注明，逐项省略
+    cls=provider_clauses(doc)
+    cls_providers={x.get("provider") for x in cls}
+    if len(cls_providers)==1:
+        cls_prov=next(iter(cls_providers))
+        lines += ["小句", f"provider={cls_prov}", joined([f"{surf(text,x.get('char_range'))};{x.get('status')}" for x in cls])]
+    else:
+        lines += ["小句", joined([f"{surf(text,x.get('char_range'))};{x.get('provider')};{x.get('status')}" for x in cls])]
+    # 来源关联
+    sources=doc.get("external_sources") or doc.get("sources",[]); graph=doc.get("structure_graph",{}); kinds=[]; rels=[]
+    for source in sources:
+        provider=source.get("provider",{}).get("id"); kinds += [f"{provider}:{x.get('kind')}" for x in source.get("nodes",[])]; rels += [f"{provider}:{x.get('kind')}:{x.get('label')}" for x in source.get("relations",[])]
+    lines += ["来源关联", f"nodes={count(kinds)}; relations={count(rels)}; entities={len(graph.get('entities',[]))}; selected={count(x.get('kind') for x in graph.get('candidates',[]) if x.get('selected'))}; incomplete={sum(not x.get('complete',True) for x in graph.get('entities',[]))}"]
+    # 对齐：非 1:1/complete 项省略固定 reason=equal_coverage；若全部 reason 相同则在摘要注明
+    groups=[g for a in doc.get("provider_token_alignments",[]) for g in a.get("groups",[])]
+    non_std=[g for g in groups if not (g.get("cardinality")=="1:1" and g.get("status")=="complete")]
+    all_reasons={g.get("reason") for g in non_std}
+    def fmt_align(g):
+        parts=[g.get("cardinality"), g.get("status"), str(g.get("char_range"))]
+        if len(all_reasons)>1: parts.append(g.get("reason"))  # 有多种 reason 才逐项显示
+        return ";".join(filter(None,parts))
+    align_summary=f"groups={len(groups)}; cardinality={count(g.get('cardinality') for g in groups)}; status={count(g.get('status') for g in groups)}"
+    if len(all_reasons)==1 and all_reasons!={None}: align_summary+=f"; reason={next(iter(all_reasons))}"
+    lines += ["对齐", align_summary, joined([fmt_align(g) for g in non_std])]
+    lines += ["", "</details>", ""]
+
+def export_one(report, sample_id, output_dir, saved_output=False):
+    """导出单个样本的 live integration 报告，返回输出路径。"""
+    sample=next(x for x in report["cases"] if x["id"]==sample_id)
+    saved=sample["document"]
+    if saved_output:
+        raw=json.loads((ROOT/"experiments/p4-sample-review"/f"{sample_id}.json").read_text(encoding="utf-8"))
+        current, providers=raw["unit"]["document"],raw["unit"]["providers"]
+    else:
+        current, providers = live(saved["text"])
+    current = dict(current)
+    current["lookup_targets"] = sample.get("lookup_targets")
+    schema=current.get("schema","")
+    # Provider：status=ready 固定值省略，只保留 id;time
+    prov_line=" | ".join(
+        f"{x.get('id')};{x.get('elapsed_ms')}ms" +
+        (f";{x.get('status')};{c(x.get('error'))}" if x.get('status')!='ready' else '')
+        for x in providers) or "count=0"
+    lines=[f"# {sample_id}",
+           f"paragraph={sample['paragraph']} | schema={schema}",
+           "",
+           "## 文本", saved["text"],
+           "",
+           "## Provider", prov_line,
+           ""]
+    append(lines, current)
+    validation=sample.get("language_validation")
+    if validation:
+        lines += ["本段校验：" + ("通过。" if validation["passed"] else c(validation["errors"])), ""]
+    if sample.get("whole_queries"):
+        rows = list(dict.fromkeys((q['surface'], "命中" if q['dictionary_status']=='matched' else "未命中") for q in sample['whole_queries']))
+        table(lines, "整体查询实测", ("查询对象", "词典结果"), rows)
+    stage=timing_lines(current)
+    if stage: lines += ["", "## 阶段耗时", *stage]
+    output = output_dir / f"{sample_id}-p4-integration.md"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines)+"\n", encoding="utf-8", newline="\n")
+    return output
+
+def main():
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+    parser=argparse.ArgumentParser(description="导出 P4 样本整合报告")
+    parser.add_argument("--case", default="all", help="样本 ID（如 p04），或 all 导出全部（默认）")
+    parser.add_argument("--source", type=Path, default=SOURCE)
+    parser.add_argument("--output-dir", type=Path, default=ROOT/"data/validation")
+    parser.add_argument("--saved", action="store_true", help="导出本次全量采集的原始响应")
+    args=parser.parse_args()
+    report=json.loads(args.source.read_text(encoding="utf-8"))
+    if args.case=="all":
+        ids=[x["id"] for x in report["cases"]]
+    else:
+        ids=[args.case]
+    for sample_id in ids:
+        output=export_one(report, sample_id, args.output_dir, args.saved)
+        print(json.dumps({"id":sample_id,"output":str(output),"bytes":output.stat().st_size}, ensure_ascii=False), flush=True)
+
+if __name__=="__main__": main()

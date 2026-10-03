@@ -3,7 +3,7 @@ mod crown;
 mod daijirin;
 mod shogakukan;
 
-use crate::models::{
+use crate::dictionary::model::{
     DictionaryAdapterDiagnostics, DictionaryContentBlock, DictionaryLink,
     DictionaryOccurrenceHeader, DictionarySection, DictionarySense,
 };

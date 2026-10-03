@@ -49,3 +49,61 @@ test("矩阵区分可联动暗显项与整个查询不可用的词典", () => {
   assert.equal(dictionaryHasAnyForm(lookup, "Starter"), false);
   assert.equal(formForDictionary(lookup, "Starter", "form:あの"), null);
 });
+
+test("连续查询同步回退，不把上一词的不可用词典保留为空单元格", () => {
+  const queriedLookups = [
+    {
+      dictionary_names: ["小学馆", "大辞林", "Crown", "Starter"],
+      selected_form_id: "form:喩える",
+      forms: [{
+        form_id: "form:喩える",
+        dictionaries: [
+          { dictionary_name: "小学馆", available: false },
+          { dictionary_name: "大辞林", available: true },
+          { dictionary_name: "Crown", available: false },
+          { dictionary_name: "Starter", available: false },
+        ],
+      }],
+    },
+    {
+      dictionary_names: ["小学馆", "大辞林", "Crown", "Starter"],
+      selected_form_id: "form:抜け落ちる",
+      forms: [{
+        form_id: "form:抜け落ちる",
+        dictionaries: [
+          { dictionary_name: "小学馆", available: true },
+          { dictionary_name: "大辞林", available: true },
+          { dictionary_name: "Crown", available: true },
+          { dictionary_name: "Starter", available: false },
+        ],
+      }],
+    },
+    {
+      dictionary_names: ["小学馆", "大辞林", "Crown", "Starter"],
+      selected_form_id: "form:落とす",
+      forms: [{
+        form_id: "form:落とす",
+        dictionaries: [
+          { dictionary_name: "小学馆", available: true },
+          { dictionary_name: "大辞林", available: true },
+          { dictionary_name: "Crown", available: true },
+          { dictionary_name: "Starter", available: false },
+        ],
+      }],
+    },
+  ];
+
+  let preferredDictionary = "小学馆";
+  const selectedDictionaries = queriedLookups.map((current) => {
+    const selected = dictionaryForForm(
+      current,
+      current.selected_form_id,
+      preferredDictionary,
+    );
+    preferredDictionary = selected;
+    return selected;
+  });
+
+  assert.deepEqual(selectedDictionaries, ["大辞林", "大辞林", "大辞林"]);
+  assert.ok(selectedDictionaries.every(Boolean));
+});

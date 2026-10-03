@@ -1,0 +1,15 @@
+{
+  "schema": "kotoclip.document-session-check.v1",
+  "open_ms": 1.9237000014982186,
+  "query_during_model_ms": 58.73609999980545,
+  "real_units": 2,
+  "cold_warm_equal": true,
+  "stale_query_rejected": true,
+  "wrong_text_rejected": true,
+  "cancellation_recovery": true,
+  "planned_characters": 21000,
+  "planned_units": 7000,
+  "tail_range_verified": true,
+  "invalid_range_atomic": true,
+  "continue_cancel": true
+}

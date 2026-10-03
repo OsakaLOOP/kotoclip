@@ -1,12 +1,6 @@
 export type AnalysisPhase =
   | "preparing"
-  | "tokenizing"
-  | "chunking"
-  | "grammar_matching"
-  | "dictionary_matching"
-  | "profile_scoring"
-  | "expression_matching"
-  | "recording_exposure"
+  | "processing"
   | "completed";
 
 export type CacheProgressPhase =
@@ -27,6 +21,7 @@ export interface AnalysisProgress {
   total: number;
   percent: number;
   message: string;
+  work?: { analysis: { complete: number; total: number }; cache: { complete: number; total: number } };
 }
 
 export interface ProgressStage {
@@ -36,12 +31,8 @@ export interface ProgressStage {
 
 export const analysisProgressStages: readonly ProgressStage[] = [
   { phase: "preparing", label: "准备" },
-  { phase: "tokenizing", label: "形态素" },
-  { phase: "dictionary_matching", label: "词典" },
-  { phase: "chunking", label: "文节" },
-  { phase: "grammar_matching", label: "语法" },
-  { phase: "profile_scoring", label: "评分" },
-  { phase: "expression_matching", label: "表达" },
+  { phase: "processing", label: "分析" },
+  { phase: "completed", label: "完成" },
 ];
 
 export const cacheProgressStages: readonly ProgressStage[] = [
@@ -64,9 +55,6 @@ export function progressPhaseIndex(progress: AnalysisProgress): number {
   if (progress.phase === "completed") return stages.length;
   const index = stages.findIndex((stage) => stage.phase === progress.phase);
   if (index >= 0) return index;
-  if (progress.mode === "analysis" && progress.phase === "recording_exposure") {
-    return stages.length;
-  }
   return -1;
 }
 

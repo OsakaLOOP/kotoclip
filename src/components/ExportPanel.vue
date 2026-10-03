@@ -1,55 +1,23 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { Backpack, Download, Eraser, Trash2 } from "@lucide/vue";
-import { Paragraph } from "../composables/useTokenization";
 import ReaderSurface from "./reader/ReaderSurface.vue";
+import type { SavedSelection } from "../types/reader";
 
 const props = defineProps<{
   show: boolean;
-  selectedKeys: { paragraphId: number; tokenIndex: number }[];
-  paragraphs: Paragraph[];
+  selections: SavedSelection[];
 }>();
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "remove-key", paragraphId: number, tokenIndex: number): void;
+  (e: "remove", selection: SavedSelection): void;
   (e: "clear-all"): void;
   (e: "export"): void;
-  (e: "update-note", paragraphId: number, tokenIndex: number, note: string): void;
+  (e: "update-note", selection: SavedSelection, note: string): void;
 }>();
 
-const isExporting = ref(false);
-
-// 将选中的 Keys 映射为可展示的词条数据
-const selectedTokens = computed(() => {
-  const list: {
-    paragraphId: number;
-    tokenIndex: number;
-    surface: string;
-    baseForm: string;
-    reading: string;
-    note: string;
-  }[] = [];
-
-  for (const key of props.selectedKeys) {
-    const p = props.paragraphs.find((para) => para.id === key.paragraphId);
-    if (!p) continue;
-    const token = p.tokens[key.tokenIndex];
-    if (!token) continue;
-    list.push({
-      paragraphId: key.paragraphId,
-      tokenIndex: key.tokenIndex,
-      surface: token.bunsetsu.surface,
-      baseForm: token.bunsetsu.head_word.base_form,
-      reading: token.bunsetsu.head_word.reading,
-      note: "",
-    });
-  }
-  return list;
-});
-
-// 计算选中的词汇数量
-const count = computed(() => selectedTokens.value.length);
+const count = computed(() => props.selections.length);
 </script>
 
 <template>
@@ -67,20 +35,20 @@ const count = computed(() => selectedTokens.value.length);
 
         <div v-else class="token-list">
           <div
-            v-for="item in selectedTokens"
-            :key="`${item.paragraphId}-${item.tokenIndex}`"
+            v-for="item in selections"
+            :key="`${item.book_id}:${item.text_version}:${item.start}:${item.end}`"
             class="token-card"
           >
             <div class="card-content">
-              <div class="card-word">{{ item.baseForm }}</div>
-              <div class="card-reading">【{{ item.reading }}】</div>
-            <div class="card-surface">来自: {{ item.surface }}</div>
-            <textarea class="card-note" :value="item.note" @input="emit('update-note', item.paragraphId, item.tokenIndex, ($event.target as HTMLTextAreaElement).value)" />
+              <div class="card-word">{{ item.base_form || item.surface }}</div>
+              <div v-if="item.reading" class="card-reading">【{{ item.reading }}】</div>
+              <div class="card-surface">正文：{{ item.surface }}</div>
+              <textarea class="card-note" :value="item.note" @input="emit('update-note', item, ($event.target as HTMLTextAreaElement).value)" />
             </div>
             <button
               class="card-remove"
               title="移出导出列表"
-              @click="emit('remove-key', item.paragraphId, item.tokenIndex)"
+              @click="emit('remove', item)"
             >
               <Trash2 :size="16" aria-hidden="true" />
             </button>
@@ -92,10 +60,9 @@ const count = computed(() => selectedTokens.value.length);
         <button class="clear-btn" @click="emit('clear-all')"><Eraser :size="15" aria-hidden="true" /> 清空选择</button>
         <button
           class="export-btn"
-          :disabled="isExporting"
           @click="$emit('export')"
         >
-          <Download :size="15" aria-hidden="true" /> {{ isExporting ? '处理中...' : '生成 Anki 导出' }}
+          <Download :size="15" aria-hidden="true" /> 导出 JSON
         </button>
       </div>
   </ReaderSurface>

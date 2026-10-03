@@ -1,4 +1,4 @@
-use crate::models::{
+use crate::dictionary::model::{
     DictEntry, DictionaryFormAvailability, DictionaryFormGroup, DictionaryFormVariant,
     DictionaryLookup, DictionaryLookupTiming,
 };
@@ -28,7 +28,7 @@ pub struct DictionaryFormSeed {
 }
 
 /// 从发现阶段的 occurrence 提取全局表记行。
-/// alias 与读音回退只提供发现证据；没有兼容读音的非精确表记不会进入矩阵。
+/// 精确表记保留异读记录；其他表记须有读音或显式别名依据。
 pub fn collect_form_seeds(
     query: &str,
     observed_form: Option<&str>,
@@ -57,7 +57,7 @@ pub fn collect_form_seeds(
             (Some(_), None) => true,
             (None, _) => true,
         };
-        if !reading_compatible {
+        if reading_key.is_some() && !reading_compatible {
             continue;
         }
         let base_score = entry
@@ -144,19 +144,25 @@ pub fn collect_form_seeds(
         }
     }
 
-    let mut context_forms = vec![(query, "context:query", 2_000)];
+    let mut context_forms = vec![(query, "context:query", 3_000)];
     if let Some(observed) = observed_form {
-        context_forms.push((observed, "context:observed", 3_000));
+        context_forms.push((observed, "context:observed", 2_000));
     }
     for (surface_form, evidence, score) in context_forms {
         let normalized = normalize_form_identity(surface_form);
-        let surface_key = original_surface_identity(surface_form);
-        let Some(seed) = seeds
-            .iter_mut()
-            .find(|seed| seed.normalized_form == normalized)
-        else {
+        if !seeds.is_empty() && !seeds.iter().any(|seed| seed.normalized_form == normalized) {
             continue;
-        };
+        }
+        let surface_key = original_surface_identity(surface_form);
+        if !seeds.iter().any(|seed| seed.normalized_form == normalized) {
+            seeds.push(DictionaryFormSeed {
+                display_form: surface_form.to_string(), normalized_form: normalized.clone(),
+                readings: Vec::new(), evidence: Vec::new(), score,
+                variants: Vec::new(), available_dictionary_names: Vec::new(),
+                order: seeds.len(), admissible: true,
+            });
+        }
+        let seed = seeds.iter_mut().find(|seed| seed.normalized_form == normalized).unwrap();
         push_unique(&mut seed.evidence, evidence.to_string());
         seed.score = seed.score.max(score);
         seed.admissible = true;
@@ -166,7 +172,9 @@ pub fn collect_form_seeds(
             .find(|variant| original_surface_identity(&variant.surface_form) == surface_key)
         {
             push_unique(&mut variant.evidence, evidence.to_string());
-            variant.score = variant.score.max(score);
+            if evidence == "context:observed" {
+                variant.score = variant.score.max(score);
+            }
             if let Some(reading) = reading_key.as_ref() {
                 push_unique(&mut variant.readings, reading.clone());
             }
@@ -307,7 +315,7 @@ pub fn build_lookup(
     query: &str,
     observed_form: Option<&str>,
     reading: Option<&str>,
-    pos: Option<&crate::models::PosTag>,
+    pos: Option<&crate::dictionary::model::PosTag>,
     selected_form_id: Option<String>,
     mode: &str,
     forms: Vec<DictionaryFormGroup>,
@@ -350,7 +358,9 @@ pub fn normalize_surface_identity(value: &str) -> String {
             _ => character,
         })
         .filter(|character| !character.is_whitespace())
-        .collect()
+        .collect::<String>()
+        .trim_matches(['-', '‐', '‑', '‒', '–', '—', '―'])
+        .to_string()
 }
 
 fn original_surface_identity(value: &str) -> String {
@@ -460,7 +470,7 @@ fn push_unique(values: &mut Vec<String>, value: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{DictionaryForm, DictionaryMatchEvidence};
+    use crate::dictionary::model::{DictionaryForm, DictionaryMatchEvidence};
 
     fn entry(
         dictionary: &str,
@@ -484,7 +494,7 @@ mod tests {
             occurrence_id: occurrence.to_string(),
             source_record_index: 0,
             entry_kind: "lexical".to_string(),
-            header: crate::models::DictionaryOccurrenceHeader {
+            header: crate::dictionary::model::DictionaryOccurrenceHeader {
                 display_form: form.to_string(),
                 reading: Some(reading.to_string()),
                 scoped_forms: vec![DictionaryForm {
@@ -503,6 +513,9 @@ mod tests {
                 ..Default::default()
             }),
             raw_definition: None,
+            content_loaded: true,
+            has_definition: true,
+            metadata_pos_tags: Vec::new(),
         }
     }
 

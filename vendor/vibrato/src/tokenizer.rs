@@ -11,7 +11,7 @@ use crate::tokenizer::worker::Worker;
 
 /// Tokenizer.
 pub struct Tokenizer {
-    dict: Dictionary,
+    dict: Box<Dictionary>,
     // For the MeCab compatibility
     space_cateset: Option<u32>,
     max_grouping_len: Option<usize>,
@@ -23,9 +23,9 @@ impl Tokenizer {
     /// # Arguments
     ///
     ///  - `dict`: Dictionary to be used.
-    pub const fn new(dict: Dictionary) -> Self {
+    pub fn new(dict: Dictionary) -> Self {
         Self {
-            dict,
+            dict: Box::new(dict),
             space_cateset: None,
             max_grouping_len: None,
         }
@@ -88,19 +88,6 @@ impl Tokenizer {
             ConnectorWrapper::Matrix(c) => self.build_lattice_inner(sent, lattice, c),
             ConnectorWrapper::Raw(c) => self.build_lattice_inner(sent, lattice, c),
             ConnectorWrapper::Dual(c) => self.build_lattice_inner(sent, lattice, c),
-        }
-    }
-
-    pub(crate) fn append_nbest_paths(
-        &self,
-        lattice: &Lattice,
-        n: usize,
-        paths: &mut Vec<(i32, Vec<(usize, crate::tokenizer::lattice::Node)>)>,
-    ) {
-        match self.dict.connector() {
-            ConnectorWrapper::Matrix(c) => lattice.append_nbest_paths(n, paths, c),
-            ConnectorWrapper::Raw(c) => lattice.append_nbest_paths(n, paths, c),
-            ConnectorWrapper::Dual(c) => lattice.append_nbest_paths(n, paths, c),
         }
     }
 

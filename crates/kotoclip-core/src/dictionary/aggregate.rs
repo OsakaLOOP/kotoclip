@@ -1,4 +1,4 @@
-use crate::models::DictEntry;
+use crate::dictionary::model::DictEntry;
 
 /// 根据用户的偏好设置，对多本词典的检索结果进行优先级重排与聚合整理
 pub fn sort_definitions(mut entries: Vec<DictEntry>, priority_list: &[String]) -> Vec<DictEntry> {

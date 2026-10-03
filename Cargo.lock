@@ -2125,6 +2125,7 @@ dependencies = [
  "flate2",
  "html5ever 0.39.0",
  "imagesize",
+ "kotoclip-nlp",
  "log",
  "regex",
  "rmp-serde",
@@ -2138,6 +2139,18 @@ dependencies = [
  "unicode-segmentation",
  "vibrato",
  "zip",
+]
+
+[[package]]
+name = "kotoclip-nlp"
+version = "0.1.0"
+dependencies = [
+ "csv",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "vibrato",
 ]
 
 [[package]]
@@ -3852,6 +3865,7 @@ dependencies = [
 name = "tauri-app"
 version = "0.1.2"
 dependencies = [
+ "flate2",
  "kotoclip-core",
  "serde",
  "serde_json",

@@ -1,0 +1,21 @@
+# 开发入口记忆
+
+- 胶囊的词汇范围与作者注音查询由 `crates/kotoclip-core/src/dictionary/targets.rs` 生成；`src/reader/lookupPresentation.ts` 提供活用投影，`ReaderDocumentView.vue` 组合两者。问题样本的实测入口为 `scripts/inspect_lookup_cases.py`，通过本机词典索引和 CLI 查询保存证据。
+
+- 正文窗口划分入口位于 `crates/kotoclip-core/src/document_plan.rs`；P4 小说性能采集入口位于 `scripts/benchmark_p4_novel.py`，十段测量结果默认保存在 `.agents/analysis/p4-novel-10.json`。
+- 当前本机结构来源由 `crates/kotoclip-core/src/providers.rs` 与 `scripts/nlp_provider.py` 调度 GiNZA；KWJA 的离线适配器位于 `scripts/kwja_adapter.py`，不进入桌面来源配置。
+- P4 活用链与整体构词的实现契约位于 `docs/p4_morphology_formation.md`。
+- `morphology.rs` 定义链、状态和 occurrence；`morphology_machine.rs` 执行连接判定；`linguistic_context.rs` 读取 GiNZA 正式词界、活用字段及关系。完整来源通过 `unify_with_sources` 接入。
+- 整体词保存在 `FormationNode.word`，由 `formation.rs` 生成，查询候选由 `lexical.rs` 提供。GiNZA 适配器的显式 compound 通常对应单个正式 token；跨正式 token 的构词需要读取 `compound` dependency。
+- P01–P10 的人工阅读入口是 `data/validation/p01-p4-integration.md` 至 `p10-p4-integration.md`。大型 `p4-sample-review.json` 由采集和验证脚本处理，开发时直接阅读 Markdown。
+- 全量采集使用 `python -X utf8 scripts/review_p4_samples.py`；现有报告导出使用 `python -X utf8 scripts/export_p4_sample_report.py --saved`。原始响应保存在 `experiments/p4-sample-review/`。
+- 旧字模块的正式名称为 `kyujitai.js`，Rust 入口是 `kyujitai.rs`；审计中曾用 `kyukanji.js` 指代该能力。
+- 缩约规范形式用于查询和展示：清浊变体统一为 `ている／てしまう／ておく`，补助动词查询形为 `いる／しまう／おく`。实际缩略、浊化和活用保存在原始成员与连接信息中。
+- P4 的必须验收范围从 token 到语法活用链和整体构词。正式 token 支持整体构词；依存、文节及其他句法结果主要作为实验性辅助证据。
+- P4 人工报告采用“原始组成、构成形态、最终对象”三列，每条链竖向独占一行；补助用言用前接词形说明归属。内部 ID、完整状态和来源引用保存在机器报告。
+- P4 完成范围的最新核对为 `docs/p4_handoff.md`。P4 提供 token、活用链和构词候选，词典验证、查询聚合与决定归下一模块；当前修复与长期方案严格分开。本轮职责整理只修改文档。
+- 多粒度查询协议在 `docs/dictionary.md`，验收在 `docs/quality.md` 和 A28–A33。P5A–P5C 负责词典查询、绑定、决定和交互；P5D 独立实施语法与表达，结合词典、形态和结构证据，规则仅覆盖适合声明条件的部分。P7 持久化词汇状态、收藏及阅读数据。
+- P5 查词处理草案位于 `docs/lookup_processing_draft.md`：活用功能范围先排除，剩余词汇范围按最大范围无重叠贪心覆盖，再归属内部子对象；词典元数据由后续解析器提供，P5 仅接收并用于筛选和排序。
+- 阅读器 Engine 生命周期、UniDic／GiNZA 分析进度和词典气泡投影协议位于 `docs/reader_engine.md`；外层词汇范围由词典确认的整体词或未覆盖的独立词构成，悬浮时并排查询外层词条与当前位置的最小可查询组分。
+- 阅读器应用入口为 `src/App.vue`，正文投影和虚拟行位于 `src/components/reader/ReaderDocumentView.vue`，宿主调用适配位于 `src/services/reader.ts`；新用户状态文件为 `reader-state.sqlite`，选择与笔记类型位于 `src/types/reader.ts`。
+- 独立桌面发行版的资源、打包和优化追踪位于 `docs/standalone_distribution.md`；现代语 UniDic 与 GiNZA 运行时的第一轮审计入口为 `scripts/audit_ginza_runtime.py`。

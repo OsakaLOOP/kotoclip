@@ -1,200 +1,192 @@
-pub mod commands;
-pub mod paths;
-pub mod state;
+mod reader_engine;
 
-use kotoclip_core::library::ReaderLibrary;
-use kotoclip_core::{cache::AnalysisCache, DictionaryService, Engine};
-use state::AppState;
-use std::any::Any;
-use std::collections::HashMap;
-use std::sync::atomic::AtomicU64;
-use tauri::{Emitter, Manager};
+use kotoclip_core::analysis::{Request, ResourcePaths, Response};
+use kotoclip_core::reader_state::{SavedSelection, WordState};
+use reader_engine::ReaderEngine;
+use std::{
+    path::PathBuf,
+    sync::Arc,
+};
+use tauri::{Manager, State};
 
-#[derive(Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct BackendReadyEvent {
-    ready: bool,
-    error: Option<String>,
+struct AppState {
+    reader: Arc<ReaderEngine>,
+    cancellation: Arc<std::sync::atomic::AtomicU64>,
 }
 
-fn panic_payload_message(payload: &(dyn Any + Send)) -> String {
-    if let Some(message) = payload.downcast_ref::<&str>() {
-        (*message).to_string()
-    } else if let Some(message) = payload.downcast_ref::<String>() {
-        message.clone()
-    } else {
-        "未知 panic".to_string()
+#[tauri::command]
+fn cancel_external(state: State<'_, AppState>) {
+    state.cancellation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+}
+
+#[tauri::command]
+fn search_grammar_catalog(
+    query: Option<String>, family: Option<String>, jlpt_level: Option<u8>,
+    audit_status: Option<String>, source_ref: Option<String>,
+) -> Result<Vec<kotoclip_core::grammar_catalog::GrammarConcept>, String> {
+    kotoclip_core::grammar_catalog::search(query.as_deref(), family.as_deref(), jlpt_level, audit_status.as_deref(), source_ref.as_deref())
+}
+
+#[tauri::command]
+fn get_grammar_concept(concept_id: String) -> Result<kotoclip_core::grammar_catalog::GrammarConceptBundle, String> {
+    kotoclip_core::grammar_catalog::get(&concept_id)
+}
+
+#[tauri::command]
+async fn nlp_request(state: State<'_, AppState>, request: Request) -> Result<Response, String> {
+    if matches!(request, Request::CancelExternal) {
+        cancel_external(state);
+        return Ok(Response { result: Some(serde_json::json!({"cancelled": true})), error: None });
     }
+    let service = state.reader.analysis.clone();
+    let generation = state.cancellation.load(std::sync::atomic::Ordering::Relaxed);
+    tauri::async_runtime::spawn_blocking(move || {
+        Ok(service.dispatch_at(request, generation))
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    let run_started = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis();
-    println!("[时间戳] Rust tauri_app_lib::run 开始: {}", run_started);
+#[tauri::command]
+fn reader_library(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    Ok(serde_json::json!({"books": state.reader.books()?, "path": state.reader.library_path()}))
+}
 
-    // 构建并启动 Tauri 桌面应用
+#[tauri::command]
+async fn reader_book_summary(state: State<'_, AppState>, id: String) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.book_summary(&id)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn reader_import(state: State<'_, AppState>, path: String) -> Result<kotoclip_core::library::LibraryBook, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.import(&path)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn reader_open_book(state: State<'_, AppState>, id: String) -> Result<kotoclip_core::library::LibraryBook, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.open_book(&id)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+async fn reader_open_text(state: State<'_, AppState>, text: String) -> Result<serde_json::Value, String> {
+    let reader = state.reader.clone();
+    tauri::async_runtime::spawn_blocking(move || reader.open_text(text)).await.map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+fn reader_close(state: State<'_, AppState>) { state.reader.close(); }
+
+#[tauri::command]
+fn reader_progress(state: State<'_, AppState>, id: String, offset: usize, total: usize, chapter: Option<String>, seconds: u64) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    state.reader.progress(&id, offset, total, chapter.as_deref(), seconds)
+}
+
+#[tauri::command]
+fn reader_organize(state: State<'_, AppState>, id: String, color: Option<String>, tags: Vec<String>) -> Result<kotoclip_core::library::LibraryBookSummary, String> {
+    state.reader.organize(&id, color.as_deref(), &tags)
+}
+
+#[tauri::command]
+fn reader_reset(state: State<'_, AppState>, id: String) -> Result<kotoclip_core::library::LibraryBookSummary, String> { state.reader.reset(&id) }
+
+#[tauri::command]
+fn reader_remove(state: State<'_, AppState>, id: String) -> Result<bool, String> { state.reader.remove(&id) }
+
+#[tauri::command]
+fn reader_word(state: State<'_, AppState>, base: String, reading: String) -> Result<WordState, String> { state.reader.word(&base, &reading) }
+
+#[tauri::command]
+fn reader_mark(state: State<'_, AppState>, base: String, reading: String, known: bool) -> Result<WordState, String> { state.reader.mark(&base, &reading, known) }
+
+#[tauri::command]
+fn reader_expose(state: State<'_, AppState>, base: String, reading: String) -> Result<(), String> { state.reader.expose(&base, &reading) }
+
+#[tauri::command]
+fn reader_selections(state: State<'_, AppState>, book: String, version: String) -> Result<Vec<SavedSelection>, String> { state.reader.selections(&book, &version) }
+
+#[tauri::command]
+fn reader_save_selection(state: State<'_, AppState>, selection: SavedSelection) -> Result<(), String> { state.reader.save_selection(&selection) }
+
+#[tauri::command]
+fn reader_delete_selection(state: State<'_, AppState>, book: String, version: String, start: usize, end: usize) -> Result<(), String> {
+    state.reader.delete_selection(&book, &version, start, end)
+}
+
+#[tauri::command]
+fn reader_clear_selections(state: State<'_, AppState>, book: String, version: String) -> Result<(), String> { state.reader.clear_selections(&book, &version) }
+
+pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .setup(move |app| {
-            let setup_entered = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis();
-            println!(
-                "[时间戳] Rust setup 阶段进入: {}, 距离 run 开始: {}ms",
-                setup_entered,
-                setup_entered - run_started
-            );
-
-            let paths =
-                paths::AppPaths::resolve(app.handle()).map_err(|error| error.to_string())?;
-            let library =
-                ReaderLibrary::open(&paths.library_dir).map_err(|error| error.to_string())?;
-
-            // 先注册可等待的资源，让 Tauri 能立即进入事件循环并绘制前端。
-            let engine = state::LazyResource::pending();
-            let dictionary = state::LazyResource::pending();
-            let dictionary_background = state::LazyResource::pending();
-            let analysis_cache = state::LazyResource::pending();
-            app.manage(AppState {
-                engine: engine.clone(),
-                dictionary: dictionary.clone(),
-                dictionary_background: dictionary_background.clone(),
-                sessions: state::RecoveringMutex::new(HashMap::new(), "document sessions"),
-                analysis_cancellations: state::AnalysisCancellationRegistry::new(),
-                next_session_id: AtomicU64::new(1),
-                analysis_cache: analysis_cache.clone(),
-                library,
+        .setup(|app| {
+            let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+            let paths = if cfg!(debug_assertions) {
+                ResourcePaths::development(&root)
+            } else {
+                let resources = app.path().resource_dir()?;
+                let portable = std::env::current_exe()?
+                    .parent()
+                    .ok_or("程序目录无效")?
+                    .to_path_buf();
+                let data = std::env::var_os("KOTOCLIP_DATA_DIR")
+                    .map(PathBuf::from)
+                    .unwrap_or(app.path().app_data_dir()?);
+                let bundled = |relative: &str| {
+                    let local = portable.join(relative);
+                    if local.exists() { local } else { resources.join("_up_").join(relative) }
+                };
+                let dictionary = |name: &str| {
+                    let override_name = format!("KOTOCLIP_UNIDIC_{}", name.to_uppercase());
+                    std::env::var_os(override_name)
+                        .map(PathBuf::from)
+                        .unwrap_or_else(|| {
+                            let local = portable.join("nlp").join(format!("{name}.dic"));
+                            if local.is_file() {
+                                local
+                            } else {
+                                bundled(&format!("experiments/unidic-source/unidic-{name}-202512.vibrato.dic"))
+                            }
+                        })
+                };
+                let sources = [
+                    data.join("dict-sources"),
+                    portable.join("dict-sources"),
+                    resources.join("_up_/data/dict-sources"),
+                ]
+                .into_iter()
+                .find(|p| p.is_dir())
+                .unwrap_or_else(|| data.join("dict-sources"));
+                ResourcePaths {
+                    cwj: dictionary("cwj"),
+                    csj: dictionary("csj"),
+                    dictionary_sources: sources,
+                    dictionaries: data.join("dicts"),
+                    provider_config: data.join("providers.local.json"),
+                    provider_script: bundled("scripts/nlp_provider.py"),
+                    provider_defaults: kotoclip_core::providers::ProviderSettings::portable(&portable),
+                }
+            };
+            let data = std::env::var_os("KOTOCLIP_DATA_DIR").map(PathBuf::from).unwrap_or(app.path().app_data_dir()?);
+            let library = app.path().document_dir()?.join("Kotoclip Library");
+            let reader = Arc::new(ReaderEngine::new(paths, library, data).map_err(std::io::Error::other)?);
+            let background_reader = Arc::clone(&reader);
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(error) = background_reader.backfill_resource_dimensions() {
+                    eprintln!("资源尺寸回填失败：{error}");
+                }
             });
-
-            // 词典和 SQLite 初始化可能持续数百毫秒到数秒，不能阻塞 WebView 首次绘制。
-            let app_handle = app.handle().clone();
-            std::thread::Builder::new()
-                .name("kotoclip-backend-init".to_string())
-                .spawn(move || {
-                    // 主动避让 1.5 秒，让出 CPU 调度资源优先保障 WebView2 的建立与首屏渲染
-                    std::thread::sleep(std::time::Duration::from_millis(1500));
-
-                    let start_time = std::time::SystemTime::now();
-                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        let paths = paths::AppPaths::resolve(&app_handle)
-                            .map_err(|error| error.to_string())?;
-
-                        let dictionary_value = DictionaryService::new_from_dictionary_sources(
-                            &paths.dictionary_source_dir,
-                            &paths.dictionary_dir,
-                            &paths.profile_db,
-                        )
-                        .map_err(|error| error.to_string())?;
-                        dictionary.initialize(Ok(dictionary_value));
-
-                        let background_dictionary_value = DictionaryService::open_existing(
-                            &paths.dictionary_dir,
-                            &paths.profile_db,
-                        )
-                        .map_err(|error| error.to_string())?;
-                        dictionary_background.initialize(Ok(background_dictionary_value));
-
-                        let engine_value = Engine::new(
-                            &paths.system_dictionary,
-                            &paths.dictionary_dir,
-                            &paths.profile_db,
-                        )
-                        .map_err(|error| error.to_string())?;
-                        engine.initialize(Ok(engine_value));
-
-                        let cache_value = AnalysisCache::new(
-                            paths.data_dir.join("cache").join("analysis"),
-                            &paths.system_dictionary,
-                            &paths.dictionary_dir,
-                        )
-                        .map_err(|error| error.to_string())?;
-                        analysis_cache.initialize(Ok(cache_value));
-
-                        if let Ok(elapsed) = start_time.elapsed() {
-                            println!(
-                                "[开发日志] 后台分析引擎与词典就绪，耗时: {}ms",
-                                elapsed.as_millis()
-                            );
-                        }
-                        Ok::<(), String>(())
-                    }))
-                    .unwrap_or_else(|payload| {
-                        Err(format!(
-                            "后台初始化任务异常结束：{}",
-                            panic_payload_message(payload.as_ref())
-                        ))
-                    });
-
-                    if let Err(error) = result {
-                        engine.initialize(Err(error.clone()));
-                        dictionary.initialize(Err(error.clone()));
-                        dictionary_background.initialize(Err(error.clone()));
-                        analysis_cache.initialize(Err(error.clone()));
-                        let _ = app_handle.emit(
-                            "backend-ready",
-                            BackendReadyEvent {
-                                ready: false,
-                                error: Some(error),
-                            },
-                        );
-                        return;
-                    }
-
-                    let _ = app_handle.emit(
-                        "backend-ready",
-                        BackendReadyEvent {
-                            ready: true,
-                            error: None,
-                        },
-                    );
-                })
-                .map_err(|error| format!("无法启动后台初始化线程：{error}"))?;
-
+            let cancellation = reader.analysis.cancellation();
+            app.manage(AppState { reader, cancellation });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            commands::log_ui_timestamps,
-            commands::import_epub_document,
-            commands::list_library_books,
-            commands::open_library_book,
-            commands::update_library_progress,
-            commands::update_library_book_organization,
-            commands::reset_library_book_progress,
-            commands::remove_library_book,
-            commands::get_library_location,
-            commands::open_document,
-            commands::backend_status,
-            commands::cancel_document_analysis,
-            commands::continue_document_analysis,
-            commands::finalize_document,
-            commands::persist_document_cache,
-            commands::request_document_range,
-            commands::apply_document_mutation,
-            commands::close_document,
-            commands::refresh_document_expressions,
-            commands::mark_document_known,
-            commands::choose_document_segmentation,
-            commands::lookup_word,
-            commands::get_dictionary_settings,
-            commands::set_dictionary_order,
-            commands::search_grammar_catalog,
-            commands::get_grammar_concept,
-            commands::mark_known,
-            commands::mark_unknown,
-            commands::add_merge_rule,
-            commands::add_expression_rule,
-            commands::preview_expression_rule,
-            commands::get_expression_rules,
-            commands::delete_expression_rule,
-            commands::get_candidates,
-            commands::choose_segmentation,
-            commands::export_selected,
-        ])
+        .invoke_handler(tauri::generate_handler![nlp_request, search_grammar_catalog, get_grammar_concept, cancel_external,
+            reader_library, reader_book_summary, reader_import, reader_open_book, reader_open_text, reader_close, reader_progress,
+            reader_organize, reader_reset, reader_remove, reader_word, reader_mark, reader_expose,
+            reader_selections, reader_save_selection, reader_delete_selection, reader_clear_selections])
         .run(tauri::generate_context!())
-        .expect("Tauri 桌面应用运行出错");
+        .expect("桌面应用启动失败");
 }

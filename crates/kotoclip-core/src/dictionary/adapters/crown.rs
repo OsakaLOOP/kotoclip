@@ -1,6 +1,6 @@
 use super::{common, AdaptedOccurrence};
 use crate::dictionary::html::{parse_fragment, HtmlElement, HtmlNode};
-use crate::models::{
+use crate::dictionary::model::{
     DictionaryAdapterDiagnostics, DictionaryExample, DictionaryForm, DictionarySection,
     DictionarySectionItem, DictionarySense, DictionaryText,
 };
@@ -56,7 +56,7 @@ pub fn adapt(
 
     let mut occurrence = AdaptedOccurrence {
         entry_kind: "lexical".to_string(),
-        header: crate::models::DictionaryOccurrenceHeader {
+        header: crate::dictionary::model::DictionaryOccurrenceHeader {
             display_form: display_form.clone(),
             canonical_form: Some(display_form.clone()),
             reading,

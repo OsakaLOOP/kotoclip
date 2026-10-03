@@ -1,22 +1,7 @@
-import type { AnnotatedToken, Morpheme, MorphologyChain, MorphologyOperator, PosTag } from "../types";
-
-function containsRange(container: [number, number], inner: [number, number]) {
-  return inner[0] >= container[0] && inner[1] <= container[1];
-}
+import type { AnnotatedToken, MorphologyChain, MorphologyOperator, PosTag } from "../types";
 
 export function morphologyLemma(chain: MorphologyChain) {
   return chain.lemma_form || chain.dictionary_form || chain.lookup_form || chain.surface_form;
-}
-
-export function morphologyChainForMorpheme(
-  token: AnnotatedToken,
-  morpheme: Morpheme,
-  role?: MorphologyChain["role"],
-) {
-  return token.bunsetsu.morphology.chains.find((chain) => (
-    (!role || chain.role === role)
-    && chain.source_ranges.some((range) => containsRange(range, morpheme.char_range))
-  )) ?? null;
 }
 
 export function primaryMorphologyChain(token: AnnotatedToken) {
@@ -28,39 +13,6 @@ export function primaryMorphologyChain(token: AnnotatedToken) {
     ?? lexical.find((chain) => morphologyLemma(chain) === head.base_form)
     ?? chains.find((chain) => chain.lookup_form === head.base_form)
     ?? null;
-}
-
-export function morphologyAnchorMorpheme(token: AnnotatedToken, chain: MorphologyChain) {
-  return token.bunsetsu.morphemes.find((morpheme) => (
-    morpheme.char_range[0] === chain.anchor_range[0]
-    && morpheme.char_range[1] === chain.anchor_range[1]
-  )) ?? null;
-}
-
-export function morphologyLookupReading(token: AnnotatedToken, chain: MorphologyChain) {
-  if (primaryMorphologyChain(token)?.chain_id === chain.chain_id) {
-    return token.bunsetsu.head_word.reading;
-  }
-  const exact = token.bunsetsu.morphemes.find((morpheme) => (
-    chain.source_ranges.some((range) => containsRange(range, morpheme.char_range))
-    && morpheme.surface === chain.lookup_form
-  ));
-  return exact?.reading ?? "";
-}
-
-export function morphologyDisplayReading(token: AnnotatedToken, chain: MorphologyChain) {
-  const exact = token.bunsetsu.morphemes.find((morpheme) => (
-    chain.source_ranges.some((range) => containsRange(range, morpheme.char_range))
-    && morpheme.surface === chain.lookup_form
-  ));
-  return exact?.reading ?? "";
-}
-
-export function morphologyPos(token: AnnotatedToken, chain: MorphologyChain): PosTag {
-  if (primaryMorphologyChain(token)?.chain_id === chain.chain_id) {
-    return token.bunsetsu.head_word.pos;
-  }
-  return morphologyAnchorMorpheme(token, chain)?.pos ?? token.bunsetsu.head_word.pos;
 }
 
 export function morphologyPosLabel(chain: MorphologyChain | null, pos: PosTag) {

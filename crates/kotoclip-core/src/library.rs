@@ -65,8 +65,12 @@ impl ReaderLibrary {
         std::fs::create_dir_all(library.root.join("books"))?;
         let connection = library.connection()?;
         initialize_schema(&connection)?;
-        backfill_resource_dimensions(&connection, &library.root)?;
         Ok(library)
+    }
+
+    pub fn backfill_resource_dimensions(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let connection = self.connection()?;
+        backfill_resource_dimensions(&connection, &self.root)
     }
 
     pub fn root(&self) -> &Path {
@@ -386,7 +390,8 @@ impl ReaderLibrary {
         tags
     }
 
-    fn book_summary(&self, id: &str) -> Result<LibraryBookSummary, Box<dyn std::error::Error>> {
+    pub fn book_summary(&self, id: &str) -> Result<LibraryBookSummary, Box<dyn std::error::Error>> {
+        validate_book_id(id)?;
         let connection = self.connection()?;
         let mut summary = connection
             .query_row(
@@ -658,6 +663,7 @@ mod tests {
         let books = library.list_books().unwrap();
         assert_eq!(books.len(), 1);
         assert_eq!(books[0].title, "测试书");
+        assert_eq!(library.book_summary(&id).unwrap(), books[0]);
         let book = library.open_book(&id).unwrap();
         assert_eq!(book.chapter_titles, vec!["第一章"]);
         assert_eq!(std::fs::read(&book.resources[0].path).unwrap(), b"cover");

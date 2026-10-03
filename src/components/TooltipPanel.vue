@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { ChevronLeft } from "@lucide/vue";
 import { AnnotatedToken, DictEntry, DictionaryChoiceOption, DictionaryLink, DictionaryLookup } from "../types";
+import { nlpRequest } from "../services/nlp";
 import {
   dictionaryShortcutSettings,
   matchesDictionaryShortcut,
@@ -30,12 +31,14 @@ const props = defineProps<{
   x: number;
   y: number;
   token: AnnotatedToken | null;
+  headword?: string;
   lookup: DictionaryLookup | null;
   loading: boolean;
   canGoBack: boolean;
   width?: number;
   maxHeight?: number;
   kindLabel?: string;
+  summaryVisible?: boolean;
   panelId: string;
   shortcutsEnabled?: boolean;
 }>();
@@ -46,6 +49,7 @@ const emit = defineEmits<{
   navigate: [target: string];
   selectForm: [formId: string];
   back: [];
+  close: [];
 }>();
 
 const morphologyChain = computed(() => (
@@ -55,12 +59,13 @@ const morphologyChain = computed(() => (
 const sourceLemma = computed(() => (
   morphologyChain.value
     ? morphologyLemma(morphologyChain.value)
-    : props.token?.bunsetsu.head_word.base_form ?? ""
+    : props.token?.bunsetsu.head_word.base_form ?? props.headword ?? ""
 ));
 
 const sourceQuery = computed(() => (
   morphologyChain.value?.lookup_form
   || props.token?.bunsetsu.head_word.base_form
+  || props.headword
   || ""
 ));
 
@@ -84,7 +89,7 @@ const displayableEntries = computed(() => {
     const hasManagedRelation = entry.links.some((link) => !["candidate", "redirect"].includes(link.relation));
     return entry.entry_kind !== "navigation"
       && entry.entry_kind !== "redirect"
-      && (entry.senses.length || entry.sections.length || entry.content_blocks.length || hasManagedRelation);
+      && (entry.has_definition || entry.senses.length || entry.sections.length || entry.content_blocks.length || hasManagedRelation);
   });
 });
 
@@ -101,7 +106,7 @@ const dictionaryGroups = computed(() => {
   return names.map((name) => ({ name, entries: groupedEntries.get(name) ?? [] }));
 });
 
-const activeDictionaryName = ref<string | null>(null);
+const preferredDictionaryName = ref<string | null>(null);
 const selectedOccurrenceByCell = ref<Record<string, string>>({});
 
 const activeForm = computed(() => (
@@ -110,11 +115,18 @@ const activeForm = computed(() => (
   ?? null
 ));
 
+// 偏好值可以跨查询保留，但实际活动词典必须始终落在当前表记的可用单元格。
+const activeDictionaryName = computed(() => dictionaryForForm(
+  props.lookup,
+  activeForm.value?.form_id,
+  preferredDictionaryName.value,
+));
+
 function meaningfulEntries(entries: DictEntry[]) {
   const withContent = entries.filter((entry) => (
     entry.entry_kind !== "navigation"
     && entry.entry_kind !== "redirect"
-    && (entry.senses.length || entry.sections.length || entry.content_blocks.length)
+    && (entry.has_definition || entry.senses.length || entry.sections.length || entry.content_blocks.length)
   ));
   return withContent.length ? withContent : entries;
 }
@@ -135,12 +147,7 @@ function cellKey(dictionaryName: string) {
 }
 
 function synchronizeSelection() {
-  const previous = activeDictionaryName.value;
-  activeDictionaryName.value = dictionaryForForm(
-    props.lookup,
-    activeForm.value?.form_id,
-    previous,
-  );
+  preferredDictionaryName.value = activeDictionaryName.value;
   const nextSelection = { ...selectedOccurrenceByCell.value };
   for (const group of dictionaryGroups.value) {
     const key = cellKey(group.name);
@@ -161,13 +168,13 @@ function handleDictionarySelect(dictionaryName: string) {
     activeForm.value?.form_id,
   );
   if (!formId) return;
-  activeDictionaryName.value = dictionaryName;
+  preferredDictionaryName.value = dictionaryName;
   if (formId !== activeForm.value?.form_id) emit("selectForm", formId);
 }
 
 function handleFormSelect(formId: string) {
   if (props.loading || formId === activeForm.value?.form_id) return;
-  activeDictionaryName.value = dictionaryForForm(
+  preferredDictionaryName.value = dictionaryForForm(
     props.lookup,
     formId,
     activeDictionaryName.value,
@@ -177,11 +184,8 @@ function handleFormSelect(formId: string) {
 
 watch(
   () => props.lookup,
-  async () => {
-    await nextTick();
-    synchronizeSelection();
-  },
-  { immediate: true },
+  synchronizeSelection,
+  { immediate: true, flush: "sync" },
 );
 
 const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
@@ -197,7 +201,9 @@ const dictionaryOptions = computed<DictionaryChoiceOption[]>(() =>
 
 const unavailableFormIds = computed(() => (
   (props.lookup?.forms ?? [])
-    .filter((form) => !formSupportsDictionary(form, activeDictionaryName.value))
+    .filter((form) => activeDictionaryName.value
+      ? !formSupportsDictionary(form, activeDictionaryName.value)
+      : !form.dictionaries.some((dictionary) => dictionary.available))
     .map((form) => form.form_id)
 ));
 
@@ -214,6 +220,43 @@ const activeEntry = computed(() => {
     ?? defaultOccurrence(activeDictionaryEntries.value)
     ?? undefined;
 });
+
+const loadedEntries = shallowRef(new Map<string, DictEntry[]>());
+const entryLoading = ref(false);
+const entryError = ref("");
+const displayedEntry = computed(() => {
+  const entry = activeEntry.value;
+  if (!entry) return undefined;
+  const loaded = loadedEntries.value.get(entry.entry_key);
+  return loaded?.find((candidate) => candidate.occurrence_id === entry.occurrence_id)
+    ?? loaded?.find((candidate) => candidate.headword === entry.headword && candidate.reading === entry.reading)
+    ?? loaded?.[0]
+    ?? entry;
+});
+
+watch([activeEntry, () => props.show], async ([entry, show], _previous, onCleanup) => {
+  if (!show || !entry || entry.content_loaded || loadedEntries.value.has(entry.entry_key)) {
+    entryLoading.value = false;
+    if (!entry || !show) entryError.value = "";
+    return;
+  }
+  let cancelled = false;
+  onCleanup(() => { cancelled = true; });
+  entryLoading.value = true;
+  entryError.value = "";
+  try {
+    const result = await nlpRequest<DictEntry[]>({ command: "query_entry", entry_key: entry.entry_key });
+    if (!cancelled) {
+      const nextEntries = new Map(loadedEntries.value);
+      nextEntries.set(entry.entry_key, result);
+      loadedEntries.value = nextEntries;
+    }
+  } catch (error) {
+    if (!cancelled) entryError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (!cancelled) entryLoading.value = false;
+  }
+}, { immediate: true });
 
 function entryKindLabel(kind: string) {
   return ({ lexical: "词汇", phrase: "短语", surname: "姓氏", kanji: "汉字条", prefix: "接头成分", suffix: "接尾成分", bound_morpheme: "拘束成分", onomatopoeia: "拟声", navigation: "导航", redirect: "跳转" } as Record<string, string>)[kind] ?? "词条";
@@ -288,16 +331,16 @@ const showsSourceIdentity = computed(() => isSourceQuery.value && (
 ));
 
 const activeHeadword = computed(() => {
-  return (activeEntry.value?.header.display_form
-    || activeEntry.value?.headword)
+  return (displayedEntry.value?.header.display_form
+    || displayedEntry.value?.headword)
     ?? activeForm.value?.display_form
     ?? props.lookup?.query
     ?? sourceLemma.value;
 });
 
 const activeReading = computed(() => {
-  const reading = activeEntry.value?.header.reading
-    || activeEntry.value?.reading
+  const reading = displayedEntry.value?.header.reading
+    || displayedEntry.value?.reading
     || (activeForm.value?.readings.length === 1 ? activeForm.value.readings[0] : "")
     || (showsSourceIdentity.value
       ? props.token?.bunsetsu.head_word.reading
@@ -308,29 +351,22 @@ const activeReading = computed(() => {
 });
 
 const activeHeaderTags = computed(() => [
-  ...(activeEntry.value?.header.pos_tags ?? []),
-  ...(activeEntry.value?.header.usage_tags ?? []),
+  ...(displayedEntry.value?.header.pos_tags ?? []),
+  ...(displayedEntry.value?.header.usage_tags ?? []),
 ]);
 
-const activeHeaderFacts = computed(() => {
-  const header = activeEntry.value?.header;
-  if (!header) return [];
-  const facts = header.pronunciations.map((item) => `${item.label} ${item.value}`);
-  if (header.origin) facts.push(`词源 ${header.origin}`);
-  if (header.historical_reading) facts.push(`历史读音 ${header.historical_reading}`);
-  for (const form of header.scoped_forms) {
-    if (form.form !== header.display_form) {
-      facts.push(`${form.kind === "original" ? "原綴" : "异表记"} ${form.form}`);
-    }
-  }
-  if (header.short_note) facts.push(header.short_note);
-  return facts;
-});
+const showContextSummary = computed(() => Boolean(
+  showMorphologySummary.value && morphologyChain.value && isSourceQuery.value || props.summaryVisible,
+));
 
 const matchHint = computed(() => {
   const evidence = activeEntry.value?.match_evidence;
   if (!evidence) return "";
-  return ({ explicit_alias: "词典别名", compatibility_alias: "兼容表记", reading_fallback: "读音回退", fuzzy: "模糊命中" } as Record<string, string>)[evidence.kind] ?? "";
+  if (evidence.reading_match === "conflict") {
+    const match = evidence.kind === "form_fallback" ? "表记匹配" : "其他读音";
+    return `${match} · 查询读音 ${props.lookup?.reading ?? ""}`;
+  }
+  return ({ explicit_alias: "词典别名", compatibility_alias: "兼容表记", reading_fallback: "同读音候选", fuzzy: "模糊命中" } as Record<string, string>)[evidence.kind] ?? "";
 });
 
 function relationLabel(relation: string) {
@@ -409,7 +445,7 @@ function handleDefinitionClick(event: MouseEvent) {
 <template>
   <Transition name="fade">
     <section
-      v-if="show && token"
+      v-if="show && (token || headword)"
       class="tooltip-panel"
       :id="panelId"
       :data-explanation-panel="panelId"
@@ -423,7 +459,7 @@ function handleDefinitionClick(event: MouseEvent) {
       <div class="tooltip-content" :data-explanation-content="panelId">
         <header class="tooltip-header">
           <button v-if="canGoBack" type="button" class="back-button" aria-label="返回上一词条" @click="emit('back')"><ChevronLeft :size="20" aria-hidden="true" /></button>
-          <div class="header-grid">
+          <div class="header-grid" :class="{ 'header-grid--single': !showContextSummary }">
             <div class="headword-block">
               <div class="headword-line">
                 <span class="base-form">{{ activeHeadword }}</span>
@@ -432,13 +468,13 @@ function handleDefinitionClick(event: MouseEvent) {
               <div class="headword-meta">
                 <span v-for="tag in activeHeaderTags" :key="`${tag.kind}:${tag.label}`" class="header-tag" :data-kind="tag.kind">{{ tag.label }}</span>
                 <span v-if="!activeHeaderTags.length && isSourceQuery" class="tooltip-pos">{{ formattedPos }}</span>
-                <span v-if="activeEntry && activeEntry.entry_kind !== 'lexical'" class="header-tag" data-kind="entry-kind">{{ entryKindLabel(activeEntry.entry_kind) }}</span>
+                <span v-if="displayedEntry && displayedEntry.entry_kind !== 'lexical'" class="header-tag" data-kind="entry-kind">{{ entryKindLabel(displayedEntry.entry_kind) }}</span>
                 <span v-if="matchHint" class="match-hint">{{ matchHint }}</span>
                 <span v-if="kindLabel" class="tooltip-kind">{{ kindLabel }}</span>
               </div>
             </div>
-            <div v-if="activeHeaderFacts.length || showMorphologySummary && morphologyChain && isSourceQuery" class="header-morphology" aria-label="当前词条与本句信息">
-              <div v-for="fact in activeHeaderFacts" :key="fact" class="header-fact">{{ fact }}</div>
+            <div v-if="showContextSummary" class="header-morphology" aria-label="本句形态信息">
+              <slot name="summary" />
               <template v-if="showMorphologySummary && morphologyChain && isSourceQuery">
                 <strong v-if="morphologyChain.surface_form !== sourceLemma" class="current-form">{{ morphologyChain.surface_form }}</strong>
                 <div v-for="step in morphologySteps" :key="step.operator_id" class="morphology-step">
@@ -450,7 +486,9 @@ function handleDefinitionClick(event: MouseEvent) {
           </div>
         </header>
 
-        <DictionaryFormSelector
+          <slot name="context" />
+
+          <DictionaryFormSelector
           v-if="lookup?.forms.length"
           :forms="lookup.forms"
           :selected-form-id="lookup.selected_form_id"
@@ -485,14 +523,15 @@ function handleDefinitionClick(event: MouseEvent) {
             :class="{ 'is-loading': loading }"
             :style="loading ? { height: loadingContentHeight } : undefined"
           >
-            <LoadingSkeleton v-if="loading" class="definition-skeleton" variant="dictionary" />
+            <LoadingSkeleton v-if="loading || entryLoading" class="definition-skeleton" variant="dictionary" />
+            <div v-else-if="entryError" class="empty-state">{{ entryError }}</div>
             <template v-else>
-              <section v-if="activeEntry" class="dictionary-group">
-                <article :key="activeEntry.occurrence_id" class="dictionary-entry">
+              <section v-if="displayedEntry" class="dictionary-group">
+                <article :key="displayedEntry.occurrence_id" class="dictionary-entry">
                   <div class="entry-body">
-                    <DictionaryContent :entry="activeEntry" @navigate="emit('navigate', $event)" />
-                    <div v-if="managedLinkGroups(activeEntry).length" class="managed-relations">
-                      <details v-for="relationGroup in managedLinkGroups(activeEntry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
+                    <DictionaryContent :entry="displayedEntry" @navigate="emit('navigate', $event)" />
+                    <div v-if="managedLinkGroups(displayedEntry).length" class="managed-relations">
+                      <details v-for="relationGroup in managedLinkGroups(displayedEntry)" :key="relationGroup.relation" class="relation-group" :open="relationGroup.links.length <= 6">
                         <summary><span>{{ relationLabel(relationGroup.relation) }}</span><span>{{ relationGroup.links.length }} 项</span></summary>
                         <div class="relation-list">
                           <button v-for="link in relationGroup.links" :key="`${link.relation}:${link.target}`" type="button" :data-relation="link.relation" @click="emit('navigate', link.target)">{{ link.label || link.target }}</button>
@@ -502,7 +541,7 @@ function handleDefinitionClick(event: MouseEvent) {
                   </div>
                 </article>
               </section>
-              <div v-else class="empty-state">当前表记在该词典中不可用。</div>
+              <div v-else class="empty-state">未找到「{{ activeForm?.display_form || sourceQuery }}」的词条。</div>
             </template>
           </div>
         </div>
@@ -515,6 +554,7 @@ function handleDefinitionClick(event: MouseEvent) {
 .tooltip-panel { position: fixed; z-index: 1000; box-sizing: border-box; width: min(480px, calc(100vw - 24px)); overflow: auto; overscroll-behavior: contain; padding: 14px; background: var(--glass-bg); backdrop-filter: var(--glass-filter); border: 1px solid var(--glass-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); color: var(--text-primary); font: .88rem/1.55 var(--font-ui); overflow-wrap: anywhere; pointer-events: auto; scrollbar-gutter: stable; }
 .tooltip-header { position: sticky; top: -14px; z-index: 3; display: flex; gap: 8px; align-items: flex-start; margin: -14px -14px 6px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 76%, transparent 100%); border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent); backdrop-filter: blur(18px); }
 .header-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, .9fr) minmax(160px, 1.1fr); gap: 12px; align-items: start; }
+.header-grid--single { grid-template-columns: minmax(0, 1fr); }
 .headword-block { min-width: 0; }
 .headword-line { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: baseline; }
 .headword-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
@@ -526,7 +566,6 @@ function handleDefinitionClick(event: MouseEvent) {
 .header-tag, .match-hint { display: inline-flex; align-items: center; border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent); border-radius: 4px; padding: 0 5px; color: var(--text-secondary); font: 700 .66rem/1.55 var(--font-ui); }
 .header-tag[data-kind="usage"], .header-tag[data-kind="entry-kind"], .match-hint { background: var(--accent-light); color: var(--accent-color); }
 .header-morphology { min-width: 0; display: grid; gap: 4px; padding-left: 11px; border-left: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent); }
-.header-fact { color: var(--text-secondary); font: .7rem/1.4 var(--font-ui); }
 .current-form { color: var(--text-primary); font-size: .88rem; line-height: 1.35; }
 .morphology-step { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px; align-items: baseline; font-size: .68rem; line-height: 1.35; }
 .morphology-step b { color: #6c5ab0; font: 700 .66rem var(--font-ui); }

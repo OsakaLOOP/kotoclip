@@ -1,6 +1,6 @@
 use super::AdaptedOccurrence;
 use crate::dictionary::html::{HtmlElement, HtmlNode};
-use crate::models::{
+use crate::dictionary::model::{
     DictionaryAdapterDiagnostics, DictionaryContentBlock, DictionaryExample, DictionaryGlossGroup,
     DictionaryLink, DictionaryOccurrenceHeader, DictionarySection, DictionarySense, DictionaryTag,
     DictionaryText,
@@ -440,7 +440,7 @@ fn render_gloss_group(group: &DictionaryGlossGroup, output: &mut String) {
     output.push_str("</span></div>");
 }
 
-fn render_tags(tags: &[crate::models::DictionaryTag], output: &mut String) {
+fn render_tags(tags: &[crate::dictionary::model::DictionaryTag], output: &mut String) {
     for tag in tags {
         output.push_str("<span class=\"dictionary-tag\" data-kind=\"");
         output.push_str(&escape_html(&tag.kind));

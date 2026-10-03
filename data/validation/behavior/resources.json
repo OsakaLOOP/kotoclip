@@ -1,0 +1,374 @@
+{
+  "schema": "kotoclip.provider-resource-check.v1",
+  "providers": [
+    {
+      "id": "ginza",
+      "manifest": {
+        "capabilities": [
+          "token",
+          "compound",
+          "bunsetsu",
+          "sentence",
+          "clause",
+          "dependency",
+          "entity"
+        ],
+        "coordinate_system": "unicode_scalar",
+        "execution": {
+          "device": "cpu",
+          "split_mode": "C"
+        },
+        "id": "ginza",
+        "model": "ja_ginza",
+        "model_version": "5.2.0",
+        "resource_digest": "eaece10333ee2d3a21684765abd21c7c26ef856ad9f7a16c73e2307e15a2741a",
+        "resources": [
+          {
+            "bytes": 217466039,
+            "name": "system.dic",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\sudachidict_core\\resources\\system.dic",
+            "role": "sudachi_dictionary",
+            "sha256": "53fa281d11eef3769712fe1c3c892117338f9892bee6daf4dad51daa5281bb6f"
+          },
+          {
+            "bytes": 1,
+            "name": "attribute_ruler/patterns",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\attribute_ruler\\patterns",
+            "role": "ginza_model",
+            "sha256": "9e076ceaf246b6003d9c2680a2b4cf0bffd069805902b0b5edeebf49039fe4bd"
+          },
+          {
+            "bytes": 23,
+            "name": "compound_splitter/cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\compound_splitter\\cfg",
+            "role": "ginza_model",
+            "sha256": "27edcd2388bf8c1090f7fab30a3bb93e0d0a47593641c20224dd5420dcbdbfcf"
+          },
+          {
+            "bytes": 3935,
+            "name": "config.cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\config.cfg",
+            "role": "ginza_model",
+            "sha256": "8d2a3ad3a0be5664cf07a9270bcd0c262f3cff47519a5d58ad606325a8d82db9"
+          },
+          {
+            "bytes": 28675,
+            "name": "meta.json",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\meta.json",
+            "role": "ginza_model",
+            "sha256": "287371de6fd2209d930e9de0185941ac84ac35a7759637432e4c7eba17cc0b4c"
+          },
+          {
+            "bytes": 719,
+            "name": "morphologizer/cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\morphologizer\\cfg",
+            "role": "ginza_model",
+            "sha256": "85c86ab1e296992e25aa53313f9bf1d04f31bae19ca2981963f81e93b6425933"
+          },
+          {
+            "bytes": 17861,
+            "name": "morphologizer/model",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\morphologizer\\model",
+            "role": "ginza_model",
+            "sha256": "beed40480a61c4e9dfe50cdc1694e44cdfdc3ce0f0eef224ac72fc7ccc99d27a"
+          },
+          {
+            "bytes": 221,
+            "name": "ner/cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\ner\\cfg",
+            "role": "ginza_model",
+            "sha256": "a7172edadafba9f472e9ac0f2660eec04b6405e471be9e20267b79c67288d22d"
+          },
+          {
+            "bytes": 364005,
+            "name": "ner/model",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\ner\\model",
+            "role": "ginza_model",
+            "sha256": "71106b0c2fab24b338cf6ef3cfb2f4ca68e887b251a71ed8435094ce2d6664c0"
+          },
+          {
+            "bytes": 12720,
+            "name": "ner/moves",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\ner\\moves",
+            "role": "ginza_model",
+            "sha256": "b6bdbcdeed53a0141891901c61b0ddf79d1dbe6456030a0a42364398aed8ddd7"
+          },
+          {
+            "bytes": 222,
+            "name": "parser/cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\parser\\cfg",
+            "role": "ginza_model",
+            "sha256": "e2a240ef01f95e58f5dd4c9d6e90d61f597b8d998966570d3009dd81e8879780"
+          },
+          {
+            "bytes": 1742792,
+            "name": "parser/model",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\parser\\model",
+            "role": "ginza_model",
+            "sha256": "539a1c8371f793036c17c29ec8a51334f246ed512e2a34c8df271ad202db0b9c"
+          },
+          {
+            "bytes": 779,
+            "name": "parser/moves",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\parser\\moves",
+            "role": "ginza_model",
+            "sha256": "2227c7b7b9cceb4a97f563375cf1fb45b54bc54ce4c5b99b8544516f85ae4716"
+          },
+          {
+            "bytes": 5268,
+            "name": "README.md",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\README.md",
+            "role": "ginza_model",
+            "sha256": "4b5df85a916844a368889157abd3a931682417a58b1fd1435e90dd45a87650c0"
+          },
+          {
+            "bytes": 4,
+            "name": "tok2vec/cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\tok2vec\\cfg",
+            "role": "ginza_model",
+            "sha256": "f8a5a26e3056eb6fb06deeb3dbccfd88ae74900200c98c70b5966bbb7ec9d4de"
+          },
+          {
+            "bytes": 29276330,
+            "name": "tok2vec/model",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\tok2vec\\model",
+            "role": "ginza_model",
+            "sha256": "0d2565e2b575f66c0a8cd1884640d89bc035def85ef71036c7addb632eda1185"
+          },
+          {
+            "bytes": 22,
+            "name": "tokenizer/cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\tokenizer\\cfg",
+            "role": "ginza_model",
+            "sha256": "46d7a43c3a9b73ee357664eb46231728021dc7e2399cf5712b3d18163f92b2ac"
+          },
+          {
+            "bytes": 5763073,
+            "name": "vocab/key2row",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\vocab\\key2row",
+            "role": "ginza_model",
+            "sha256": "dee5b86de2f94dac1f48db1115ad21a94755e370debb78b5cc46dbcf3950cad0"
+          },
+          {
+            "bytes": 1,
+            "name": "vocab/lookups.bin",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\vocab\\lookups.bin",
+            "role": "ginza_model",
+            "sha256": "76be8b528d0075f7aae98d6fa57a6d3c83ae480a8469e668d7b0af968995ac71"
+          },
+          {
+            "bytes": 17754472,
+            "name": "vocab/strings.json",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\vocab\\strings.json",
+            "role": "ginza_model",
+            "sha256": "b3ed16035cd82356d54c68b5c933f30a3ec931d67abb853a2bf2c6433f6c7b80"
+          },
+          {
+            "bytes": 24000128,
+            "name": "vocab/vectors",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\vocab\\vectors",
+            "role": "ginza_model",
+            "sha256": "8c16f062e90069d86fc58df57af9c9c948aae9b0033684332c99538fbdcff4bf"
+          },
+          {
+            "bytes": 22,
+            "name": "vocab/vectors.cfg",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\ja_ginza\\ja_ginza-5.2.0\\vocab\\vectors.cfg",
+            "role": "ginza_model",
+            "sha256": "ff4359091952c8cd16f1f0482f5770fb82d1707368d5cca3c46aa501f552e3c5"
+          },
+          {
+            "bytes": 5654,
+            "name": "char.def",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\sudachipy\\resources\\char.def",
+            "role": "sudachi_config",
+            "sha256": "2911e12f9c5bf6197e8ffdfc5cb7cb31659020cfd9fa93d88cef0c3ed1562cf2"
+          },
+          {
+            "bytes": 6448,
+            "name": "rewrite.def",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\sudachipy\\resources\\rewrite.def",
+            "role": "sudachi_config",
+            "sha256": "ded358e6274be4b901067ad3f3cc4656e368d8ed87ff88326b24e77f5aefe7aa"
+          },
+          {
+            "bytes": 1266,
+            "name": "sudachi.json",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\sudachipy\\resources\\sudachi.json",
+            "role": "sudachi_config",
+            "sha256": "eea285e9ac927098fffcc73610ec8289b7cc54b78d4af46515423030b50f92f3"
+          },
+          {
+            "bytes": 2035,
+            "name": "unk.def",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\ginza311\\Lib\\site-packages\\sudachipy\\resources\\unk.def",
+            "role": "sudachi_config",
+            "sha256": "14f0f8df4475d0d5368029935b74c2e9f1d9b50941735736de5b2b2f640aae32"
+          }
+        ],
+        "tasks": [
+          "tok2vec",
+          "parser",
+          "ner",
+          "morphologizer",
+          "compound_splitter",
+          "bunsetu_recognizer"
+        ],
+        "version": "5.2.1",
+        "versions": {
+          "python": "3.11.9",
+          "spacy": "3.8.16",
+          "sudachidict-core": "20260723",
+          "sudachipy": "0.6.11"
+        }
+      },
+      "pid": 9780,
+      "status": "ready"
+    },
+    {
+      "id": "kwja",
+      "manifest": {
+        "capabilities": [
+          "token",
+          "bunsetsu",
+          "basic_phrase",
+          "sentence",
+          "clause",
+          "predicate",
+          "dependency",
+          "entity",
+          "cohesion",
+          "discourse"
+        ],
+        "coordinate_system": "unicode_scalar",
+        "device": "cpu",
+        "execution": {
+          "device": "cpu",
+          "modules": [
+            "senter",
+            "char",
+            "word"
+          ],
+          "offline": true,
+          "threads": 4
+        },
+        "id": "kwja",
+        "model": "tiny",
+        "model_version": "v2.1",
+        "resource_digest": "205074c3396a59af711a4f07fbb1b83126520bc94f6be3d4df3b4857501e22b5",
+        "resources": [
+          {
+            "bytes": 23435100,
+            "name": "char_deberta-v2-tiny-wwm.ckpt",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja-cache\\v2.1\\char_deberta-v2-tiny-wwm.ckpt",
+            "role": "kwja_char",
+            "sha256": "8f3e4145a5ffc24d7bc5d9850e61e9d174ffcd3908a5b8324602eb455ad71bc5"
+          },
+          {
+            "bytes": 45587287,
+            "name": "word_deberta-v2-tiny.ckpt",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja-cache\\v2.1\\word_deberta-v2-tiny.ckpt",
+            "role": "kwja_word",
+            "sha256": "124583ecff60051d9462837c7268d2c33290665350e3ba17eca5ba2f12caf5d3"
+          },
+          {
+            "bytes": 15930916,
+            "name": "grammar.json",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja311\\Lib\\site-packages\\kwja\\resource\\jumandic\\grammar.json",
+            "role": "juman_dictionary",
+            "sha256": "56c0815b979198ab91f70196de7fb0883d229db2fdd14a091057b14ec42ba532"
+          },
+          {
+            "bytes": 48957470,
+            "name": "jumandic.db",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja311\\Lib\\site-packages\\kwja\\resource\\jumandic\\jumandic.db",
+            "role": "juman_dictionary",
+            "sha256": "50b845cf728e0d53b2c3a0b8a86842ccf53280a5ae427a79d26348d5212b3ef3"
+          },
+          {
+            "bytes": 21919320,
+            "name": "jumandic_canon.db",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja311\\Lib\\site-packages\\kwja\\resource\\jumandic\\jumandic_canon.db",
+            "role": "juman_dictionary",
+            "sha256": "6d305ab72806f25409d937d29ecd43c949cfb2bd6fee14f54789ef52d7ec700b"
+          },
+          {
+            "bytes": 155950,
+            "name": "vocab.txt",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja311\\Lib\\site-packages\\kwja\\resource\\reading_prediction\\vocab.txt",
+            "role": "reading_vocabulary",
+            "sha256": "238c4a869cbe01c8c07a12fdeae74aa9fd104e7800c7af81e77f4dfef1d81c87"
+          },
+          {
+            "bytes": 1281,
+            "name": "e_basic_stem_suffix.json",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja311\\Lib\\site-packages\\jinf\\data\\e_basic_stem_suffix.json",
+            "role": "inflection_dictionary",
+            "sha256": "02a0d30cad7266e91e777df50977308c756696f968fc491fc7d547936245636f"
+          },
+          {
+            "bytes": 25834,
+            "name": "jinf.json",
+            "path": "D:\\PROJ\\GIT\\kotoclip\\experiments\\kwja311\\Lib\\site-packages\\jinf\\data\\jinf.json",
+            "role": "inflection_dictionary",
+            "sha256": "c3207bda3c301760eefd369943983a6b8dbb75e3c073fa5dc94b843eb8c555f1"
+          },
+          {
+            "bytes": 110840,
+            "name": "ku-nlp/deberta-v2-tiny-japanese-char-wwm",
+            "path": null,
+            "role": "CharModuleProcessor",
+            "sha256": "08d237b04cc092c964fb831461ee66c8ac33fdaa133df1dc14c216b4067f0baf"
+          },
+          {
+            "bytes": 3214408,
+            "name": "ku-nlp/deberta-v2-tiny-japanese",
+            "path": null,
+            "role": "WordModuleProcessor",
+            "sha256": "648f2f6e35ea00a05dee42dcaa4443d6c2e9cc3aa9d841ba255f50cf00aba499"
+          }
+        ],
+        "tasks": [
+          "reading_prediction",
+          "morphological_analysis",
+          "word_feature_tagging",
+          "ner",
+          "base_phrase_feature_tagging",
+          "dependency_parsing",
+          "cohesion_analysis",
+          "discourse_parsing"
+        ],
+        "version": "2.1.3",
+        "versions": {
+          "jinf": "1.0.4",
+          "python": "3.11.9",
+          "rhoknp": "1.3.2",
+          "tokenizers": "0.13.3",
+          "torch": "2.1.2",
+          "transformers": "4.29.2"
+        }
+      },
+      "pid": 14884,
+      "status": "ready"
+    }
+  ],
+  "explicit_dictionary_verified": true,
+  "identity_consistent": true,
+  "process_reuse": true,
+  "source_manifest_preserved": true,
+  "missing_resources": [
+    {
+      "error": "缺少 sudachi_dictionary 资源：C:\\Users\\WRH\\AppData\\Local\\Temp\\kotoclip-resources-kzr0_kn8\\missing-dictionary",
+      "id": "ginza",
+      "status": "failed"
+    },
+    {
+      "error": "缺少 juman_dictionary 资源：C:\\Users\\WRH\\AppData\\Local\\Temp\\kotoclip-resources-kzr0_kn8\\missing-dictionary",
+      "id": "kwja",
+      "status": "failed"
+    }
+  ],
+  "recovery": true,
+  "relocated_jumandic_verified": true,
+  "relocated_jumandic_nodes": 16
+}

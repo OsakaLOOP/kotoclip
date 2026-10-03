@@ -1,6 +1,6 @@
 use super::{common, AdaptedOccurrence};
 use crate::dictionary::html::{parse_fragment, HtmlElement, HtmlNode};
-use crate::models::{
+use crate::dictionary::model::{
     DictionaryAdapterDiagnostics, DictionaryExample, DictionaryForm, DictionaryGlossClause,
     DictionaryGlossGroup, DictionarySection, DictionarySectionItem, DictionarySense, DictionaryTag,
     DictionaryText,
@@ -123,7 +123,7 @@ fn adapt_standalone_subhead(
         source_record_index: index,
         occurrence_suffix: format!("standalone-subhead-{index}"),
         entry_kind: entry_kind.to_string(),
-        header: crate::models::DictionaryOccurrenceHeader {
+        header: crate::dictionary::model::DictionaryOccurrenceHeader {
             display_form: display_form.clone(),
             canonical_form: Some(display_form.clone()),
             reading: reading.clone(),
@@ -333,7 +333,7 @@ fn adapt_record(
         source_record_index: index,
         occurrence_suffix: format!("record-{index}"),
         entry_kind: bound_kind(reading.as_deref()).to_string(),
-        header: crate::models::DictionaryOccurrenceHeader {
+        header: crate::dictionary::model::DictionaryOccurrenceHeader {
             display_form: display_form.clone(),
             canonical_form: Some(display_form.clone()),
             reading: reading.clone(),

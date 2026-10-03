@@ -3,8 +3,8 @@ import test from "node:test";
 import { buildReaderRows, rowIndexForOffset } from "./rows.ts";
 
 const paragraphs = [
-  { id: 0, tokens: [], isDialogue: false, charRange: [0, 8] },
-  { id: 1, tokens: [], isDialogue: false, charRange: [10, 24] },
+  { id: 0, kind: "heading", tokens: [], isDialogue: false, charRange: [0, 8] },
+  { id: 1, kind: "paragraph", tokens: [], isDialogue: false, charRange: [10, 24] },
 ];
 
 test("将图片和标题锚点合并到虚拟行但不改变段落对象", () => {
@@ -45,6 +45,12 @@ test("段落 key 不随增量插入导致的临时 ID 变化", () => {
     false,
   );
   assert.deepEqual(after.map((row) => row.key), before.map((row) => row.key));
+});
+
+test("章节锚点落入普通正文时仍保持正文排版", () => {
+  const document = { chapters: [{ id: "chapter-1", title: "第一章", level: 2, charOffset: 12 }], images: [] };
+  const rows = buildReaderRows(paragraphs, document, () => undefined, true);
+  assert.equal(rows[1].heading, undefined);
 });
 
 test("连续的近 400px 竖版图片按顺序两两配对", () => {

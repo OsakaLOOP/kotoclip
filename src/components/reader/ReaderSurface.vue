@@ -225,7 +225,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
 .reader-surface-modal-leave-active,
 .reader-surface-fullscreen-enter-active,
 .reader-surface-fullscreen-leave-active {
-  transition: opacity 150ms ease;
+  transition: opacity 80ms ease;
 }
 
 .reader-surface-side-enter-active .reader-surface__panel,
@@ -234,7 +234,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
 .reader-surface-modal-leave-active .reader-surface__panel,
 .reader-surface-fullscreen-enter-active .reader-surface__panel,
 .reader-surface-fullscreen-leave-active .reader-surface__panel {
-  transition: transform 180ms cubic-bezier(.2, 0, 0, 1), opacity 150ms ease;
+  transition: transform 100ms cubic-bezier(.2, 0, 0, 1), opacity 80ms ease;
 }
 
 .reader-surface-side-enter-from,

@@ -1,0 +1,27 @@
+//! UniDic 分析对象与来源适配。
+pub mod model;
+pub mod prepare;
+pub mod kyujitai;
+pub mod routing;
+mod ruby;
+pub mod sources;
+pub mod unify;
+pub mod structure;
+pub mod structure_graph;
+pub mod syntax;
+pub mod formation;
+pub mod bunsetsu;
+pub mod alignment;
+pub mod alignment_group;
+pub mod clause;
+pub mod lexical;
+pub mod grammar;
+pub mod expression;
+pub mod projection;
+pub mod morphology;
+pub mod linguistic_context;
+mod morphology_machine;
+pub mod native;
+pub mod external;
+pub mod rules;
+pub mod application;

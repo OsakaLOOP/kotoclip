@@ -1,0 +1,78 @@
+# 重构实施记录
+
+更新日期：2026-09-24。完整范围以 [TODO](TODO.md) 和 [模块索引](README.md) 为准。各阶段记录实现、应用调用和验收证据。历史双来源记录保留原始测量与复核结论；当前运行链路仅使用 UniDic 和 GiNZA，KWJA 保留为离线研究材料。
+
+## 阶段状态
+
+| 阶段 | 状态 | 已有证据 | 后续工作 |
+| --- | --- | --- | --- |
+| P0 接口与验收集 | 已完成 | 七组短样本的三来源输出、环境版本及行为结论；32 项验收场景；统一文档、来源实体、关系、任务版本和查询目标协议 |
+| P1 本机模型 | 已完成 | 常驻 GiNZA／KWJA、独立词典配置、离线资源检查与内容身份、桌面调用及生命周期恢复 | release 配置与仓库外运行由 P10 验收 |
+| P2 对齐与结构 | 已完成 | 正文准备映射、多对多分组、结构图与类型化关系、多来源选择和稳定身份；真实短例、离线导入及桌面查看通过 | 后续会话与阅读模块消费这些协议 |
+| P3 文档会话 | 已完成 | 文档规划、句段／引号上下文单元、范围优先调度、基础／结构阶段更新、取消／重试、前后端代次合并、24 单元保留和 64 MiB 产物缓存；`sessions.json` 与 `session-desktop.json` | 接入书库章节调度和阅读器持久化 |
+| P4 来源输出审计 | 已完成 | 十段 UniDic、GiNZA、KWJA 原始结果、对齐和统一结构已保存并完成复核 | 为后续阶段提供来源引用与诊断 |
+| P4 活用链与整体构词 | 基础实现及代表验收完成 | 状态机、形态 occurrence、GiNZA 构词候选已接入统一入口 | 独立核验复杂核心范围及活用覆盖；查询聚合和决定归下一模块，见 [完成范围核对](p4_handoff.md) |
+| P5 词典查询与后续语言能力 | P5A–P5C 基础完成 | 查词目标、矩阵请求、会话版本校验和 P4/P5 定向测试；表达、语法扩展、筛选与排序保留后续空间 | P5D 及高级词典决定继续独立实施 |
+| P6 书库阅读 | 应用接入完成 | 书架、EPUB／Markdown、正文坐标、UniDic／GiNZA 增量分析、虚拟行、章节、图片、查词和阅读进度 | 需要在真实 Tauri 窗口完成桌面验收 |
+| P7 用户状态 | 基础接入完成 | 独立 `reader-state.sqlite`、已知状态、曝光、选择、笔记、JSON 导出及文本版本归属 | 汉字知识、词典偏好和完整重启场景继续验收 |
+| P8 助手 | 待实施 | 保留的请求与响应协议 | 实际 transport、配置、候选展示、采用及撤销 |
+| P9 质量工具 | 待实施 | 保留的产物、历史及界面文件 | 执行器、双侧比较、查询快照与性能基线 |
+| P10 桌面交付 | 待实施 | 本轮 debug 桌面已实际启动 | release 资源包、仓库外启动、全部功能与持久化验收 |
+
+## 来源行为与设计依据
+
+2026-09-28 词典与胶囊修复：独立助词恢复词典目标和连续拖选；作者注音提供整体边界与优先读音，`本卦返り` 保留末尾送假名。原表记、词典异读与同音候选分别展示，`軒／ケン` 的接辞和汉字记录可访问。`ありそうな` 的默认对象采用来源词元 `有る／アル`，假名查询的同音结果作为备选。
+
+Rust CLI 编译、Vue 类型检查和指定样本的真实词典查询通过。本轮遵照用户要求未运行原有测试。浏览器使用实际文档会话及查询服务，个人状态接口采用内存响应；助词悬浮、连续合并查词、原表记与同音候选切换、`ありそうな` 默认词条及 390px 窗口检查通过。界面检查未出现 JavaScript 错误。
+
+正文范围确认仅查询精确表记，同音发现由交互查询执行；移除了已由逐词典查询完成的重复读音回退。查询键的记录完整读取后排序，复用现有词典正文缓存。debug 实测首次阅读器查询约 980 ms，后续查询约 31–210 ms；合并查词约 8 ms。证据位于 `.agents/analysis/lookup-cases-after.json`、`lookup-ui-calls.json`、`lookup-desktop.png` 和 `lookup-narrow.png`。
+
+详见 [本机 NLP 行为基线](nlp_behavior.md)。实际输出确认 KWJA 的 NFKC／控制字符处理、长单位活用、独立基本句、小句、格关系、外指和跨句照应；GiNZA 保留正文坐标并提供 Sudachi 成分、内部主辞、依存与实体。
+
+原始证据位于 `data/validation/behavior/ginza.json`、`kwja.json`、`unidic.json`。UniDic 证据保存原始 CSV、词元与形态字段，省去重复的派生结构。KWJA 的词法预测错误保留在证据中，应用词汇查询继续采用 UniDic 字段。
+
+## 本轮实现入口
+
+| 入口 | 职责 |
+| --- | --- |
+| `scripts/nlp_adapters.py` | 两来源结果适配、规范化来源映射、结构与有类型的关系 |
+| `scripts/nlp_provider.py` | 逐行 JSON 常驻进程，UTF-8、离线初始化、模型复用与诊断日志 |
+| `crates/kotoclip-nlp/src/external.rs` | 来源协议、摘要／坐标／引用校验、结构消费投影 |
+| `crates/kotoclip-core/src/providers.rs` | 本机配置、隐藏进程、请求 ID、超时、取消、退出与重启 |
+| `analysis.rs` 的 `enrich` | 在基础正文上追加真实来源及应用结构 |
+| `src/components/ProviderPanel.vue` | 模型配置、运行状态、实体／关系查看及重试 |
+| `crates/kotoclip-nlp/src/alignment_group.rs` | 以字符交集形成多对多分组，保存两侧 gap 和未匹配成员 |
+| `crates/kotoclip-nlp/src/structure_graph.rs` | 实体与组合主辞映射、关系诊断、同范围证据合并和默认选择 |
+| `scripts/emit_provider_syntax.py` | 两来源共用的连续结构导出入口 |
+| `scripts/nlp_resources.py` | 实际加载文件与 tokenizer 配置的内容身份、执行参数及资源清单 |
+
+`analyze` 返回基础结果，桌面随后请求 `enrich`。文档会话已将两阶段结果、任务代次和前台矩阵查询接入同一服务；`external_sources` 保留完整模型空间，连续跨度消费层读取可表达的投影，非连续来源仍完整保存在来源实体中。
+
+## 已完成验证
+
+| 验证 | 结果与产物 |
+| --- | --- |
+| 三来源行为观察 | 七组输入；两套 UniDic 请求；GiNZA／KWJA 各加载一次并完成七次推理 |
+| Python 映射与关系检查 | 5 项通过，覆盖展开、组合、控制字符删除、外指、跨句照应及完整正文导出 |
+| Rust NLP 检查 | 51 项通过；包含正文映射、四种对齐组、内部切点、gap、组合主辞、来源选择及消费层状态 |
+| Rust 服务集成 | 七组均通过两来源执行；各 provider PID 保持一致；解释器错误和修复通过；见 `integration.json` |
+| 来源生命周期 | 单个短例通过排队取消、取消后重试、超时后重试、来源进程异常退出后重试；见 `lifecycle.json` |
+| TypeScript | `npx vue-tsc --noEmit` 通过 |
+| 前端生产构建 | `npm run build` 通过 |
+| 桌面构建 | `cargo build -p tauri-app` 通过，`target/debug/tauri-app.exe` 已启动 |
+| 真实 Tauri 窗口 | 指定语料第九段得到 21 个 UniDic 词元；GiNZA／KWJA 均完成，KWJA 文节与 20 个对齐组可查看；交集、gap 和候选选择显示通过；取消后重试成功；见 `desktop.json` |
+| 窄窗口 | WebView2 390×844 视口检查通过；截图 `experiments/provider-desktop.png` |
+| P2 完整来源集成 | 新闻、Unicode／空白、重复 ruby 三组通过基础与追加身份一致、原文映射、引用解析和错误摘要拒绝；见 `alignment.json` |
+| 离线采集与导入 | 两套采集器和导出器实际处理含 `㍿`、末尾空白的短例，经 Rust 导入成功；重复注音原文位置通过；见 `offline-alignment.json` |
+| 资源初始化 | 默认与显式词典摘要一致，初始化后复用进程分析短句；缺失 Sudachi／JumanDic 路径有具体错误且恢复成功；见 `resources.json` |
+| 桌面资源配置 | “保存并检查”实际加载 GiNZA 26 项资源、KWJA 10 项资源；后续结构分析、取消重试和窄窗口检查通过；见 `desktop.json` |
+
+既有工作区变更已分别提交：`b5497f9` 保存文档基线与验收清单，`ef7a4cb` 保存 provider 状态及实验检查，`57fd098` 保存结构覆盖修复。各提交前执行 `git diff` 检查。采集器另以 `煙草《たばこ》を読む。` 加末尾空白验证准备正文与 gap；既有评估函数及资源测量入口通过定向检查。
+
+重复验证使用 `scripts/validate_nlp_integration.py`；可用 `--cases` 限定短例、`--output` 保存专项结果。桌面验证使用 `scripts/validate_provider_desktop.mjs`，连接开启本机调试端口 9222 的 WebView2 窗口。
+
+P2 协议提交为 `28ecdb2`，离线采集与导入提交为 `baeb927`。`kotoclip.unified-document.v5` 包含准备映射、作者注音、对齐组和统一结构图；连续导入为 `kotoclip.syntax-artifact.v2`。详细选择策略与坐标契约见 [分析来源与对齐](nlp_sources.md)。CLI 与桌面需分别执行 `cargo build -p kotoclip-core --bin kotoclip-nlp`、`cargo build -p tauri-app`，保证两个入口均采用当前协议。
+
+## 接续顺序
+
+P0 至 P3 已完成。P4 的 token、活用链与构词候选已具备后续开发基础，核心契约的待核验项独立处理。P4–P5 尚未完成的表达、语法扩展、词典筛选和排序暂时保留扩展位；P6–P7 依赖当前已验证的 UniDic、GiNZA、活用链、整体构词和词典查询接口，接入完整阅读器、应用级 Engine、个人状态和导出。当前生命周期与气泡投影见 [阅读器 Engine](reader_engine.md)，来源证据见 [P4 样本输出复核](p4_sample_review.md)，职责核对见 [P4 完成范围与后续开发对齐](p4_handoff.md)。

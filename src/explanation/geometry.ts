@@ -49,6 +49,28 @@ export function measureIntrinsicPanel(panel: Pick<HTMLElement, "getBoundingClien
   };
 }
 
+/** 两个上对齐气泡的高度差与较短气泡宽度构成指针过渡三角形。 */
+export function isWithinPanelGroupTriangle(
+  x: number,
+  y: number,
+  first: RectSnapshot,
+  second: RectSnapshot,
+) {
+  if (first.height === second.height) return false;
+  const shorter = first.height < second.height ? first : second;
+  const taller = shorter === first ? second : first;
+  const heightDifference = taller.bottom - shorter.bottom;
+  if (heightDifference <= 0 || shorter.width <= 0 || y < shorter.bottom || y > taller.bottom) return false;
+
+  const innerEdge = shorter.left > taller.left ? shorter.left : shorter.right;
+  const outerEdge = shorter.left > taller.left ? shorter.right : shorter.left;
+  const width = Math.abs(outerEdge - innerEdge);
+  if (width <= 0 || x < Math.min(innerEdge, outerEdge) || x > Math.max(innerEdge, outerEdge)) return false;
+
+  const progress = Math.abs(x - innerEdge) / width;
+  return y <= taller.bottom - heightDifference * progress;
+}
+
 export function explanationPanelWidth(viewportWidth: number, paired: boolean) {
   const availableWidth = paired
     ? (viewportWidth - MARGIN * 2 - GAP) / 2

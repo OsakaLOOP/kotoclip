@@ -2,7 +2,7 @@
 use crate::dictionary::connector::Connector;
 use crate::dictionary::mapper::{ConnIdCounter, ConnIdProbs};
 use crate::sentence::Sentence;
-use crate::token::{NBestToken, Token, TokenIter};
+use crate::token::{Token, TokenIter};
 use crate::tokenizer::lattice::{Lattice, Node};
 use crate::tokenizer::Tokenizer;
 
@@ -15,7 +15,6 @@ pub struct Worker<'t> {
     pub(crate) sent: Sentence,
     pub(crate) lattice: Lattice,
     pub(crate) top_nodes: Vec<(usize, Node)>,
-    pub(crate) nbest_paths: Vec<(i32, Vec<(usize, Node)>)>,
     pub(crate) counter: Option<ConnIdCounter>,
 }
 
@@ -27,7 +26,6 @@ impl<'t> Worker<'t> {
             sent: Sentence::new(),
             lattice: Lattice::default(),
             top_nodes: vec![],
-            nbest_paths: vec![],
             counter: None,
         }
     }
@@ -39,7 +37,6 @@ impl<'t> Worker<'t> {
     {
         self.sent.clear();
         self.top_nodes.clear();
-        self.nbest_paths.clear();
         let input = input.as_ref();
         if !input.is_empty() {
             self.sent.set_sentence(input);
@@ -50,42 +47,12 @@ impl<'t> Worker<'t> {
     /// Tokenizes the input sentence set in `state`,
     /// returning the result through `state`.
     pub fn tokenize(&mut self) {
-        self.tokenize_nbest(1);
-    }
-
-    /// Tokenizes the input and retains up to `n` complete lattice paths in
-    /// ascending total-cost order. Candidate zero is identical to `tokenize()`.
-    pub fn tokenize_nbest(&mut self, n: usize) {
+        self.top_nodes.clear();
         if self.sent.chars().is_empty() {
             return;
         }
         self.tokenizer.build_lattice(&self.sent, &mut self.lattice);
-        self.tokenizer
-            .append_nbest_paths(&self.lattice, n.max(1), &mut self.nbest_paths);
-        self.top_nodes.clear();
-        if let Some((_, nodes)) = self.nbest_paths.first() {
-            self.top_nodes.extend(nodes.iter().cloned());
-        }
-    }
-
-    /// Returns the number of retained complete candidates.
-    pub fn num_candidates(&self) -> usize {
-        self.nbest_paths.len()
-    }
-
-    /// Returns the total lattice cost of a candidate, including the EOS connection.
-    pub fn candidate_cost(&self, candidate: usize) -> i32 {
-        self.nbest_paths[candidate].0
-    }
-
-    /// Returns the number of tokens in a retained candidate.
-    pub fn candidate_num_tokens(&self, candidate: usize) -> usize {
-        self.nbest_paths[candidate].1.len()
-    }
-
-    /// Gets a token from a retained candidate in input order.
-    pub fn candidate_token<'w>(&'w self, candidate: usize, token: usize) -> NBestToken<'w, 't> {
-        NBestToken::new(self, candidate, token)
+        self.lattice.append_top_nodes(&mut self.top_nodes);
     }
 
     /// Gets the number of resultant tokens.

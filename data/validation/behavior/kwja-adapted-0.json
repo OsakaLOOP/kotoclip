@@ -1,0 +1,1440 @@
+{
+  "protocol": "kotoclip.provider-process.v1",
+  "event": "result",
+  "request_id": "0",
+  "result": {
+    "schema": "kotoclip.source-analysis.v1",
+    "provider": {
+      "id": "kwja",
+      "version": "2.1.3",
+      "model": "tiny",
+      "model_version": "v2.1",
+      "device": "cpu",
+      "versions": {
+        "torch": "2.1.2",
+        "rhoknp": "1.3.2",
+        "transformers": "4.29.2"
+      },
+      "tasks": [
+        "reading_prediction",
+        "morphological_analysis",
+        "word_feature_tagging",
+        "ner",
+        "base_phrase_feature_tagging",
+        "dependency_parsing",
+        "cohesion_analysis",
+        "discourse_parsing"
+      ],
+      "capabilities": [
+        "token",
+        "bunsetsu",
+        "basic_phrase",
+        "sentence",
+        "clause",
+        "predicate",
+        "dependency",
+        "entity",
+        "cohesion",
+        "discourse"
+      ],
+      "coordinate_system": "unicode_scalar"
+    },
+    "text_sha256": "02afe1b7b4f3896a82984d773f3412a9beb721dbbe8190816e1a718641229569",
+    "text_characters": 20,
+    "normalized_text": "太郎は本を買った。彼は家でそれを読んだ。",
+    "normalization_map": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        6,
+        7
+      ],
+      [
+        7,
+        8
+      ],
+      [
+        8,
+        9
+      ],
+      [
+        9,
+        10
+      ],
+      [
+        10,
+        11
+      ],
+      [
+        11,
+        12
+      ],
+      [
+        12,
+        13
+      ],
+      [
+        13,
+        14
+      ],
+      [
+        14,
+        15
+      ],
+      [
+        15,
+        16
+      ],
+      [
+        16,
+        17
+      ],
+      [
+        17,
+        18
+      ],
+      [
+        18,
+        19
+      ],
+      [
+        19,
+        20
+      ]
+    ],
+    "deleted_ranges": [],
+    "nodes": [
+      {
+        "id": "t0",
+        "kind": "token",
+        "source_ranges": [
+          [
+            0,
+            2
+          ]
+        ],
+        "source_surface": "太郎",
+        "text_ranges": [
+          [
+            0,
+            2
+          ]
+        ],
+        "surface": "太郎",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "太郎",
+          "lemma": "太郎",
+          "pos": "名詞",
+          "subpos": "人名",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "太郎 太郎 太郎 名詞 6 人名 5 * 0 * 0 <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t1",
+        "kind": "token",
+        "source_ranges": [
+          [
+            2,
+            3
+          ]
+        ],
+        "source_surface": "は",
+        "text_ranges": [
+          [
+            2,
+            3
+          ]
+        ],
+        "surface": "は",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "は",
+          "lemma": "は",
+          "pos": "助詞",
+          "subpos": "副助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "は は は 助詞 9 副助詞 2 * 0 * 0 \"代表表記:は/は\"\n"
+        }
+      },
+      {
+        "id": "t2",
+        "kind": "token",
+        "source_ranges": [
+          [
+            3,
+            4
+          ]
+        ],
+        "source_surface": "本",
+        "text_ranges": [
+          [
+            3,
+            4
+          ]
+        ],
+        "surface": "本",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "ほん",
+          "lemma": "本",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "本 ほん 本 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:本/ほん 漢字読み:音 カテゴリ:人工物-その他;抽象物\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t3",
+        "kind": "token",
+        "source_ranges": [
+          [
+            4,
+            5
+          ]
+        ],
+        "source_surface": "を",
+        "text_ranges": [
+          [
+            4,
+            5
+          ]
+        ],
+        "surface": "を",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "を",
+          "lemma": "を",
+          "pos": "助詞",
+          "subpos": "格助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "を を を 助詞 9 格助詞 1 * 0 * 0 \"代表表記:を/を\"\n"
+        }
+      },
+      {
+        "id": "t4",
+        "kind": "token",
+        "source_ranges": [
+          [
+            5,
+            8
+          ]
+        ],
+        "source_surface": "買った",
+        "text_ranges": [
+          [
+            5,
+            8
+          ]
+        ],
+        "surface": "買った",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "かった",
+          "lemma": "買っる",
+          "pos": "動詞",
+          "subpos": "*",
+          "conjtype": "母音動詞",
+          "conjform": "タ形",
+          "features": {
+            "基本句-主辞": true,
+            "用言表記先頭": true,
+            "用言表記末尾": true
+          },
+          "raw": "買った かった 買っる 動詞 2 * 0 母音動詞 1 タ形 10 <基本句-主辞><用言表記先頭><用言表記末尾>\n"
+        }
+      },
+      {
+        "id": "t5",
+        "kind": "token",
+        "source_ranges": [
+          [
+            8,
+            9
+          ]
+        ],
+        "source_surface": "。",
+        "text_ranges": [
+          [
+            8,
+            9
+          ]
+        ],
+        "surface": "。",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "。",
+          "lemma": "。",
+          "pos": "特殊",
+          "subpos": "句点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\n"
+        }
+      },
+      {
+        "id": "t6",
+        "kind": "token",
+        "source_ranges": [
+          [
+            9,
+            10
+          ]
+        ],
+        "source_surface": "彼",
+        "text_ranges": [
+          [
+            9,
+            10
+          ]
+        ],
+        "surface": "彼",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "かれ",
+          "lemma": "彼",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "彼 かれ 彼 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:彼/かれ 漢字読み:訓 カテゴリ:人\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t7",
+        "kind": "token",
+        "source_ranges": [
+          [
+            10,
+            11
+          ]
+        ],
+        "source_surface": "は",
+        "text_ranges": [
+          [
+            10,
+            11
+          ]
+        ],
+        "surface": "は",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "は",
+          "lemma": "は",
+          "pos": "助詞",
+          "subpos": "副助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "は は は 助詞 9 副助詞 2 * 0 * 0 \"代表表記:は/は\"\n"
+        }
+      },
+      {
+        "id": "t8",
+        "kind": "token",
+        "source_ranges": [
+          [
+            11,
+            12
+          ]
+        ],
+        "source_surface": "家",
+        "text_ranges": [
+          [
+            11,
+            12
+          ]
+        ],
+        "surface": "家",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "いえ",
+          "lemma": "家",
+          "pos": "名詞",
+          "subpos": "普通名詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "家 いえ 家 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:家/いえ 漢字読み:訓 カテゴリ:組織・団体;場所-施設 ドメイン:家庭・暮らし\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t9",
+        "kind": "token",
+        "source_ranges": [
+          [
+            12,
+            13
+          ]
+        ],
+        "source_surface": "で",
+        "text_ranges": [
+          [
+            12,
+            13
+          ]
+        ],
+        "surface": "で",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "で",
+          "lemma": "で",
+          "pos": "助詞",
+          "subpos": "格助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "で で で 助詞 9 格助詞 1 * 0 * 0 \"代表表記:で/で\"\n"
+        }
+      },
+      {
+        "id": "t10",
+        "kind": "token",
+        "source_ranges": [
+          [
+            13,
+            15
+          ]
+        ],
+        "source_surface": "それ",
+        "text_ranges": [
+          [
+            13,
+            15
+          ]
+        ],
+        "surface": "それ",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "それ",
+          "lemma": "それ",
+          "pos": "指示詞",
+          "subpos": "名詞形態指示詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {
+            "基本句-主辞": true
+          },
+          "raw": "それ それ それ 指示詞 7 名詞形態指示詞 1 * 0 * 0 \"代表表記:それ/それ\" <基本句-主辞>\n"
+        }
+      },
+      {
+        "id": "t11",
+        "kind": "token",
+        "source_ranges": [
+          [
+            15,
+            16
+          ]
+        ],
+        "source_surface": "を",
+        "text_ranges": [
+          [
+            15,
+            16
+          ]
+        ],
+        "surface": "を",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "を",
+          "lemma": "を",
+          "pos": "助詞",
+          "subpos": "格助詞",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "を を を 助詞 9 格助詞 1 * 0 * 0 \"代表表記:を/を\"\n"
+        }
+      },
+      {
+        "id": "t12",
+        "kind": "token",
+        "source_ranges": [
+          [
+            16,
+            19
+          ]
+        ],
+        "source_surface": "読んだ",
+        "text_ranges": [
+          [
+            16,
+            19
+          ]
+        ],
+        "surface": "読んだ",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "かった",
+          "lemma": "読んだ",
+          "pos": "動詞",
+          "subpos": "*",
+          "conjtype": "母音動詞",
+          "conjform": "タ形",
+          "features": {
+            "基本句-主辞": true,
+            "用言表記先頭": true,
+            "用言表記末尾": true
+          },
+          "raw": "読んだ かった 読んだ 動詞 2 * 0 母音動詞 1 タ形 10 <基本句-主辞><用言表記先頭><用言表記末尾>\n"
+        }
+      },
+      {
+        "id": "t13",
+        "kind": "token",
+        "source_ranges": [
+          [
+            19,
+            20
+          ]
+        ],
+        "source_surface": "。",
+        "text_ranges": [
+          [
+            19,
+            20
+          ]
+        ],
+        "surface": "。",
+        "head": null,
+        "members": [],
+        "features": {
+          "reading": "。",
+          "lemma": "。",
+          "pos": "特殊",
+          "subpos": "句点",
+          "conjtype": "*",
+          "conjform": "*",
+          "features": {},
+          "raw": "。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\n"
+        }
+      },
+      {
+        "id": "s0",
+        "kind": "sentence",
+        "source_ranges": [
+          [
+            0,
+            9
+          ]
+        ],
+        "source_surface": "太郎は本を買った。",
+        "text_ranges": [
+          [
+            0,
+            9
+          ]
+        ],
+        "surface": "太郎は本を買った。",
+        "head": null,
+        "members": [
+          "t0",
+          "t1",
+          "t2",
+          "t3",
+          "t4",
+          "t5"
+        ],
+        "features": {
+          "source_sid": "202609210128-0-0"
+        }
+      },
+      {
+        "id": "s1",
+        "kind": "sentence",
+        "source_ranges": [
+          [
+            9,
+            20
+          ]
+        ],
+        "source_surface": "彼は家でそれを読んだ。",
+        "text_ranges": [
+          [
+            9,
+            20
+          ]
+        ],
+        "surface": "彼は家でそれを読んだ。",
+        "head": null,
+        "members": [
+          "t6",
+          "t7",
+          "t8",
+          "t9",
+          "t10",
+          "t11",
+          "t12",
+          "t13"
+        ],
+        "features": {
+          "source_sid": "202609210128-0-1"
+        }
+      },
+      {
+        "id": "b0",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            0,
+            3
+          ]
+        ],
+        "source_surface": "太郎は",
+        "text_ranges": [
+          [
+            0,
+            3
+          ]
+        ],
+        "surface": "太郎は",
+        "head": null,
+        "members": [
+          "bp0"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b1",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            3,
+            5
+          ]
+        ],
+        "source_surface": "本を",
+        "text_ranges": [
+          [
+            3,
+            5
+          ]
+        ],
+        "surface": "本を",
+        "head": null,
+        "members": [
+          "bp1"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b2",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "source_surface": "買った。",
+        "text_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "surface": "買った。",
+        "head": null,
+        "members": [
+          "bp2"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b3",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            9,
+            11
+          ]
+        ],
+        "source_surface": "彼は",
+        "text_ranges": [
+          [
+            9,
+            11
+          ]
+        ],
+        "surface": "彼は",
+        "head": null,
+        "members": [
+          "bp3"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b4",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            11,
+            13
+          ]
+        ],
+        "source_surface": "家で",
+        "text_ranges": [
+          [
+            11,
+            13
+          ]
+        ],
+        "surface": "家で",
+        "head": null,
+        "members": [
+          "bp4"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b5",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            13,
+            16
+          ]
+        ],
+        "source_surface": "それを",
+        "text_ranges": [
+          [
+            13,
+            16
+          ]
+        ],
+        "surface": "それを",
+        "head": null,
+        "members": [
+          "bp5"
+        ],
+        "features": {}
+      },
+      {
+        "id": "b6",
+        "kind": "bunsetsu",
+        "source_ranges": [
+          [
+            16,
+            20
+          ]
+        ],
+        "source_surface": "読んだ。",
+        "text_ranges": [
+          [
+            16,
+            20
+          ]
+        ],
+        "surface": "読んだ。",
+        "head": null,
+        "members": [
+          "bp6"
+        ],
+        "features": {}
+      },
+      {
+        "id": "bp0",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            0,
+            3
+          ]
+        ],
+        "source_surface": "太郎は",
+        "text_ranges": [
+          [
+            0,
+            3
+          ]
+        ],
+        "surface": "太郎は",
+        "head": "t0",
+        "members": [
+          "t0",
+          "t1"
+        ],
+        "features": {
+          "NE": "PERSON:太郎",
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp1",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            3,
+            5
+          ]
+        ],
+        "source_surface": "本を",
+        "text_ranges": [
+          [
+            3,
+            5
+          ]
+        ],
+        "surface": "本を",
+        "head": "t2",
+        "members": [
+          "t2",
+          "t3"
+        ],
+        "features": {
+          "体言": true
+        }
+      },
+      {
+        "id": "bp2",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "source_surface": "買った。",
+        "text_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "surface": "買った。",
+        "head": "t4",
+        "members": [
+          "t4",
+          "t5"
+        ],
+        "features": {
+          "用言": "動",
+          "時制": "過去",
+          "レベル": "C",
+          "動態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "p2",
+        "kind": "predicate",
+        "source_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "source_surface": "買った。",
+        "text_ranges": [
+          [
+            5,
+            9
+          ]
+        ],
+        "surface": "買った。",
+        "head": "t4",
+        "members": [
+          "bp2"
+        ],
+        "features": {
+          "用言": "動",
+          "時制": "過去",
+          "レベル": "C",
+          "動態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "bp3",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            9,
+            11
+          ]
+        ],
+        "source_surface": "彼は",
+        "text_ranges": [
+          [
+            9,
+            11
+          ]
+        ],
+        "surface": "彼は",
+        "head": "t6",
+        "members": [
+          "t6",
+          "t7"
+        ],
+        "features": {
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp4",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            11,
+            13
+          ]
+        ],
+        "source_surface": "家で",
+        "text_ranges": [
+          [
+            11,
+            13
+          ]
+        ],
+        "surface": "家で",
+        "head": "t8",
+        "members": [
+          "t8",
+          "t9"
+        ],
+        "features": {
+          "体言": true,
+          "SM-主体": true
+        }
+      },
+      {
+        "id": "bp5",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            13,
+            16
+          ]
+        ],
+        "source_surface": "それを",
+        "text_ranges": [
+          [
+            13,
+            16
+          ]
+        ],
+        "surface": "それを",
+        "head": "t10",
+        "members": [
+          "t10",
+          "t11"
+        ],
+        "features": {
+          "体言": true
+        }
+      },
+      {
+        "id": "bp6",
+        "kind": "basic_phrase",
+        "source_ranges": [
+          [
+            16,
+            20
+          ]
+        ],
+        "source_surface": "読んだ。",
+        "text_ranges": [
+          [
+            16,
+            20
+          ]
+        ],
+        "surface": "読んだ。",
+        "head": "t12",
+        "members": [
+          "t12",
+          "t13"
+        ],
+        "features": {
+          "用言": "動",
+          "時制": "過去",
+          "レベル": "C",
+          "動態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "p6",
+        "kind": "predicate",
+        "source_ranges": [
+          [
+            16,
+            20
+          ]
+        ],
+        "source_surface": "読んだ。",
+        "text_ranges": [
+          [
+            16,
+            20
+          ]
+        ],
+        "surface": "読んだ。",
+        "head": "t12",
+        "members": [
+          "bp6"
+        ],
+        "features": {
+          "用言": "動",
+          "時制": "過去",
+          "レベル": "C",
+          "動態述語": true,
+          "節-区切": true,
+          "節-主辞": true
+        }
+      },
+      {
+        "id": "e0",
+        "kind": "entity",
+        "source_ranges": [
+          [
+            0,
+            2
+          ]
+        ],
+        "source_surface": "太郎",
+        "text_ranges": [
+          [
+            0,
+            2
+          ]
+        ],
+        "surface": "太郎",
+        "head": null,
+        "members": [
+          "t0"
+        ],
+        "features": {
+          "label": "PERSON"
+        }
+      },
+      {
+        "id": "clause0",
+        "kind": "clause",
+        "source_ranges": [
+          [
+            0,
+            9
+          ]
+        ],
+        "source_surface": "太郎は本を買った。",
+        "text_ranges": [
+          [
+            0,
+            9
+          ]
+        ],
+        "surface": "太郎は本を買った。",
+        "head": "bp2",
+        "members": [
+          "bp0",
+          "bp1",
+          "bp2"
+        ],
+        "features": {}
+      },
+      {
+        "id": "clause1",
+        "kind": "clause",
+        "source_ranges": [
+          [
+            9,
+            20
+          ]
+        ],
+        "source_surface": "彼は家でそれを読んだ。",
+        "text_ranges": [
+          [
+            9,
+            20
+          ]
+        ],
+        "surface": "彼は家でそれを読んだ。",
+        "head": "bp6",
+        "members": [
+          "bp3",
+          "bp4",
+          "bp5",
+          "bp6"
+        ],
+        "features": {}
+      }
+    ],
+    "relations": [
+      {
+        "id": "r0",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b0"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b2"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r1",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b1"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b2"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r2",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b2"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r3",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b3"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b6"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r4",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b4"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b6"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r5",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b5"
+        },
+        "target": {
+          "kind": "node",
+          "id": "b6"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r6",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "b6"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r7",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp0"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r8",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp1"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r9",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r10",
+        "kind": "predicate_argument",
+        "source": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp0"
+        },
+        "label": "ガ",
+        "features": {
+          "raw": "<rel type=\"ガ\" target=\"太郎\" sid=\"202609210128-0-0\" id=\"0\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r11",
+        "kind": "predicate_argument",
+        "source": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp1"
+        },
+        "label": "ヲ",
+        "features": {
+          "raw": "<rel type=\"ヲ\" target=\"本\" sid=\"202609210128-0-0\" id=\"1\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r12",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp3"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp6"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r13",
+        "kind": "coreference",
+        "source": {
+          "kind": "node",
+          "id": "bp3"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp0"
+        },
+        "label": "=",
+        "features": {
+          "raw": "<rel type=\"=\" target=\"太郎\" sid=\"202609210128-0-0\" id=\"0\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r14",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp4"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp6"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r15",
+        "kind": "bridging",
+        "source": {
+          "kind": "node",
+          "id": "bp4"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp3"
+        },
+        "label": "ノ",
+        "features": {
+          "raw": "<rel type=\"ノ\" target=\"彼\" sid=\"202609210128-0-1\" id=\"0\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r16",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp5"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp6"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r17",
+        "kind": "coreference",
+        "source": {
+          "kind": "node",
+          "id": "bp5"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp2"
+        },
+        "label": "=",
+        "features": {
+          "raw": "<rel type=\"=\" target=\"買った\" sid=\"202609210128-0-0\" id=\"2\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r18",
+        "kind": "dependency",
+        "source": {
+          "kind": "node",
+          "id": "bp6"
+        },
+        "target": {
+          "kind": "root"
+        },
+        "label": "D",
+        "features": {}
+      },
+      {
+        "id": "r19",
+        "kind": "predicate_argument",
+        "source": {
+          "kind": "node",
+          "id": "bp6"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp3"
+        },
+        "label": "ガ",
+        "features": {
+          "raw": "<rel type=\"ガ\" target=\"彼\" sid=\"202609210128-0-1\" id=\"0\"/>",
+          "mode": null
+        }
+      },
+      {
+        "id": "r20",
+        "kind": "predicate_argument",
+        "source": {
+          "kind": "node",
+          "id": "bp6"
+        },
+        "target": {
+          "kind": "node",
+          "id": "bp5"
+        },
+        "label": "ヲ",
+        "features": {
+          "raw": "<rel type=\"ヲ\" target=\"それ\" sid=\"202609210128-0-1\" id=\"2\"/>",
+          "mode": null
+        }
+      }
+    ],
+    "diagnostics": [],
+    "raw": "# S-ID:202609210128-0-0 kwja:2.1.3\n* 2D\n+ 2D <NE:PERSON:太郎><体言><SM-主体>\n太郎 太郎 太郎 名詞 6 人名 5 * 0 * 0 <基本句-主辞>\nは は は 助詞 9 副助詞 2 * 0 * 0 \"代表表記:は/は\"\n* 2D\n+ 2D <体言>\n本 ほん 本 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:本/ほん 漢字読み:音 カテゴリ:人工物-その他;抽象物\" <基本句-主辞>\nを を を 助詞 9 格助詞 1 * 0 * 0 \"代表表記:を/を\"\n* -1D\n+ -1D <rel type=\"ガ\" target=\"太郎\" sid=\"202609210128-0-0\" id=\"0\"/><rel type=\"ヲ\" target=\"本\" sid=\"202609210128-0-0\" id=\"1\"/><用言:動><時制:過去><レベル:C><動態述語><節-区切><節-主辞>\n買った かった 買っる 動詞 2 * 0 母音動詞 1 タ形 10 <基本句-主辞><用言表記先頭><用言表記末尾>\n。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\nEOS\n# S-ID:202609210128-0-1 kwja:2.1.3\n* 3D\n+ 3D <rel type=\"=\" target=\"太郎\" sid=\"202609210128-0-0\" id=\"0\"/><体言><SM-主体>\n彼 かれ 彼 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:彼/かれ 漢字読み:訓 カテゴリ:人\" <基本句-主辞>\nは は は 助詞 9 副助詞 2 * 0 * 0 \"代表表記:は/は\"\n* 3D\n+ 3D <rel type=\"ノ\" target=\"彼\" sid=\"202609210128-0-1\" id=\"0\"/><体言><SM-主体>\n家 いえ 家 名詞 6 普通名詞 1 * 0 * 0 \"代表表記:家/いえ 漢字読み:訓 カテゴリ:組織・団体;場所-施設 ドメイン:家庭・暮らし\" <基本句-主辞>\nで で で 助詞 9 格助詞 1 * 0 * 0 \"代表表記:で/で\"\n* 3D\n+ 3D <rel type=\"=\" target=\"買った\" sid=\"202609210128-0-0\" id=\"2\"/><体言>\nそれ それ それ 指示詞 7 名詞形態指示詞 1 * 0 * 0 \"代表表記:それ/それ\" <基本句-主辞>\nを を を 助詞 9 格助詞 1 * 0 * 0 \"代表表記:を/を\"\n* -1D\n+ -1D <rel type=\"ガ\" target=\"彼\" sid=\"202609210128-0-1\" id=\"0\"/><rel type=\"ヲ\" target=\"それ\" sid=\"202609210128-0-1\" id=\"2\"/><用言:動><時制:過去><レベル:C><動態述語><節-区切><節-主辞>\n読んだ かった 読んだ 動詞 2 * 0 母音動詞 1 タ形 10 <基本句-主辞><用言表記先頭><用言表記末尾>\n。 。 。 特殊 1 句点 1 * 0 * 0 \"代表表記:。/。\"\nEOS\n",
+    "elapsed_ms": 480.2802000194788
+  }
+}

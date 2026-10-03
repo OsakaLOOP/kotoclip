@@ -1,0 +1,83 @@
+# 分析来源与对齐
+
+## 来源职责
+
+本机版本的实测输出、规范化行为及 P0–P4 设计依据见 [NLP 行为基线](nlp_behavior.md)。
+
+| 来源 | 输入与资源 | 主要职责 |
+| --- | --- | --- |
+| UniDic | 准备后的正文；Vibrato、CWJ／CSJ 2025.12 | 短单位词法、四级词性、词元、活用、表记、读音和查询字段 |
+| GiNZA | 同一正文；本机 Python、spaCy、Sudachi 词典与模型 | 复合词、文节、主辞、依存、句界及模型提供的实体结果 |
+
+GiNZA 使用原生输入流程，版本清单固定程序、词典、模型和执行选项。应用以 UniDic 组织词汇查询和个人知识，同时保留 GiNZA 的词法与结构空间。KWJA 仅保留为离线研究材料，不参与桌面来源配置与分析。
+
+GiNZA 提供复合词、文节和依存候选。与 UniDic 的词界分歧保留双方证据；结构选择使用版本化策略。
+
+## 正文准备与语域
+
+准备阶段保留字形、空白、标点和换行，提取 `漢字《かな》` 形式的作者注音，形成正文基底及原文映射。作者特殊读法以跨度保存，注音校验记录匹配、读音差异和待核验状态。
+
+`kotoclip.prepare-text.v4` 保存输入原文、输入与正文摘要、逐字符原文位置，以及 ruby／图片标记的删除范围和正文锚点。注音校验的 `candidate_char_range` 表示修正前正文候选，`source_char_ranges` 表示输入原文位置。相同正文但作者注音不同的输入具有独立文档身份。
+
+CWJ／CSJ 在分析单元上选择，保存请求语域、实际语域及选择原因。书面叙述与对话单元可采用不同资源。路由版本进入缓存键，界面允许用户明确选择并查看自动路由结果。
+
+外部模型内部若执行规范化，适配器保存其文本到共同正文的映射。长度变化、组合字符、空白和标点转换均通过映射还原，结构范围在共同正文上核验。
+
+## UniDic 字段契约
+
+节点保留原始 CSV、29 列原值与解析值、词典类别、连接 ID、词成本、累计成本、字符与字节范围。缺失值使用显式空值，来源文件摘要和字段 schema 随分析结果保存。
+
+| 列号 | 字段 | 用途 |
+| --- | --- | --- |
+| 0–3 | `pos1`–`pos4` | 四级词性 |
+| 4–5 | `cType`、`cForm` | 活用型、活用形 |
+| 6–7 | `lForm`、`lemma` | 词元读法、词元 |
+| 8–11 | `orth`、`pron`、`orthBase`、`pronBase` | 出现表记、出现发音、基本表记、基本发音 |
+| 12 | `goshu` | 语种 |
+| 13–18 | `iType`、`iForm`、`fType`、`fForm`、`iConType`、`fConType` | 词首与词尾变化及结合类型 |
+| 19 | `type` | 词类补充 |
+| 20–23 | `kana`、`kanaBase`、`form`、`formBase` | 出现假名、基本假名、语形、基本语形 |
+| 24–26 | `aType`、`aConType`、`aModType` | 重音信息 |
+| 27–28 | `lid`、`lemma_id` | 词条与词元来源 ID，以字符串传输 |
+
+读音按词元读法、出现假名、基本假名、出现发音、基本发音和作者注音分离建模。例如 `向かっ` 的 `kana=ムカッ` 对应出现形式，`kanaBase=ムカウ` 对应基本形式。查询采用与表记相配的证据，正文注音采用该出现位置的证据。
+
+## 来源结果协议
+
+每份来源结果包含输入正文摘要、字符数、分析单元、来源版本、能力状态、token、结构跨度、关系和诊断。关系端点引用来源实体，模型主辞、依存目标、谓语和论元分别表达。
+
+结构协议保留基本句（base phrase）与小句（clause）的独立类型。依存弧保存从属项、目标项和标签；主辞保存结构内部的核心。照应和篇章关系采用允许跨句的关系类型，局部词法跨度采用连续范围。
+
+## 对齐机制
+
+对齐依次校验输入身份、来源坐标、实际表面串和 token 覆盖关系。共同字符区间构成分组依据，各组保存两侧 token 引用及交集范围，支持 `1:1`、`1:n`、`n:1` 和 `n:m`。
+
+| 结果 | 处理 |
+| --- | --- |
+| 边界一致 | 直接建立实体引用 |
+| 多 token 完整覆盖 | 校验顺序、相邻边界和 gap 后形成组合引用 |
+| 来源边界位于 UniDic token 内部 | 保留原始精确跨度、重叠成员和分歧原因；需要完整词元的操作等待明确决定 |
+| 表面串或正文身份不符 | 进入诊断，重新核对输入或规范化映射 |
+| 没有可对应内容 | 保留未对齐结果及来源，标记受影响能力 |
+
+空格、换行等 gap 作为显式对象参与覆盖检查。结构层可引用多个对齐组；主辞落在多个 UniDic token 上时保存组合引用。某个 token 的局部边界分歧按实际影响传播到相关结构。
+
+来源实体、统一词元和阅读单位拥有独立身份。应用分组生成派生阅读单位，原始 token 序列和来源结果继续作为复核依据。
+
+`kotoclip.provider-token-alignment.v2` 按字符交集建立两侧 token 的连通分量，保存完整、部分及单侧未匹配分组。`kotoclip.structure-graph.v1` 保存来源实体、组合主辞、类型化关系和选择候选；所有引用在 `document_id` 内解析。当前默认选择 GiNZA 的结构候选。同范围同类型合并证据，同类交叉边界保留竞争候选，小句与实体允许嵌套。部分覆盖、主辞越界、构词内部 gap 及跨句依存形成明确诊断，消费层继承待定状态。
+
+连续结构导入采用 `kotoclip.syntax-artifact.v2`，校验完整正文字符数、SHA-256 和表面串。GiNZA 离线采集器复用应用适配器；研究用 KWJA 采集器位于 `scripts/kwja_adapter.py`。导出器保留内部主辞与规范化后的原文映射，字符数包含末尾空白。完整关系和非连续跨度保存在来源结果中。
+
+## 本机执行
+
+Rust 启动配置指定的解释器与适配器，复用模型进程，通过版本化消息提交正文和接收结果。消息包含请求 ID、分析单元、文本版本和任务选项；标准输出用于协议，诊断写入标准错误。Windows 下统一使用 UTF-8。
+
+启动检查报告 GiNZA 解释器、包、词典和模型是否可用。执行支持超时、取消、进程退出检测和重启。外部结构完成后继续统一与应用分析，基础正文保持可读。完整交付验收要求 GiNZA 实际执行并进入桌面结果。
+
+## 代码入口
+
+本机适配器位于 [nlp_adapters.py](../scripts/nlp_adapters.py)，常驻入口位于 [nlp_provider.py](../scripts/nlp_provider.py)。[providers.rs](../crates/kotoclip-core/src/providers.rs) 管理进程与配置；[external.rs](../crates/kotoclip-nlp/src/external.rs) 定义完整来源实体、规范化映射及关系，并校验正文身份。
+
+[sources.rs](../crates/kotoclip-nlp/src/sources.rs)、[prepare.rs](../crates/kotoclip-nlp/src/prepare.rs)、[routing.rs](../crates/kotoclip-nlp/src/routing.rs)负责基础输入；[syntax.rs](../crates/kotoclip-nlp/src/syntax.rs)、[alignment.rs](../crates/kotoclip-nlp/src/alignment.rs)负责外部结果和对齐。当前离线转换器为 [GiNZA](../scripts/emit_ginza_syntax_artifact.py)；[KWJA 转换器](../scripts/emit_kwja_syntax_artifact.py)仅供研究。
+
+[alignment_group.rs](../crates/kotoclip-nlp/src/alignment_group.rs) 生成多对多分组；[structure_graph.rs](../crates/kotoclip-nlp/src/structure_graph.rs) 负责实体映射、关系校验和多来源选择。`unify_with_sources` 接收完整来源，在应用层生成前完成选择；统一结果版本为 `kotoclip.unified-document.v5`。

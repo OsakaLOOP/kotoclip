@@ -1,0 +1,218 @@
+# 完整桌面应用实施 TODO
+
+目标：按照[当前设计](README.md)完成全部模块接入，并交付依赖本机环境的可用桌面应用。
+
+计划调整日期：2026-09-23。P4 实现核对基线为 `522a801`；已完成证据及独立待核验项见 [完成范围核对](p4_handoff.md)，下一模块协议见 [词典与解释](dictionary.md)。
+
+当前应用仅使用 UniDic 和 GiNZA。KWJA 不参与来源配置、模型启动、结构追加或桌面展示；此前 P1／P4 的双模型验收条目记录历史研究，不代表当前调用路径。本机模型及资料保持原状。
+
+实施进度与检查证据见 [重构实施记录](implementation_progress.md)，来源行为依据见 [本机 NLP 行为基线](nlp_behavior.md)。已完成、待修复和长期建设分别记录；清单在满足整项验收后勾选。
+
+## 工作区状态
+
+2026-09-28：已修复独立助词胶囊、作者注音整体查询、送假名衔接及表记／读音候选。`ありそうな` 依据词元 `有る／アル` 确定默认词条。实测记录见[实施记录](implementation_progress.md)，复核脚本为 `scripts/inspect_lookup_cases.py`。
+
+| 模块       | 已有基础                                                 | 需要完成的接入                                                 |
+| ---------- | -------------------------------------------------------- | -------------------------------------------------------------- |
+| UniDic     | CWJ／CSJ、字段、注音校验、分单元语域、资源身份与原文映射 | 在后续模块持续验证词形和坐标                                   |
+| GiNZA      | 常驻服务、配置、缓存和实际桌面入口                       | 支持词汇主流程，依存等结构能力按实验消费                       |
+| 对齐与结构 | 多对多分组、gap、来源映射、实体关系和冲突证据            | 后续对象复用范围及来源引用                                     |
+| 活用       | 状态机、核心成员、父链、operator、occurrence 与规范形式  | P4 独立核验复杂核心和覆盖清单；解释归 P5D                      |
+| 构词       | 正式 token／compound 映射、整体成员、词头及候选形式      | P4 核验核心边界；词典验证、查询聚合及决定归 P5                 |
+| 语法       | 功能语素候选、知识目录与只读查询命令                     | 构式识别、义项决定、正文精确讲解与界面入口                     |
+| 表达       | 当前输出不构成验收证据                                   | 结合词典、形态和结构证据识别表达并提供解释；必要条件由规则管理 |
+| 词典       | 三词典适配器、源包、schema v4、矩阵调用及候选查询        | 多粒度目标、统一矩阵、词典决定、设置及双面板                   |
+| 会话       | 文档单元调度、增量版本、取消重试、token 查询和缓存       | 所有查询粒度复用会话与产物版本校验                             |
+| 书库／导入 | Rust 文件及 Vue 组件保留                                 | core 注册、桌面命令、应用协调和坐标接入                        |
+| 画像／导出 | 文件保留，仍有已删除类型和模块引用                       | 新身份适配、数据迁移、服务与 UI 操作                           |
+| 词典助手   | 请求、响应校验、传输抽象及前端端口                       | 实际 transport、配置、宿主调用与建议采用                       |
+| 审计       | `artifact.rs`、`history.rs`、宿主和 UI 文件保留          | 执行器、workspace 注册、两侧分析与桌面入口                     |
+| 桌面       | Tauri 主程序、UniDic 资源和便携打包脚本                  | 完整功能集、外部依赖配置、实际产物验收                         |
+
+当前 `core/lib.rs` 注册 `dictionary`、`text_language`、`analysis`、`output` 和 `grammar_catalog` 等模块。Tauri 注册 `nlp_request`、`search_grammar_catalog` 和 `get_grammar_concept`。`App.vue` 只接入分词、字段检查和基础查询。
+
+## 实施顺序
+
+P0–P3 已完成基础接入；P4 提供 token、活用链和构词候选。P4 自身核验及修复独立处理。下一模块 P5A 建立查询目标，P5B 完成词典查询、绑定与决定，P5C 接入短文本交互，P5D 实施语法与表达；随后接入 P6 阅读器和 P7 用户状态。P5D 可在 P5A 对象稳定后单独推进；P8–P10 保留助手、审计和完整交付范围。
+
+各模块可以复用已明确的协议独立开发。功能完成以应用调用和验收为准，每个独立修改在提交前检查 `git diff`。
+
+## P0：固定接口与验收集
+
+- [x] 按文档功能矩阵建立可执行验收清单，覆盖各桌面入口、持久状态和异常恢复。保存本机依赖版本及代表文本，作为整个接入过程的共同基线。见 [A01–A27、E01–E05](acceptance.md) 与 [来源观察](nlp_behavior.md)；各场景的实际通过状态见实施记录。
+- [x] 扩展统一结果协议，明确文本身份、来源能力、对齐组、结构关系、查询目标和任务版本；同步 Rust 与 TypeScript 类型及序列化样本。统一文档 v6、会话更新 v1、来源实体／关系、查询目标和矩阵表记均已接入。
+- [x] 为现有工作区变更执行定向检查，核实 provider 状态、采集脚本和评估脚本的实际行为，再与模块接入修改分别提交。文档基线 `b5497f9`，既有 provider／实验变更 `ef7a4cb`，覆盖检查 `57fd098`；检查结果见实施记录。
+
+入口：[model.rs](../crates/kotoclip-nlp/src/model.rs)、[types/nlp.ts](../src/types/nlp.ts)、[analysis.rs](../crates/kotoclip-core/src/analysis.rs)。
+
+完成条件：每项功能有明确入口和验收场景，同一结果在 Rust、IPC 与前端具有一致身份及状态。
+
+## P1：接入本机 GiNZA
+
+依赖 P0。
+
+- [x] 增加本机配置与检查：分别选择 GiNZA、KWJA 解释器、模型和词典目录，报告版本、缺失资源及具体错误，验证离线初始化。桌面“保存并检查”展示实际清单；默认与指定词典、资源摘要、进程复用和缺失恢复见 `resources.json`。
+- [x] 将现有采集流程提取为应用可调用的分析适配器。支持请求 ID、正文摘要、UTF-8、模型复用、超时、取消、进程退出和重启；进程日志与协议输出分离。七组集成与生命周期证据见 `data/validation/behavior/integration.json`、`lifecycle.json`。
+- [x] 输出完整的实际任务结果。GiNZA 保留 compound、bunsetsu、主辞和依存标签；KWJA 保留基本句、谓语、论元及启用任务的实体、照应和篇章关系。能力清单逐项对应输出。来源实体、原始 KNP、typed relation 与 checkpoint 任务清单进入 `external_sources`。
+- [x] 在 `AnalysisService` 的普通分析路径调用两项服务，先返回基础正文，再追加已校验的结构。增加桌面配置、运行状态和结构查看入口。Tauri 已验证自动结构追加、两来源切换、取消与重试；证据见 `data/validation/behavior/desktop.json`。
+
+入口：[analysis.rs](../crates/kotoclip-core/src/analysis.rs)、[native.rs](../crates/kotoclip-nlp/src/native.rs)、[collect_ginza_validation.py](../scripts/collect_ginza_validation.py)、[probe_kwja_provider.py](../scripts/probe_kwja_provider.py)、[src-tauri/src/lib.rs](../src-tauri/src/lib.rs)。
+
+当前完成条件：Tauri 窗口输入真实文本，GiNZA 服务实际执行，来源和结构结果可查看；连续请求复用模型，服务异常具有明确恢复路径。上方勾选项保留当时的双来源验收记录。
+
+## P2：完成对齐与结构协议
+
+依赖 P0；使用 P1 的真实结果验收。
+
+- [x] 为准备正文和 provider 内部规范化建立来源映射。结果校验正文摘要、字符数及表面串；采集器按完整正文计算长度，包含末尾空白。注音校验独立保存正文候选与输入原文范围。
+- [x] 实现 `1:1`、`1:n`、`n:1`、`n:m` 对齐组，保留部分重叠、原始边界、两侧 gap 和未匹配成员。
+- [x] 统一结构映射校验。`formation.rs`、`bunsetsu.rs`、`clause.rs` 共用覆盖检查，完整、部分及候选状态传播到消费方。
+- [x] 分离主辞与依存目标，增加有类型的关系端点；分别保存基本句和小句。保留模型原始标签、来源节点、多个候选和选择理由。
+- [x] 定义多来源选择策略及稳定 ID，检查同范围证据合并、交叉边界、组合主辞、跨句关系和重复句定位。三组真实集成见 `alignment.json`；离线导入见 `offline-alignment.json`；桌面分组与选择显示见 `desktop.json`。
+
+入口：[prepare.rs](../crates/kotoclip-nlp/src/prepare.rs)、[syntax.rs](../crates/kotoclip-nlp/src/syntax.rs)、[alignment.rs](../crates/kotoclip-nlp/src/alignment.rs)、[structure.rs](../crates/kotoclip-nlp/src/structure.rs)、[unify.rs](../crates/kotoclip-nlp/src/unify.rs)。
+
+完成条件：真实两来源样本及人工边界用例覆盖所有映射类型；空白、ruby、标点规范化和 token 内部切点均有准确结果或明确诊断，关系引用可解析。
+
+## P3：建立文档会话与增量分析
+
+依赖 P0、P2，连接 P1。
+
+- [x] 建立文档、分析单元和出现锚点，按句段及引号上下文切分长文档。CWJ／CSJ 在单元级选择；现有全次请求自动切换改由明确的单元策略承接。
+- [x] 实现打开、请求范围、继续、取消、关闭和重试；提供首批正文、结构追加与阶段进度。章节跳转优先请求目标范围。
+- [x] 建立版本化更新协议及前后端合并器，校验文本版本、任务代次和基准版本；目标引用随产物生命周期管理。
+- [x] 增加分层缓存、容量限制和资源失效规则。分离前台查询与后台分析，替换当前单服务互斥串行处理方式。
+
+入口：[analysis.rs](../crates/kotoclip-core/src/analysis.rs)、[analysis_progress.rs](../crates/kotoclip-core/src/analysis_progress.rs)、[services/nlp.ts](../src/services/nlp.ts)、[documentOperation.ts](../src/reader/documentOperation.ts)。
+
+完成条件：整本书可渐进分析，快速切书、取消、跳转和迟到结果保持一致；冷分析、缓存恢复和增量更新得到相同规范结果。
+
+## P4：核验来源输出与统一证据
+
+依赖 P2、P3。
+
+十段指定语料的原始输出、人工阅读结论和异常归因见 [P4 样本输出复核](p4_sample_review.md)与[P4 十段来源输出审计](p4_layer_audit.md)。P4 保存 UniDic 原子字段、GiNZA C 模式正式 token／compound、KWJA 基本句及关系，以及三者在共同正文上的引用。
+
+- [x] 逐段保存 UniDic、GiNZA、KWJA 的实际结果、资源身份和原始来源空间。
+- [x] 校验共同正文、字符范围、多对多 token 对齐、结构实体和关系引用。
+- [x] 人工核对十段来源质量，区分可靠字段、模型错误、统一诊断和后置派生污染。
+- [x] 生成十段报告，逐行呈现活用链与整体构词；完整 occurrence、状态与来源诊断保存在机器产物。
+
+入口：[sources.rs](../crates/kotoclip-nlp/src/sources.rs)、[external.rs](../crates/kotoclip-nlp/src/external.rs)、[alignment_group.rs](../crates/kotoclip-nlp/src/alignment_group.rs)与[structure_graph.rs](../crates/kotoclip-nlp/src/structure_graph.rs)。
+
+完成条件：十段的三来源字段、范围、实体和关系可以追溯；对齐完整性与语言学正确性分别报告；外部来源错误和后置派生异常具有明确归因。
+
+## P4 完善：活用链与整体构词
+
+- [x] 按 UniDic 连接形和 GiNZA 正式词界、辅助依存建立有限状态机，输出核心、父链、operator 与精确 occurrence。
+- [x] 处理使役、语态候选、否定、敬体、条件、补助用言与主要缩约；规范展示和查询使用基本形式，原始成员保存浊化与活用。
+- [x] 从 GiNZA compound、正式 token 覆盖及 compound 依存生成整体构词，保存内部查询、词头、来源和候选状态。
+- [x] 统一完整来源、SyntaxArtifact 导入及 native 入口，同步 Rust／TypeScript 协议与候选查询响应。
+
+实现契约见 [P4 活用链与整体构词](p4_morphology_formation.md)，回测与完成证据见 [P4 样本输出复核](p4_sample_review.md)。语法构式义项、表达成立判断、词典范围竞争、阅读单位与展示投影按后续设计实施。
+
+P4 必须保证 token、语法活用链和整体构词的对象及行为。依存、文节和其他句法结果主要用于实验与辅助复核。
+
+### P4 独立核验与修复待办
+
+下列任务限于 P4 契约，本轮只登记。后续以独立修改和验证完成；词典验证与查询决定属于 P5。
+
+- [ ] 建立现代活用及已有转移的覆盖表，逐项对应正例、非法接续、来源缺失／分歧和字符边界；明确已验证范围。
+- [ ] 核验构词覆盖与词汇核心的差异，重点检查来源整体含助动成分、复合活用、サ变及词头非末位。发现错误后修复核心范围和规范形式，并保存独立结果。
+
+## P5：恢复完整词典与解释交互
+
+依赖 P0、P3 和 P4 的候选对象。本模块拥有词典验证、查询聚合及决定，长期协议见 [词典与解释](dictionary.md)。现有 `output.rs` 已调用 `lookup_matrix_profiled`，仍需完成多形式矩阵一致性及上下文选择。
+
+### P5A：多粒度查询目标
+
+- [x] 定义整体词、内部子词、词元、功能成分和有词汇依据的 token 内部目标，建立包含、等价及交叉候选关系，保存 P4 来源引用。
+- [x] 统一目标的会话、单元、产物版本及字符锚点，完成查询和重算后失效校验；以 A28–A33 建立人工期望及查询快照。
+
+### P5B：词典验证、聚合与决定
+
+- [x] 基于 P4 候选和受边界限制的索引查询发现合理范围，完成词典验证、备选保留、默认目标及无整体记录时的内部查询。
+- [x] 合并目标全部合法词形的矩阵，按上下文基本形选择默认项；保留表记／读音配对、词性和每个词典记录身份，修复 `読みませんでした`、`てる` 等已记录的选择问题。
+- [ ] 验证最粗、最细及中间粒度，分别记录漏词、错误合并、错误拆分和错误查询选择；区分词典覆盖与范围识别。完成缓存、轻量索引与正文按需加载的性能基线。
+
+### P5C：短文本查询与投影
+
+- [ ] 在短文本桌面入口接入整体／内部双面板、统一矩阵、表记和词典切换、关系导航、请求代次、历史和后端投影。
+- [ ] 恢复设置、词典顺序和默认选择，验证窄窗口、长内容、锚点卸载及迟到响应；完成 A08、A11–A13、A28–A33。
+
+### P5D：语法与表达
+
+本节独立实施语法与表达能力，消费 P4 形态对象及 P5 词汇目标。表达的词汇收录、形态实现和结构成立分别采用适用的证据，规则仅负责需要明确条件的部分。
+
+- [ ] 消费活用 occurrence、词汇目标和必要结构证据，完成构式识别、语境义项及正文解释，接入文法库和内容核验状态。
+- [ ] 结合词典收录、形态实现和句法关系识别连续／非连续表达，确定功能所有权、精确命中范围与跨句等适用边界；逐类验证结果和解释。
+- [ ] 为适合声明条件的语法与表达提供规则管理、预演、保存及更新后的重算；清理旧通用扫描及其遗留入口。完成 A09、A10。
+
+入口：[output.rs](../crates/kotoclip-core/src/output.rs)、[lookup.rs](../crates/kotoclip-core/src/dictionary/lookup.rs)、[useDictionary.ts](../src/composables/useDictionary.ts)、[useExplanationSession.ts](../src/composables/useExplanationSession.ts)、[ExplanationPopover.vue](../src/components/explanation/ExplanationPopover.vue)。
+
+请注意: 在P4阶段, 不要提及规则或表达模块, 也不要尝试运行或接入. 除非用户明确提及.
+
+完成条件：多粒度查询、默认对象、矩阵及正文一致，三词典交互可用；语法与表达独立达到对应验收条件。粗、中、细粒度各自提供人工期望、实际结果和失败归因。
+
+## P6：恢复书库与阅读器
+
+依赖 P3 和 P5 的查询目标、决定及投影；语言标记依赖 P5D。导入与书库基础工作可提前进行，阅读分组消费已验证结果。
+
+- [x] 注册导入、书库和正文编译模块，恢复对应桌面命令与数据库迁移；校验所有保留文件的依赖及资源路径。
+- [x] 统一 Markdown 编译、ruby 与正文准备坐标；从准备结果建立章节和图片锚点，验证多个章节之后的累计位置。
+- [x] 在应用入口接入引导、书架、文本输入和阅读页面，恢复导入、分类、排序、详情、继续阅读、删除和打开书库目录。
+- [x] 将阅读胶囊、图片、虚拟行和选择操作接到新投影；恢复章节跳转、进度、排版、阅读时长和重启定位。语法与表达沿用后续扩展位。
+
+入口：[阅读器 Engine](reader_engine.md)、[core/lib.rs](../crates/kotoclip-core/src/lib.rs)、[library.rs](../crates/kotoclip-core/src/library.rs)、[epub.rs](../crates/kotoclip-core/src/import/epub.rs)、[App.vue](../src/App.vue)、[reader 组件](../src/components/reader/)。
+
+完成条件：完整书籍从导入到继续阅读可用；图文、注音、章节、查词、语法与表达解释及排版在同一实际桌面流程中通过验收。
+
+## P7：接入用户状态、收藏与导出
+
+依赖 P3、P4、P5、P6。
+
+- [x] 适配并注册独立的阅读器状态库，完成词汇已知状态、曝光计数和正文选择身份接口；旧 `profile.sqlite` 保持隔离。
+- [x] 完成已知状态、曝光记录、选择、笔记和重启后按书籍／文本版本恢复；汉字知识和词典偏好留作后续扩展。
+- [x] 完成连续文本选择、笔记编辑和 JSON 导出，保留正文范围、词形、读音和上下文表记。
+
+入口：[阅读器 Engine](reader_engine.md)、[profile](../crates/kotoclip-core/src/profile/)、[export](../crates/kotoclip-core/src/export/)、[useSelection.ts](../src/composables/useSelection.ts)、[ExportPanel.vue](../src/components/ExportPanel.vue)。
+
+完成条件：词汇状态、收藏等用户操作经过持久化与重启验证；后台重算及虚拟列表重绘保持曝光计数正确；导出可准确对应原文。
+
+## P8：接入词典助手
+
+依赖 P5、P7。
+
+- [ ] 适配并注册 LLM 模块，使用新查询目标和词典 occurrence 构建证据；完成实际 HTTP transport 与宿主接口。
+- [ ] 接入本机端点、模型与凭据配置，提供主动触发、取消、错误提示和响应校验。
+- [ ] 展示候选引用与建议依据；用户在本次查询中选择候选，验证助手与本地查询的独立请求状态。
+
+入口：[llm](../crates/kotoclip-core/src/llm/)、[dictionaryAssistantPort.ts](../src/services/dictionaryAssistantPort.ts)、[types/llm.ts](../src/types/llm.ts)。
+
+完成条件：一次真实消歧请求完成展示和本次查询的候选选择；服务失败时阅读和本地查询保持可用。
+
+## P9：恢复质量审计与性能诊断
+
+依赖 P2–P7 的实际应用流程。
+
+小型回归、人工期望和查询快照从 P5A 开始使用；本阶段恢复完整审计执行器和界面。
+
+- [ ] 恢复质量审计执行器及 workspace 注册，沿用产物和历史存储基础，建立版本握手、两侧真实分析及类型化观察。
+- [ ] 实现分层比较、变化归因、分页阅读数据和对应侧查询快照；接入宿主命令、历史列表和双侧查看。
+- [ ] 先完成可靠的完整范围比较，再接入具有覆盖验证的局部规则选择；更新 `language_quality.py` 中已缺失的委托脚本入口。
+- [ ] 使用实际桌面流程测量冷／热启动、首批正文、结构追加、章节跳转、词典查询和规则更新，合计统计 Rust 与 Python 进程资源。
+
+入口：[quality-audit/src](../crates/kotoclip-quality-audit/src/)、[quality_audit.rs](../src-tauri/src/quality_audit.rs)、[质量界面](../src/components/quality/)、[language_quality.py](../scripts/language_quality.py)。
+
+完成条件：已知语言变化可在机器报告和桌面两侧定位；局部比较与完整比较一致；资源与响应时间形成可复现的基线。
+
+## P10：生成并验收桌面应用
+
+依赖 P1–P9。
+
+- [ ] 更新 Tauri 和便携打包流程，包含应用资源、provider 适配器与本机配置说明；检查词典、权重及内容的实际资源清单与许可记录。
+- [ ] 执行已接入模块的 Rust 测试、前端测试与生产构建，再构建桌面 release 产物，保存路径、版本与检查结果。
+- [ ] 从仓库外目录启动产物，配置本机依赖，验证离线 UniDic、GiNZA；检查 UTF-8、中文／日文路径、缺失依赖、进程退出与再次启动。
+- [ ] 逐项完成本文功能矩阵及各模块桌面验收，验证重启后的书库、进度、个人状态、规则和收藏，记录最终可执行程序及资源包。
+
+完成条件：全部模块可通过桌面入口使用，数据持久化与异常恢复经过实际验证，桌面产物和本机依赖说明可供直接使用。

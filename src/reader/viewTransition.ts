@@ -24,10 +24,14 @@ export function createViewTransitionGuard() {
     if (active === transition) active = null;
   }
 
+  async function settled(): Promise<void> {
+    await active?.finished.catch(() => undefined);
+  }
+
   function dispose(): void {
     active?.skipTransition();
     active = null;
   }
 
-  return { track, finish, dispose };
+  return { track, finish, settled, dispose };
 }

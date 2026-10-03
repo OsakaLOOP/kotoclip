@@ -54,6 +54,22 @@ test("旧过渡自然结束不会清除后来登记的活动过渡", async () =>
   assert.equal(current.skipped(), 1);
 });
 
+test("后续页面切换等待活动过渡自然完成", async () => {
+  const guard = createViewTransitionGuard();
+  const current = fakeTransition();
+  guard.track(current.transition);
+  let settled = false;
+  const pending = guard.settled().then(() => { settled = true; });
+
+  await Promise.resolve();
+  assert.equal(settled, false);
+  current.completion.resolve();
+  await pending;
+
+  assert.equal(settled, true);
+  assert.equal(current.skipped(), 0);
+});
+
 test("组件销毁会终止过渡且不保留活动引用", async () => {
   const guard = createViewTransitionGuard();
   const current = fakeTransition();

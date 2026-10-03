@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { explanationPanelWidth, measureIntrinsicPanel, placeExplanationPanels } from "./geometry.ts";
+import { explanationPanelWidth, isWithinPanelGroupTriangle, measureIntrinsicPanel, placeExplanationPanels } from "./geometry.ts";
 
 const rect = (left, top, width, height) => ({
   left,
@@ -63,6 +63,36 @@ test("16:9 视口中双面板强制左右捆绑并限制高度", () => {
   assert.equal(overlaps(placement.whole, placement.component), false);
   assert.equal(overlaps(placement.whole, anchor), false);
   assert.equal(overlaps(placement.component, anchor), false);
+});
+
+test("上方双面板组以最高面板底边与锚点保持间距", () => {
+  const anchor = rect(740, 650, 60, 28);
+  const placement = placeExplanationPanels(
+    anchor,
+    anchor,
+    { width: 365, height: 180 },
+    { width: 1600, height: 900 },
+    { width: 365, height: 420 },
+  );
+  assert.ok(placement.whole);
+  assert.equal(placement.whole.top, placement.component.top);
+  assert.equal(placement.whole.top + placement.whole.height, anchor.top - 10);
+  assert.equal(placement.component.top + placement.component.height < anchor.top - 10, true);
+});
+
+test("较短气泡下方的过渡三角形保持气泡组打开", () => {
+  const tallLeft = rect(80, 120, 365, 420);
+  const shortRight = rect(455, 120, 300, 180);
+  assert.equal(isWithinPanelGroupTriangle(455, 540, tallLeft, shortRight), true);
+  assert.equal(isWithinPanelGroupTriangle(605, 420, tallLeft, shortRight), true);
+  assert.equal(isWithinPanelGroupTriangle(605, 421, tallLeft, shortRight), false);
+  assert.equal(isWithinPanelGroupTriangle(756, 300, tallLeft, shortRight), false);
+
+  const shortLeft = rect(80, 120, 300, 180);
+  const tallRight = rect(390, 120, 365, 420);
+  assert.equal(isWithinPanelGroupTriangle(380, 540, shortLeft, tallRight), true);
+  assert.equal(isWithinPanelGroupTriangle(230, 420, shortLeft, tallRight), true);
+  assert.equal(isWithinPanelGroupTriangle(230, 421, shortLeft, tallRight), false);
 });
 
 test("靠近水平边界时只平移整个双面板组", () => {

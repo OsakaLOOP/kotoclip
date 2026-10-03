@@ -1,0 +1,21 @@
+{
+  "providers": [
+    {
+      "provider": "ginza",
+      "characters": 13,
+      "spans": 17,
+      "rust_import": true,
+      "digest_verified": true,
+      "trailing_whitespace": true
+    },
+    {
+      "provider": "kwja",
+      "characters": 13,
+      "spans": 19,
+      "rust_import": true,
+      "digest_verified": true,
+      "trailing_whitespace": true
+    }
+  ],
+  "repeated_ruby_source_ranges": true
+}
