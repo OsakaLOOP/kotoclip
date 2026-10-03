@@ -69,7 +69,15 @@ python scripts/test_dictionary_schema.py
 
 核心测试覆盖已注册模块；模块恢复时将其测试纳入编译和执行。前端构建包含 TypeScript 检查与 Vite 打包。语法资源或词典 schema 改动时执行各自专项检查。
 
-GitHub Actions 使用 `src-tauri/tauri.github-release.conf.json` 构建发行包。`.kdict` 是发行包的词典源格式，四个源包已被 Git 跟踪；UniDic 运行文件和 GiNZA 运行环境由 `scripts/prepare_release_resources.py` 下载、校验并打入便携目录。`scripts/package_portable.py` 将 no-bundle 可执行文件和资源压缩为 ZIP，不生成 MSI、NSIS、DMG 或其他安装包。本地 `tauri.conf.json` 继续使用开发环境中的 `.dic` 资源。推送 `v*` 标签后，Actions 在 Windows x64 和 macOS arm64 runner 上构建并创建 GitHub Release，手动运行工作流只生成构建产物。
+GitHub Actions 使用 `src-tauri/tauri.github-release.conf.json` 构建发行包。`.kdict` 是发行包的词典源格式，四个源包已被 Git 跟踪；UniDic 与 GiNZA 资源由 `resources-v1` Release 中的一个共用 `nlp` ZIP 和两个平台 Python ZIP 提供，正式发布只执行 `scripts/fetch_release_resources.py` 下载与解压。现有便携包可通过 `scripts/split_portable_resources.py` 拆出这些上传文件。`scripts/package_portable.py` 将 no-bundle 可执行文件和资源压缩为 ZIP，不生成 MSI、NSIS、DMG 或其他安装包。本地 `tauri.conf.json` 继续使用开发环境中的 `.dic` 资源。推送 `v*` 标签后，Actions 在 Windows x64 和 macOS arm64 runner 上构建并创建 GitHub Release，手动运行工作流只生成构建产物。
+
+资源 Release 的资产名称固定为：
+
+```text
+Kotoclip-insider-portable-nlp.zip
+Kotoclip-insider-portable-windows-x64-python.zip
+Kotoclip-insider-portable-macos-arm64-python.zip
+```
 
 ## 桌面交付验收
 

@@ -20,12 +20,14 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             binary: tauri-app.exe
-            builder: unidic-vibrato-build.exe
+            nlp_asset: Kotoclip-insider-portable-nlp.zip
+            python_asset: Kotoclip-insider-portable-windows-x64-python.zip
           - name: macos-arm64
             os: macos-14
             target: aarch64-apple-darwin
             binary: tauri-app
-            builder: unidic-vibrato-build
+            nlp_asset: Kotoclip-insider-portable-nlp.zip
+            python_asset: Kotoclip-insider-portable-macos-arm64-python.zip
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out source
@@ -42,6 +44,11 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -53,13 +60,12 @@ jobs:
       - name: Verify tracked release resources
         run: npm run verify:release-resources
 
-      - name: Build UniDic resource generator
-        run: cargo build --release --target ${{ matrix.target }} -p kotoclip-core --bin unidic-vibrato-build
-
-      - name: Download and prepare NLP runtime resources
+      - name: Download prebuilt NLP resources
         run: >-
-          python scripts/prepare_release_resources.py
-          --builder target/${{ matrix.target }}/release/${{ matrix.builder }}
+          python scripts/fetch_release_resources.py
+          --nlp-url https://github.com/${{ github.repository }}/releases/download/resources-v1/${{ matrix.nlp_asset }}
+          --python-url https://github.com/${{ github.repository }}/releases/download/resources-v1/${{ matrix.python_asset }}
+          --output release-resources
 
       - name: Verify generated release dependencies
         run: npm run verify:release-resources -- --require-generated
