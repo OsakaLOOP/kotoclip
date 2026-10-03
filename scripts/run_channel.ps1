@@ -95,24 +95,11 @@ function Create-InsiderPackage {
 
     New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
 
-    $mdxSource = (Get-ChildItem -LiteralPath $workspace -File -Filter "*.mdx" | Select-Object -First 1).FullName
-    $txtSource = (Get-ChildItem -LiteralPath (Join-Path $workspace "data\tmp_dict") -File -Filter "*.txt" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
-    $dictionarySource = if ($txtSource) { $txtSource } else { $mdxSource }
-    if (-not $dictionarySource) {
-        throw "no MDX or equivalent TXT dictionary source found"
-    }
     $bundleDirectory = Join-Path $workspace "data\dict-sources"
-    $dictionaryBundle = Join-Path $bundleDirectory "daijirin.kdict"
-    New-Item -ItemType Directory -Force -Path $bundleDirectory | Out-Null
-    $bundleOutdated = -not (Test-Path -LiteralPath $dictionaryBundle)
-    if (-not $bundleOutdated) {
-        $bundleOutdated = (Get-Item -LiteralPath $dictionaryBundle).LastWriteTimeUtc -lt (Get-Item -LiteralPath $dictionarySource).LastWriteTimeUtc
-    }
-    if ($bundleOutdated) {
-        & python "scripts\build_dictionary_bundle.py" $dictionarySource $dictionaryBundle
-        if ($LASTEXITCODE -ne 0) {
-            throw "dictionary bundle build failed with exit code $LASTEXITCODE"
-        }
+    $requiredBundles = @("starter.kdict", "daijirin.kdict", "shogakukan.kdict", "crown.kdict")
+    $missingBundles = @($requiredBundles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $bundleDirectory $_)) })
+    if ($missingBundles.Count -gt 0) {
+        throw "missing tracked dictionary bundles: $($missingBundles -join ', ')"
     }
 
     $minimalGinza = Join-Path $workspace "experiments\ginza-minimal"
@@ -140,12 +127,6 @@ function Create-InsiderPackage {
     $dictionaryBundles = Get-ChildItem -LiteralPath $bundleDirectory -File -Filter "*.kdict" | Sort-Object Name
     if (-not $dictionaryBundles) {
         throw "no .kdict dictionary bundles found in $bundleDirectory"
-    }
-    $requiredBundles = @("daijirin.kdict", "shogakukan.kdict", "crown.kdict")
-    $bundleNames = @($dictionaryBundles | ForEach-Object Name)
-    $missingBundles = @($requiredBundles | Where-Object { $_ -notin $bundleNames })
-    if ($missingBundles.Count -gt 0) {
-        throw "missing required dictionary bundles: $($missingBundles -join ', ')"
     }
     foreach ($bundle in $dictionaryBundles) {
         Copy-Item -LiteralPath $bundle.FullName -Destination (Join-Path $packageDir "dict-sources\$($bundle.Name)") -Force

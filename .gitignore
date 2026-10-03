@@ -24,6 +24,8 @@ __pycache__/
 !/data/baselines/
 !/data/validation/
 !/data/validation/*.json
+!/data/dict-sources/
+!/data/dict-sources/*.kdict
 /data/validation/p4-sample-review.json
 /ipadic/
 /unidic-cwj-202512/

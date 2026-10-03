@@ -1,6 +1,8 @@
 {
   "name": "tauri-app",
   "private": true,
+  "license": "MIT",
+  "author": "OsakaLOOP",
   "version": "0.1.2",
   "type": "module",
   "scripts": {

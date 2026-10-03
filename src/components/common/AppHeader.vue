@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ArrowLeft, BookOpen } from "@lucide/vue";
+import { ArrowLeft, BadgeInfo, BookOpen, X } from "@lucide/vue";
+import { ref } from "vue";
+import { CURRENT_VERSION } from "../../version/changelog";
 
 withDefaults(defineProps<{
   showBack?: boolean;
@@ -16,6 +18,7 @@ withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{ back: [] }>();
+const showAbout = ref(false);
 </script>
 
 <template>
@@ -70,8 +73,38 @@ const emit = defineEmits<{ back: [] }>();
     </div>
     <div class="app-header__actions">
       <slot name="actions" />
+      <button class="app-header__about" type="button" title="关于 Kotoclip" aria-label="关于 Kotoclip" @click="showAbout = true">
+        <BadgeInfo :size="18" stroke-width="1.8" aria-hidden="true" />
+      </button>
     </div>
   </header>
+  <Teleport to="body">
+    <div v-if="showAbout" class="about-dialog-backdrop" role="presentation" @click.self="showAbout = false" @keydown.esc="showAbout = false">
+      <section class="about-dialog" role="dialog" aria-modal="true" aria-labelledby="about-dialog-title">
+        <header class="about-dialog__header">
+          <div>
+            <h2 id="about-dialog-title">关于 Kotoclip</h2>
+            <p>版本 {{ CURRENT_VERSION }}</p>
+          </div>
+          <button class="about-dialog__close" type="button" title="关闭" aria-label="关闭关于窗口" @click="showAbout = false">
+            <X :size="18" aria-hidden="true" />
+          </button>
+        </header>
+        <div class="about-dialog__body">
+          <p>Kotoclip 是面向日语原文阅读与语言分析的本地桌面应用。</p>
+          <h3>许可证</h3>
+          <p>项目代码采用 MIT License。许可证文本见发行包中的 <code>LICENSE</code> 文件。</p>
+          <h3>致谢</h3>
+          <ul>
+            <li><a href="https://clrd.ninjal.ac.jp/unidic/" target="_blank" rel="noreferrer">UniDic</a>：感谢国立国语研究所及相关维护团队提供日语词法资源。UniDic 资源遵循其官方发布的 GPL v2.0、LGPL v2.1 与 BSD 许可条件。</li>
+            <li><a href="https://github.com/megagonlabs/ginza" target="_blank" rel="noreferrer">GiNZA</a>：感谢 Megagon Labs 提供基于 spaCy 与 Sudachi 的日语依存分析工具，GiNZA 项目采用 MIT License。</li>
+            <li><a href="https://forum.freemdict.com/" target="_blank" rel="noreferrer">FreeMdict 论坛</a>：感谢 MDict 词典制作与交流社区提供的资料整理和技术讨论。</li>
+          </ul>
+          <p class="about-dialog__note">第三方程序、模型、词典资源及其派生文件遵循各自的许可和分发条件，项目 MIT License 不覆盖这些内容。</p>
+        </div>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -172,7 +205,82 @@ const emit = defineEmits<{ back: [] }>();
   min-width: 0;
   flex: 0 1 auto;
   align-items: center;
+  gap: 4px;
+  overflow: visible;
+}
+
+.app-header__about,
+.about-dialog__close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.app-header__about:hover,
+.app-header__about:focus-visible,
+.about-dialog__close:hover,
+.about-dialog__close:focus-visible {
+  outline: 0;
+  background: var(--accent-light);
+  color: var(--accent-color);
+}
+
+.about-dialog-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, #111 38%, transparent);
+}
+
+.about-dialog {
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
   overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  box-shadow: 0 18px 60px color-mix(in srgb, #000 22%, transparent);
+}
+
+.about-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.about-dialog__header h2,
+.about-dialog__header p,
+.about-dialog__body h3,
+.about-dialog__body p {
+  margin: 0;
+}
+
+.about-dialog__header h2 { color: var(--text-primary); font-size: 1rem; }
+.about-dialog__header p { margin-top: 4px; color: var(--text-muted); font-size: .72rem; }
+.about-dialog__body { max-height: calc(min(720px, 100vh - 40px) - 82px); overflow: auto; padding: 18px 20px 20px; color: var(--text-secondary); font-size: .8rem; line-height: 1.65; }
+.about-dialog__body h3 { margin-top: 18px; margin-bottom: 6px; color: var(--text-primary); font-size: .82rem; }
+.about-dialog__body ul { display: grid; gap: 9px; margin: 8px 0 0; padding-left: 20px; }
+.about-dialog__body a { color: var(--accent-color); }
+.about-dialog__body code { padding: 1px 4px; border-radius: 3px; background: var(--bg-secondary); font-size: .75rem; }
+.about-dialog__note { margin-top: 18px !important; color: var(--text-muted); font-size: .72rem; }
+
+@media (max-width: 520px) {
+  .about-dialog-backdrop { padding: 10px; }
+  .about-dialog { max-height: calc(100vh - 20px); }
+  .about-dialog__body { max-height: calc(100vh - 102px); }
 }
 
 @media (max-width: 820px) {
