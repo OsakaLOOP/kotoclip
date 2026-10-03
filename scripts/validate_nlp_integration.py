@@ -51,6 +51,14 @@ def main():
                 report["pids"] = pids
                 print(case["id"], "通过", flush=True)
             settings = status["settings"]
+            checked = request({"command": "check_providers"})
+            checked_pid = next(provider["pid"] for provider in checked["providers"] if provider["id"] == "ginza")
+            assert checked_pid == report["pids"]["ginza"], "检查 provider 不应重复加载模型"
+            request({"command": "configure_providers", "settings": settings})
+            configured_status = request({"command": "provider_status"})
+            configured_pid = next(provider["pid"] for provider in configured_status["providers"] if provider["id"] == "ginza")
+            assert configured_pid == report["pids"]["ginza"], "相同配置更新不应重启模型进程"
+            report["check_and_same_config_reuse"] = True
             original = settings["ginza"]["python"]
             settings["ginza"]["python"] = str(Path(data) / "missing-python.exe")
             request({"command": "configure_providers", "settings": settings})
@@ -75,21 +83,23 @@ def main():
             report["cancellation_recovery"] = True
             settings["ginza"]["timeout_seconds"] = 1
             request({"command": "configure_providers", "settings": settings})
-            timed_out = request({"command": "enrich", "analysis_id": base["id"]})
-            assert timed_out["providers"][0]["status"] == "failed"
+            timeout_base = request({"command": "analyze", "text": base["text"] * 200, "register": "cwj"})
+            timed_out = request({"command": "enrich", "analysis_id": timeout_base["id"]})
+            assert timed_out["providers"][0]["status"] == "failed", timed_out
             assert "超过" in timed_out["providers"][0]["error"]
             settings["ginza"]["timeout_seconds"] = 120
             request({"command": "configure_providers", "settings": settings})
-            assert request({"command": "enrich", "analysis_id": base["id"]})["providers"][0]["status"] == "ready"
+            assert request({"command": "enrich", "analysis_id": timeout_base["id"]})["providers"][0]["status"] == "ready"
             report["timeout_recovery"] = True
             status = request({"command": "provider_status"})
             pid = next(p["pid"] for p in status["providers"] if p["id"] == "ginza")
             subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True, check=True)
-            # 新正文触发实际推理，确保异常退出检查经过进程通信。
+            # 新正文触发实际推理，确保异常退出后自动重建 worker。
             uncached = request({"command": "analyze", "text": "新しい本を読む。", "register": "cwj"})
             exited = request({"command": "enrich", "analysis_id": uncached["id"]})
-            assert exited["providers"][0]["status"] == "failed"
-            assert request({"command": "enrich", "analysis_id": uncached["id"]})["providers"][0]["status"] == "ready"
+            assert exited["providers"][0]["status"] == "ready"
+            recovered_pid = next(p["pid"] for p in request({"command": "provider_status"})["providers"] if p["id"] == "ginza")
+            assert recovered_pid != pid, "异常退出后应创建新的 worker"
             report["unexpected_exit_recovery"] = True
         finally:
             process.stdin.close()

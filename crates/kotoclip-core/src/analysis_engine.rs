@@ -1,19 +1,75 @@
 //! 来源分析、查询和快照分别加锁，模型推理期间允许前台查词。
-use crate::{analysis::ResourcePaths, analysis_cache::AnalysisCache, dictionary::lookup::DictionaryEngine, document_plan::DocumentPlan, output, providers::ProviderManager, rule_store::{RuleSnapshot, RuleStore}};
+use crate::{analysis::ResourcePaths, analysis_cache::AnalysisCache, dictionary::lookup::DictionaryEngine, document_plan::DocumentPlan, output, performance::{PerformanceEvent, PerformanceRecorder, PerformanceSnapshot}, providers::ProviderManager, rule_store::{RuleSnapshot, RuleStore}};
 use kotoclip_nlp::{model::{MorphemeToken, QueryForm, Register, RegisterRouting, SourceAnalysis, SourceRun, StageTiming, UnifiedDocument}, prepare::PreparedText, sources::UniDicProvider, syntax::SyntaxArtifact};
 use serde_json::{json, Value};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::{Path, PathBuf}, sync::{Arc, Mutex, atomic::AtomicU64}, time::{Instant, UNIX_EPOCH}};
+use std::{collections::HashMap, fs, path::{Path, PathBuf}, sync::{Arc, Condvar, Mutex, atomic::AtomicU64}, time::{Instant, UNIX_EPOCH}};
+
+const DICTIONARY_FOREGROUND_POOL_SIZE: usize = 3;
+const DICTIONARY_BACKGROUND_POOL_SIZE: usize = 1;
+
+struct DictionaryPoolState {
+    initialized: bool,
+    foreground: Vec<DictionaryEngine>,
+    background: Vec<DictionaryEngine>,
+}
+
+struct DictionaryPool {
+    source_dir: PathBuf,
+    database_dir: PathBuf,
+    state: Mutex<DictionaryPoolState>,
+    available: Condvar,
+}
+
+impl DictionaryPool {
+    fn new(source_dir: PathBuf, database_dir: PathBuf) -> Self {
+        Self { source_dir, database_dir, state: Mutex::new(DictionaryPoolState { initialized: false, foreground: Vec::new(), background: Vec::new() }), available: Condvar::new() }
+    }
+
+    fn checkout(&self, actor: &str) -> Result<(DictionaryEngine, f64, f64), String> {
+        let started = Instant::now();
+        let mut state = self.state.lock().unwrap();
+        let mut prepare_ms = 0.0;
+        if !state.initialized {
+            let prepare_started = Instant::now();
+            let first = DictionaryEngine::prepare(&self.source_dir, &self.database_dir).map_err(|error| error.to_string())?;
+            let mut forks = Vec::new();
+            for _ in 1..DICTIONARY_FOREGROUND_POOL_SIZE + DICTIONARY_BACKGROUND_POOL_SIZE {
+                forks.push(first.fork().map_err(|error| error.to_string())?);
+            }
+            state.foreground.push(first);
+            state.foreground.extend(forks.drain(..DICTIONARY_FOREGROUND_POOL_SIZE - 1));
+            state.background.extend(forks);
+            state.initialized = true;
+            prepare_ms = prepare_started.elapsed().as_secs_f64() * 1000.0;
+        }
+        let foreground = actor == "foreground";
+        while if foreground { state.foreground.is_empty() } else { state.background.is_empty() } {
+            state = self.available.wait(state).unwrap();
+        }
+        let wait_ms = (started.elapsed().as_secs_f64() * 1000.0 - prepare_ms).max(0.0);
+        let dictionary = if foreground { state.foreground.pop().unwrap() } else { state.background.pop().unwrap() };
+        Ok((dictionary, wait_ms, prepare_ms))
+    }
+
+    fn release(&self, dictionary: DictionaryEngine, actor: &str) {
+        let mut state = self.state.lock().unwrap();
+        if actor == "foreground" { state.foreground.push(dictionary); } else { state.background.push(dictionary); }
+        self.available.notify_one();
+    }
+}
 
 pub struct AnalysisEngine {
     pub paths: ResourcePaths,
     providers: Mutex<HashMap<Register, UniDicProvider>>,
-    dictionary: Mutex<Option<DictionaryEngine>>,
+    dictionary: DictionaryPool,
     documents: Mutex<AnalysisCache<UnifiedDocument>>,
     complete_units: Mutex<AnalysisCache<CompleteUnit>>,
+    query_cache: Mutex<AnalysisCache<Value>>,
     pub external: Mutex<ProviderManager>,
     pub rules: RuleStore,
     pub cancellation: Arc<AtomicU64>,
+    pub performance: PerformanceRecorder,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -27,7 +83,8 @@ impl AnalysisEngine {
         let external = ProviderManager::new(paths.provider_config.clone(), paths.provider_script.clone(), paths.provider_defaults.clone());
         let cancellation = external.cancellation.clone();
         let rules = RuleStore::open(paths.provider_config.with_file_name("language-rules.json"));
-        Self { paths, providers: Mutex::new(HashMap::new()), dictionary: Mutex::new(None), documents: Mutex::new(AnalysisCache::new(64 * 1024 * 1024)), complete_units: Mutex::new(AnalysisCache::new(128 * 1024 * 1024)), external: Mutex::new(external), rules, cancellation }
+        let dictionary = DictionaryPool::new(paths.dictionary_sources.clone(), paths.dictionaries.clone());
+        Self { paths, providers: Mutex::new(HashMap::new()), dictionary, documents: Mutex::new(AnalysisCache::new(64 * 1024 * 1024)), complete_units: Mutex::new(AnalysisCache::new(128 * 1024 * 1024)), query_cache: Mutex::new(AnalysisCache::new(16 * 1024 * 1024)), external: Mutex::new(external), rules, cancellation, performance: PerformanceRecorder::default() }
     }
 
     pub fn status(&self) -> Value {
@@ -167,7 +224,7 @@ impl AnalysisEngine {
         let mut value = kotoclip_nlp::unify::unify_with_sources(prepared, source, routing, &sources)?;
         let unify_timing = StageTiming::new("unify", unify_started);
         let lookup_started = Instant::now();
-        let lookup = self.lookup_targets(&value, range)?;
+        let lookup = self.lookup_targets_for(&value, range, "background")?;
         let lookup_timing = StageTiming::new("lookup", lookup_started);
         value.stage_timings = vec![unidic_timing, ginza_timing, unify_timing, lookup_timing, StageTiming::new("complete", started)];
         value.elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
@@ -247,34 +304,59 @@ impl AnalysisEngine {
     pub fn delete_rule(&self, id: &str) -> Result<RuleSnapshot, String> { self.rules.delete(id) }
 
     pub fn query(&self, analysis_id: Option<String>, token: Option<&MorphemeToken>, forms: &[QueryForm], selected_form: Option<&str>) -> Result<Value, String> {
-        let mut dictionary = self.dictionary.lock().unwrap();
-        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|e| e.to_string())?); }
-        serde_json::to_value(output::query(dictionary.as_ref().unwrap(), analysis_id, token, forms, selected_form)).map_err(|e| e.to_string())
+        self.with_dictionary("query", "foreground", |dictionary, event| {
+            let result = output::query(dictionary, analysis_id, token, forms, selected_form);
+            if let Some(timing) = &result.timing {
+                event.sqlite_ms = timing.sqlite_ms as f64;
+                event.database_ms = timing.service_ms as f64;
+            }
+            serde_json::to_value(result).map_err(|error| error.to_string())
+        })
     }
 
     pub fn lookup_targets(&self, document: &UnifiedDocument, range: [usize; 2]) -> Result<Value, String> {
-        let mut dictionary = self.dictionary.lock().unwrap();
-        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|e| e.to_string())?); }
-        let group = crate::dictionary::targets::build(dictionary.as_ref().unwrap(), document, range, &[])?;
-        serde_json::to_value(group).map_err(|error| error.to_string())
+        self.lookup_targets_for(document, range, "foreground")
+    }
+
+    pub fn lookup_targets_for(&self, document: &UnifiedDocument, range: [usize; 2], actor: &str) -> Result<Value, String> {
+        self.with_dictionary("lookup_targets", actor, |dictionary, event| {
+            let build_started = Instant::now();
+            let (group, timing) = crate::dictionary::targets::build_profiled(dictionary, document, range, &[])?;
+            event.target_build_ms = build_started.elapsed().as_secs_f64() * 1000.0;
+            event.database_ms = timing.database_ms;
+            let serialization_started = Instant::now();
+            let value = serde_json::to_value(group).map_err(|error| error.to_string())?;
+            event.serialization_ms = serialization_started.elapsed().as_secs_f64() * 1000.0;
+            Ok(value)
+        })
     }
 
     pub fn lookup_report(&self, document: &UnifiedDocument) -> Result<Value, String> {
-        let mut dictionary = self.dictionary.lock().unwrap();
-        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|error| error.to_string())?); }
-        let dictionary = dictionary.as_ref().unwrap();
-        let group = crate::dictionary::targets::build(dictionary, document, [0, document.characters], &[])?;
-        crate::dictionary::targets::report(dictionary, &group)
+        self.with_dictionary("lookup_report", "diagnostic", |dictionary, event| {
+            let build_started = Instant::now();
+            let (group, timing) = crate::dictionary::targets::build_profiled(dictionary, document, [0, document.characters], &[])?;
+            event.target_build_ms = build_started.elapsed().as_secs_f64() * 1000.0;
+            event.database_ms = timing.database_ms;
+            crate::dictionary::targets::report(dictionary, &group)
+        })
     }
 
     pub fn query_target(&self, document: &UnifiedDocument, target_id: &str, selected_form: Option<&str>) -> Result<Value, String> {
-        let mut dictionary = self.dictionary.lock().unwrap();
-        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|e| e.to_string())?); }
-        let group = crate::dictionary::targets::build(dictionary.as_ref().unwrap(), document, [0, document.characters], &[])?;
-        let target = group.outer_targets.iter().chain(group.inner_targets.iter()).chain(group.candidate_targets.iter())
-            .find(|target| target.id == target_id).ok_or("查词目标引用无效")?;
-        let request = target.matrix_request.as_ref().ok_or("该目标没有词条矩阵")?;
-        serde_json::to_value(crate::dictionary::targets::query(dictionary.as_ref().unwrap(), request, selected_form)).map_err(|error| error.to_string())
+        self.with_dictionary("query_target", "foreground", |dictionary, event| {
+            let build_started = Instant::now();
+            let (group, build_timing) = crate::dictionary::targets::build_profiled(dictionary, document, [0, document.characters], &[])?;
+            event.target_build_ms = build_started.elapsed().as_secs_f64() * 1000.0;
+            event.database_ms = build_timing.database_ms;
+            let target = group.outer_targets.iter().chain(group.inner_targets.iter()).chain(group.candidate_targets.iter())
+                .find(|target| target.id == target_id).ok_or("查词目标引用无效")?;
+            let request = target.matrix_request.as_ref().ok_or("该目标没有词条矩阵")?;
+            let result = crate::dictionary::targets::query(dictionary, request, selected_form);
+            if let Some(timing) = &result.timing {
+                event.sqlite_ms += timing.sqlite_ms as f64;
+                event.database_ms += timing.service_ms as f64;
+            }
+            serde_json::to_value(result).map_err(|error| error.to_string())
+        })
     }
 
     pub fn query_group(&self, group: Value, target_id: &str, selected_form: Option<&str>) -> Result<Value, String> {
@@ -282,15 +364,51 @@ impl AnalysisEngine {
         let target = group.outer_targets.iter().chain(group.inner_targets.iter()).chain(group.candidate_targets.iter())
             .find(|target| target.id == target_id).ok_or("查词目标引用无效")?;
         let request = target.matrix_request.as_ref().ok_or("该目标没有词条矩阵")?;
-        let mut dictionary = self.dictionary.lock().unwrap();
-        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|error| error.to_string())?); }
-        serde_json::to_value(crate::dictionary::targets::query(dictionary.as_ref().unwrap(), request, selected_form)).map_err(|error| error.to_string())
+        let cache_key = format!("query-group:{}", kotoclip_nlp::external::text_digest(&serde_json::to_string(&(request, selected_form)).map_err(|error| error.to_string())?));
+        if let Some(value) = self.query_cache.lock().unwrap().get(&cache_key) {
+            return Ok(value.as_ref().clone());
+        }
+        let result = self.with_dictionary("query_group", "foreground", |dictionary, event| {
+            let result = crate::dictionary::targets::query(dictionary, request, selected_form);
+            if let Some(timing) = &result.timing {
+                event.sqlite_ms = timing.sqlite_ms as f64;
+                event.database_ms = timing.service_ms as f64;
+            }
+            serde_json::to_value(result).map_err(|error| error.to_string())
+        })?;
+        self.query_cache.lock().unwrap().insert(cache_key, Arc::new(result.clone()));
+        Ok(result)
     }
 
     pub fn query_entry(&self, entry_key: &str) -> Result<Value, String> {
-        let mut dictionary = self.dictionary.lock().unwrap();
-        if dictionary.is_none() { *dictionary = Some(DictionaryEngine::prepare(&self.paths.dictionary_sources, &self.paths.dictionaries).map_err(|error| error.to_string())?); }
-        serde_json::to_value(dictionary.as_ref().unwrap().load_entry(entry_key)?).map_err(|error| error.to_string())
+        self.with_dictionary("query_entry", "foreground", |dictionary, _| {
+            serde_json::to_value(dictionary.load_entry(entry_key)?).map_err(|error| error.to_string())
+        })
+    }
+
+    pub fn performance_snapshot(&self, clear: bool) -> PerformanceSnapshot {
+        self.performance.snapshot(clear)
+    }
+
+    fn with_dictionary<T, F>(&self, operation: &str, actor: &str, action: F) -> Result<T, String>
+    where
+        F: FnOnce(&DictionaryEngine, &mut PerformanceEvent) -> Result<T, String>,
+    {
+        let started = Instant::now();
+        let mut event = PerformanceEvent::new(operation, actor);
+        let (dictionary, pool_wait_ms, prepare_ms) = self.dictionary.checkout(actor)?;
+        event.dictionary_lock_wait_ms = pool_wait_ms;
+        event.dictionary_pool_wait_ms = pool_wait_ms;
+        event.dictionary_prepare_ms = prepare_ms;
+        let resource_acquired = Instant::now();
+        let result = action(&dictionary, &mut event);
+        event.dictionary_lock_hold_ms = resource_acquired.elapsed().as_secs_f64() * 1000.0;
+        self.dictionary.release(dictionary, actor);
+        event.elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
+        event.execution_ms = (event.elapsed_ms - event.dictionary_lock_wait_ms).max(0.0);
+        if result.is_err() { event.status = "error".into(); }
+        self.performance.record(event);
+        result
     }
 }
 

@@ -57,6 +57,7 @@ pub enum Request {
     CheckProviders,
     ConfigureProviders { settings: crate::providers::ProviderSettings },
     SetAnalysisTiming { enabled: bool },
+    PerformanceStats { #[serde(default)] clear: bool },
     Enrich { analysis_id: String },
     CancelExternal,
     Analyze {
@@ -163,6 +164,7 @@ impl AnalysisService {
                 result
             },
             Request::SetAnalysisTiming { enabled } => self.engine.external.lock().unwrap().set_analysis_timing(enabled),
+            Request::PerformanceStats { clear } => serde_json::to_value(self.engine.performance_snapshot(clear)).map_err(|error| error.to_string()),
             Request::OpenDocument { document_id, text, policy, initial_offset } => self.sessions.open(document_id, &text, policy, initial_offset),
             Request::RequestRange { session_id, text_version, generation, range, after_revision } => self.sessions.control(&session_id, &text_version, generation, "range", Some(range), None, after_revision),
             Request::ContinueDocument { session_id, text_version, generation, after_revision } => self.sessions.control(&session_id, &text_version, generation, "continue", None, None, after_revision),

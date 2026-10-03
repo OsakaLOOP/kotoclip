@@ -33,6 +33,7 @@ pub struct DictionaryStats {
 struct DictionaryDatabase {
     name: String,
     file_name: String,
+    path: std::path::PathBuf,
     connection: Connection,
 }
 
@@ -56,6 +57,32 @@ struct DefinitionBlockCache {
 struct PresentationCache {
     entries: HashMap<(usize, i64), Vec<presentation::DictionaryPresentation>>,
     order: VecDeque<(usize, i64)>,
+}
+
+#[derive(Default)]
+struct MatrixCache {
+    entries: HashMap<String, DictionaryLookup>,
+    order: VecDeque<String>,
+}
+
+impl MatrixCache {
+    fn get(&mut self, key: &str) -> Option<DictionaryLookup> {
+        let value = self.entries.get(key)?.clone();
+        self.order.retain(|candidate| candidate != key);
+        self.order.push_back(key.to_string());
+        Some(value)
+    }
+
+    fn insert(&mut self, key: String, value: DictionaryLookup) {
+        self.entries.insert(key.clone(), value);
+        self.order.retain(|candidate| candidate != &key);
+        self.order.push_back(key);
+        while self.order.len() > 128 {
+            if let Some(expired) = self.order.pop_front() {
+                self.entries.remove(&expired);
+            }
+        }
+    }
 }
 
 impl PresentationCache {
@@ -100,9 +127,10 @@ impl DefinitionBlockCache {
 
 pub struct DictionaryEngine {
     databases: Vec<DictionaryDatabase>,
-    exists_cache: Mutex<HashMap<String, bool>>,
-    definition_cache: Mutex<DefinitionBlockCache>,
-    presentation_cache: Mutex<PresentationCache>,
+    exists_cache: Arc<Mutex<HashMap<String, bool>>>,
+    definition_cache: Arc<Mutex<DefinitionBlockCache>>,
+    presentation_cache: Arc<Mutex<PresentationCache>>,
+    matrix_cache: Arc<Mutex<MatrixCache>>,
 }
 
 impl DictionaryEngine {
@@ -164,15 +192,25 @@ impl DictionaryEngine {
             databases.push(DictionaryDatabase {
                 name: source_name,
                 file_name,
+                path: file_path,
                 connection,
             });
         }
         Ok(Self {
             databases,
-            exists_cache: Mutex::new(HashMap::new()),
-            definition_cache: Mutex::new(DefinitionBlockCache::default()),
-            presentation_cache: Mutex::new(PresentationCache::default()),
+            exists_cache: Arc::new(Mutex::new(HashMap::new())),
+            definition_cache: Arc::new(Mutex::new(DefinitionBlockCache::default())),
+            presentation_cache: Arc::new(Mutex::new(PresentationCache::default())),
+            matrix_cache: Arc::new(Mutex::new(MatrixCache::default())),
         })
+    }
+
+    pub fn fork(&self) -> Result<Self, Box<dyn std::error::Error>> {
+        let databases = self.databases.iter().map(|database| {
+            let connection = Connection::open_with_flags(&database.path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+            Ok(DictionaryDatabase { name: database.name.clone(), file_name: database.file_name.clone(), path: database.path.clone(), connection })
+        }).collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+        Ok(Self { databases, exists_cache: self.exists_cache.clone(), definition_cache: self.definition_cache.clone(), presentation_cache: self.presentation_cache.clone(), matrix_cache: self.matrix_cache.clone() })
     }
 
     pub fn stats(&self) -> Vec<DictionaryStats> {
@@ -220,6 +258,11 @@ impl DictionaryEngine {
         selected_form: Option<&str>,
         priority_list: &[String],
     ) -> DictionaryLookup {
+        let cache_key = kotoclip_nlp::external::text_digest(&serde_json::to_string(&(query, observed_form, reading, pos, selected_form, priority_list)).unwrap_or_default());
+        if let Some(mut cached) = self.matrix_cache.lock().ok().and_then(|mut cache| cache.get(&cache_key)) {
+            cached.timing = Some(DictionaryLookupTiming::default());
+            return cached;
+        }
         let started = Instant::now();
         let effective_reading = reading
             .filter(|value| !value.is_empty() && *value != "*")
@@ -282,7 +325,7 @@ impl DictionaryEngine {
         entries = aggregate::sort_definitions(entries, priority_list);
         timing.entries = entries.len();
         timing.service_ms = started.elapsed().as_millis() as u64;
-        lookup_state::build_lookup(
+        let result = lookup_state::build_lookup(
             query,
             observed_form,
             reading,
@@ -293,7 +336,9 @@ impl DictionaryEngine {
             dictionary_names,
             entries,
             Some(timing),
-        )
+        );
+        if let Ok(mut cache) = self.matrix_cache.lock() { cache.insert(cache_key, result.clone()); }
+        result
     }
 
     pub fn match_kind(&self, headword: &str, reading: Option<&str>) -> Option<String> {
@@ -696,9 +741,13 @@ impl DictionaryEngine {
         requested_reading: Option<&str>,
         timing: &mut DictionaryLookupTiming,
     ) {
+        let words = seeds.iter().flat_map(|seed| seed.variants.iter().map(|variant| variant.surface_form.clone())).collect::<HashSet<_>>();
+        let started = Instant::now();
+        let references = self.resolve_exact_forms_batch(&words);
+        timing.sqlite_ms += started.elapsed().as_millis() as u64;
         for seed in seeds {
             seed.available_dictionary_names.clear();
-            for (database_index, database) in self.databases.iter().enumerate() {
+            for database in &self.databases {
                 let discovered = discovery_entries.iter().any(|entry| {
                     entry.dict_name == database.name
                         && is_substantive(entry)
@@ -710,19 +759,8 @@ impl DictionaryEngine {
                     if available {
                         break;
                     }
-                    available = self
-                        .lookup_exact_in_database(
-                            database_index,
-                            &variant.surface_form,
-                            "exact_form",
-                            timing,
-                        )
-                        .into_iter()
-                        .any(|entry| {
-                            is_substantive(&entry)
-                                && lookup_state::entry_matches_reading(&entry, requested_reading)
-                                && lookup_state::entry_matches_form(&entry, &seed.display_form)
-                        });
+                    available = references.get(&variant.surface_form).is_some_and(|items| items.iter()
+                        .any(|item| item.dict_name == database.name && reference_matches_reading(item, requested_reading)));
                 }
                 if available && !seed.available_dictionary_names.contains(&database.name) {
                     seed.available_dictionary_names.push(database.name.clone());
@@ -1127,6 +1165,12 @@ fn is_substantive(entry: &DictEntry) -> bool {
         && (entry.has_definition || !entry.senses.is_empty()
             || !entry.sections.is_empty()
             || !entry.content_blocks.is_empty())
+}
+
+fn reference_matches_reading(reference: &DictionaryEntryRef, requested_reading: Option<&str>) -> bool {
+    let Some(requested) = requested_reading.filter(|value| !value.is_empty() && *value != "*") else { return true; };
+    let requested = normalize_reading(requested);
+    reference.readings.is_empty() || reference.readings.iter().any(|reading| normalize_reading(reading) == requested)
 }
 
 fn ordered_dictionary_names(available: Vec<String>, priority_list: &[String]) -> Vec<String> {

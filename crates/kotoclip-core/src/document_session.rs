@@ -1,5 +1,5 @@
 //! 文档会话与单工作线程调度。控制操作立即更新代次，迟到产物在提交前失效。
-use crate::{analysis_engine::AnalysisEngine, document_plan::DocumentPlan};
+use crate::{analysis_engine::AnalysisEngine, document_plan::DocumentPlan, performance::PerformanceEvent};
 use kotoclip_nlp::{model::UnifiedDocument, routing::RegisterPolicy};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -188,6 +188,15 @@ impl DocumentSessions {
             let unit = &job.plan.units[job.index];
             let range = [unit.anchor.char_range[0] - unit.context_range[0], unit.anchor.char_range[1] - unit.context_range[0]];
             let result = worker_engine.analyze_complete(&prepared, routing, range, job.cancellation);
+            let mut event = PerformanceEvent::new("background.unit", "background");
+            event.background_task_ms = started.elapsed().as_secs_f64() * 1000.0;
+            event.elapsed_ms = event.background_task_ms;
+            event.execution_ms = event.background_task_ms;
+            event.status = if result.is_ok() { "ok".into() } else { "error".into() };
+            event.details.insert("sessionId".into(), json!(job.session_id));
+            event.details.insert("unitId".into(), json!(unit.id));
+            event.details.insert("unitIndex".into(), json!(job.index));
+            worker_engine.performance.record(event);
             let mut state = worker_state.lock().unwrap();
             state.active = None;
             let Some(session) = state.sessions.get_mut(&job.session_id) else { continue; };

@@ -59,10 +59,17 @@ struct Worker {
     input: ChildStdin,
     output: Receiver<Result<Value, String>>,
     manifest: Value,
+    identity: String,
+}
+
+fn worker_identity(id: &str, config: &ProviderConfig, script: &Path) -> String {
+    serde_json::to_string(&(PROTOCOL, id, &config.python, &config.model, &config.dictionary, script))
+        .expect("provider identity must be serializable")
 }
 
 impl Worker {
     fn start(id: &str, config: &ProviderConfig, script: &Path, log: &Path, cancel: &AtomicU64, generation: u64) -> Result<Self, String> {
+        let identity = worker_identity(id, config, script);
         let mut command = Command::new(&config.python);
         command.args(["-X", "utf8", "-u"]).arg(script)
             .args(["--provider", id, "--model", &config.model])
@@ -84,7 +91,7 @@ impl Worker {
                 if sender.send(value).is_err() { break; }
             }
         });
-        let mut worker = Self { child, input, output: receiver, manifest: Value::Null };
+        let mut worker = Self { child, input, output: receiver, manifest: Value::Null, identity };
         let ready = worker.receive(config.timeout_seconds, cancel, generation)?;
         if ready["event"] != "ready" { return Err(ready["error"].as_str().unwrap_or("来源初始化失败").into()); }
         worker.manifest = ready["manifest"].clone();
@@ -118,6 +125,10 @@ impl Worker {
         let artifact: SourceArtifact = serde_json::from_value(value["result"].clone()).map_err(|e| format!("来源结果协议不匹配：{e}"))?;
         artifact.validate(text)?;
         Ok(artifact)
+    }
+
+    fn is_alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
     }
 }
 
@@ -165,10 +176,18 @@ impl ProviderManager {
         for (id, config) in [("ginza", &settings.ginza)] {
             if config.timeout_seconds == 0 || config.model.trim().is_empty() { return Err(format!("{id} 的模型和超时设置无效")); }
         }
+        let previous = self.settings().ok();
         fs::create_dir_all(self.config_path.parent().unwrap()).map_err(|e| e.to_string())?;
         fs::write(&self.config_path, serde_json::to_vec_pretty(&settings).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
-        self.workers.clear();
-        self.cache.lock().unwrap().clear();
+        let new_identity = worker_identity("ginza", &settings.ginza, &self.script);
+        let keep_worker = settings.ginza.enabled && self.workers.get("ginza").map(|worker| {
+            let mut worker = worker.lock().unwrap();
+            worker.identity == new_identity && worker.is_alive()
+        }).unwrap_or(false);
+        if !keep_worker { self.workers.remove("ginza"); }
+        let previous_config = previous.as_ref().and_then(|value| serde_json::to_string(&value.ginza).ok());
+        let new_config = serde_json::to_string(&settings.ginza).map_err(|error| error.to_string())?;
+        if previous_config.as_deref() != Some(new_config.as_str()) { self.cache.lock().unwrap().clear(); }
         self.status()
     }
 
@@ -183,36 +202,50 @@ impl ProviderManager {
     pub fn status(&self) -> Result<Value, String> {
         let settings = self.settings()?;
         let providers: Vec<Value> = [("ginza", &settings.ginza)].into_iter().map(|(id, config)| {
-            let worker = self.workers.get(id);
-            let (pid, manifest) = worker.map(|w| { let w = w.lock().unwrap(); (Some(w.child.id()), Some(w.manifest.clone())) }).unwrap_or((None, None));
-            json!({"id": id, "configured": config.python.is_file() && self.script.is_file(), "available": worker.is_some(), "enabled": config.enabled,
-                "loaded": worker.is_some(), "pid": pid, "manifest": manifest})
+            let identity = worker_identity(id, config, &self.script);
+            let state = self.workers.get(id).map(|worker| {
+                let mut worker = worker.lock().unwrap();
+                if worker.identity == identity && worker.is_alive() {
+                    (Some(worker.child.id()), Some(worker.manifest.clone()))
+                } else {
+                    (None, None)
+                }
+            }).unwrap_or((None, None));
+            let loaded = state.0.is_some();
+            json!({"id": id, "configured": config.python.is_file() && self.script.is_file(), "available": loaded, "enabled": config.enabled,
+                "loaded": loaded, "pid": state.0, "manifest": state.1})
         }).collect();
         Ok(json!({"settings": settings, "providers": providers, "config_path": self.config_path, "script": self.script}))
     }
 
-    fn initialize(&mut self, id: &str, config: &ProviderConfig, generation: u64) -> Result<(), String> {
+    fn ensure_worker(&mut self, id: &str, config: &ProviderConfig, generation: u64) -> Result<Arc<Mutex<Worker>>, String> {
         if self.cancellation.load(Ordering::Relaxed) != generation { return Err("来源初始化已取消".into()); }
-        if !self.workers.contains_key(id) {
-            let log_dir = self.config_path.parent().unwrap().join("provider-logs");
-            fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;
-            let worker = Worker::start(id, config, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)
-                .map_err(|error| format!("{id} 初始化失败：{error}"))?;
-            self.workers.insert(id.into(), Arc::new(Mutex::new(worker)));
+        let identity = worker_identity(id, config, &self.script);
+        if let Some(existing) = self.workers.get(id).cloned() {
+            let reusable = {
+                let mut worker = existing.lock().unwrap();
+                worker.identity == identity && worker.is_alive()
+            };
+            if reusable { return Ok(existing); }
+            self.workers.remove(id);
         }
-        Ok(())
+        let log_dir = self.config_path.parent().unwrap().join("provider-logs");
+        fs::create_dir_all(&log_dir).map_err(|e| e.to_string())?;
+        let worker = Worker::start(id, config, &self.script, &log_dir.join(format!("{id}.log")), &self.cancellation, generation)
+            .map_err(|error| format!("{id} 初始化失败：{error}"))?;
+        let worker = Arc::new(Mutex::new(worker));
+        self.workers.insert(id.into(), worker.clone());
+        Ok(worker)
     }
 
     pub fn check(&mut self, generation: u64) -> Result<Value, String> {
         let settings = self.settings()?;
-        self.workers.clear();
-        self.cache.lock().unwrap().clear();
         let mut diagnostics = Vec::new();
         for (id, config) in [("ginza", &settings.ginza)] {
-            if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
-            let result = self.initialize(id, config, generation);
+            if !config.enabled { self.workers.remove(id); diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
+            let result = self.ensure_worker(id, config, generation);
             diagnostics.push(match result {
-                Ok(()) => { let worker = self.workers[id].lock().unwrap(); json!({"id": id, "status": "ready", "manifest": worker.manifest, "pid": worker.child.id()}) },
+                Ok(worker) => { let worker = worker.lock().unwrap(); json!({"id": id, "status": "ready", "manifest": worker.manifest, "pid": worker.child.id()}) },
                 Err(error) => json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error}),
             });
         }
@@ -223,75 +256,37 @@ impl ProviderManager {
         let settings = match self.settings() { Ok(s) => s, Err(e) => return (vec![], vec![json!({"id": "configuration", "status": "failed", "error": e})]) };
         let mut artifacts = Vec::new();
         let mut diagnostics = Vec::new();
-        let mut jobs = Vec::new();
-        let configs = [("ginza", settings.ginza.clone())];
-        let mut pending = Vec::new();
-        for (id, config) in configs {
+        for (id, config) in [("ginza", settings.ginza.clone())] {
             if !config.enabled { diagnostics.push(json!({"id": id, "status": "disabled"})); continue; }
             if self.cancellation.load(Ordering::Relaxed) != generation { diagnostics.push(json!({"id": id, "status": "cancelled"})); continue; }
             self.sequence += 1;
             let request_id = format!("{id}-{}", self.sequence);
-            if let Some(worker) = self.workers.get(id).cloned() {
-                jobs.push((id.to_string(), config, request_id, worker));
-            } else {
-                pending.push((id.to_string(), config, request_id));
+            let worker = match self.ensure_worker(id, &config, generation) {
+                Ok(worker) => worker,
+                Err(error) => {
+                    diagnostics.push(json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error, "request_id": request_id}));
+                    continue;
+                }
+            };
+            let started = Instant::now();
+            let mut cache_hit = false;
+            let result = (|| {
+                let (resource, identity) = {
+                    let worker = worker.lock().unwrap();
+                    (worker.manifest["resource_digest"].as_str().unwrap_or("unknown").to_string(), worker.identity.clone())
+                };
+                let digest = kotoclip_nlp::external::text_digest(text);
+                let key = format!("{id}:{identity}:{resource}:{digest}");
+                if let Some(artifact) = self.cache.lock().unwrap().get(&key) { cache_hit = true; return Ok((*artifact).clone()); }
+                let artifact = worker.lock().unwrap().analyze(text, &request_id, config.timeout_seconds, &self.cancellation, generation)?;
+                self.cache.lock().unwrap().insert(key, Arc::new(artifact.clone()));
+                Ok::<_, String>(artifact)
+            })();
+            match result {
+                Ok(artifact) => { diagnostics.push(json!({"id": id, "status": "ready", "elapsed_ms": started.elapsed().as_millis(), "request_id": request_id, "cache_hit": cache_hit})); artifacts.push(artifact); }
+                Err(error) => { self.workers.remove(id); diagnostics.push(json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error, "request_id": request_id})); }
             }
         }
-        let script = self.script.clone();
-        let config_path = self.config_path.clone();
-        let cancellation = self.cancellation.clone();
-        std::thread::scope(|scope| {
-            let mut handles = Vec::new();
-            for (id, config, request_id) in pending {
-                let script = script.clone();
-                let config_path = config_path.clone();
-                let cancellation = cancellation.clone();
-                handles.push(scope.spawn(move || {
-                    let log_dir = config_path.parent().unwrap().join("provider-logs");
-                    let result = fs::create_dir_all(&log_dir).map_err(|e| e.to_string())
-                        .and_then(|_| Worker::start(&id, &config, &script, &log_dir.join(format!("{id}.log")), &cancellation, generation));
-                    result.map(|worker| (id.clone(), config, request_id, worker)).map_err(|error| (id, error))
-                }));
-            }
-            for handle in handles {
-                match handle.join().unwrap() {
-                    Ok((id, config, request_id, worker)) => {
-                        let worker = Arc::new(Mutex::new(worker));
-                        self.workers.insert(id.clone(), worker.clone());
-                        jobs.push((id, config, request_id, worker));
-                    }
-                    Err((id, error)) => diagnostics.push(json!({"id": id, "status": if cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error})),
-                }
-            }
-        });
-        let digest = kotoclip_nlp::external::text_digest(text);
-        let cache = &self.cache;
-        let cancellation = &self.cancellation;
-        std::thread::scope(|scope| {
-            let mut handles = Vec::new();
-            for (id, config, request_id, worker) in jobs {
-                let digest = digest.clone();
-                handles.push(scope.spawn(move || {
-                    let started = Instant::now();
-                    let mut cache_hit = false;
-                    let result = (|| {
-                        let resource = worker.lock().unwrap().manifest["resource_digest"].as_str().unwrap().to_string();
-                        let key = format!("{id}:{resource}:{digest}");
-                        if let Some(artifact) = cache.lock().unwrap().get(&key) { cache_hit = true; return Ok((*artifact).clone()); }
-                        let artifact = worker.lock().unwrap().analyze(text, &request_id, config.timeout_seconds, cancellation, generation)?;
-                        cache.lock().unwrap().insert(key, Arc::new(artifact.clone()));
-                        Ok::<_, String>(artifact)
-                    })();
-                    (id, request_id, started.elapsed().as_millis(), cache_hit, result)
-                }));
-            }
-            for handle in handles {
-                match handle.join().unwrap() {
-                    (id, request_id, elapsed, cache_hit, Ok(artifact)) => { diagnostics.push(json!({"id": id, "status": "ready", "elapsed_ms": elapsed, "request_id": request_id, "cache_hit": cache_hit})); artifacts.push(artifact); }
-                    (id, request_id, _, _, Err(error)) => { self.workers.remove(&id); diagnostics.push(json!({"id": id, "status": if self.cancellation.load(Ordering::Relaxed) != generation { "cancelled" } else { "failed" }, "error": error, "request_id": request_id})); }
-                }
-            }
-        });
         artifacts.sort_by(|a, b| a.provider.id.cmp(&b.provider.id));
         diagnostics.sort_by(|a, b| a["id"].as_str().cmp(&b["id"].as_str()));
         (artifacts, diagnostics)

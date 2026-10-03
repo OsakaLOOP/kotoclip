@@ -1,4 +1,4 @@
-use super::{lookup::DictionaryEngine, lookup_state, model::{DictEntry, DictionaryLookup, PosTag}};
+use super::{lookup::DictionaryEngine, lookup_state, model::{DictEntry, DictionaryLookup, DictionaryLookupTiming, PosTag}};
 use kotoclip_nlp::{model::{MorphemeToken, QueryForm, UnifiedDocument}, morphology::MorphologyRole};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -203,12 +203,27 @@ fn scope_matches(hint: &DictionaryMetadataHint, chars: &[char], range: [usize; 2
     })
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct LookupTargetTiming {
+    pub database_ms: f64,
+}
+
 pub fn build(
     dictionary: &DictionaryEngine,
     document: &UnifiedDocument,
     anchor_range: [usize; 2],
     supplied_metadata: &[DictionaryMetadataHint],
 ) -> Result<LookupTargetGroup, String> {
+    build_profiled(dictionary, document, anchor_range, supplied_metadata).map(|(group, _)| group)
+}
+
+pub fn build_profiled(
+    dictionary: &DictionaryEngine,
+    document: &UnifiedDocument,
+    anchor_range: [usize; 2],
+    supplied_metadata: &[DictionaryMetadataHint],
+) -> Result<(LookupTargetGroup, LookupTargetTiming), String> {
+    let mut timing = LookupTargetTiming::default();
     let chars = document.text.chars().collect::<Vec<_>>();
     if anchor_range[0] >= anchor_range[1] || anchor_range[1] > chars.len() { return Err("查词范围超出正文".into()); }
     let tokens = &document.morphemes;
@@ -337,6 +352,7 @@ pub fn build(
             candidate.formations.push(node.id.clone());
         }
     }
+    let database_started = std::time::Instant::now();
     let words = candidates.values().flat_map(|candidate| candidate.forms.iter().map(|query| query.form.clone())).collect::<HashSet<_>>();
     let exact = dictionary.contains_exact_batch(&words);
     let mut lookup_cache: HashMap<(String, Option<String>, Option<PosTag>), Vec<DictEntry>> = HashMap::new();
@@ -361,6 +377,7 @@ pub fn build(
             else if candidate.hints.iter().any(|hint| hint.compatibility == "incompatible") { "incompatible" }
             else if !candidate.hints.is_empty() { "nonlexical_entry" } else { "no_entry" }.into();
     }
+    timing.database_ms = database_started.elapsed().as_secs_f64() * 1000.0;
     let candidates = candidates.into_values().collect::<Vec<_>>();
     let mut outer = Vec::new();
     let mut cursor = anchor_range[0];
@@ -399,10 +416,10 @@ pub fn build(
         .map(|candidate| target(candidate, &chars, tokens, None, if candidate.reason == "no_entry" { "pending" } else { "rejected" })).collect();
     let default_target_id = outer.iter().max_by_key(|target| (target.decision == "accepted", target.char_range[1] - target.char_range[0], std::cmp::Reverse(target.char_range[0])))
         .map(|target| target.id.clone());
-    Ok(LookupTargetGroup { schema: "kotoclip.lookup-targets.v1".into(), source_revision: kotoclip_nlp::external::text_digest(
+    Ok((LookupTargetGroup { schema: "kotoclip.lookup-targets.v1".into(), source_revision: kotoclip_nlp::external::text_digest(
         &serde_json::to_string(&(&document.id, &document.morphology, &document.formation, &document.ruby_validations)).map_err(|error| error.to_string())?),
         anchor_range, outer_targets: outer, inner_targets: inner, candidate_targets: pending, grammar_targets: grammar, excluded_ranges: excluded,
-        coverage_status: "complete".into(), default_target_id })
+        coverage_status: "complete".into(), default_target_id }, timing))
 }
 
 fn target(candidate: &Candidate, chars: &[char], tokens: &[MorphemeToken], parent: Option<&String>, decision: &str) -> LookupTarget {
@@ -425,11 +442,14 @@ fn target(candidate: &Candidate, chars: &[char], tokens: &[MorphemeToken], paren
 pub fn query(dictionary: &DictionaryEngine, request: &MatrixRequest, selected_form: Option<&str>) -> DictionaryLookup {
     let mut merged = DictionaryLookup { query: request.lookup_forms.first().map(|form| form.form.clone()).unwrap_or_default(), observed_form: Some(request.observed_form.clone()),
         reading: request.lookup_forms.first().and_then(|form| form.reading.clone()), pos: request.pos_constraints.clone(), selected_form_id: None,
-        mode: "lookup_target".into(), forms: Vec::new(), dictionary_names: dictionary.names(), entries: Vec::new(), timing: None };
+        mode: "lookup_target".into(), forms: Vec::new(), dictionary_names: dictionary.names(), entries: Vec::new(), timing: Some(DictionaryLookupTiming::default()) };
     let mut entries = Vec::new();
     let mut selected_by_reading = false;
-    for form in &request.lookup_forms {
-        let matrix = dictionary.lookup_matrix_profiled(&form.form, Some(&request.observed_form), form.reading.as_deref(), request.pos_constraints.as_ref(), selected_form, &request.dictionary_order);
+    let mut seen_forms = HashSet::new();
+    for form in request.lookup_forms.iter().filter(|form| seen_forms.insert((form.form.clone(), form.reading.clone()))) {
+        let preferred_form = selected_form.or_else(|| if !selected_by_reading { merged.selected_form_id.as_deref() } else { None });
+        let matrix = dictionary.lookup_matrix_profiled(&form.form, Some(&request.observed_form), form.reading.as_deref(), request.pos_constraints.as_ref(), preferred_form, &request.dictionary_order);
+        if let (Some(total), Some(current)) = (merged.timing.as_mut(), matrix.timing.as_ref()) { merge_timing(total, current); }
         let explicit_match = matrix.forms.iter().find(|group| group.normalized_form == lookup_state::normalize_form_identity(&form.form)
             && group.dictionaries.iter().any(|dictionary| dictionary.available)
             && form.reading.as_ref().is_none_or(|reading| group.readings.iter().any(|actual|
@@ -462,19 +482,24 @@ pub fn query(dictionary: &DictionaryEngine, request: &MatrixRequest, selected_fo
     }
     if let Some(selected) = selected_form { merged.selected_form_id = merged.forms.iter().find(|form| form.form_id == selected || form.display_form == selected).map(|form| form.form_id.clone()); }
     if let Some(active) = merged.forms.iter().find(|form| Some(&form.form_id) == merged.selected_form_id.as_ref()) {
-        for variant in &active.variants {
-            for entry in dictionary.lookup_exact_form_profiled_with_pos(&variant.surface_form, merged.reading.as_deref(), request.pos_constraints.as_ref()).0 {
-                if !entries.iter().any(|existing| existing.occurrence_id == entry.occurrence_id) {
-                    entries.push(entry);
-                }
-            }
-        }
         merged.entries = entries.into_iter().filter(|entry| lookup_state::entry_matches_form(entry, &active.display_form)).collect();
         let normalized_reading = merged.reading.as_deref().map(super::lookup::normalize_reading);
         super::lookup::rank_entries(&mut merged.entries, &merged.query, normalized_reading.as_deref(), request.pos_constraints.as_ref());
         merged.entries = super::aggregate::sort_definitions(merged.entries, &request.dictionary_order);
     }
     merged
+}
+
+fn merge_timing(target: &mut DictionaryLookupTiming, source: &DictionaryLookupTiming) {
+    target.resource_wait_ms += source.resource_wait_ms;
+    target.service_ms += source.service_ms;
+    target.redirect_ms += source.redirect_ms;
+    target.sqlite_ms += source.sqlite_ms;
+    target.definition_ms += source.definition_ms;
+    target.presentation_ms += source.presentation_ms;
+    target.definition_cache_hits += source.definition_cache_hits;
+    target.definition_cache_misses += source.definition_cache_misses;
+    target.entries += source.entries;
 }
 
 pub fn report(dictionary: &DictionaryEngine, group: &LookupTargetGroup) -> Result<serde_json::Value, String> {

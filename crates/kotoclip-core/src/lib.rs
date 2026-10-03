@@ -13,6 +13,7 @@ pub mod import;
 pub mod library;
 pub mod reader_markdown;
 pub mod reader_state;
+pub mod performance;
 mod analysis_cache;
 mod analysis_engine;
 mod document_session;
