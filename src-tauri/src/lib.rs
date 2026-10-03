@@ -137,7 +137,12 @@ pub fn run() {
                     .unwrap_or(app.path().app_data_dir()?);
                 let bundled = |relative: &str| {
                     let local = portable.join(relative);
-                    if local.exists() { local } else { resources.join("_up_").join(relative) }
+                    if local.exists() {
+                        local
+                    } else {
+                        let packaged = resources.join(relative);
+                        if packaged.exists() { packaged } else { resources.join("_up_").join(relative) }
+                    }
                 };
                 let dictionary = |name: &str| {
                     let override_name = format!("KOTOCLIP_UNIDIC_{}", name.to_uppercase());
@@ -147,6 +152,8 @@ pub fn run() {
                             let local = portable.join("nlp").join(format!("{name}.dic"));
                             if local.is_file() {
                                 local
+                            } else if resources.join("nlp").join(format!("{name}.dic")).is_file() {
+                                resources.join("nlp").join(format!("{name}.dic"))
                             } else {
                                 bundled(&format!("experiments/unidic-source/unidic-{name}-202512.vibrato.dic"))
                             }
@@ -155,6 +162,7 @@ pub fn run() {
                 let sources = [
                     data.join("dict-sources"),
                     portable.join("dict-sources"),
+                    resources.join("dict-sources"),
                     resources.join("_up_/data/dict-sources"),
                 ]
                 .into_iter()
@@ -167,7 +175,7 @@ pub fn run() {
                     dictionaries: data.join("dicts"),
                     provider_config: data.join("providers.local.json"),
                     provider_script: bundled("scripts/nlp_provider.py"),
-                    provider_defaults: kotoclip_core::providers::ProviderSettings::portable(&portable),
+                    provider_defaults: kotoclip_core::providers::ProviderSettings::portable_with_resource_dir(&portable, Some(&resources)),
                 }
             };
             let data = std::env::var_os("KOTOCLIP_DATA_DIR").map(PathBuf::from).unwrap_or(app.path().app_data_dir()?);

@@ -69,7 +69,7 @@ python scripts/test_dictionary_schema.py
 
 核心测试覆盖已注册模块；模块恢复时将其测试纳入编译和执行。前端构建包含 TypeScript 检查与 Vite 打包。语法资源或词典 schema 改动时执行各自专项检查。
 
-GitHub Actions 使用 `src-tauri/tauri.github-release.conf.json` 构建发行包。该配置只打包已被 Git 跟踪的 `.kdict` 词典源包和 provider 脚本；本地 `tauri.conf.json` 继续使用开发环境中的 `.dic` 资源。推送 `v*` 标签后，Actions 在 Windows x64 和 macOS arm64 runner 上构建并创建 GitHub Release，手动运行工作流只生成构建产物。
+GitHub Actions 使用 `src-tauri/tauri.github-release.conf.json` 构建发行包。`.kdict` 是发行包的词典源格式，四个源包已被 Git 跟踪；UniDic 运行文件和 GiNZA 运行环境由 `scripts/prepare_release_resources.py` 下载、校验并打入包内，本地 `tauri.conf.json` 继续使用开发环境中的 `.dic` 资源。推送 `v*` 标签后，Actions 在 Windows x64 和 macOS arm64 runner 上构建并创建 GitHub Release，手动运行工作流只生成构建产物。
 
 ## 桌面交付验收
 

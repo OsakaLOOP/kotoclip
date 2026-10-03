@@ -16,6 +16,7 @@ __pycache__/
 /target-lookup-review/
 /.agents/
 /packages/
+/release-resources/
 *.local
 /src/version/changelog.json
 
