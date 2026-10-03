@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft, BadgeInfo, BookOpen, X } from "@lucide/vue";
 import { ref } from "vue";
-import { CURRENT_VERSION } from "../../version/changelog";
 
 withDefaults(
   defineProps<{
@@ -120,7 +119,6 @@ const showAbout = ref(false);
         <header class="about-dialog__header">
           <div>
             <h2 id="about-dialog-title">关于 Kotoclip</h2>
-            <p>版本 {{ CURRENT_VERSION }}</p>
           </div>
           <button
             class="about-dialog__close"

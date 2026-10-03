@@ -8,10 +8,9 @@
   "scripts": {
     "acceptance": "cargo build -p kotoclip-core --bin kotoclip-nlp && vite --host 127.0.0.1 --port 1420",
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_channel.ps1 -Channel dev",
-    "version:sync": "node scripts/sync_changelog.mjs",
     "verify:release-resources": "node scripts/check_release_resources.mjs",
-    "frontend:dev": "npm run version:sync && vite",
-    "build": "npm run version:sync && vue-tsc --noEmit && vite build",
+    "frontend:dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
     "insider": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_channel.ps1 -Channel insider",
     "test:ui": "node --test --experimental-strip-types src/explanation/*.test.mjs src/reader/*.test.mjs src/utils/*.test.mjs",
     "preview": "vite preview",
